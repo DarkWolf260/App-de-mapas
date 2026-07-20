@@ -323,32 +323,28 @@ export const useMapSetup = ({
           // Sort screenLabels by priority: highest priority (1) first
           screenLabels.sort((a, b) => a.priority - b.priority);
 
-          const minLabelDistance = 55;
-          for (let i = 0; i < screenLabels.length; i++) {
-            const l1 = screenLabels[i];
-            if (!l1.visible || l1.x === null || l1.y === null) continue;
-            for (let j = i + 1; j < screenLabels.length; j++) {
-              const l2 = screenLabels[j];
-              if (!l2.visible || l2.x === null || l2.y === null) continue;
-              const dx = l1.x - l2.x;
-              const dy = l1.y - l2.y;
-              const dist = Math.sqrt(dx * dx + dy * dy);
-              if (dist < minLabelDistance) {
-                l2.visible = false;
-                l2.graphic.visible = false;
+          const allowOverlap = layerVisibilityRef.current.allowLabelOverlap;
+          if (!allowOverlap) {
+            const minLabelDistance = 55;
+            for (let i = 0; i < screenLabels.length; i++) {
+              const l1 = screenLabels[i];
+              if (!l1.visible || l1.x === null || l1.y === null) continue;
+              for (let j = i + 1; j < screenLabels.length; j++) {
+                const l2 = screenLabels[j];
+                if (!l2.visible || l2.x === null || l2.y === null) continue;
+                const dx = l1.x - l2.x;
+                const dy = l1.y - l2.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < minLabelDistance) {
+                  l2.visible = false;
+                  l2.graphic.visible = false;
+                }
               }
             }
           }
 
           const activeHtmlLabels: Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string; placement: "top" | "bottom" | "left" | "right"; hasArrived?: boolean }> = [];
-
-          const pointBoxes = screenLabels.map((lbl) => ({
-            x1: lbl.x !== null ? lbl.x - 10 : -1000,
-            y1: lbl.y !== null ? lbl.y - 10 : -1000,
-            x2: lbl.x !== null ? lbl.x + 10 : -1000,
-            y2: lbl.y !== null ? lbl.y + 10 : -1000
-          }));
-          const placedBoxes: Array<{ x1: number; y1: number; x2: number; y2: number }> = [...pointBoxes];
+          const placedBoxes: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
 
           screenLabels.forEach((item) => {
             const lbl = item.graphic;
@@ -401,51 +397,56 @@ export const useMapSetup = ({
               let chosenBox = { x1: x - w / 2, y1: y - offset - h, x2: x + w / 2, y2: y - offset };
               let found = false;
 
-              for (const dir of directions) {
-                let box = { x1: 0, y1: 0, x2: 0, y2: 0 };
-                if (dir === "top") {
-                  box = { x1: x - w / 2, y1: y - offset - h, x2: x + w / 2, y2: y - offset };
-                } else if (dir === "bottom") {
-                  box = { x1: x - w / 2, y1: y + offset, x2: x + w / 2, y2: y + offset + h };
-                } else if (dir === "right") {
-                  box = { x1: x + offset, y1: y - h / 2, x2: x + offset + w, y2: y + h / 2 };
-                } else if (dir === "left") {
-                  box = { x1: x - offset - w, y1: y - h / 2, x2: x - offset, y2: y + h / 2 };
-                }
-
-                const hasOverlap = placedBoxes.some((b) => {
-                  return box.x1 < b.x2 && box.x2 > b.x1 && box.y1 < b.y2 && box.y2 > b.y1;
-                });
-
-                if (!hasOverlap) {
-                  chosenPlacement = dir;
-                  chosenBox = box;
-                  found = true;
-                  break;
-                }
-              }
-
-               if (found) {
-                 const todayLog = feat?.dailyLogs?.find((l: any) => l.date === todayStr);
-                 const g1Arrived = todayLog ? (!!todayLog.hasArrivedG1 || (!!todayLog.arrivalTime && todayLog.arrivalTime.trim() !== "")) : false;
-                 const g2Arrived = todayLog ? (!!todayLog.hasArrivedG2 || (!!todayLog.arrivalTime2 && todayLog.arrivalTime2.trim() !== "")) : false;
-                 const arrived = g1Arrived || g2Arrived;
-
-                 activeHtmlLabels.push({
-                   id: pid,
-                   title,
-                   info,
-                   x,
-                   y,
-                   themeColor: feat?.color,
-                   placement: chosenPlacement,
-                   hasArrived: arrived
-                 });
-                 placedBoxes.push(chosenBox);
-                 lbl.visible = false;
+              if (allowOverlap) {
+                found = true;
               } else {
-                lbl.visible = false;
+                for (const dir of directions) {
+                  let box = { x1: 0, y1: 0, x2: 0, y2: 0 };
+                  if (dir === "top") {
+                    box = { x1: x - w / 2, y1: y - offset - h, x2: x + w / 2, y2: y - offset };
+                  } else if (dir === "bottom") {
+                    box = { x1: x - w / 2, y1: y + offset, x2: x + w / 2, y2: y + offset + h };
+                  } else if (dir === "right") {
+                    box = { x1: x + offset, y1: y - h / 2, x2: x + offset + w, y2: y + h / 2 };
+                  } else if (dir === "left") {
+                    box = { x1: x - offset - w, y1: y - h / 2, x2: x - offset, y2: y + h / 2 };
+                  }
+
+                  const hasOverlap = placedBoxes.some((b) => {
+                    return box.x1 < b.x2 && box.x2 > b.x1 && box.y1 < b.y2 && box.y2 > b.y1;
+                  });
+
+                  if (!hasOverlap) {
+                    chosenPlacement = dir;
+                    chosenBox = box;
+                    found = true;
+                    break;
+                  }
+                }
               }
+
+              if (!found) {
+                chosenPlacement = "top";
+                chosenBox = { x1: x - w / 2, y1: y - offset - h, x2: x + w / 2, y2: y - offset };
+              }
+
+              const todayLog = feat?.dailyLogs?.find((l: any) => l.date === todayStr);
+              const g1Arrived = todayLog ? (!!todayLog.hasArrivedG1 || (!!todayLog.arrivalTime && todayLog.arrivalTime.trim() !== "")) : false;
+              const g2Arrived = todayLog ? (!!todayLog.hasArrivedG2 || (!!todayLog.arrivalTime2 && todayLog.arrivalTime2.trim() !== "")) : false;
+              const arrived = g1Arrived || g2Arrived;
+
+              activeHtmlLabels.push({
+                id: pid,
+                title,
+                info,
+                x,
+                y,
+                themeColor: feat?.color,
+                placement: chosenPlacement,
+                hasArrived: arrived
+              });
+              placedBoxes.push(chosenBox);
+              lbl.visible = false;
             } else {
               lbl.visible = item.visible;
               if (lbl.symbol) {

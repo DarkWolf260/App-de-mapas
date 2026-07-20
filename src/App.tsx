@@ -54,6 +54,7 @@ export interface LayerVisibility {
   polygonLabels: boolean;
   pointLabels: boolean;
   hideNestedAreas: boolean;
+  allowLabelOverlap: boolean;
 }
 
 export interface RemoveFeatureId {
@@ -84,6 +85,7 @@ function App() {
       polygonLabels: true,
       pointLabels: true,
       hideNestedAreas: false,
+      allowLabelOverlap: false,
     };
   });
   const [drawnFeatures, setDrawnFeatures] = useState<DrawnFeature[]>([]);

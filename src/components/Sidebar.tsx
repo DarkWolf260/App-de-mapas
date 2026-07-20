@@ -352,6 +352,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <span className="slider" />
               </label>
             </div>
+            <div className="toggle-item">
+              <span className="toggle-label" style={{ fontSize: "0.72rem" }}>
+                Permitir Solapamiento de Etiquetas
+              </span>
+              <label className="toggle-switch">
+                <input type="checkbox" checked={layerVisibility.allowLabelOverlap || false} onChange={() => onToggleLayer("allowLabelOverlap")} />
+                <span className="slider" />
+              </label>
+            </div>
           </div>
         )}
       </div>
