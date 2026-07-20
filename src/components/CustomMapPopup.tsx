@@ -1,7 +1,7 @@
 import React from "react";
 import type { DrawnFeature, LayerVisibility } from "../App";
 import * as webMercatorUtils from "@arcgis/core/geometry/support/webMercatorUtils";
-import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
+import { execute as containsExecute } from "@arcgis/core/geometry/operators/containsOperator";
 import { Lock, Unlock } from "lucide-react";
 
 interface CustomMapPopupProps {
@@ -541,7 +541,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                     ? webMercatorUtils.webMercatorToGeographic(otherG.geometry)
                     : otherG.geometry;
 
-                  if (otherGeom && geometryEngine.contains(polyGeom, otherGeom)) {
+                  if (otherGeom && containsExecute(polyGeom, otherGeom)) {
                     const otherId = otherG.attributes?.id || (otherG as any).uid;
                     const otherFeat = drawnFeatures.find((f) => String(f.id) === String(otherId));
                     if (otherFeat) {

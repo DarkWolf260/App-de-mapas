@@ -9,6 +9,7 @@ import Basemap from "@arcgis/core/Basemap";
 import Zoom from "@arcgis/core/widgets/Zoom";
 import Compass from "@arcgis/core/widgets/Compass";
 import TextSymbol from "@arcgis/core/symbols/TextSymbol";
+import { execute as centroidExecute } from "@arcgis/core/geometry/operators/centroidOperator";
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
 import * as webMercatorUtils from "@arcgis/core/geometry/support/webMercatorUtils";
 import { Color, PALETTE, hexToRgb } from "./ColorPicker";
@@ -332,9 +333,9 @@ export const useMapSetup = ({
               font: { size: 11, family: "sans-serif", weight: "bold" },
               yoffset: g.geometry.type === "point" ? 12 : 0,
             });
-            const isPolyLabel = g.geometry.type === "polygon";
+            const isPolyLabel = g.geometry!.type === "polygon";
             const labelG = new Graphic({
-              geometry: isPolyLabel ? (g.geometry as any).centroid : g.geometry.clone(),
+              geometry: isPolyLabel ? centroidExecute(g.geometry!) : g.geometry!.clone(),
               symbol: labelSym,
               visible: isPolyLabel ? layerVisibility.polygonLabels : layerVisibility.pointLabels,
               attributes: { isLabel: true, parentId: g.uid, isPolygonLabel: isPolyLabel },
@@ -362,9 +363,9 @@ export const useMapSetup = ({
           const label = sketchLayer.graphics.find((x: any) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
           if (label) {
             if (g.geometry?.type === "polygon") {
-              label.geometry = (g.geometry as any).centroid;
+              label.geometry = centroidExecute(g.geometry!);
             } else {
-              label.geometry = g.geometry.clone();
+              label.geometry = g.geometry!.clone();
             }
           }
         });
@@ -471,7 +472,13 @@ export const useMapSetup = ({
 
   // ── 2. Sync basemap ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (viewRef.current?.map) viewRef.current.map.basemap = getBasemapValue(activeBasemap);
+    if (viewRef.current?.map) {
+      const currentBasemap = viewRef.current.map.basemap;
+      if (currentBasemap && currentBasemap.id === activeBasemap) {
+        return;
+      }
+      viewRef.current.map.basemap = getBasemapValue(activeBasemap);
+    }
   }, [activeBasemap]);
 
   // ── 3. Sync layer visibility ─────────────────────────────────────────────────
@@ -607,7 +614,7 @@ export const useMapSetup = ({
           }
 
           if (feat.type === "polygon" && g.geometry) {
-            label.geometry = (g.geometry as any).centroid;
+            label.geometry = centroidExecute(g.geometry!);
           }
 
           if (g.attributes && g.attributes.title !== feat.title) {
@@ -650,7 +657,7 @@ export const useMapSetup = ({
             const isPolyLabel = feat.geojsonGeometry.type === "Polygon";
             const labelGeom = feat.geojsonGeometry.type === "Point"
               ? ng.geometry!.clone()
-              : (ng.geometry as any).centroid;
+              : centroidExecute(ng.geometry!);
 
             const labelSym = new TextSymbol({
               text: getLabelText(feat),
