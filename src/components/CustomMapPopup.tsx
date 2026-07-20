@@ -200,7 +200,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
               {activeFeat.locked && (
                 <div style={{ fontSize: "0.62rem", color: "var(--color-high)", background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "4px", padding: "4px 6px", display: "flex", gap: "4px" }}>
-                  <span>⚠️ Elemento bloqueado. Desbloquéalo en el encabezado del popup para editar.</span>
+                  <span>🔒 Ubicación del elemento bloqueada (no se puede mover).</span>
                 </div>
               )}
 
@@ -210,7 +210,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                   type="date"
                   value={popupEditDate}
                   onChange={(e) => setPopupEditDate(e.target.value)}
-                  disabled={activeFeat.locked}
                   style={{
                     background: "rgba(15, 23, 42, 0.8)",
                     border: "1px solid var(--border-subtle)",
@@ -218,7 +217,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                     color: "var(--text-main)",
                     fontSize: "0.62rem",
                     padding: "1px 3px",
-                    cursor: activeFeat.locked ? "not-allowed" : "text"
+                    cursor: "text"
                   }}
                 />
               </div>
@@ -228,7 +227,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                 placeholder="Grupo Desplegado"
                 value={currentLog.groupName}
                 onChange={(e) => handlePopupInputChange("groupName", e.target.value)}
-                disabled={activeFeat.locked}
                 style={{
                   background: "rgba(255, 255, 255, 0.02)",
                   border: "1px solid var(--border-subtle)",
@@ -236,7 +234,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                   color: "var(--text-main)",
                   fontSize: "0.68rem",
                   padding: "3px 6px",
-                  cursor: activeFeat.locked ? "not-allowed" : "text"
+                  cursor: "text"
                 }}
               />
               <input
@@ -244,7 +242,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                 placeholder="Encargado"
                 value={currentLog.managerName}
                 onChange={(e) => handlePopupInputChange("managerName", e.target.value)}
-                disabled={activeFeat.locked}
                 style={{
                   background: "rgba(255, 255, 255, 0.02)",
                   border: "1px solid var(--border-subtle)",
@@ -252,7 +249,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                   color: "var(--text-main)",
                   fontSize: "0.68rem",
                   padding: "3px 6px",
-                  cursor: activeFeat.locked ? "not-allowed" : "text"
+                  cursor: "text"
                 }}
               />
               <input
@@ -260,7 +257,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                 placeholder="Teléfono Encargado"
                 value={currentLog.managerPhone}
                 onChange={(e) => handlePopupInputChange("managerPhone", e.target.value)}
-                disabled={activeFeat.locked}
                 style={{
                   background: "rgba(255, 255, 255, 0.02)",
                   border: "1px solid var(--border-subtle)",
@@ -268,7 +264,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                   color: "var(--text-main)",
                   fontSize: "0.68rem",
                   padding: "3px 6px",
-                  cursor: activeFeat.locked ? "not-allowed" : "text"
+                  cursor: "text"
                 }}
               />
               <input
@@ -276,7 +272,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                 placeholder="Unidad (Vehículo/Equipo)"
                 value={currentLog.unitOut}
                 onChange={(e) => handlePopupInputChange("unitOut", e.target.value)}
-                disabled={activeFeat.locked}
                 style={{
                   background: "rgba(255, 255, 255, 0.02)",
                   border: "1px solid var(--border-subtle)",
@@ -284,7 +279,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                   color: "var(--text-main)",
                   fontSize: "0.68rem",
                   padding: "3px 6px",
-                  cursor: activeFeat.locked ? "not-allowed" : "text"
+                  cursor: "text"
                 }}
               />
               <input
@@ -293,7 +288,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                 placeholder="Cantidad de Funcionarios"
                 value={currentLog.officersCount || ""}
                 onChange={(e) => handlePopupInputChange("officersCount", e.target.value)}
-                disabled={activeFeat.locked}
                 style={{
                   background: "rgba(255, 255, 255, 0.02)",
                   border: "1px solid var(--border-subtle)",
@@ -301,7 +295,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                   color: "var(--text-main)",
                   fontSize: "0.68rem",
                   padding: "3px 6px",
-                  cursor: activeFeat.locked ? "not-allowed" : "text"
+                  cursor: "text"
                 }}
               />
               <div style={{ display: "flex", gap: "6px" }}>
@@ -311,7 +305,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                   placeholder="Rescatados"
                   value={currentLog.rescuedCount || ""}
                   onChange={(e) => handlePopupInputChange("rescuedCount", e.target.value)}
-                  disabled={activeFeat.locked}
                   style={{
                     flex: 1,
                     background: "rgba(255, 255, 255, 0.02)",
@@ -320,7 +313,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                     color: "var(--text-main)",
                     fontSize: "0.68rem",
                     padding: "3px 6px",
-                    cursor: activeFeat.locked ? "not-allowed" : "text"
+                    cursor: "text"
                   }}
                 />
                 <input
@@ -329,7 +322,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                   placeholder="Recuperados"
                   value={currentLog.recoveredCount || ""}
                   onChange={(e) => handlePopupInputChange("recoveredCount", e.target.value)}
-                  disabled={activeFeat.locked}
                   style={{
                     flex: 1,
                     background: "rgba(255, 255, 255, 0.02)",
@@ -338,7 +330,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                     color: "var(--text-main)",
                     fontSize: "0.68rem",
                     padding: "3px 6px",
-                    cursor: activeFeat.locked ? "not-allowed" : "text"
+                    cursor: "text"
                   }}
                 />
               </div>
@@ -350,7 +342,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                     type="time"
                     value={currentLog.departureTime || ""}
                     onChange={(e) => handlePopupInputChange("departureTime", e.target.value)}
-                    disabled={activeFeat.locked}
                     style={{
                       background: "rgba(15, 23, 42, 0.8)",
                       border: "1px solid var(--border-subtle)",
@@ -359,7 +350,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                       fontSize: "0.65rem",
                       padding: "2px 4px",
                       outline: "none",
-                      cursor: activeFeat.locked ? "not-allowed" : "text"
+                      cursor: "text"
                     }}
                   />
                 </div>
@@ -369,7 +360,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                     type="time"
                     value={currentLog.arrivalTime || ""}
                     onChange={(e) => handlePopupInputChange("arrivalTime", e.target.value)}
-                    disabled={activeFeat.locked}
                     style={{
                       background: "rgba(15, 23, 42, 0.8)",
                       border: "1px solid var(--border-subtle)",
@@ -378,7 +368,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                       fontSize: "0.65rem",
                       padding: "2px 4px",
                       outline: "none",
-                      cursor: activeFeat.locked ? "not-allowed" : "text"
+                      cursor: "text"
                     }}
                   />
                 </div>
@@ -390,8 +380,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                     type="checkbox"
                     checked={!!currentLog.hasArrivedG1}
                     onChange={(e) => handlePopupInputChange("hasArrivedG1", e.target.checked)}
-                    disabled={activeFeat.locked}
-                    style={{ margin: 0, cursor: activeFeat.locked ? "not-allowed" : "pointer" }}
+                    style={{ margin: 0, cursor: "pointer" }}
                   />
                   <span>¿Ya llegó la unidad?</span>
                 </label>

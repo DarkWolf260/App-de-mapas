@@ -95,7 +95,6 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           type="text"
           value={feat.title}
           onChange={(e) => onRenameFeature(feat.id as unknown as number, e.target.value)}
-          disabled={feat.locked}
           className="form-input"
           style={{
             background: "transparent",
@@ -107,9 +106,9 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             fontSize: "0.78rem",
             width: "100%",
             opacity: isHidden ? 0.5 : 1,
-            cursor: feat.locked ? "not-allowed" : "text",
+            cursor: "text",
           }}
-          title={feat.locked ? "Elemento bloqueado" : "Haz clic para renombrar"}
+          title="Haz clic para renombrar"
         />
       </div>
       
@@ -120,10 +119,9 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
       )}
       
       <textarea
-        placeholder={feat.locked ? "Elemento bloqueado — desbloquea para añadir notas" : "Notas o información del elemento..."}
+        placeholder="Notas o información del elemento..."
         value={feat.description || ""}
         onChange={(e) => onUpdateFeatureDescription(feat.id as unknown as number, e.target.value)}
-        disabled={feat.locked}
         style={{
           background: "rgba(255, 255, 255, 0.01)",
           border: "1px solid var(--border-subtle)",
@@ -136,8 +134,8 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           height: "36px",
           marginTop: "2px",
           fontFamily: "inherit",
-          opacity: isHidden ? 0.4 : feat.locked ? 0.6 : 0.8,
-          cursor: feat.locked ? "not-allowed" : "text",
+          opacity: isHidden ? 0.4 : 0.8,
+          cursor: "text",
         }}
       />
 
