@@ -269,7 +269,7 @@ export const useMapSetup = ({
           const isParentHidden = hiddenFeaturesRef.current[pid];
           if (isParentHidden) return false;
 
-          if (currentZoom !== undefined && currentZoom < 16) return false;
+          if (currentZoom === undefined || currentZoom === null || isNaN(currentZoom) || currentZoom < 16) return false;
 
           if (isPolygonLabel) {
             if (!layerVisibilityRef.current.polygonLabels) return false;
@@ -386,10 +386,12 @@ export const useMapSetup = ({
               yoffset: g.geometry.type === "point" ? 12 : 0,
             });
             const isPolyLabel = g.geometry!.type === "polygon";
+            const currentZoom = view.zoom;
+            const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= 16;
             const labelG = new Graphic({
               geometry: isPolyLabel ? centroidExecute(g.geometry!) : g.geometry!.clone(),
               symbol: labelSym,
-              visible: isPolyLabel ? layerVisibility.polygonLabels : layerVisibility.pointLabels,
+              visible: isZoomOk && (isPolyLabel ? layerVisibility.polygonLabels : layerVisibility.pointLabels),
               attributes: { isLabel: true, parentId: g.uid, isPolygonLabel: isPolyLabel },
             });
             sketchLayer.add(labelG);
@@ -660,10 +662,11 @@ export const useMapSetup = ({
         const label = layer.graphics.find((x: any) => x.attributes?.isLabel && String(x.attributes?.parentId) === String(feat.id));
         if (label) {
           const isPolygonLabel = label.attributes?.isPolygonLabel;
+          const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= 16;
           if (isPolygonLabel) {
-            label.visible = !isHidden && !shouldHideNested && layerVisibility.polygonLabels && currentZoom >= 16;
+            label.visible = !isHidden && !shouldHideNested && layerVisibility.polygonLabels && isZoomOk;
           } else {
-            label.visible = !isHidden && layerVisibility.pointLabels && currentZoom >= 16;
+            label.visible = !isHidden && layerVisibility.pointLabels && isZoomOk;
           }
 
           if (feat.type === "polygon" && g.geometry) {
@@ -736,12 +739,13 @@ export const useMapSetup = ({
               yoffset: feat.geojsonGeometry.type === "Point" ? (showBox ? 18 : 12) : 0
             });
 
+            const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= 16;
             const labelG = new Graphic({
               geometry: labelGeom,
               symbol: labelSym,
               visible: !isHidden && !shouldHideNested && (isPolyLabel 
-                ? (layerVisibility.polygonLabels && currentZoom >= 16) 
-                : (layerVisibility.pointLabels && currentZoom >= 16)),
+                ? (layerVisibility.polygonLabels && isZoomOk) 
+                : (layerVisibility.pointLabels && isZoomOk)),
               attributes: { isLabel: true, parentId: feat.id, isPolygonLabel: isPolyLabel }
             });
             layer.add(labelG);
@@ -802,6 +806,8 @@ export const useMapSetup = ({
         layer.add(ng);
 
         if (feat.geojsonGeometry.type === "Point") {
+          const currentZoom = viewRef.current?.zoom;
+          const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= 16;
           const labelSym = new TextSymbol({
             text: feat.title || "Importado Punto",
             color: "white",
@@ -813,13 +819,14 @@ export const useMapSetup = ({
           const labelG = new Graphic({
             geometry: ng.geometry!.clone(),
             symbol: labelSym,
-            visible: layerVisibility.pointLabels,
-            attributes: { isLabel: true, parentId: feat.id },
+            visible: isZoomOk && layerVisibility.pointLabels,
+            attributes: { isLabel: true, parentId: feat.id, isPolygonLabel: false },
           });
           layer.add(labelG);
         }
       }
     });
+    deconflictGraphicsRef.current?.();
   }, [importedFeatures, mapReady]);
 
   useEffect(() => {
