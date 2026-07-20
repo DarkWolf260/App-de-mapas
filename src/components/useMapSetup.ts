@@ -178,6 +178,7 @@ export const useMapSetup = ({
   }, [activeColor]);
 
   const [currentZoom, setCurrentZoom] = useState<number>(DEFAULT_ZOOM);
+  const [htmlLabels, setHtmlLabels] = useState<Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string }>>([]);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number; visible: boolean }>({
     text: "",
     x: 0,
@@ -259,7 +260,7 @@ export const useMapSetup = ({
           g.visible = !hiddenFeaturesRef.current[pid];
         });
 
-        const currentZoom = view.zoom;
+        const { parentsMap } = buildParentsMap(drawnFeaturesRef.current);
         const candidateLabels = labels.filter((lbl: any) => {
           const pid = lbl.attributes?.parentId;
           const isPolygonLabel = lbl.attributes?.isPolygonLabel;
@@ -269,7 +270,11 @@ export const useMapSetup = ({
           const isParentHidden = hiddenFeaturesRef.current[pid];
           if (isParentHidden) return false;
 
-          if (currentZoom === undefined || currentZoom === null || isNaN(currentZoom) || currentZoom < 16) return false;
+          const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(pid));
+          const isSubpolygon = isPolygonLabel && feat && parentsMap[feat.id] !== undefined;
+          const requiredZoom = (isPolygonLabel && !isSubpolygon) ? 14 : 16;
+
+          if (currentZoom === undefined || currentZoom === null || isNaN(currentZoom) || currentZoom < requiredZoom) return false;
 
           if (isPolygonLabel) {
             if (!layerVisibilityRef.current.polygonLabels) return false;
@@ -281,12 +286,8 @@ export const useMapSetup = ({
         });
 
         labels.forEach((lbl: any) => {
-          const isVisible = candidateLabels.includes(lbl);
-          if (lbl.visible !== isVisible) {
-            lbl.visible = isVisible;
-            if (lbl.symbol) {
-              lbl.symbol = lbl.symbol.clone();
-            }
+          if (!candidateLabels.includes(lbl)) {
+            lbl.visible = false;
           }
         });
 
@@ -336,6 +337,62 @@ export const useMapSetup = ({
             }
           }
         }
+
+        const activeHtmlLabels: Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string }> = [];
+
+        screenLabels.forEach((item) => {
+          const lbl = item.graphic;
+          const pid = lbl.attributes?.parentId;
+          const isPolygonLabel = lbl.attributes?.isPolygonLabel;
+
+          const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(pid));
+          let title = feat ? feat.title : (lbl.symbol as any)?.text || "";
+          let info = "";
+
+          if (feat && feat.type === "point") {
+            const todayStr = new Date().toLocaleDateString('en-CA');
+            const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
+            if (todayLog) {
+              const parts: string[] = [];
+              const g1 = todayLog.groupName?.trim();
+              const u1 = todayLog.unitOut?.trim();
+              if (g1 && u1) parts.push(`${g1}, ${u1}`);
+              else if (g1) parts.push(g1);
+              else if (u1) parts.push(u1);
+
+              const g2 = todayLog.groupName2?.trim();
+              const u2 = todayLog.unitOut2?.trim();
+              if (g2 && u2) parts.push(`${g2}, ${u2}`);
+              else if (g2) parts.push(g2);
+              else if (u2) parts.push(u2);
+
+              if (parts.length > 0) {
+                info = parts.join(" | ");
+              }
+            }
+          }
+
+          const hasPersonnel = info !== "";
+
+          if (item.visible && !isPolygonLabel && hasPersonnel) {
+            activeHtmlLabels.push({
+              id: pid,
+              title,
+              info,
+              x: item.x!,
+              y: item.y!,
+              themeColor: feat?.color
+            });
+            lbl.visible = false;
+          } else {
+            lbl.visible = item.visible;
+            if (lbl.symbol) {
+              lbl.symbol = lbl.symbol.clone();
+            }
+          }
+        });
+
+        setHtmlLabels(activeHtmlLabels);
       };
       deconflictGraphicsRef.current = deconflictGraphics;
       deconflictGraphics();
@@ -387,7 +444,8 @@ export const useMapSetup = ({
             });
             const isPolyLabel = g.geometry!.type === "polygon";
             const currentZoom = view.zoom;
-            const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= 16;
+            const requiredZoom = isPolyLabel ? 14 : 16;
+            const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= requiredZoom;
             const labelG = new Graphic({
               geometry: isPolyLabel ? centroidExecute(g.geometry!) : g.geometry!.clone(),
               symbol: labelSym,
@@ -662,7 +720,9 @@ export const useMapSetup = ({
         const label = layer.graphics.find((x: any) => x.attributes?.isLabel && String(x.attributes?.parentId) === String(feat.id));
         if (label) {
           const isPolygonLabel = label.attributes?.isPolygonLabel;
-          const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= 16;
+          const isSubpolygon = isPolygonLabel && parentsMap[feat.id] !== undefined;
+          const requiredZoom = (isPolygonLabel && !isSubpolygon) ? 14 : 16;
+          const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= requiredZoom;
           if (isPolygonLabel) {
             label.visible = !isHidden && !shouldHideNested && layerVisibility.polygonLabels && isZoomOk;
           } else {
@@ -739,7 +799,9 @@ export const useMapSetup = ({
               yoffset: feat.geojsonGeometry.type === "Point" ? (showBox ? 18 : 12) : 0
             });
 
-            const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= 16;
+            const isSubpolygon = isPolyLabel && parentsMap[feat.id] !== undefined;
+            const requiredZoom = (isPolyLabel && !isSubpolygon) ? 14 : 16;
+            const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= requiredZoom;
             const labelG = new Graphic({
               geometry: labelGeom,
               symbol: labelSym,
@@ -857,6 +919,7 @@ export const useMapSetup = ({
     popupEditDate,
     sketchLayer: sketchLayerRef.current,
     currentZoom,
+    htmlLabels,
     setCustomPopup,
     setShowHistoryInPopup,
     setPopupEditDate,

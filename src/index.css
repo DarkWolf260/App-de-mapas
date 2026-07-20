@@ -1440,4 +1440,9 @@ input:checked + .slider:before {
   color: var(--text-muted);
 }
 
+/* Ensure ESRI UI controls (Zoom/Compass) stay above HTML overlay labels */
+.esri-ui {
+  z-index: 10 !important;
+}
+
 

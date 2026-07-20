@@ -46,6 +46,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     popupEditDate,
     sketchLayer,
     currentZoom,
+    htmlLabels,
     setCustomPopup,
     setShowHistoryInPopup,
     setPopupEditDate,
@@ -57,7 +58,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
   } = useMapSetup(props);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
       <div className="map-view-container" ref={mapDiv} style={{ width: "100%", height: "100%" }} />
       {layerVisibility?.sketch && (
         <div className="draw-toolbar-wrapper">
@@ -142,6 +143,36 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
       >
         ZOOM: {currentZoom.toFixed(1)}
       </div>
+
+      {/* HTML point labels with background (personnel info) */}
+      {htmlLabels.map((lbl) => (
+        <div
+          key={lbl.id}
+          style={{
+            position: "absolute",
+            left: `${lbl.x}px`,
+            top: `${lbl.y - 12}px`,
+            transform: "translate(-50%, -100%)",
+            background: "rgba(10, 15, 29, 0.95)",
+            border: `1px solid ${lbl.themeColor ? `${lbl.themeColor}80` : "rgba(56, 189, 248, 0.5)"}`,
+            color: "#f8fafc",
+            padding: "5px 10px",
+            borderRadius: "6px",
+            fontFamily: "var(--font-sans)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+            pointerEvents: "none",
+            zIndex: 2,
+            whiteSpace: "nowrap",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+            <div style={{ fontWeight: 800, fontSize: "11px", marginBottom: "2px" }}>{lbl.title}</div>
+            <div style={{ fontWeight: 500, fontSize: "9px", opacity: 0.85 }}>{lbl.info}</div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
