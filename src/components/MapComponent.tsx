@@ -145,34 +145,100 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
       </div>
 
       {/* HTML point labels with background (personnel info) */}
-      {htmlLabels.map((lbl) => (
-        <div
-          key={lbl.id}
-          style={{
-            position: "absolute",
-            left: `${lbl.x}px`,
-            top: `${lbl.y - 12}px`,
-            transform: "translate(-50%, -100%)",
-            background: "rgba(10, 15, 29, 0.95)",
-            border: `1px solid ${lbl.themeColor ? `${lbl.themeColor}80` : "rgba(56, 189, 248, 0.5)"}`,
-            color: "#f8fafc",
-            padding: "5px 10px",
-            borderRadius: "6px",
-            fontFamily: "var(--font-sans)",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
-            pointerEvents: "none",
-            zIndex: 2,
-            whiteSpace: "nowrap",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-            <div style={{ fontWeight: 800, fontSize: "11px", marginBottom: "2px" }}>{lbl.title}</div>
-            <div style={{ fontWeight: 500, fontSize: "9px", opacity: 0.85 }}>{lbl.info}</div>
+      {htmlLabels.map((lbl) => {
+        const borderStyle = `1px solid ${lbl.themeColor ? `${lbl.themeColor}80` : "rgba(56, 189, 248, 0.5)"}`;
+        
+        let top = `${lbl.y - 12}px`;
+        let left = `${lbl.x}px`;
+        let transform = "translate(-50%, -100%)";
+        let arrowStyle: React.CSSProperties = {};
+
+        if (lbl.placement === "top") {
+          top = `${lbl.y - 12}px`;
+          left = `${lbl.x}px`;
+          transform = "translate(-50%, -100%)";
+          arrowStyle = {
+            bottom: "0",
+            left: "50%",
+            transform: "translate(-50%, 50%) rotate(45deg)",
+            borderRight: borderStyle,
+            borderBottom: borderStyle,
+          };
+        } else if (lbl.placement === "bottom") {
+          top = `${lbl.y + 12}px`;
+          left = `${lbl.x}px`;
+          transform = "translate(-50%, 0)";
+          arrowStyle = {
+            top: "0",
+            left: "50%",
+            transform: "translate(-50%, -50%) rotate(45deg)",
+            borderTop: borderStyle,
+            borderLeft: borderStyle,
+          };
+        } else if (lbl.placement === "right") {
+          top = `${lbl.y}px`;
+          left = `${lbl.x + 12}px`;
+          transform = "translate(0, -50%)";
+          arrowStyle = {
+            top: "50%",
+            left: "0",
+            transform: "translate(-50%, -50%) rotate(45deg)",
+            borderBottom: borderStyle,
+            borderLeft: borderStyle,
+          };
+        } else if (lbl.placement === "left") {
+          top = `${lbl.y}px`;
+          left = `${lbl.x - 12}px`;
+          transform = "translate(-100%, -50%)";
+          arrowStyle = {
+            top: "50%",
+            right: "0",
+            transform: "translate(50%, -50%) rotate(45deg)",
+            borderTop: borderStyle,
+            borderRight: borderStyle,
+          };
+        }
+
+        return (
+          <div
+            key={lbl.id}
+            style={{
+              position: "absolute",
+              left,
+              top,
+              transform,
+              background: "rgba(10, 15, 29, 0.95)",
+              border: borderStyle,
+              color: "#f8fafc",
+              padding: "5px 10px",
+              borderRadius: "6px",
+              fontFamily: "var(--font-sans)",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+              pointerEvents: "none",
+              zIndex: 2,
+              whiteSpace: "nowrap",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+              <div style={{ fontWeight: 800, fontSize: "11px", marginBottom: "2px" }}>{lbl.title}</div>
+              <div style={{ fontWeight: 500, fontSize: "9px", opacity: 0.85 }}>{lbl.info}</div>
+            </div>
+
+            {/* Rotated square acting as a bubble tail pointer */}
+            <div
+              style={{
+                position: "absolute",
+                width: "8px",
+                height: "8px",
+                background: "rgba(10, 15, 29, 0.95)",
+                ...arrowStyle,
+              }}
+            />
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

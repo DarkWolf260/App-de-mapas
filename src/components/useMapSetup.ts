@@ -178,7 +178,7 @@ export const useMapSetup = ({
   }, [activeColor]);
 
   const [currentZoom, setCurrentZoom] = useState<number>(DEFAULT_ZOOM);
-  const [htmlLabels, setHtmlLabels] = useState<Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string }>>([]);
+  const [htmlLabels, setHtmlLabels] = useState<Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string; placement: "top" | "bottom" | "left" | "right" }>>([]);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number; visible: boolean }>({
     text: "",
     x: 0,
@@ -251,148 +251,205 @@ export const useMapSetup = ({
       sketchVMRef.current = svm;
 
       const deconflictGraphics = () => {
-        if (!sketchLayer || !view) return;
-        const points = sketchLayer.graphics.filter((x: any) => x.geometry?.type === "point" && !x.attributes?.isLabel).toArray();
-        const labels = sketchLayer.graphics.filter((x: any) => !!x.attributes?.isLabel).toArray();
+        try {
+          if (!sketchLayer || !view) return;
+          const points = sketchLayer.graphics.filter((x: any) => x.geometry?.type === "point" && !x.attributes?.isLabel).toArray();
+          const labels = sketchLayer.graphics.filter((x: any) => !!x.attributes?.isLabel).toArray();
 
-        points.forEach((g: any) => {
-          const pid = g.attributes?.id || (g as any).uid;
-          g.visible = !hiddenFeaturesRef.current[pid];
-        });
+          points.forEach((g: any) => {
+            const pid = g.attributes?.id || (g as any).uid;
+            g.visible = !hiddenFeaturesRef.current[pid];
+          });
 
-        const { parentsMap } = buildParentsMap(drawnFeaturesRef.current);
-        const candidateLabels = labels.filter((lbl: any) => {
-          const pid = lbl.attributes?.parentId;
-          const isPolygonLabel = lbl.attributes?.isPolygonLabel;
-          const parentGraphic = sketchLayer.graphics.find((x: any) => !x.attributes?.isLabel && (String((x as any).uid) === String(pid) || String(x.attributes?.id) === String(pid)));
-          if (!parentGraphic || !parentGraphic.visible || !parentGraphic.geometry) return false;
+          const currentZoom = view.zoom !== undefined && view.zoom !== null ? view.zoom : DEFAULT_ZOOM;
+          const { parentsMap } = buildParentsMap(drawnFeaturesRef.current || []);
+          const candidateLabels = labels.filter((lbl: any) => {
+            const pid = lbl.attributes?.parentId;
+            const isPolygonLabel = lbl.attributes?.isPolygonLabel;
+            const parentGraphic = sketchLayer.graphics.find((x: any) => !x.attributes?.isLabel && (String((x as any).uid) === String(pid) || String(x.attributes?.id) === String(pid)));
+            if (!parentGraphic || !parentGraphic.visible || !parentGraphic.geometry) return false;
 
-          const isParentHidden = hiddenFeaturesRef.current[pid];
-          if (isParentHidden) return false;
+            const isParentHidden = hiddenFeaturesRef.current[pid];
+            if (isParentHidden) return false;
 
-          const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(pid));
-          const isSubpolygon = isPolygonLabel && feat && parentsMap[feat.id] !== undefined;
-          const requiredZoom = (isPolygonLabel && !isSubpolygon) ? 14 : 16;
+            const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
+            const isSubpolygon = isPolygonLabel && feat && parentsMap[feat.id] !== undefined;
+            const requiredZoom = (isPolygonLabel && !isSubpolygon) ? 14 : 16;
 
-          if (currentZoom === undefined || currentZoom === null || isNaN(currentZoom) || currentZoom < requiredZoom) return false;
+            if (currentZoom === undefined || currentZoom === null || isNaN(currentZoom) || currentZoom < requiredZoom) return false;
 
-          if (isPolygonLabel) {
-            if (!layerVisibilityRef.current.polygonLabels) return false;
-          } else {
-            if (!layerVisibilityRef.current.pointLabels) return false;
+            if (isPolygonLabel) {
+              if (!layerVisibilityRef.current.polygonLabels) return false;
+            } else {
+              if (!layerVisibilityRef.current.pointLabels) return false;
+            }
+
+            return true;
+          });
+
+          labels.forEach((lbl: any) => {
+            if (!candidateLabels.includes(lbl)) {
+              lbl.visible = false;
+            }
+          });
+
+          const screenLabels = candidateLabels.map((lbl: any) => {
+            const screenPt = lbl.geometry ? view.toScreen(lbl.geometry) : null;
+            const pid = lbl.attributes?.parentId;
+            const isPolygonLabel = lbl.attributes?.isPolygonLabel;
+            let priority = 2; // Default point label
+            if (isPolygonLabel) {
+              priority = 3; // Polygon label (lowest priority)
+            } else {
+              const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
+              if (feat?.type === "point") {
+                const todayStr = new Date().toLocaleDateString('en-CA');
+                const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
+                const hasPersonnel = todayLog && (todayLog.groupName?.trim() || todayLog.unitOut?.trim());
+                if (hasPersonnel) {
+                  priority = 1; // Point label with active personnel (highest priority)
+                }
+              }
+            }
+            return {
+              graphic: lbl,
+              x: screenPt ? screenPt.x : null,
+              y: screenPt ? screenPt.y : null,
+              visible: screenPt !== null,
+              priority
+            };
+          });
+
+          // Sort screenLabels by priority: highest priority (1) first
+          screenLabels.sort((a, b) => a.priority - b.priority);
+
+          const minLabelDistance = 55;
+          for (let i = 0; i < screenLabels.length; i++) {
+            const l1 = screenLabels[i];
+            if (!l1.visible || l1.x === null || l1.y === null) continue;
+            for (let j = i + 1; j < screenLabels.length; j++) {
+              const l2 = screenLabels[j];
+              if (!l2.visible || l2.x === null || l2.y === null) continue;
+              const dx = l1.x - l2.x;
+              const dy = l1.y - l2.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist < minLabelDistance) {
+                l2.visible = false;
+                l2.graphic.visible = false;
+              }
+            }
           }
 
-          return true;
-        });
+          const activeHtmlLabels: Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string; placement: "top" | "bottom" | "left" | "right" }> = [];
 
-        labels.forEach((lbl: any) => {
-          if (!candidateLabels.includes(lbl)) {
-            lbl.visible = false;
-          }
-        });
+          const pointBoxes = screenLabels.map((lbl) => ({
+            x1: lbl.x !== null ? lbl.x - 10 : -1000,
+            y1: lbl.y !== null ? lbl.y - 10 : -1000,
+            x2: lbl.x !== null ? lbl.x + 10 : -1000,
+            y2: lbl.y !== null ? lbl.y + 10 : -1000
+          }));
+          const placedBoxes: Array<{ x1: number; y1: number; x2: number; y2: number }> = [...pointBoxes];
 
-        const screenLabels = candidateLabels.map((lbl: any) => {
-          const screenPt = view.toScreen(lbl.geometry);
-          const pid = lbl.attributes?.parentId;
-          const isPolygonLabel = lbl.attributes?.isPolygonLabel;
-          let priority = 2; // Default point label
-          if (isPolygonLabel) {
-            priority = 3; // Polygon label (lowest priority)
-          } else {
-            const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(pid));
-            if (feat?.type === "point") {
+          screenLabels.forEach((item) => {
+            const lbl = item.graphic;
+            const pid = lbl.attributes?.parentId;
+            const isPolygonLabel = lbl.attributes?.isPolygonLabel;
+
+            const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
+            let title = feat ? feat.title : (lbl.symbol as any)?.text || "";
+            let info = "";
+
+            if (feat && feat.type === "point") {
               const todayStr = new Date().toLocaleDateString('en-CA');
               const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
-              const hasPersonnel = todayLog && (todayLog.groupName?.trim() || todayLog.unitOut?.trim());
-              if (hasPersonnel) {
-                priority = 1; // Point label with active personnel (highest priority)
+              if (todayLog) {
+                const parts: string[] = [];
+                const g1 = todayLog.groupName?.trim();
+                const u1 = todayLog.unitOut?.trim();
+                if (g1 && u1) parts.push(`${g1}, ${u1}`);
+                else if (g1) parts.push(g1);
+                else if (u1) parts.push(u1);
+
+                const g2 = todayLog.groupName2?.trim();
+                const u2 = todayLog.unitOut2?.trim();
+                if (g2 && u2) parts.push(`${g2}, ${u2}`);
+                else if (g2) parts.push(g2);
+                else if (u2) parts.push(u2);
+
+                if (parts.length > 0) {
+                  info = parts.join(" | ");
+                }
               }
             }
-          }
-          return {
-            graphic: lbl,
-            x: screenPt ? screenPt.x : null,
-            y: screenPt ? screenPt.y : null,
-            visible: screenPt !== null,
-            priority
-          };
-        });
 
-        // Sort screenLabels by priority: highest priority (1) first
-        screenLabels.sort((a, b) => a.priority - b.priority);
+            const hasPersonnel = info !== "";
 
-        const minLabelDistance = 55;
-        for (let i = 0; i < screenLabels.length; i++) {
-          const l1 = screenLabels[i];
-          if (!l1.visible || l1.x === null || l1.y === null) continue;
-          for (let j = i + 1; j < screenLabels.length; j++) {
-            const l2 = screenLabels[j];
-            if (!l2.visible || l2.x === null || l2.y === null) continue;
-            const dx = l1.x - l2.x;
-            const dy = l1.y - l2.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < minLabelDistance) {
-              l2.visible = false;
-              l2.graphic.visible = false;
+            if (item.visible && !isPolygonLabel && hasPersonnel) {
+              const charWidth = 6;
+              const padding = 20;
+              const textLength = Math.max(title.length, info.length);
+              const w = Math.min(220, Math.max(100, textLength * charWidth + padding));
+              const h = info ? 42 : 28;
+              const offset = 12;
+              const x = item.x!;
+              const y = item.y!;
+
+              const directions: Array<"top" | "bottom" | "right" | "left"> = ["top", "bottom", "right", "left"];
+              let chosenPlacement: "top" | "bottom" | "right" | "left" = "top";
+              let chosenBox = { x1: x - w / 2, y1: y - offset - h, x2: x + w / 2, y2: y - offset };
+              let found = false;
+
+              for (const dir of directions) {
+                let box = { x1: 0, y1: 0, x2: 0, y2: 0 };
+                if (dir === "top") {
+                  box = { x1: x - w / 2, y1: y - offset - h, x2: x + w / 2, y2: y - offset };
+                } else if (dir === "bottom") {
+                  box = { x1: x - w / 2, y1: y + offset, x2: x + w / 2, y2: y + offset + h };
+                } else if (dir === "right") {
+                  box = { x1: x + offset, y1: y - h / 2, x2: x + offset + w, y2: y + h / 2 };
+                } else if (dir === "left") {
+                  box = { x1: x - offset - w, y1: y - h / 2, x2: x - offset, y2: y + h / 2 };
+                }
+
+                const hasOverlap = placedBoxes.some((b) => {
+                  return box.x1 < b.x2 && box.x2 > b.x1 && box.y1 < b.y2 && box.y2 > b.y1;
+                });
+
+                if (!hasOverlap) {
+                  chosenPlacement = dir;
+                  chosenBox = box;
+                  found = true;
+                  break;
+                }
+              }
+
+              if (found) {
+                activeHtmlLabels.push({
+                  id: pid,
+                  title,
+                  info,
+                  x,
+                  y,
+                  themeColor: feat?.color,
+                  placement: chosenPlacement
+                });
+                placedBoxes.push(chosenBox);
+                lbl.visible = false;
+              } else {
+                lbl.visible = false;
+              }
+            } else {
+              lbl.visible = item.visible;
+              if (lbl.symbol) {
+                lbl.symbol = lbl.symbol.clone();
+              }
             }
-          }
+          });
+
+          setHtmlLabels(activeHtmlLabels);
+        } catch (err) {
+          console.error("Error in deconflictGraphics:", err);
         }
-
-        const activeHtmlLabels: Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string }> = [];
-
-        screenLabels.forEach((item) => {
-          const lbl = item.graphic;
-          const pid = lbl.attributes?.parentId;
-          const isPolygonLabel = lbl.attributes?.isPolygonLabel;
-
-          const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(pid));
-          let title = feat ? feat.title : (lbl.symbol as any)?.text || "";
-          let info = "";
-
-          if (feat && feat.type === "point") {
-            const todayStr = new Date().toLocaleDateString('en-CA');
-            const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
-            if (todayLog) {
-              const parts: string[] = [];
-              const g1 = todayLog.groupName?.trim();
-              const u1 = todayLog.unitOut?.trim();
-              if (g1 && u1) parts.push(`${g1}, ${u1}`);
-              else if (g1) parts.push(g1);
-              else if (u1) parts.push(u1);
-
-              const g2 = todayLog.groupName2?.trim();
-              const u2 = todayLog.unitOut2?.trim();
-              if (g2 && u2) parts.push(`${g2}, ${u2}`);
-              else if (g2) parts.push(g2);
-              else if (u2) parts.push(u2);
-
-              if (parts.length > 0) {
-                info = parts.join(" | ");
-              }
-            }
-          }
-
-          const hasPersonnel = info !== "";
-
-          if (item.visible && !isPolygonLabel && hasPersonnel) {
-            activeHtmlLabels.push({
-              id: pid,
-              title,
-              info,
-              x: item.x!,
-              y: item.y!,
-              themeColor: feat?.color
-            });
-            lbl.visible = false;
-          } else {
-            lbl.visible = item.visible;
-            if (lbl.symbol) {
-              lbl.symbol = lbl.symbol.clone();
-            }
-          }
-        });
-
-        setHtmlLabels(activeHtmlLabels);
       };
       deconflictGraphicsRef.current = deconflictGraphics;
       deconflictGraphics();
