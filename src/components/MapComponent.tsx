@@ -222,7 +222,19 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
             }}
           >
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-              <div style={{ fontWeight: 800, fontSize: "11px", marginBottom: "2px" }}>{lbl.title}</div>
+              <div style={{ fontWeight: 800, fontSize: "11px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "5px" }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: (lbl as any).hasArrived ? "#22c55e" : "#f97316",
+                    boxShadow: (lbl as any).hasArrived ? "0 0 6px #22c55e" : "0 0 6px #f97316",
+                  }}
+                />
+                {lbl.title}
+              </div>
               <div style={{ fontWeight: 500, fontSize: "9px", opacity: 0.85 }}>{lbl.info}</div>
             </div>
 

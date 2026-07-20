@@ -357,7 +357,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Elementos Dibujados */}
-      <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", marginTop: "4px" }}>
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", marginTop: "4px", minHeight: 0 }}>
         <div
           className="list-section-title"
           style={{
@@ -388,9 +388,20 @@ const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        <div className="incident-list" style={{ flex: 1, overflowY: "auto" }}>
+        <div
+          className="incident-list"
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            minHeight: 0,
+            background: "rgba(0, 0, 0, 0.2)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: "10px",
+            padding: "8px",
+          }}
+        >
           {drawnFeatures.length === 0 ? (
-            <div className="empty-state" style={{ fontSize: "0.75rem", padding: "12px" }}>
+            <div className="empty-state" style={{ fontSize: "0.72rem", padding: "12px", color: "var(--text-muted)", textAlign: "center", marginTop: "16px" }}>
               Usa la herramienta de dibujo para crear polígonos, líneas y puntos.
             </div>
           ) : groupByType ? (

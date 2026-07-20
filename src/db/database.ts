@@ -8,7 +8,7 @@ addRxPlugin(RxDBMigrationSchemaPlugin);
 
 export const FeatureSchema = {
   title: "feature schema",
-  version: 9,
+  version: 10,
   primaryKey: "id",
   type: "object",
   properties: {
@@ -33,6 +33,7 @@ export const FeatureSchema = {
           officersCount: { type: "string" },
           rescuedCount: { type: "string" },
           recoveredCount: { type: "string" },
+          rescuedPetsCount: { type: "string" },
           groupName2: { type: "string" },
           managerName2: { type: "string" },
           managerPhone2: { type: "string" },
@@ -192,6 +193,15 @@ export const initDatabase = (): Promise<RxDrawnDatabase> => {
                   ...log,
                   hasArrivedG1: false,
                   hasArrivedG2: false
+                }));
+              }
+              return oldDoc;
+            },
+            10: (oldDoc: any) => {
+              if (oldDoc.dailyLogs && Array.isArray(oldDoc.dailyLogs)) {
+                oldDoc.dailyLogs = oldDoc.dailyLogs.map((log: any) => ({
+                  ...log,
+                  rescuedPetsCount: ""
                 }));
               }
               return oldDoc;

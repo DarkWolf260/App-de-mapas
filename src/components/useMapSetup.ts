@@ -27,7 +27,7 @@ const getBasemapValue = (key: string): string | Basemap => {
       title: "Satelital Gratis",
       id: "satellite-free",
     });
-    bm.load().catch(() => {});
+    bm.load().catch(() => { });
     return bm;
   }
   return key;
@@ -68,7 +68,7 @@ const getLabelText = (feat: DrawnFeature): string => {
   const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
   if (todayLog) {
     const parts: string[] = [];
-    
+
     const g1 = todayLog.groupName?.trim();
     const u1 = todayLog.unitOut?.trim();
     if (g1 && u1) {
@@ -178,7 +178,7 @@ export const useMapSetup = ({
   }, [activeColor]);
 
   const [currentZoom, setCurrentZoom] = useState<number>(DEFAULT_ZOOM);
-  const [htmlLabels, setHtmlLabels] = useState<Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string; placement: "top" | "bottom" | "left" | "right" }>>([]);
+  const [htmlLabels, setHtmlLabels] = useState<Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string; placement: "top" | "bottom" | "left" | "right"; hasArrived?: boolean }>>([]);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number; visible: boolean }>({
     text: "",
     x: 0,
@@ -304,11 +304,11 @@ export const useMapSetup = ({
               const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
               if (feat?.type === "point") {
                 const todayStr = new Date().toLocaleDateString('en-CA');
-                const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
-                const hasPersonnel = todayLog && (todayLog.groupName?.trim() || todayLog.unitOut?.trim());
-                if (hasPersonnel) {
-                  priority = 1; // Point label with active personnel (highest priority)
-                }
+                 const todayLog = feat.dailyLogs?.find((l: any) => l.date === todayStr);
+                 const hasPersonnel = todayLog !== undefined;
+                 if (hasPersonnel) {
+                   priority = 1; // Point label active today (highest priority)
+                 }
               }
             }
             return {
@@ -340,7 +340,7 @@ export const useMapSetup = ({
             }
           }
 
-          const activeHtmlLabels: Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string; placement: "top" | "bottom" | "left" | "right" }> = [];
+          const activeHtmlLabels: Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string; placement: "top" | "bottom" | "left" | "right"; hasArrived?: boolean }> = [];
 
           const pointBoxes = screenLabels.map((lbl) => ({
             x1: lbl.x !== null ? lbl.x - 10 : -1000,
@@ -354,14 +354,14 @@ export const useMapSetup = ({
             const lbl = item.graphic;
             const pid = lbl.attributes?.parentId;
             const isPolygonLabel = lbl.attributes?.isPolygonLabel;
+            const todayStr = new Date().toLocaleDateString('en-CA');
 
             const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
             let title = feat ? feat.title : (lbl.symbol as any)?.text || "";
             let info = "";
 
             if (feat && feat.type === "point") {
-              const todayStr = new Date().toLocaleDateString('en-CA');
-              const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
+              const todayLog = feat.dailyLogs?.find((l: any) => l.date === todayStr);
               if (todayLog) {
                 const parts: string[] = [];
                 const g1 = todayLog.groupName?.trim();
@@ -376,13 +376,15 @@ export const useMapSetup = ({
                 else if (g2) parts.push(g2);
                 else if (u2) parts.push(u2);
 
-                if (parts.length > 0) {
-                  info = parts.join(" | ");
-                }
-              }
-            }
+                 if (parts.length > 0) {
+                   info = parts.join(" | ");
+                 } else {
+                   info = "Sin personal registrado";
+                 }
+               }
+             }
 
-            const hasPersonnel = info !== "";
+             const hasPersonnel = feat?.type === "point" && feat.dailyLogs?.some((l: any) => l.date === todayStr);
 
             if (item.visible && !isPolygonLabel && hasPersonnel) {
               const charWidth = 6;
@@ -423,18 +425,24 @@ export const useMapSetup = ({
                 }
               }
 
-              if (found) {
-                activeHtmlLabels.push({
-                  id: pid,
-                  title,
-                  info,
-                  x,
-                  y,
-                  themeColor: feat?.color,
-                  placement: chosenPlacement
-                });
-                placedBoxes.push(chosenBox);
-                lbl.visible = false;
+               if (found) {
+                 const todayLog = feat?.dailyLogs?.find((l: any) => l.date === todayStr);
+                 const g1Arrived = todayLog ? (!!todayLog.hasArrivedG1 || (!!todayLog.arrivalTime && todayLog.arrivalTime.trim() !== "")) : false;
+                 const g2Arrived = todayLog ? (!!todayLog.hasArrivedG2 || (!!todayLog.arrivalTime2 && todayLog.arrivalTime2.trim() !== "")) : false;
+                 const arrived = g1Arrived || g2Arrived;
+
+                 activeHtmlLabels.push({
+                   id: pid,
+                   title,
+                   info,
+                   x,
+                   y,
+                   themeColor: feat?.color,
+                   placement: chosenPlacement,
+                   hasArrived: arrived
+                 });
+                 placedBoxes.push(chosenBox);
+                 lbl.visible = false;
               } else {
                 lbl.visible = false;
               }
@@ -862,8 +870,8 @@ export const useMapSetup = ({
             const labelG = new Graphic({
               geometry: labelGeom,
               symbol: labelSym,
-              visible: !isHidden && !shouldHideNested && (isPolyLabel 
-                ? (layerVisibility.polygonLabels && isZoomOk) 
+              visible: !isHidden && !shouldHideNested && (isPolyLabel
+                ? (layerVisibility.polygonLabels && isZoomOk)
                 : (layerVisibility.pointLabels && isZoomOk)),
               attributes: { isLabel: true, parentId: feat.id, isPolygonLabel: isPolyLabel }
             });

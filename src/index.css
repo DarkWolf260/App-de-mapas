@@ -76,6 +76,7 @@ body, html, #root {
   top: 20px;
   left: 20px;
   bottom: 20px;
+  height: calc(100vh - 40px);
   width: 380px;
   display: flex;
   flex-direction: column;
@@ -379,7 +380,7 @@ input:checked + .slider:before {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 280px;
+  max-height: none;
   overflow-y: auto;
   padding-right: 4px;
 }

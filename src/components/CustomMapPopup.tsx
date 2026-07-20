@@ -315,6 +315,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                     padding: "3px 6px",
                     cursor: "text"
                   }}
+                  title="Personas Rescatadas"
                 />
                 <input
                   type="number"
@@ -332,6 +333,25 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                     padding: "3px 6px",
                     cursor: "text"
                   }}
+                  title="Cadáveres Recuperados"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Mascotas"
+                  value={currentLog.rescuedPetsCount || ""}
+                  onChange={(e) => handlePopupInputChange("rescuedPetsCount", e.target.value)}
+                  style={{
+                    flex: 1,
+                    background: "rgba(255, 255, 255, 0.02)",
+                    border: "1px solid var(--border-subtle)",
+                    borderRadius: "4px",
+                    color: "var(--text-main)",
+                    fontSize: "0.68rem",
+                    padding: "3px 6px",
+                    cursor: "text"
+                  }}
+                  title="Mascotas Rescatadas"
                 />
               </div>
 
@@ -404,11 +424,12 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                   <div><strong>👤 Encargado:</strong> {todayLog.managerName || "-"}</div>
                   <div><strong>📞 Teléfono:</strong> {todayLog.managerPhone || "-"}</div>
                   <div><strong>🚒 Unidad:</strong> {todayLog.unitOut || "-"}</div>
-                  {(todayLog.officersCount || todayLog.rescuedCount || todayLog.recoveredCount) && (
+                  {(todayLog.officersCount || todayLog.rescuedCount || todayLog.recoveredCount || todayLog.rescuedPetsCount) && (
                     <div>
                       <strong>👮 Personal:</strong> {todayLog.officersCount || "0"} funcionarios
                       {" | "}<strong>🛟 Resc.:</strong> {todayLog.rescuedCount || "0"}
                       {" | "}<strong>🩹 Recup.:</strong> {todayLog.recoveredCount || "0"}
+                      {todayLog.rescuedPetsCount ? ` | 🐾 Masc.: ${todayLog.rescuedPetsCount}` : ""}
                     </div>
                   )}
                   {(todayLog.departureTime || todayLog.arrivalTime) && (
@@ -484,7 +505,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                           <div>Grupo: {log.groupName || "-"} | Enc: {log.managerName || "-"}</div>
                           <div>
                             Tel: {log.managerPhone || "-"} | 👮 Pers: {log.officersCount || "0"}{" "}
-                            (🛟 {log.rescuedCount || "0"} | 🩹 {log.recoveredCount || "0"})
+                            (🛟 {log.rescuedCount || "0"} | 🩹 {log.recoveredCount || "0"}{log.rescuedPetsCount ? ` | 🐾 ${log.rescuedPetsCount}` : ""})
                           </div>
                           {(log.departureTime || log.arrivalTime) && (
                             <div style={{ fontSize: "0.58rem", color: "var(--color-info)", marginTop: "1px" }}>

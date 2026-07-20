@@ -5,6 +5,7 @@ import { ChevronLeft, Menu } from "lucide-react";
 import { initDatabase, RxDrawnDatabase } from "./db/database";
 import { RangeReportModal } from "./components/RangeReportModal";
 import { FloatingSearchBar } from "./components/FloatingSearchBar";
+import { GlobalStatsWidget } from "./components/GlobalStatsWidget";
 
 // ── Shared types ──────────────────────────────────────────────────────────────
 
@@ -31,6 +32,7 @@ export interface DrawnFeature {
     officersCount?: string;
     rescuedCount?: string;
     recoveredCount?: string;
+    rescuedPetsCount?: string;
     groupName2?: string;
     managerName2?: string;
     managerPhone2?: string;
@@ -64,12 +66,25 @@ export interface RemoveFeatureId {
 function App() {
   const apiKey: string = import.meta.env.VITE_ARCGIS_API_KEY ?? "";
   const [activeCity, setActiveCity] = useState<string>("venezuela");
-  const [showSidebar, setShowSidebar] = useState<boolean>(true);
-  const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>({
-    sketch: true,
-    polygonLabels: true,
-    pointLabels: true,
-    hideNestedAreas: false,
+  const [showSidebar, setShowSidebar] = useState<boolean>(() => {
+    const saved = localStorage.getItem("pc_show_sidebar");
+    return saved !== null ? saved === "true" : true;
+  });
+  const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>(() => {
+    const saved = localStorage.getItem("pc_layer_visibility");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing layer visibility:", e);
+      }
+    }
+    return {
+      sketch: true,
+      polygonLabels: true,
+      pointLabels: true,
+      hideNestedAreas: false,
+    };
   });
   const [drawnFeatures, setDrawnFeatures] = useState<DrawnFeature[]>([]);
   const [zoomToFeature, setZoomToFeature] = useState<DrawnFeature | null>(null);
@@ -107,7 +122,11 @@ function App() {
   }, [db]);
 
   const handleToggleLayer = (layerName: keyof LayerVisibility): void => {
-    setLayerVisibility((prev) => ({ ...prev, [layerName]: !prev[layerName] }));
+    setLayerVisibility((prev) => {
+      const next = { ...prev, [layerName]: !prev[layerName] };
+      localStorage.setItem("pc_layer_visibility", JSON.stringify(next));
+      return next;
+    });
   };
 
   const handleFeatureAdded = async (newFeat: DrawnFeature): Promise<void> => {
@@ -287,10 +306,24 @@ function App() {
     }
   };
 
-  const [hiddenFeatures, setHiddenFeatures] = useState<Record<number, boolean>>({});
+  const [hiddenFeatures, setHiddenFeatures] = useState<Record<number, boolean>>(() => {
+    const saved = localStorage.getItem("pc_hidden_features");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing hidden features:", e);
+      }
+    }
+    return {};
+  });
 
   const handleToggleFeatureVisibility = (id: number): void => {
-    setHiddenFeatures((prev) => ({ ...prev, [id]: !prev[id] }));
+    setHiddenFeatures((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      localStorage.setItem("pc_hidden_features", JSON.stringify(next));
+      return next;
+    });
   };
 
   const handleToggleFeaturesVisibility = (ids: number[], visible: boolean): void => {
@@ -299,6 +332,7 @@ function App() {
       ids.forEach((id) => {
         next[id] = !visible;
       });
+      localStorage.setItem("pc_hidden_features", JSON.stringify(next));
       return next;
     });
   };
@@ -395,9 +429,17 @@ function App() {
         showSidebar={showSidebar}
       />
 
+      <GlobalStatsWidget
+        drawnFeatures={sortedDrawnFeatures}
+      />
+
       <button
         className={`sidebar-toggle ${!showSidebar ? "collapsed" : ""}`}
-        onClick={() => setShowSidebar(!showSidebar)}
+        onClick={() => {
+          const next = !showSidebar;
+          setShowSidebar(next);
+          localStorage.setItem("pc_show_sidebar", String(next));
+        }}
         title={showSidebar ? "Ocultar panel lateral" : "Mostrar panel lateral"}
       >
         {showSidebar ? <ChevronLeft size={18} /> : <Menu size={18} />}
