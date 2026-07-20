@@ -45,6 +45,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     showHistoryInPopup,
     popupEditDate,
     sketchLayer,
+    currentZoom,
     setCustomPopup,
     setShowHistoryInPopup,
     setPopupEditDate,
@@ -103,7 +104,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
             borderRadius: "8px",
             fontSize: "11px",
             fontWeight: 600,
-            textTransform: "uppercase",
+            textTransform: "none",
             letterSpacing: "0.03em",
             pointerEvents: "none",
             zIndex: 1000,
@@ -111,11 +112,36 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
             fontFamily: "var(--font-sans)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
+            whiteSpace: "pre-wrap",
           }}
         >
           {tooltip.text}
         </div>
       )}
+      {/* Floating Zoom level indicator in bottom-right */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "16px",
+          right: "16px",
+          background: "rgba(10, 15, 29, 0.85)",
+          border: "1px solid rgba(56, 189, 248, 0.35)",
+          color: "#f8fafc",
+          padding: "6px 12px",
+          borderRadius: "8px",
+          fontSize: "11px",
+          fontWeight: 700,
+          fontFamily: "var(--font-sans)",
+          pointerEvents: "none",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+          zIndex: 100,
+          letterSpacing: "0.05em",
+        }}
+      >
+        ZOOM: {currentZoom.toFixed(1)}
+      </div>
     </div>
   );
 };

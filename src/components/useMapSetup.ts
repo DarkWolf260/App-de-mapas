@@ -22,11 +22,13 @@ const DEFAULT_ZOOM = 14;
 
 const getBasemapValue = (key: string): string | Basemap => {
   if (key === "satellite-free") {
-    return new Basemap({
+    const bm = new Basemap({
       baseLayers: [new TileLayer({ url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" })],
       title: "Satelital Gratis",
       id: "satellite-free",
     });
+    bm.load().catch(() => {});
+    return bm;
   }
   return key;
 };
@@ -58,21 +60,40 @@ const makeSymbols = ([r, g, b]: [number, number, number]): any => ({
 });
 
 const getLabelText = (feat: DrawnFeature): string => {
-  if (feat.type === "point") {
-    const todayStr = new Date().toLocaleDateString('en-CA');
-    const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
-    if (todayLog) {
-      const g1 = todayLog.groupName;
-      const g2 = todayLog.groupName2;
-      if (g1 && g2) {
-        return `${feat.title}\n(👥 ${g1} | ${g2})`;
-      } else if (g1) {
-        return `${feat.title}\n(👥 ${g1})`;
-      } else if (g2) {
-        return `${feat.title}\n(👥 ${g2})`;
-      }
+  if (feat.type !== "point") {
+    return feat.title;
+  }
+
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
+  if (todayLog) {
+    const parts: string[] = [];
+    
+    const g1 = todayLog.groupName?.trim();
+    const u1 = todayLog.unitOut?.trim();
+    if (g1 && u1) {
+      parts.push(`${g1}, ${u1}`);
+    } else if (g1) {
+      parts.push(g1);
+    } else if (u1) {
+      parts.push(u1);
+    }
+
+    const g2 = todayLog.groupName2?.trim();
+    const u2 = todayLog.unitOut2?.trim();
+    if (g2 && u2) {
+      parts.push(`${g2}, ${u2}`);
+    } else if (g2) {
+      parts.push(g2);
+    } else if (u2) {
+      parts.push(u2);
+    }
+
+    if (parts.length > 0) {
+      return `${feat.title} (${parts.join(" | ")})`;
     }
   }
+
   return feat.title;
 };
 
@@ -156,6 +177,7 @@ export const useMapSetup = ({
     activeColorRef.current = activeColor;
   }, [activeColor]);
 
+  const [currentZoom, setCurrentZoom] = useState<number>(DEFAULT_ZOOM);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number; visible: boolean }>({
     text: "",
     x: 0,
@@ -247,6 +269,8 @@ export const useMapSetup = ({
           const isParentHidden = hiddenFeaturesRef.current[pid];
           if (isParentHidden) return false;
 
+          if (currentZoom !== undefined && currentZoom < 16) return false;
+
           if (isPolygonLabel) {
             if (!layerVisibilityRef.current.polygonLabels) return false;
           } else {
@@ -268,13 +292,33 @@ export const useMapSetup = ({
 
         const screenLabels = candidateLabels.map((lbl: any) => {
           const screenPt = view.toScreen(lbl.geometry);
+          const pid = lbl.attributes?.parentId;
+          const isPolygonLabel = lbl.attributes?.isPolygonLabel;
+          let priority = 2; // Default point label
+          if (isPolygonLabel) {
+            priority = 3; // Polygon label (lowest priority)
+          } else {
+            const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(pid));
+            if (feat?.type === "point") {
+              const todayStr = new Date().toLocaleDateString('en-CA');
+              const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
+              const hasPersonnel = todayLog && (todayLog.groupName?.trim() || todayLog.unitOut?.trim());
+              if (hasPersonnel) {
+                priority = 1; // Point label with active personnel (highest priority)
+              }
+            }
+          }
           return {
             graphic: lbl,
             x: screenPt ? screenPt.x : null,
             y: screenPt ? screenPt.y : null,
-            visible: screenPt !== null
+            visible: screenPt !== null,
+            priority
           };
         });
+
+        // Sort screenLabels by priority: highest priority (1) first
+        screenLabels.sort((a, b) => a.priority - b.priority);
 
         const minLabelDistance = 55;
         for (let i = 0; i < screenLabels.length; i++) {
@@ -301,6 +345,14 @@ export const useMapSetup = ({
         () => {
           deconflictGraphics();
           setPopupTick((t) => t + 1);
+        }
+      );
+      reactiveUtils.watch(
+        () => view.zoom,
+        (z) => {
+          if (typeof z === "number") {
+            setCurrentZoom(z);
+          }
         }
       );
       reactiveUtils.watch(
@@ -446,15 +498,16 @@ export const useMapSetup = ({
           ) as any;
           if (result) {
             const g = result.graphic;
-            if (g.geometry.type !== "point") {
-              setTooltip({
-                text: g.attributes?.title || "Elemento",
-                x: evt.x,
-                y: evt.y,
-                visible: true,
-              });
-              return;
-            }
+            const featId = g.attributes?.id || (g as any).uid;
+            const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
+            const tooltipText = feat ? getLabelText(feat) : (g.attributes?.title || "Elemento");
+            setTooltip({
+              text: tooltipText,
+              x: evt.x,
+              y: evt.y,
+              visible: true,
+            });
+            return;
           }
           setTooltip((t) => (t.visible ? { ...t, visible: false } : t));
         });
@@ -608,9 +661,9 @@ export const useMapSetup = ({
         if (label) {
           const isPolygonLabel = label.attributes?.isPolygonLabel;
           if (isPolygonLabel) {
-            label.visible = !isHidden && !shouldHideNested && layerVisibility.polygonLabels;
+            label.visible = !isHidden && !shouldHideNested && layerVisibility.polygonLabels && currentZoom >= 16;
           } else {
-            label.visible = !isHidden && layerVisibility.pointLabels;
+            label.visible = !isHidden && layerVisibility.pointLabels && currentZoom >= 16;
           }
 
           if (feat.type === "polygon" && g.geometry) {
@@ -623,8 +676,18 @@ export const useMapSetup = ({
           if (label.symbol) {
             const ts = label.symbol as TextSymbol;
             const targetText = getLabelText(feat);
-            if (ts.text !== targetText) {
+            const isPolygonLabel = label.attributes?.isPolygonLabel;
+            const hasPersonnel = !isPolygonLabel && targetText !== feat.title;
+            const showBox = hasPersonnel;
+            const currentHasBox = ts.backgroundColor !== null && ts.backgroundColor !== undefined;
+            if (ts.text !== targetText || currentHasBox !== showBox) {
               ts.text = targetText;
+              ts.backgroundColor = showBox ? [15, 23, 42, 0.95] as any : null as any;
+              ts.borderLineColor = showBox ? [56, 189, 248, 0.95] as any : null as any;
+              ts.borderLineSize = showBox ? 1 : null as any;
+              ts.haloColor = showBox ? null as any : "black";
+              ts.haloSize = showBox ? null as any : "1.5px";
+              ts.yoffset = feat.geojsonGeometry?.type === "Point" ? (showBox ? 18 : 12) : 0;
               label.symbol = ts.clone();
             }
           }
@@ -659,19 +722,26 @@ export const useMapSetup = ({
               ? ng.geometry!.clone()
               : centroidExecute(ng.geometry!);
 
+            const hasPersonnel = !isPolyLabel && getLabelText(feat) !== feat.title;
+            const showBox = hasPersonnel;
             const labelSym = new TextSymbol({
               text: getLabelText(feat),
               color: "white",
-              haloColor: "black",
-              haloSize: "1px",
-              font: { size: 11, family: "sans-serif", weight: "bold" },
-              yoffset: feat.geojsonGeometry.type === "Point" ? 12 : 0
+              backgroundColor: showBox ? [15, 23, 42, 0.95] as any : null as any,
+              borderLineColor: showBox ? [56, 189, 248, 0.95] as any : null as any,
+              borderLineSize: showBox ? 1 : null as any,
+              haloColor: showBox ? null as any : "black",
+              haloSize: showBox ? null as any : "1.5px",
+              font: { size: 10, family: "sans-serif", weight: "bold" },
+              yoffset: feat.geojsonGeometry.type === "Point" ? (showBox ? 18 : 12) : 0
             });
 
             const labelG = new Graphic({
               geometry: labelGeom,
               symbol: labelSym,
-              visible: !isHidden && !shouldHideNested && (isPolyLabel ? layerVisibility.polygonLabels : layerVisibility.pointLabels),
+              visible: !isHidden && !shouldHideNested && (isPolyLabel 
+                ? (layerVisibility.polygonLabels && currentZoom >= 16) 
+                : (layerVisibility.pointLabels && currentZoom >= 16)),
               attributes: { isLabel: true, parentId: feat.id, isPolygonLabel: isPolyLabel }
             });
             layer.add(labelG);
@@ -708,7 +778,7 @@ export const useMapSetup = ({
       });
     }
     deconflictGraphicsRef.current?.();
-  }, [drawnFeatures, activeColor, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.hideNestedAreas, mapReady]);
+  }, [drawnFeatures, activeColor, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.hideNestedAreas, mapReady, currentZoom]);
 
   useEffect(() => {
     const layer = sketchLayerRef.current;
@@ -779,6 +849,7 @@ export const useMapSetup = ({
     showHistoryInPopup,
     popupEditDate,
     sketchLayer: sketchLayerRef.current,
+    currentZoom,
     setCustomPopup,
     setShowHistoryInPopup,
     setPopupEditDate,
