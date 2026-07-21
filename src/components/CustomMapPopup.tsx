@@ -119,6 +119,32 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
   if (!customPopup || !popupScreenPos || !activeFeat) return null;
 
+  const POPUP_W = 330;
+  const POPUP_H = 400;
+  const MARGIN = 12;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  let x = popupScreenPos.x;
+  let y = popupScreenPos.y;
+  let flipY = false;
+
+  if (y - POPUP_H - MARGIN < 0) {
+    flipY = true;
+    y = y + MARGIN;
+  } else {
+    y = y - MARGIN;
+  }
+
+  x = Math.max(POPUP_W / 2 + MARGIN, Math.min(x, vw - POPUP_W / 2 - MARGIN));
+
+  const containerStyle: React.CSSProperties = {
+    ...CONTAINER_STYLE,
+    left: `${x}px`,
+    top: `${y}px`,
+    transform: flipY ? "translate(-50%, 0)" : "translate(-50%, -100%)",
+  };
+
   const handleGeneralSave = async () => {
     try {
       if (onRenameFeature) await onRenameFeature(activeFeat.id, localTitle);
@@ -155,7 +181,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   return (
     <div
       className="custom-map-popup glass-panel"
-      style={{ ...CONTAINER_STYLE, left: `${popupScreenPos.x}px`, top: `${popupScreenPos.y - 12}px`, transform: "translate(-50%, -100%)" }}
+      style={containerStyle}
     >
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: "6px" }}>
@@ -229,7 +255,18 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
       {/* Bubble Tail Pointer Arrow */}
       <div
-        style={{
+        style={flipY ? {
+          position: "absolute",
+          top: "-6px",
+          left: "50%",
+          transform: "translateX(-50%) rotate(45deg)",
+          width: "12px",
+          height: "12px",
+          background: "rgba(15, 23, 42, 0.94)",
+          borderLeft: "1px solid var(--border-subtle)",
+          borderTop: "1px solid var(--border-subtle)",
+          zIndex: -1,
+        } : {
           position: "absolute",
           bottom: "-6px",
           left: "50%",

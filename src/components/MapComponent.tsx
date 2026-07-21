@@ -6,6 +6,7 @@ import { CustomMapPopup } from "./CustomMapPopup";
 import { DeploymentSummaryCard } from "./DeploymentSummaryCard";
 import { HtmlPointLabels } from "./HtmlPointLabels";
 import { useMapSetup } from "./useMapSetup";
+import { useDraggable } from "../hooks/useDraggable";
 
 interface MapComponentProps {
   apiKey: string;
@@ -66,11 +67,24 @@ interface MapComponentProps {
     handleColorChange,
   } = useMapSetup(props);
 
+  const { position: toolbarPos, dragHandleProps } = useDraggable(
+    typeof window !== "undefined" ? window.innerWidth / 2 - 200 : 200,
+    typeof window !== "undefined" ? window.innerHeight - 80 : 500,
+  );
+
+  const popoverDirection: "top" | "bottom" = (() => {
+    const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+    return toolbarPos.y + 60 > vh / 2 ? "top" : "bottom";
+  })();
+
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
       <div className="map-view-container" ref={mapDiv} style={{ width: "100%", height: "100%" }} />
       {layerVisibility?.sketch && (
-        <div className="draw-toolbar-wrapper">
+        <div
+          className="draw-toolbar-wrapper"
+          style={{ left: toolbarPos.x, top: toolbarPos.y }}
+        >
           <DrawingToolbar
             activeTool={activeTool}
             editMode={editMode}
@@ -81,6 +95,8 @@ interface MapComponentProps {
             hasSelection={!!selectedGraphic}
             activeColor={activeColor}
             onColorChange={handleColorChange}
+            dragHandleProps={dragHandleProps}
+            popoverDirection={popoverDirection}
           />
         </div>
       )}

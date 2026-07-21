@@ -8,9 +8,10 @@ export { PALETTE, hexToRgb };
 interface ColorPickerProps {
   activeColor: Color;
   onColorChange: (color: Color) => void;
+  direction?: "top" | "bottom";
 }
 
-export const ColorPicker: React.FC<ColorPickerProps> = ({ activeColor, onColorChange }) => {
+export const ColorPicker: React.FC<ColorPickerProps> = ({ activeColor, onColorChange, direction = "top" }) => {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +46,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ activeColor, onColorCh
       </button>
 
       {open && (
-        <div className="color-picker-popover">
+        <div className={"color-picker-popover" + (direction === "bottom" ? " opens-down" : "")}>
           <div className="color-grid">
             <label
               className="color-grid-cell custom-color-cell"

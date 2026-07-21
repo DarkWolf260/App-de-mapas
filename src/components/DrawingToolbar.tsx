@@ -21,6 +21,8 @@ interface DrawingToolbarProps {
   hasSelection: boolean;
   activeColor: Color;
   onColorChange: (color: Color) => void;
+  dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>;
+  popoverDirection?: "top" | "bottom";
 }
 
 export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
@@ -33,9 +35,10 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
   hasSelection,
   activeColor,
   onColorChange,
+  dragHandleProps,
+  popoverDirection = "top",
 }) => (
   <div className="draw-toolbar">
-    {/* Draw tools */}
     {DRAW_TOOLS.map((tool) => (
       <button
         key={tool.id}
@@ -51,7 +54,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
     <div className="draw-toolbar-divider" />
 
     {/* Color picker */}
-    <ColorPicker activeColor={activeColor} onColorChange={onColorChange} />
+    <ColorPicker activeColor={activeColor} onColorChange={onColorChange} direction={popoverDirection} />
 
     <div className="draw-toolbar-divider" />
 
@@ -86,6 +89,19 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
         <span className="draw-tool-icon">✕</span>
         <span className="draw-tool-label">Cancelar</span>
       </button>
+    )}
+
+    {dragHandleProps && (
+      <span className="drag-handle" title="Arrastrar toolbar" {...dragHandleProps}>
+        <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor">
+          <circle cx="2" cy="2" r="1.2" />
+          <circle cx="6" cy="2" r="1.2" />
+          <circle cx="2" cy="7" r="1.2" />
+          <circle cx="6" cy="7" r="1.2" />
+          <circle cx="2" cy="12" r="1.2" />
+          <circle cx="6" cy="12" r="1.2" />
+        </svg>
+      </span>
     )}
   </div>
 );

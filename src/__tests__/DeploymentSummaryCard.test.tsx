@@ -103,7 +103,7 @@ describe("DeploymentSummaryCard", () => {
     expect(defaultProps.onToggleCollapse).toHaveBeenCalledWith(true);
   });
 
-  it('shows "[ + ]" when collapsed and "[ − ]" when expanded', () => {
+  it('shows Minimize2 icon when expanded and Maximize2 icon when collapsed', () => {
     const { rerender } = render(
       <DeploymentSummaryCard
         {...defaultProps}
@@ -111,7 +111,7 @@ describe("DeploymentSummaryCard", () => {
         drawnFeatures={[featureWithLog]}
       />
     );
-    expect(screen.getByText("[ − ]")).toBeInTheDocument();
+    expect(screen.getByTitle("Contraer listado (sólo mostrar totales)")).toBeInTheDocument();
 
     rerender(
       <DeploymentSummaryCard
@@ -120,7 +120,7 @@ describe("DeploymentSummaryCard", () => {
         drawnFeatures={[featureWithLog]}
       />
     );
-    expect(screen.getByText("[ + ]")).toBeInTheDocument();
+    expect(screen.getByTitle("Mostrar listado completo")).toBeInTheDocument();
   });
 
   it("clicking a feature row calls onZoomToFeature", async () => {

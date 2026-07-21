@@ -569,11 +569,9 @@ input:checked + .slider:before {
 /* --- Custom Drawing Toolbar --- */
 .draw-toolbar-wrapper {
   position: absolute;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
   z-index: 50;
   pointer-events: auto;
+  touch-action: none;
 }
 
 .draw-toolbar {
@@ -661,6 +659,30 @@ input:checked + .slider:before {
   margin: 0 4px;
 }
 
+/* --- Drag handle for toolbar --- */
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 36px;
+  font-size: 12px;
+  letter-spacing: -2px;
+  color: rgba(148, 163, 184, 0.5);
+  user-select: none;
+  touch-action: none;
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.drag-handle:hover {
+  color: rgba(56, 189, 248, 0.8);
+}
+
+.drag-handle:active {
+  color: #38bdf8;
+}
+
 /* --- Color palette swatches --- */
 .draw-color-palette {
   display: flex;
@@ -723,6 +745,12 @@ input:checked + .slider:before {
   box-shadow: 0 -8px 32px rgba(0,0,0,0.6);
   z-index: 200;
   min-width: 220px;
+}
+
+.color-picker-popover.opens-down {
+  bottom: auto;
+  top: calc(100% + 12px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
 }
 
 .color-grid {
