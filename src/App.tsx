@@ -420,6 +420,7 @@ function App() {
         onRenameFeature={handleRenameFeature}
         onUpdateFeatureDescription={handleUpdateFeatureDescription}
         onUpdateFeatureColor={handleUpdateFeatureColor}
+        onZoomToFeature={setZoomToFeature}
       />
 
       <FloatingSearchBar

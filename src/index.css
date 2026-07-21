@@ -1448,30 +1448,40 @@ input:checked + .slider:before {
 
 /* Custom discreet scrollbars for the map popups and its nested scrollable elements */
 .custom-map-popup,
-.custom-map-popup * {
+.custom-map-popup *,
+.deployed-staff-widget,
+.deployed-staff-widget * {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 }
 
 .custom-map-popup::-webkit-scrollbar,
-.custom-map-popup *::-webkit-scrollbar {
+.custom-map-popup *::-webkit-scrollbar,
+.deployed-staff-widget::-webkit-scrollbar,
+.deployed-staff-widget *::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 
 .custom-map-popup::-webkit-scrollbar-track,
-.custom-map-popup *::-webkit-scrollbar-track {
+.custom-map-popup *::-webkit-scrollbar-track,
+.deployed-staff-widget::-webkit-scrollbar-track,
+.deployed-staff-widget *::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .custom-map-popup::-webkit-scrollbar-thumb,
-.custom-map-popup *::-webkit-scrollbar-thumb {
+.custom-map-popup *::-webkit-scrollbar-thumb,
+.deployed-staff-widget::-webkit-scrollbar-thumb,
+.deployed-staff-widget *::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 4px;
 }
 
 .custom-map-popup::-webkit-scrollbar-thumb:hover,
-.custom-map-popup *::-webkit-scrollbar-thumb:hover {
+.custom-map-popup *::-webkit-scrollbar-thumb:hover,
+.deployed-staff-widget::-webkit-scrollbar-thumb:hover,
+.deployed-staff-widget *::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.28);
 }
 
