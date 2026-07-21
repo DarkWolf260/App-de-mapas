@@ -1,6 +1,7 @@
 import { createRxDatabase, RxDatabase, RxCollection, addRxPlugin } from "rxdb";
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
 import { RxDBMigrationSchemaPlugin } from "rxdb/plugins/migration-schema";
+import type { DailyLog } from "../types";
 
 addRxPlugin(RxDBMigrationSchemaPlugin);
 
@@ -71,29 +72,7 @@ export type RxDrawnFeatureDocument = {
   description?: string;
   color?: string;
   locked?: boolean;
-  dailyLogs?: Array<{
-    date: string;
-    groupName: string;
-    managerName: string;
-    managerPhone: string;
-    unitOut: string;
-    departureTime?: string;
-    arrivalTime?: string;
-    officersCount?: string;
-    rescuedCount?: string;
-    recoveredCount?: string;
-    groupName2?: string;
-    managerName2?: string;
-    managerPhone2?: string;
-    unitOut2?: string;
-    departureTime2?: string;
-    arrivalTime2?: string;
-    officersCount2?: string;
-    rescuedCount2?: string;
-    recoveredCount2?: string;
-    hasArrivedG1?: boolean;
-    hasArrivedG2?: boolean;
-  }>;
+  dailyLogs?: DailyLog[];
   geojsonGeometry: {
     type: "Point" | "LineString" | "Polygon";
     coordinates: any;

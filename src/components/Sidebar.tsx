@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useState } from "react";
-import { Activity, Compass, Download, Upload, ChevronDown, ChevronRight, Calendar } from "lucide-react";
-import type { DrawnFeature, LayerVisibility } from "../App";
+import { Activity, Download, Upload, ChevronDown, ChevronRight, Calendar } from "lucide-react";
+import type { DrawnFeature, LayerVisibility } from "../types";
 import { FeatureCard } from "./FeatureCard";
 
 interface SidebarProps {

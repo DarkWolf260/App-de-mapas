@@ -4,98 +4,16 @@ import MapView from "@arcgis/core/views/MapView";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Graphic from "@arcgis/core/Graphic";
 import SketchViewModel from "@arcgis/core/widgets/Sketch/SketchViewModel";
-import TileLayer from "@arcgis/core/layers/TileLayer";
-import Basemap from "@arcgis/core/Basemap";
 import Zoom from "@arcgis/core/widgets/Zoom";
 import Compass from "@arcgis/core/widgets/Compass";
 import TextSymbol from "@arcgis/core/symbols/TextSymbol";
 import { execute as centroidExecute } from "@arcgis/core/geometry/operators/centroidOperator";
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
-import * as webMercatorUtils from "@arcgis/core/geometry/support/webMercatorUtils";
 import { Color, PALETTE, hexToRgb } from "./ColorPicker";
 import { ToolId } from "./DrawingToolbar";
 import { geoToJSON, buildParentsMap } from "../utils/spatialUtils";
-import type { DrawnFeature, LayerVisibility, RemoveFeatureId } from "../App";
-
-const DEFAULT_CENTER: [number, number] = [-66.9303, 10.6011];
-const DEFAULT_ZOOM = 14;
-
-const getBasemapValue = (key: string): string | Basemap => {
-  if (key === "satellite-free") {
-    const bm = new Basemap({
-      baseLayers: [new TileLayer({ url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" })],
-      title: "Satelital Gratis",
-      id: "satellite-free",
-    });
-    bm.load().catch(() => { });
-    return bm;
-  }
-  return key;
-};
-
-const typeLabel = (type: string): "Poligono" | "Linea" | "Punto" => {
-  if (type === "polygon") return "Poligono";
-  if (type === "polyline") return "Linea";
-  return "Punto";
-};
-
-const makeSymbols = ([r, g, b]: [number, number, number]): any => ({
-  point: {
-    type: "simple-marker",
-    color: [r, g, b, 0.9],
-    outline: { color: [255, 255, 255, 0.8], width: 1.5 },
-    size: "10px",
-  },
-  polyline: {
-    type: "simple-line",
-    color: [r, g, b, 0.95],
-    width: 3,
-    style: "solid",
-  },
-  polygon: {
-    type: "simple-fill",
-    color: [r, g, b, 0.25],
-    outline: { color: [r, g, b, 0.95], width: 2 },
-  },
-});
-
-const getLabelText = (feat: DrawnFeature): string => {
-  if (feat.type !== "point") {
-    return feat.title;
-  }
-
-  const todayStr = new Date().toLocaleDateString('en-CA');
-  const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
-  if (todayLog) {
-    const parts: string[] = [];
-
-    const g1 = todayLog.groupName?.trim();
-    const u1 = todayLog.unitOut?.trim();
-    if (g1 && u1) {
-      parts.push(`${g1}, ${u1}`);
-    } else if (g1) {
-      parts.push(g1);
-    } else if (u1) {
-      parts.push(u1);
-    }
-
-    const g2 = todayLog.groupName2?.trim();
-    const u2 = todayLog.unitOut2?.trim();
-    if (g2 && u2) {
-      parts.push(`${g2}, ${u2}`);
-    } else if (g2) {
-      parts.push(g2);
-    } else if (u2) {
-      parts.push(u2);
-    }
-
-    if (parts.length > 0) {
-      return `${feat.title} (${parts.join(" | ")})`;
-    }
-  }
-
-  return feat.title;
-};
+import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapValue, typeLabel, makeSymbols, getLabelText, symbolForType } from "../utils/mapUtils";
+import type { DrawnFeature, LayerVisibility, RemoveFeatureId } from "../types";
 
 export interface UseMapSetupProps {
   apiKey: string;
@@ -768,18 +686,12 @@ export const useMapSetup = ({
       const isNestedArea = feat.type === "polygon" && parentsMap[feat.id] !== undefined;
       const shouldHideNested = isNestedArea && layerVisibility.hideNestedAreas;
       const featColor = feat.color || "#3b82f6";
-      const syms = makeSymbols(hexToRgb(featColor));
-      const symbolFor = (type: string) => {
-        if (type === "point") return syms.point;
-        if (type === "polyline") return syms.polyline;
-        return syms.polygon;
-      };
 
       if (g) {
         g.visible = !isHidden && !shouldHideNested;
         const storedColor = g.attributes?._color;
         if (storedColor !== featColor) {
-          g.symbol = symbolFor(feat.type) as any;
+          g.symbol = symbolForType(feat.type, featColor) as any;
           g.attributes = { ...g.attributes, _color: featColor };
         }
 
@@ -839,7 +751,7 @@ export const useMapSetup = ({
           const ng = new Graphic({
             geometry: geomCfg,
             attributes: { id: feat.id, title: feat.title, _color: featColor },
-            symbol: symbolFor(feat.type) as any,
+            symbol: symbolForType(feat.type, featColor) as any,
             visible: !isHidden && !shouldHideNested,
             popupTemplate: { title: "<b>{title}</b>", content: "<div style=\"font:13px sans-serif;color:#0f172a;padding:4px\">Elemento guardado.</div>" } as any
           });
@@ -915,12 +827,6 @@ export const useMapSetup = ({
   useEffect(() => {
     const layer = sketchLayerRef.current;
     if (!importedFeatures?.length || !layer) return;
-    const syms = makeSymbols(hexToRgb(PALETTE[0].hex));
-    const symbolFor = (type: string) => {
-      if (type === "Point") return syms.point;
-      if (type === "LineString") return syms.polyline;
-      return syms.polygon;
-    };
     importedFeatures.forEach((feat) => {
       if (layer.graphics.some((g: any) => (g as any).uid === feat.id || g.attributes?.id === feat.id)) return;
       let geomCfg: any = null;
@@ -930,7 +836,7 @@ export const useMapSetup = ({
         else if (feat.geojsonGeometry.type === "Polygon") geomCfg = { type: "polygon", rings: feat.geojsonGeometry.coordinates, spatialReference: { wkid: 4326 } };
       }
       if (geomCfg) {
-        const ng = new Graphic({ geometry: geomCfg, attributes: { id: feat.id, title: feat.title || ("Importado " + feat.type), _color: PALETTE[0].hex }, symbol: symbolFor(feat.geojsonGeometry.type) as any, popupTemplate: { title: "<b>{title}</b>", content: "<div style=\"font:13px sans-serif;color:#0f172a;padding:4px\">Importado via GeoJSON.</div>" } as any });
+        const ng = new Graphic({ geometry: geomCfg, attributes: { id: feat.id, title: feat.title || ("Importado " + feat.type), _color: PALETTE[0].hex }, symbol: symbolForType(feat.geojsonGeometry.type, PALETTE[0].hex) as any, popupTemplate: { title: "<b>{title}</b>", content: "<div style=\"font:13px sans-serif;color:#0f172a;padding:4px\">Importado via GeoJSON.</div>" } as any });
         layer.add(ng);
 
         if (feat.geojsonGeometry.type === "Point") {

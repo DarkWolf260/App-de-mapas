@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { DrawnFeature } from "../App";
+import type { DrawnFeature } from "../types";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
 interface GlobalStatsWidgetProps {
@@ -16,11 +16,11 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({ drawnFeatu
     let rescuedPets = 0;
 
     drawnFeatures.forEach((feat) => {
-      const todayLog = feat.dailyLogs?.find((l: any) => l.date === todayStr);
+      const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
       if (todayLog) {
         rescuedPeople += todayLog.rescuedCount ? Number(todayLog.rescuedCount) : 0;
         recoveredBodies += todayLog.recoveredCount ? Number(todayLog.recoveredCount) : 0;
-        rescuedPets += (todayLog as any).rescuedPetsCount ? Number((todayLog as any).rescuedPetsCount) : 0;
+        rescuedPets += todayLog.rescuedPetsCount ? Number(todayLog.rescuedPetsCount) : 0;
       }
     });
 

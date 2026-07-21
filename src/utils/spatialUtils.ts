@@ -1,5 +1,5 @@
 import * as webMercatorUtils from "@arcgis/core/geometry/support/webMercatorUtils";
-import type { DrawnFeature } from "../App";
+import type { DrawnFeature } from "../types";
 
 /**
  * Convierte una geometría de ArcGIS en una estructura GeoJSON compatible

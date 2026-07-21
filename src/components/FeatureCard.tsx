@@ -1,5 +1,5 @@
 import React from "react";
-import type { DrawnFeature } from "../App";
+import type { DrawnFeature, DailyLog } from "../types";
 import { Activity, Square, MapPin, Maximize2, Trash2, Lock, Unlock } from "lucide-react";
 
 interface FeatureCardProps {
@@ -12,10 +12,7 @@ interface FeatureCardProps {
   onZoomToFeature: (feat: DrawnFeature) => void;
   onDeleteFeature: (id: number) => void;
   onToggleFeatureLock: (id: number, locked: boolean) => void;
-  onSaveDailyLog?: (
-    featureId: number,
-    log: { date: string; groupName: string; managerName: string; managerPhone: string; unitOut: string; departureTime?: string; arrivalTime?: string; officersCount?: string }
-  ) => Promise<void>;
+  onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
   onOpenRangeReport?: (feat: DrawnFeature) => void;
   hasChildren?: boolean;
   isChildrenCollapsed?: boolean;
@@ -94,7 +91,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         <input
           type="text"
           value={feat.title}
-          onChange={(e) => onRenameFeature(feat.id as unknown as number, e.target.value)}
+          onChange={(e) => onRenameFeature(feat.id, e.target.value)}
           className="form-input"
           style={{
             background: "transparent",
@@ -122,7 +119,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         <textarea
           placeholder="Notas o información del elemento..."
           value={feat.description || ""}
-          onChange={(e) => onUpdateFeatureDescription(feat.id as unknown as number, e.target.value)}
+          onChange={(e) => onUpdateFeatureDescription(feat.id, e.target.value)}
           style={{
             background: "rgba(255, 255, 255, 0.01)",
             border: "1px solid var(--border-subtle)",
@@ -144,7 +141,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
       
       <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "2px" }}>
         <button
-          onClick={() => onReorderFeature(feat.id as unknown as number, "up")}
+          onClick={() => onReorderFeature(feat.id, "up")}
           style={{
             background: "transparent",
             border: "none",
@@ -160,7 +157,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           ▲ Subir
         </button>
         <button
-          onClick={() => onReorderFeature(feat.id as unknown as number, "down")}
+          onClick={() => onReorderFeature(feat.id, "down")}
           style={{
             background: "transparent",
             border: "none",
@@ -232,7 +229,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           <Maximize2 size={11} /> Enfocar
         </button>
         <button
-          onClick={() => onDeleteFeature(feat.id as unknown as number)}
+          onClick={() => onDeleteFeature(feat.id)}
           style={{
             background: "transparent",
             border: "none",

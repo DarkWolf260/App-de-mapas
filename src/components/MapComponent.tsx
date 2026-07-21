@@ -1,6 +1,6 @@
 import React from "react";
 import "@arcgis/core/assets/esri/themes/dark/main.css";
-import type { DrawnFeature, LayerVisibility, RemoveFeatureId } from "../App";
+import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DailyLog } from "../types";
 import { DrawingToolbar } from "./DrawingToolbar";
 import { CustomMapPopup } from "./CustomMapPopup";
 import { useMapSetup } from "./useMapSetup";
@@ -19,7 +19,7 @@ interface MapComponentProps {
   hiddenFeatures: Record<number, boolean>;
     onSaveDailyLog?: (
       featureId: number,
-      log: any
+      log: DailyLog
     ) => Promise<void>;
     onOpenRangeReport?: (feat: DrawnFeature) => void;
     onToggleFeatureLock?: (id: number, locked: boolean) => void;
@@ -54,13 +54,11 @@ interface MapComponentProps {
     tooltip,
     customPopup,
     popupScreenPos,
-    showHistoryInPopup,
     popupEditDate,
     sketchLayer,
     currentZoom,
     htmlLabels,
     setCustomPopup,
-    setShowHistoryInPopup,
     setPopupEditDate,
     handleSelectTool,
     handleCancel,
@@ -95,8 +93,6 @@ interface MapComponentProps {
         layerVisibility={layerVisibility}
         popupEditDate={popupEditDate}
         setPopupEditDate={setPopupEditDate}
-        showHistoryInPopup={showHistoryInPopup}
-        setShowHistoryInPopup={setShowHistoryInPopup}
         onSaveDailyLog={onSaveDailyLog}
         onToggleFeatureLock={onToggleFeatureLock}
         onRenameFeature={onRenameFeature}

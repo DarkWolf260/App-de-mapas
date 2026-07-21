@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { DrawnFeature, LayerVisibility } from "../App";
+import type { DrawnFeature, LayerVisibility } from "../types";
 import * as webMercatorUtils from "@arcgis/core/geometry/support/webMercatorUtils";
 import { execute as containsExecute } from "@arcgis/core/geometry/operators/containsOperator";
 import { Lock, Unlock, Save, Plus, Trash2, Calendar, FileText, Settings, History, Layers } from "lucide-react";
@@ -11,8 +11,6 @@ interface CustomMapPopupProps {
   layerVisibility: LayerVisibility;
   popupEditDate: string;
   setPopupEditDate: (date: string) => void;
-  showHistoryInPopup: boolean;
-  setShowHistoryInPopup: (show: boolean) => void;
   onSaveDailyLog?: (
     featureId: number,
     log: any
@@ -43,8 +41,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   layerVisibility,
   popupEditDate,
   setPopupEditDate,
-  showHistoryInPopup,
-  setShowHistoryInPopup,
   onSaveDailyLog,
   onToggleFeatureLock,
   onRenameFeature,
@@ -53,17 +49,17 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   sketchLayer,
   onClose,
 }) => {
-  if (!customPopup || !popupScreenPos) return null;
-
-  const activeFeat = drawnFeatures.find((f) => String(f.id) === String(customPopup.feat.id)) || customPopup.feat;
+  const activeFeat = customPopup
+    ? drawnFeatures.find((f) => String(f.id) === String(customPopup.feat.id)) || customPopup.feat
+    : null;
 
   // Active Tab state
   const [activeTab, setActiveTab] = useState<"general" | "operation" | "history" | "contained">("general");
 
   // Local Form states
-  const [localTitle, setLocalTitle] = useState(activeFeat.title);
-  const [localDescription, setLocalDescription] = useState(activeFeat.description || "");
-  const [localColor, setLocalColor] = useState(activeFeat.color || "#3b82f6");
+  const [localTitle, setLocalTitle] = useState("");
+  const [localDescription, setLocalDescription] = useState("");
+  const [localColor, setLocalColor] = useState("#3b82f6");
   const [showSecondGroup, setShowSecondGroup] = useState(false);
   const [generalSaveSuccess, setGeneralSaveSuccess] = useState(false);
   const [logSaveSuccess, setLogSaveSuccess] = useState(false);
@@ -96,6 +92,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
   // Sync state when selected feature or edit date changes
   useEffect(() => {
+    if (!activeFeat) return;
     setLocalTitle(activeFeat.title);
     setLocalDescription(activeFeat.description || "");
     setLocalColor(activeFeat.color || "#3b82f6");
@@ -133,14 +130,14 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           }
     );
     setShowSecondGroup(todayLog ? !!todayLog.groupName2 || !!todayLog.unitOut2 : false);
-  }, [activeFeat.id, popupEditDate]);
+  }, [activeFeat?.id, popupEditDate]);
 
   // Reset tab based on drawing tools state and feature type
   useEffect(() => {
-    if (!layerVisibility.sketch) {
-      if (activeFeat.type === "point") {
+    if (!activeFeat || !layerVisibility.sketch) {
+      if (activeFeat?.type === "point") {
         setActiveTab("operation");
-      } else if (activeFeat.type === "polygon") {
+      } else if (activeFeat?.type === "polygon") {
         setActiveTab("contained");
       } else {
         setActiveTab("general");
@@ -148,7 +145,9 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     } else {
       setActiveTab("general");
     }
-  }, [activeFeat.id, layerVisibility.sketch]);
+  }, [activeFeat?.id, activeFeat?.type, layerVisibility.sketch]);
+
+  if (!customPopup || !popupScreenPos || !activeFeat) return null;
 
   const handleGeneralSave = async () => {
     try {

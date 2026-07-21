@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { DrawnFeature } from "../App";
+import type { DrawnFeature } from "../types";
 
 interface WorkSiteLogFormProps {
   feat: DrawnFeature;

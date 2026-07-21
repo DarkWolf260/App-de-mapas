@@ -12,5 +12,3 @@ export const LOCATIONS: Record<string, Location> = {
   },
 };
 
-export const EMERGENCY_ASSETS: unknown[] = [];
-export const INITIAL_INCIDENTS: unknown[] = [];

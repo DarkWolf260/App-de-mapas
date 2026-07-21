@@ -1,31 +1,7 @@
 import React, { useState, useCallback } from "react";
-import type { DrawnFeature } from "../App";
-import { X, Calendar, Phone, Truck, ShieldAlert, ChevronDown, ChevronUp, Users, Save, MapPin } from "lucide-react";
-
-type DailyLog = {
-  date: string;
-  groupName: string;
-  managerName: string;
-  managerPhone: string;
-  unitOut: string;
-  departureTime?: string;
-  arrivalTime?: string;
-  officersCount?: string;
-  rescuedCount?: string;
-  recoveredCount?: string;
-  groupName2?: string;
-  managerName2?: string;
-  managerPhone2?: string;
-  unitOut2?: string;
-  departureTime2?: string;
-  arrivalTime2?: string;
-  officersCount2?: string;
-  rescuedCount2?: string;
-  recoveredCount2?: string;
-  hasArrivedG1?: boolean;
-  hasArrivedG2?: boolean;
-  observations?: string;
-};
+import type { DrawnFeature, DailyLog } from "../types";
+import { X, Calendar, ShieldAlert, ChevronDown, ChevronUp, Users } from "lucide-react";
+import { GroupLogForm } from "./GroupLogForm";
 
 interface RangeReportModalProps {
   feat: DrawnFeature | "all" | null;
@@ -34,27 +10,7 @@ interface RangeReportModalProps {
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
 }
 
-const INPUT_STYLE: React.CSSProperties = {
-  background: "rgba(255, 255, 255, 0.05)",
-  border: "1px solid rgba(255, 255, 255, 0.12)",
-  borderRadius: "5px",
-  color: "var(--text-main)",
-  fontSize: "0.68rem",
-  padding: "4px 7px",
-  width: "100%",
-  outline: "none",
-  fontFamily: "inherit",
-};
-
-const LABEL_STYLE: React.CSSProperties = {
-  fontSize: "0.56rem",
-  color: "var(--text-muted)",
-  fontWeight: 700,
-  letterSpacing: "0.06em",
-  textTransform: "uppercase" as const,
-  marginBottom: "3px",
-  display: "block",
-};
+const REPORT_START_DATE = "2026-06-24";
 
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
@@ -119,7 +75,6 @@ const DateRow: React.FC<RowProps> = ({ dateStr, log, feat, onSaveDailyLog }) => 
   const [draft, setDraft] = useState<DailyLog>(log ?? emptyLog(dateStr));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [showGroup2, setShowGroup2] = useState(!!(draft.groupName2 || draft.unitOut2 || draft.managerName2 || draft.officersCount2));
 
   const effectiveLog = log ?? emptyLog(dateStr);
   const hasData = !!(
@@ -152,7 +107,6 @@ const DateRow: React.FC<RowProps> = ({ dateStr, log, feat, onSaveDailyLog }) => 
     setExpanded(next);
     if (next) {
       setDraft(effectiveLog);
-      setShowGroup2(!!(effectiveLog.groupName2 || effectiveLog.unitOut2 || effectiveLog.managerName2 || effectiveLog.officersCount2));
     }
   };
 
@@ -277,197 +231,13 @@ const DateRow: React.FC<RowProps> = ({ dateStr, log, feat, onSaveDailyLog }) => 
       {/* Expanded editor */}
       {expanded && (
         <div className="rr-editor">
-          {/* GRUPO 1 */}
-          <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "4px", marginBottom: "8px" }}>
-            GRUPO 1
-          </div>
-          <div className="rr-editor-grid2">
-            <div>
-              <label style={LABEL_STYLE}>Grupo Desplegado</label>
-              <input style={INPUT_STYLE} type="text" placeholder="Nombre del grupo" value={draft.groupName} onChange={(e) => handleChange("groupName", e.target.value)} />
-            </div>
-            <div>
-              <label style={LABEL_STYLE}>Encargado</label>
-              <input style={INPUT_STYLE} type="text" placeholder="Nombre" value={draft.managerName} onChange={(e) => handleChange("managerName", e.target.value)} />
-            </div>
-          </div>
-          <div className="rr-editor-grid3">
-            <div>
-              <label style={LABEL_STYLE}>Funcionarios</label>
-              <input style={INPUT_STYLE} type="number" min="0" placeholder="0" value={draft.officersCount ?? ""} onChange={(e) => handleChange("officersCount", e.target.value)} />
-            </div>
-            <div>
-              <label style={LABEL_STYLE}>Rescatados</label>
-              <input style={INPUT_STYLE} type="number" min="0" placeholder="0" value={draft.rescuedCount ?? ""} onChange={(e) => handleChange("rescuedCount", e.target.value)} />
-            </div>
-            <div>
-              <label style={LABEL_STYLE}>Recuperados</label>
-              <input style={INPUT_STYLE} type="number" min="0" placeholder="0" value={draft.recoveredCount ?? ""} onChange={(e) => handleChange("recoveredCount", e.target.value)} />
-            </div>
-          </div>
-          <div className="rr-editor-grid2">
-            <div>
-              <label style={LABEL_STYLE}>Teléfono Encargado</label>
-              <input style={INPUT_STYLE} type="tel" placeholder="0414-0000000" value={draft.managerPhone} onChange={(e) => handleChange("managerPhone", e.target.value)} />
-            </div>
-            <div>
-              <label style={LABEL_STYLE}>Unidad / Vehículo</label>
-              <input style={INPUT_STYLE} type="text" placeholder="Ej: Unidad 03" value={draft.unitOut} onChange={(e) => handleChange("unitOut", e.target.value)} />
-            </div>
-          </div>
-          <div className="rr-editor-grid2">
-            <div>
-              <label style={LABEL_STYLE}>Hora de Salida</label>
-              <input style={INPUT_STYLE} type="time" value={draft.departureTime ?? ""} onChange={(e) => handleChange("departureTime", e.target.value)} />
-            </div>
-            <div style={{ display: "flex", gap: "6px" }}>
-              <div style={{ flex: 1 }}>
-                <label style={LABEL_STYLE}>Hora de Llegada</label>
-                <input style={INPUT_STYLE} type="time" value={draft.arrivalTime ?? ""} onChange={(e) => handleChange("arrivalTime", e.target.value)} />
-              </div>
-              <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: "6px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.62rem", color: "var(--text-muted)", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={!!draft.hasArrivedG1}
-                    onChange={(e) => handleChange("hasArrivedG1", e.target.checked)}
-                    style={{ margin: 0, cursor: "pointer" }}
-                  />
-                  <span>¿Ya llegó?</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* TOGGLE GRUPO 2 */}
-          {!showGroup2 ? (
-            <button
-              type="button"
-              className="sim-btn"
-              onClick={() => setShowGroup2(true)}
-              style={{
-                marginTop: "8px",
-                justifyContent: "center",
-                padding: "6px",
-                fontSize: "0.68rem",
-                width: "100%",
-                background: "rgba(56, 189, 248, 0.06)",
-                border: "1px dashed rgba(56, 189, 248, 0.2)",
-                color: "var(--color-info)"
-              }}
-            >
-              + Registrar Segundo Grupo
-            </button>
-          ) : (
-            <div style={{ marginTop: "12px", borderTop: "1px dashed rgba(255, 255, 255, 0.08)", paddingTop: "12px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "4px", marginBottom: "8px" }}>
-                <span>GRUPO 2 (OPCIONAL)</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowGroup2(false);
-                    handleChange("groupName2", "");
-                    handleChange("managerName2", "");
-                    handleChange("managerPhone2", "");
-                    handleChange("unitOut2", "");
-                    handleChange("departureTime2", "");
-                    handleChange("arrivalTime2", "");
-                    handleChange("officersCount2", "");
-                    handleChange("rescuedCount2", "");
-                    handleChange("recoveredCount2", "");
-                  }}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "var(--color-high)",
-                    fontSize: "0.62rem",
-                    cursor: "pointer",
-                    padding: 0
-                  }}
-                >
-                  Remover Grupo 2
-                </button>
-              </div>
-              <div className="rr-editor-grid2">
-                <div>
-                  <label style={LABEL_STYLE}>Grupo Desplegado 2</label>
-                  <input style={INPUT_STYLE} type="text" placeholder="Nombre del grupo 2" value={draft.groupName2 ?? ""} onChange={(e) => handleChange("groupName2", e.target.value)} />
-                </div>
-                <div>
-                  <label style={LABEL_STYLE}>Encargado 2</label>
-                  <input style={INPUT_STYLE} type="text" placeholder="Nombre" value={draft.managerName2 ?? ""} onChange={(e) => handleChange("managerName2", e.target.value)} />
-                </div>
-              </div>
-              <div className="rr-editor-grid3">
-                <div>
-                  <label style={LABEL_STYLE}>Funcionarios 2</label>
-                  <input style={INPUT_STYLE} type="number" min="0" placeholder="0" value={draft.officersCount2 ?? ""} onChange={(e) => handleChange("officersCount2", e.target.value)} />
-                </div>
-                <div>
-                  <label style={LABEL_STYLE}>Rescatados 2</label>
-                  <input style={INPUT_STYLE} type="number" min="0" placeholder="0" value={draft.rescuedCount2 ?? ""} onChange={(e) => handleChange("rescuedCount2", e.target.value)} />
-                </div>
-                <div>
-                  <label style={LABEL_STYLE}>Recuperados 2</label>
-                  <input style={INPUT_STYLE} type="number" min="0" placeholder="0" value={draft.recoveredCount2 ?? ""} onChange={(e) => handleChange("recoveredCount2", e.target.value)} />
-                </div>
-              </div>
-              <div className="rr-editor-grid2">
-                <div>
-                  <label style={LABEL_STYLE}>Teléfono Encargado 2</label>
-                  <input style={INPUT_STYLE} type="tel" placeholder="0414-0000000" value={draft.managerPhone2 ?? ""} onChange={(e) => handleChange("managerPhone2", e.target.value)} />
-                </div>
-                <div>
-                  <label style={LABEL_STYLE}>Unidad / Vehículo 2</label>
-                  <input style={INPUT_STYLE} type="text" placeholder="Ej: Unidad 03" value={draft.unitOut2 ?? ""} onChange={(e) => handleChange("unitOut2", e.target.value)} />
-                </div>
-              </div>
-              <div className="rr-editor-grid2">
-                <div>
-                  <label style={LABEL_STYLE}>Hora de Salida 2</label>
-                  <input style={INPUT_STYLE} type="time" value={draft.departureTime2 ?? ""} onChange={(e) => handleChange("departureTime2", e.target.value)} />
-                </div>
-                <div style={{ display: "flex", gap: "6px" }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={LABEL_STYLE}>Hora de Llegada 2</label>
-                    <input style={INPUT_STYLE} type="time" value={draft.arrivalTime2 ?? ""} onChange={(e) => handleChange("arrivalTime2", e.target.value)} />
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: "6px" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.62rem", color: "var(--text-muted)", cursor: "pointer" }}>
-                      <input
-                        type="checkbox"
-                        checked={!!draft.hasArrivedG2}
-                        onChange={(e) => handleChange("hasArrivedG2", e.target.checked)}
-                        style={{ margin: 0, cursor: "pointer" }}
-                      />
-                      <span>¿Ya llegó?</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          <div style={{ marginTop: "8px" }}>
-            <label style={LABEL_STYLE}>Observación / Notas del Día</label>
-            <textarea
-              style={{ ...INPUT_STYLE, resize: "none", height: "42px" }}
-              placeholder="Notas u observaciones de las actividades de este día..."
-              value={draft.observations || ""}
-              onChange={(e) => handleChange("observations", e.target.value)}
-            />
-          </div>
-
-          <div className="rr-editor-footer" style={{ marginTop: "12px" }}>
-            {saved && <span className="rr-saved-msg">✓ Guardado</span>}
-            <button
-              className="rr-save-btn"
-              onClick={handleSave}
-              disabled={saving || !onSaveDailyLog}
-            >
-              <Save size={12} />
-              {saving ? "Guardando…" : "Guardar registro"}
-            </button>
-          </div>
+          <GroupLogForm
+            draft={draft}
+            onChange={handleChange}
+            onSave={handleSave}
+            saving={saving}
+            saved={saved}
+          />
         </div>
       )}
     </div>
@@ -488,7 +258,6 @@ const InlineRowEditor: React.FC<InlineRowEditorProps> = ({ dateStr, log, feat, o
   const [draft, setDraft] = useState<DailyLog>(log ?? emptyLog(dateStr));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [showGroup2, setShowGroup2] = useState(!!(draft.groupName2 || draft.unitOut2 || draft.managerName2 || draft.officersCount2));
 
   const handleChange = useCallback((field: keyof DailyLog, value: any) => {
     setDraft((prev) => ({ ...prev, [field]: value }));
@@ -509,197 +278,14 @@ const InlineRowEditor: React.FC<InlineRowEditorProps> = ({ dateStr, log, feat, o
 
   return (
     <div className="rr-editor" style={{ padding: "8px 0 0 0", borderTop: "none", background: "transparent" }}>
-      {/* GRUPO 1 */}
-      <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "4px", marginBottom: "8px" }}>
-        GRUPO 1
-      </div>
-      <div className="rr-editor-grid2">
-        <div>
-          <label style={LABEL_STYLE}>Grupo Desplegado</label>
-          <input style={INPUT_STYLE} type="text" placeholder="Nombre del grupo" value={draft.groupName} onChange={(e) => handleChange("groupName", e.target.value)} />
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Encargado</label>
-          <input style={INPUT_STYLE} type="text" placeholder="Nombre" value={draft.managerName} onChange={(e) => handleChange("managerName", e.target.value)} />
-        </div>
-      </div>
-      <div className="rr-editor-grid3">
-        <div>
-          <label style={LABEL_STYLE}>Funcionarios</label>
-          <input style={INPUT_STYLE} type="number" min="0" placeholder="0" value={draft.officersCount ?? ""} onChange={(e) => handleChange("officersCount", e.target.value)} />
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Rescatados</label>
-          <input style={INPUT_STYLE} type="number" min="0" placeholder="0" value={draft.rescuedCount ?? ""} onChange={(e) => handleChange("rescuedCount", e.target.value)} />
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Recuperados</label>
-          <input style={INPUT_STYLE} type="number" min="0" placeholder="0" value={draft.recoveredCount ?? ""} onChange={(e) => handleChange("recoveredCount", e.target.value)} />
-        </div>
-      </div>
-      <div className="rr-editor-grid2">
-        <div>
-          <label style={LABEL_STYLE}>Teléfono Encargado</label>
-          <input style={INPUT_STYLE} type="tel" placeholder="0414-0000000" value={draft.managerPhone} onChange={(e) => handleChange("managerPhone", e.target.value)} />
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Unidad / Vehículo</label>
-          <input style={INPUT_STYLE} type="text" placeholder="Ej: Unidad 03" value={draft.unitOut} onChange={(e) => handleChange("unitOut", e.target.value)} />
-        </div>
-      </div>
-      <div className="rr-editor-grid2">
-        <div>
-          <label style={LABEL_STYLE}>Hora de Salida</label>
-          <input style={INPUT_STYLE} type="time" value={draft.departureTime ?? ""} onChange={(e) => handleChange("departureTime", e.target.value)} />
-        </div>
-        <div style={{ display: "flex", gap: "6px" }}>
-          <div style={{ flex: 1 }}>
-            <label style={LABEL_STYLE}>Hora de Llegada</label>
-            <input style={INPUT_STYLE} type="time" value={draft.arrivalTime ?? ""} onChange={(e) => handleChange("arrivalTime", e.target.value)} />
-          </div>
-          <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: "6px" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.62rem", color: "var(--text-muted)", cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={!!draft.hasArrivedG1}
-                onChange={(e) => handleChange("hasArrivedG1", e.target.checked)}
-                style={{ margin: 0, cursor: "pointer" }}
-              />
-              <span>¿Ya llegó?</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* TOGGLE GRUPO 2 */}
-      {!showGroup2 ? (
-        <button
-          type="button"
-          className="sim-btn"
-          onClick={() => setShowGroup2(true)}
-          style={{
-            marginTop: "8px",
-            justifyContent: "center",
-            padding: "6px",
-            fontSize: "0.68rem",
-            width: "100%",
-            background: "rgba(56, 189, 248, 0.06)",
-            border: "1px dashed rgba(56, 189, 248, 0.2)",
-            color: "var(--color-info)"
-          }}
-        >
-          + Registrar Segundo Grupo
-        </button>
-      ) : (
-        <div style={{ marginTop: "12px", borderTop: "1px dashed rgba(255, 255, 255, 0.08)", paddingTop: "12px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "4px", marginBottom: "8px" }}>
-            <span>GRUPO 2 (OPCIONAL)</span>
-            <button
-              type="button"
-              onClick={() => {
-                setShowGroup2(false);
-                handleChange("groupName2", "");
-                handleChange("managerName2", "");
-                handleChange("managerPhone2", "");
-                handleChange("unitOut2", "");
-                handleChange("departureTime2", "");
-                handleChange("arrivalTime2", "");
-                handleChange("officersCount2", "");
-                handleChange("rescuedCount2", "");
-                handleChange("recoveredCount2", "");
-              }}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--color-high)",
-                fontSize: "0.62rem",
-                cursor: "pointer",
-                padding: 0
-              }}
-            >
-              Remover Grupo 2
-            </button>
-          </div>
-          <div className="rr-editor-grid2">
-            <div>
-              <label style={LABEL_STYLE}>Grupo Desplegado 2</label>
-              <input style={INPUT_STYLE} type="text" placeholder="Nombre del grupo 2" value={draft.groupName2 ?? ""} onChange={(e) => handleChange("groupName2", e.target.value)} />
-            </div>
-            <div>
-              <label style={LABEL_STYLE}>Encargado 2</label>
-              <input style={INPUT_STYLE} type="text" placeholder="Nombre" value={draft.managerName2 ?? ""} onChange={(e) => handleChange("managerName2", e.target.value)} />
-            </div>
-          </div>
-          <div className="rr-editor-grid3">
-            <div>
-              <label style={LABEL_STYLE}>Funcionarios 2</label>
-              <input style={INPUT_STYLE} type="number" min="0" placeholder="0" value={draft.officersCount2 ?? ""} onChange={(e) => handleChange("officersCount2", e.target.value)} />
-            </div>
-            <div>
-              <label style={LABEL_STYLE}>Rescatados 2</label>
-              <input style={INPUT_STYLE} type="number" min="0" placeholder="0" value={draft.rescuedCount2 ?? ""} onChange={(e) => handleChange("rescuedCount2", e.target.value)} />
-            </div>
-            <div>
-              <label style={LABEL_STYLE}>Recuperados 2</label>
-              <input style={INPUT_STYLE} type="number" min="0" placeholder="0" value={draft.recoveredCount2 ?? ""} onChange={(e) => handleChange("recoveredCount2", e.target.value)} />
-            </div>
-          </div>
-          <div className="rr-editor-grid2">
-            <div>
-              <label style={LABEL_STYLE}>Teléfono Encargado 2</label>
-              <input style={INPUT_STYLE} type="tel" placeholder="0414-0000000" value={draft.managerPhone2 ?? ""} onChange={(e) => handleChange("managerPhone2", e.target.value)} />
-            </div>
-            <div>
-              <label style={LABEL_STYLE}>Unidad / Vehículo 2</label>
-              <input style={INPUT_STYLE} type="text" placeholder="Ej: Unidad 03" value={draft.unitOut2 ?? ""} onChange={(e) => handleChange("unitOut2", e.target.value)} />
-            </div>
-          </div>
-          <div className="rr-editor-grid2">
-            <div>
-              <label style={LABEL_STYLE}>Hora de Salida 2</label>
-              <input style={INPUT_STYLE} type="time" value={draft.departureTime2 ?? ""} onChange={(e) => handleChange("departureTime2", e.target.value)} />
-            </div>
-            <div style={{ display: "flex", gap: "6px" }}>
-              <div style={{ flex: 1 }}>
-                <label style={LABEL_STYLE}>Hora de Llegada 2</label>
-                <input style={INPUT_STYLE} type="time" value={draft.arrivalTime2 ?? ""} onChange={(e) => handleChange("arrivalTime2", e.target.value)} />
-              </div>
-              <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: "6px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.62rem", color: "var(--text-muted)", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={!!draft.hasArrivedG2}
-                    onChange={(e) => handleChange("hasArrivedG2", e.target.checked)}
-                    style={{ margin: 0, cursor: "pointer" }}
-                  />
-                  <span>¿Ya llegó?</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      <div style={{ marginTop: "8px" }}>
-        <label style={LABEL_STYLE}>Observación / Notas del Día</label>
-        <textarea
-          style={{ ...INPUT_STYLE, resize: "none", height: "42px" }}
-          placeholder="Notas u observaciones de las actividades de este día..."
-          value={draft.observations || ""}
-          onChange={(e) => handleChange("observations", e.target.value)}
-        />
-      </div>
-
-      <div className="rr-editor-footer" style={{ marginTop: "12px" }}>
-        {saved && <span className="rr-saved-msg">✓ Guardado</span>}
-        <button
-          className="rr-save-btn"
-          onClick={handleSave}
-          disabled={saving || !onSaveDailyLog}
-        >
-          <Save size={12} />
-          {saving ? "Guardando…" : "Guardar registro"}
-        </button>
-      </div>
+      <GroupLogForm
+        draft={draft}
+        onChange={handleChange}
+        onSave={handleSave}
+        saving={saving}
+        saved={saved}
+        compact
+      />
     </div>
   );
 };
@@ -707,15 +293,15 @@ const InlineRowEditor: React.FC<InlineRowEditorProps> = ({ dateStr, log, feat, o
 // ── Modal ─────────────────────────────────────────────────────────────────────
 
 export const RangeReportModal: React.FC<RangeReportModalProps> = ({ feat, allFeatures = [], onClose, onSaveDailyLog }) => {
-  if (!feat) return null;
-
-  const dates = getDatesRange("2026-06-24");
-  const isAllMode = feat === "all";
-
   // If it's all mode, we use pagination
   const [activeDateIndex, setActiveDateIndex] = useState(0);
   const [activeEditFeatureId, setActiveEditFeatureId] = useState<number | null>(null);
   const [arrivalFilter, setArrivalFilter] = useState<'all' | 'arrived' | 'not_arrived'>('all');
+
+  if (!feat) return null;
+
+  const dates = getDatesRange(REPORT_START_DATE);
+  const isAllMode = feat === "all";
 
   const activeDate = dates[activeDateIndex];
 

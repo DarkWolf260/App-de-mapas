@@ -137,34 +137,9 @@ body, html, #root {
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
 }
 
-/* Modal Windows (Incident Form / API Key Configuration) */
-.floating-modal {
-  position: absolute;
-  width: 360px;
-  padding: 20px;
-  z-index: 15;
-  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.floating-modal.right-bottom {
-  right: 20px;
-  bottom: 20px;
-}
-
-.floating-modal.right-top {
-  right: 20px;
-  top: 75px;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Headers */
@@ -185,74 +160,6 @@ body, html, #root {
   font-size: 0.85rem;
   color: var(--text-muted);
   margin-bottom: 16px;
-}
-
-/* Stats Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.stat-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  transition: all 0.2s ease;
-}
-
-.stat-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-.stat-val {
-  font-size: 1.5rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.stat-lbl {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.stat-card.high .stat-val { color: var(--color-high); }
-.stat-card.medium .stat-val { color: var(--color-medium); }
-.stat-card.low .stat-val { color: var(--color-low); }
-.stat-card.total .stat-val { color: var(--color-info); }
-
-/* Quick Travel City Buttons */
-.city-selector {
-  display: flex;
-  gap: 8px;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 4px;
-  border-radius: 10px;
-}
-
-.city-btn {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  padding: 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.city-btn.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-main);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* Layer & Basemap Toggles */
@@ -414,53 +321,6 @@ input:checked + .slider:before {
 .incident-card.medium { border-left-color: var(--color-medium); }
 .incident-card.low { border-left-color: var(--color-low); }
 
-.incident-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 4px;
-}
-
-.incident-name {
-  font-size: 0.85rem;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 75%;
-}
-
-.severity-badge {
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.severity-badge.high { background: rgba(244, 63, 94, 0.2); color: var(--color-high); }
-.severity-badge.medium { background: rgba(251, 146, 60, 0.2); color: var(--color-medium); }
-.severity-badge.low { background: rgba(250, 204, 21, 0.2); color: var(--color-low); }
-
-.incident-desc {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-  margin-bottom: 6px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.incident-meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.65rem;
-  color: var(--text-muted);
-}
-
 .empty-state {
   text-align: center;
   padding: 20px;
@@ -504,30 +364,6 @@ input:checked + .slider:before {
 .form-textarea {
   resize: vertical;
   min-height: 60px;
-}
-
-/* Custom styled map locate area */
-.locate-helper-box {
-  background: rgba(56, 189, 248, 0.08);
-  border: 1px dashed rgba(56, 189, 248, 0.4);
-  border-radius: 8px;
-  padding: 10px;
-  text-align: center;
-  font-size: 0.75rem;
-  color: var(--color-info);
-  cursor: pointer;
-  margin-bottom: 12px;
-  transition: all 0.2s ease;
-}
-
-.locate-helper-box:hover {
-  background: rgba(56, 189, 248, 0.15);
-}
-
-.locate-helper-box.selected {
-  background: rgba(52, 211, 153, 0.08);
-  border-color: rgba(52, 211, 153, 0.4);
-  color: var(--color-green);
 }
 
 /* Action Buttons */

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import type { DrawnFeature } from "../App";
+import type { DrawnFeature } from "../types";
 import { Search, MapPin, Activity, Square, X } from "lucide-react";
 
 interface FloatingSearchBarProps {
