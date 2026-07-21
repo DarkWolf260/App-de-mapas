@@ -133,10 +133,20 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     setShowSecondGroup(todayLog ? !!todayLog.groupName2 || !!todayLog.unitOut2 : false);
   }, [activeFeat.id, popupEditDate]);
 
-  // Reset tab to general when changing features
+  // Reset tab based on drawing tools state and feature type
   useEffect(() => {
-    setActiveTab("general");
-  }, [activeFeat.id]);
+    if (!layerVisibility.sketch) {
+      if (activeFeat.type === "point") {
+        setActiveTab("operation");
+      } else if (activeFeat.type === "polygon") {
+        setActiveTab("contained");
+      } else {
+        setActiveTab("general");
+      }
+    } else {
+      setActiveTab("general");
+    }
+  }, [activeFeat.id, layerVisibility.sketch]);
 
   const handleGeneralSave = async () => {
     try {
@@ -356,26 +366,28 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
             gap: "2px",
           }}
         >
-          <button
-            onClick={() => setActiveTab("general")}
-            style={{
-              flex: 1,
-              background: activeTab === "general" ? "rgba(255,255,255,0.08)" : "transparent",
-              border: "none",
-              color: activeTab === "general" ? "var(--color-info)" : "var(--text-muted)",
-              fontSize: "0.65rem",
-              fontWeight: 700,
-              padding: "4px 6px",
-              borderRadius: "4px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "4px",
-            }}
-          >
-            <Settings size={10} /> General
-          </button>
+          {layerVisibility.sketch && (
+            <button
+              onClick={() => setActiveTab("general")}
+              style={{
+                flex: 1,
+                background: activeTab === "general" ? "rgba(255,255,255,0.08)" : "transparent",
+                border: "none",
+                color: activeTab === "general" ? "var(--color-info)" : "var(--text-muted)",
+                fontSize: "0.65rem",
+                fontWeight: 700,
+                padding: "4px 6px",
+                borderRadius: "4px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "4px",
+              }}
+            >
+              <Settings size={10} /> General
+            </button>
+          )}
           <button
             onClick={() => setActiveTab("operation")}
             style={{
@@ -419,7 +431,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         </div>
       )}
 
-      {activeFeat.type === "polygon" && (
+      {activeFeat.type === "polygon" && layerVisibility.sketch && (
         <div
           style={{
             display: "flex",
