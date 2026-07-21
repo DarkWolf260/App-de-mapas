@@ -1,5 +1,5 @@
 import React from "react";
-import type { DrawnFeature, DailyLog } from "../types";
+import type { DrawnFeature } from "../types";
 import { Activity, Square, MapPin, Maximize2, Trash2, Lock, Unlock } from "lucide-react";
 
 interface FeatureCardProps {
@@ -12,7 +12,6 @@ interface FeatureCardProps {
   onZoomToFeature: (feat: DrawnFeature) => void;
   onDeleteFeature: (id: number) => void;
   onToggleFeatureLock: (id: number, locked: boolean) => void;
-  onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
   onOpenRangeReport?: (feat: DrawnFeature) => void;
   hasChildren?: boolean;
   isChildrenCollapsed?: boolean;
@@ -30,7 +29,6 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   onZoomToFeature,
   onDeleteFeature,
   onToggleFeatureLock,
-  onSaveDailyLog,
   onOpenRangeReport,
   hasChildren,
   isChildrenCollapsed,

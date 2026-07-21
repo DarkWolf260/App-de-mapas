@@ -565,6 +565,7 @@ export const useMapSetup = ({
       if (view) view.destroy();
       viewRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Map init runs once; basemap is synced in useEffect #2
   }, []);
 
   // ── 2. Sync basemap ─────────────────────────────────────────────────────────
@@ -861,7 +862,7 @@ export const useMapSetup = ({
       }
     });
     deconflictGraphicsRef.current?.();
-  }, [importedFeatures, mapReady]);
+  }, [importedFeatures, mapReady, layerVisibility.pointLabels]);
 
   useEffect(() => {
     if (viewRef.current) {

@@ -233,7 +233,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       onZoomToFeature={onZoomToFeature}
       onDeleteFeature={onDeleteFeature}
       onToggleFeatureLock={onToggleFeatureLock}
-      onSaveDailyLog={onSaveDailyLog}
       onOpenRangeReport={onOpenRangeReport}
       hasChildren={hasChildren}
       isChildrenCollapsed={isCollapsed}
