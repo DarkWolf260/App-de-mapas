@@ -190,6 +190,15 @@ function App() {
       });
     }
   };
+  const handleUpdateFeatureColor = async (id: number, newColor: string): Promise<void> => {
+    if (!db) return;
+    const doc = await db.features.findOne(String(id)).exec();
+    if (doc) {
+      await doc.patch({
+        color: newColor,
+      });
+    }
+  };
   const handleToggleFeatureLock = async (id: number, locked: boolean): Promise<void> => {
     if (!db) return;
     const doc = await db.features.findOne(String(id)).exec();
@@ -423,6 +432,9 @@ function App() {
         onSaveDailyLog={handleSaveDailyLog}
         onOpenRangeReport={(feat) => setRangeReportFeature(feat)}
         onToggleFeatureLock={handleToggleFeatureLock}
+        onRenameFeature={handleRenameFeature}
+        onUpdateFeatureDescription={handleUpdateFeatureDescription}
+        onUpdateFeatureColor={handleUpdateFeatureColor}
       />
 
       <FloatingSearchBar

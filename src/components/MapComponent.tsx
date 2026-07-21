@@ -17,21 +17,27 @@ interface MapComponentProps {
   removeFeatureId: RemoveFeatureId | null;
   importedFeatures: DrawnFeature[];
   hiddenFeatures: Record<number, boolean>;
-  onSaveDailyLog?: (
-    featureId: number,
-    log: { date: string; groupName: string; managerName: string; managerPhone: string; unitOut: string; departureTime?: string; arrivalTime?: string; officersCount?: string }
-  ) => Promise<void>;
-  onOpenRangeReport?: (feat: DrawnFeature) => void;
-  onToggleFeatureLock?: (id: number, locked: boolean) => void;
-}
-
-const MapComponent: React.FC<MapComponentProps> = (props) => {
-  const {
-    layerVisibility,
-    drawnFeatures,
-    onSaveDailyLog,
-    onToggleFeatureLock,
-  } = props;
+    onSaveDailyLog?: (
+      featureId: number,
+      log: { date: string; groupName: string; managerName: string; managerPhone: string; unitOut: string; departureTime?: string; arrivalTime?: string; officersCount?: string }
+    ) => Promise<void>;
+    onOpenRangeReport?: (feat: DrawnFeature) => void;
+    onToggleFeatureLock?: (id: number, locked: boolean) => void;
+    onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
+    onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
+    onUpdateFeatureColor?: (id: number, newColor: string) => Promise<void>;
+  }
+  
+  const MapComponent: React.FC<MapComponentProps> = (props) => {
+    const {
+      layerVisibility,
+      drawnFeatures,
+      onSaveDailyLog,
+      onToggleFeatureLock,
+      onRenameFeature,
+      onUpdateFeatureDescription,
+      onUpdateFeatureColor,
+    } = props;
 
   const {
     mapDiv,
@@ -87,6 +93,9 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         setShowHistoryInPopup={setShowHistoryInPopup}
         onSaveDailyLog={onSaveDailyLog}
         onToggleFeatureLock={onToggleFeatureLock}
+        onRenameFeature={onRenameFeature}
+        onUpdateFeatureDescription={onUpdateFeatureDescription}
+        onUpdateFeatureColor={onUpdateFeatureColor}
         sketchLayer={sketchLayer}
         onClose={() => setCustomPopup(null)}
       />

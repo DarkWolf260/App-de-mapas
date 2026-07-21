@@ -1446,4 +1446,33 @@ input:checked + .slider:before {
   z-index: 10 !important;
 }
 
+/* Custom discreet scrollbars for the map popups and its nested scrollable elements */
+.custom-map-popup,
+.custom-map-popup * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+.custom-map-popup::-webkit-scrollbar,
+.custom-map-popup *::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-map-popup::-webkit-scrollbar-track,
+.custom-map-popup *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-map-popup::-webkit-scrollbar-thumb,
+.custom-map-popup *::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+.custom-map-popup::-webkit-scrollbar-thumb:hover,
+.custom-map-popup *::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
 
