@@ -44,6 +44,7 @@ export interface DrawnFeature {
     recoveredCount2?: string;
     hasArrivedG1?: boolean;
     hasArrivedG2?: boolean;
+    observations?: string;
   }>;
   geojsonGeometry: GeoJSONGeometry;
   _isUpdate?: boolean;
@@ -210,23 +211,7 @@ function App() {
   };
   const handleSaveDailyLog = async (
     featureId: number,
-    log: {
-      date: string;
-      groupName: string;
-      managerName: string;
-      managerPhone: string;
-      unitOut: string;
-      departureTime?: string;
-      arrivalTime?: string;
-      officersCount?: string;
-      groupName2?: string;
-      managerName2?: string;
-      managerPhone2?: string;
-      unitOut2?: string;
-      departureTime2?: string;
-      arrivalTime2?: string;
-      officersCount2?: string;
-    }
+    log: any
   ): Promise<void> => {
     if (!db) return;
     const doc = await db.features.findOne(String(featureId)).exec();

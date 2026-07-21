@@ -118,26 +118,28 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         </div>
       )}
       
-      <textarea
-        placeholder="Notas o información del elemento..."
-        value={feat.description || ""}
-        onChange={(e) => onUpdateFeatureDescription(feat.id as unknown as number, e.target.value)}
-        style={{
-          background: "rgba(255, 255, 255, 0.01)",
-          border: "1px solid var(--border-subtle)",
-          borderRadius: "6px",
-          padding: "4px 6px",
-          color: "var(--text-muted)",
-          fontSize: "0.68rem",
-          width: "100%",
-          resize: "none",
-          height: "36px",
-          marginTop: "2px",
-          fontFamily: "inherit",
-          opacity: isHidden ? 0.4 : 0.8,
-          cursor: "text",
-        }}
-      />
+      {feat.type !== "point" && (
+        <textarea
+          placeholder="Notas o información del elemento..."
+          value={feat.description || ""}
+          onChange={(e) => onUpdateFeatureDescription(feat.id as unknown as number, e.target.value)}
+          style={{
+            background: "rgba(255, 255, 255, 0.01)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: "6px",
+            padding: "4px 6px",
+            color: "var(--text-muted)",
+            fontSize: "0.68rem",
+            width: "100%",
+            resize: "none",
+            height: "36px",
+            marginTop: "2px",
+            fontFamily: "inherit",
+            opacity: isHidden ? 0.4 : 0.8,
+            cursor: "text",
+          }}
+        />
+      )}
 
       
       <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "2px" }}>

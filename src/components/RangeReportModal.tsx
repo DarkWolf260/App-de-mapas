@@ -24,6 +24,7 @@ type DailyLog = {
   recoveredCount2?: string;
   hasArrivedG1?: boolean;
   hasArrivedG2?: boolean;
+  observations?: string;
 };
 
 interface RangeReportModalProps {
@@ -100,6 +101,7 @@ function emptyLog(date: string): DailyLog {
     recoveredCount2: "",
     hasArrivedG1: false,
     hasArrivedG2: false,
+    observations: "",
   };
 }
 
@@ -250,6 +252,11 @@ const DateRow: React.FC<RowProps> = ({ dateStr, log, feat, onSaveDailyLog }) => 
                       </span>
                     </span>
                   </div>
+                </div>
+              )}
+              {effectiveLog.observations && (
+                <div style={{ marginTop: "6px", padding: "4px 8px", background: "rgba(56, 189, 248, 0.04)", borderLeft: "2px solid var(--color-info)", borderRadius: "0 4px 4px 0", fontSize: "0.68rem", width: "100%" }}>
+                  <strong style={{ color: "var(--color-info)" }}>📝 Observación:</strong> {effectiveLog.observations}
                 </div>
               )}
             </div>
@@ -440,6 +447,15 @@ const DateRow: React.FC<RowProps> = ({ dateStr, log, feat, onSaveDailyLog }) => 
               </div>
             </div>
           )}
+          <div style={{ marginTop: "8px" }}>
+            <label style={LABEL_STYLE}>Observación / Notas del Día</label>
+            <textarea
+              style={{ ...INPUT_STYLE, resize: "none", height: "42px" }}
+              placeholder="Notas u observaciones de las actividades de este día..."
+              value={draft.observations || ""}
+              onChange={(e) => handleChange("observations", e.target.value)}
+            />
+          </div>
 
           <div className="rr-editor-footer" style={{ marginTop: "12px" }}>
             {saved && <span className="rr-saved-msg">✓ Guardado</span>}
@@ -663,6 +679,15 @@ const InlineRowEditor: React.FC<InlineRowEditorProps> = ({ dateStr, log, feat, o
           </div>
         </div>
       )}
+      <div style={{ marginTop: "8px" }}>
+        <label style={LABEL_STYLE}>Observación / Notas del Día</label>
+        <textarea
+          style={{ ...INPUT_STYLE, resize: "none", height: "42px" }}
+          placeholder="Notas u observaciones de las actividades de este día..."
+          value={draft.observations || ""}
+          onChange={(e) => handleChange("observations", e.target.value)}
+        />
+      </div>
 
       <div className="rr-editor-footer" style={{ marginTop: "12px" }}>
         {saved && <span className="rr-saved-msg">✓ Guardado</span>}
@@ -1116,6 +1141,12 @@ export const RangeReportModal: React.FC<RangeReportModalProps> = ({ feat, allFea
                             )}
                           </div>
                         )}
+
+                        {log?.observations && !isEditingThis && (
+                           <div style={{ marginTop: "4px", padding: "4px 8px", background: "rgba(56, 189, 248, 0.04)", borderLeft: "2px solid var(--color-info)", borderRadius: "0 4px 4px 0", fontSize: "0.72rem" }}>
+                             <strong style={{ color: "var(--color-info)" }}>📝 Observación:</strong> {log.observations}
+                           </div>
+                         )}
 
                         {/* Inline Editor */}
                         {isEditingThis && (

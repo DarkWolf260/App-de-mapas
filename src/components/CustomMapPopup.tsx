@@ -91,6 +91,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     recoveredCount2: "",
     hasArrivedG1: false,
     hasArrivedG2: false,
+    observations: "",
   });
 
   // Sync state when selected feature or edit date changes
@@ -128,6 +129,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
             recoveredCount2: "",
             hasArrivedG1: false,
             hasArrivedG2: false,
+            observations: "",
           }
     );
     setShowSecondGroup(todayLog ? !!todayLog.groupName2 || !!todayLog.unitOut2 : false);
@@ -865,6 +867,15 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                 />
               </div>
             </div>
+            <div style={{ marginTop: "4px" }}>
+              <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Observación del Día</span>
+              <textarea
+                value={localLog.observations || ""}
+                onChange={(e) => handleLocalLogChange("observations", e.target.value)}
+                style={{ ...inputStyle, resize: "none", height: "36px" }}
+                placeholder="Notas u observaciones de hoy..."
+              />
+            </div>
           </div>
 
           {/* Save Button */}
@@ -936,6 +947,11 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                     {(log.departureTime || log.arrivalTime) && (
                       <div style={{ fontSize: "0.58rem", color: "var(--color-info)", display: "flex", gap: "6px", marginTop: "1px" }}>
                         ⏱️ Horario: {log.departureTime || "--:--"} - {log.arrivalTime || "--:--"}
+                      </div>
+                    )}
+                    {log.observations && (
+                      <div style={{ fontSize: "0.58rem", color: "var(--color-info)", marginTop: "1px", background: "rgba(56, 189, 248, 0.04)", borderLeft: "2px solid var(--color-info)", padding: "2px 4px", borderRadius: "0 3px 3px 0" }}>
+                        <strong>📝 Obs:</strong> {log.observations}
                       </div>
                     )}
                   </div>

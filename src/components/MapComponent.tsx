@@ -19,7 +19,7 @@ interface MapComponentProps {
   hiddenFeatures: Record<number, boolean>;
     onSaveDailyLog?: (
       featureId: number,
-      log: { date: string; groupName: string; managerName: string; managerPhone: string; unitOut: string; departureTime?: string; arrivalTime?: string; officersCount?: string }
+      log: any
     ) => Promise<void>;
     onOpenRangeReport?: (feat: DrawnFeature) => void;
     onToggleFeatureLock?: (id: number, locked: boolean) => void;
