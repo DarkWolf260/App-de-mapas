@@ -1,6 +1,7 @@
 import React from "react";
 import type { DrawnFeature } from "../types";
 import { getTotalPersonnel } from "../utils/logUtils";
+import { Minimize2, Maximize2 } from "lucide-react";
 
 interface DeploymentSummaryCardProps {
   drawnFeatures: DrawnFeature[];
@@ -44,6 +45,15 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   const activePoints = computeActivePoints(drawnFeatures);
   const totalOff = activePoints.reduce((acc, item) => acc + item.totalOff, 0);
   const totalGroups = activePoints.reduce((acc, item) => acc + item.groups, 0);
+
+  const statDivider = <div style={{ width: "1px", height: "28px", background: "rgba(255,255,255,0.1)" }} />;
+
+  const renderStat = (label: string, value: number, color: string) => (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <span style={{ fontSize: "7px", fontWeight: 700, color, textTransform: "uppercase" as const, letterSpacing: "0.05em", marginBottom: "1px" }}>{label}</span>
+      <span style={{ fontSize: "18px", fontWeight: 800, color: "#fff", textShadow: `0 0 10px ${color.replace("0.7", "0.3")}` }}>{value}</span>
+    </div>
+  );
 
   return (
     <div
@@ -92,10 +102,12 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
               e.stopPropagation();
               onToggleCollapse(!widgetCollapsed);
             }}
-            style={{ background: "transparent", border: "none", color: "var(--color-info)", cursor: "pointer", fontSize: "10px", fontWeight: 800, padding: "0 2px", lineHeight: 1 }}
+            style={{ background: "transparent", border: "1px solid rgba(56, 189, 248, 0.2)", borderRadius: "6px", color: "var(--color-info)", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(56, 189, 248, 0.1)"; e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.5)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.2)"; }}
             title={widgetCollapsed ? "Mostrar listado completo" : "Contraer listado (sólo mostrar totales)"}
           >
-            {widgetCollapsed ? "[ + ]" : "[ − ]"}
+            {widgetCollapsed ? <Maximize2 size={12} /> : <Minimize2 size={12} />}
           </button>
         </div>
       </div>
@@ -105,9 +117,10 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
           Sin personal desplegado hoy
         </div>
       ) : widgetCollapsed ? (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", fontWeight: 800, color: "var(--color-green)", padding: "4px 2px 2px 2px" }}>
-          <span>TOTALES:</span>
-          <span>👮 {totalOff} | 👥 {totalGroups}</span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", padding: "6px 0" }}>
+          {renderStat("Funcionarios", totalOff, "rgba(56, 189, 248, 0.7)")}
+          {statDivider}
+          {renderStat("Grupos", totalGroups, "rgba(139, 92, 246, 0.7)")}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
