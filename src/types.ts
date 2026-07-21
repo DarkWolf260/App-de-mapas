@@ -1,3 +1,28 @@
+export type FeatureType = "point" | "polyline" | "polygon";
+
+export type BasemapKey = "topo-vector" | "satellite" | "hybrid" | "streets-vector" | "dark-gray-vector" | "osm";
+
+export interface HtmlLabel {
+  id: number | string;
+  title: string;
+  info: string;
+  x: number;
+  y: number;
+  themeColor?: string;
+  placement: "top" | "bottom" | "left" | "right";
+  hasArrived?: boolean;
+}
+
+export interface MapPoint {
+  x: number;
+  y: number;
+}
+
+export interface ContainedItem {
+  title: string;
+  type: FeatureType;
+}
+
 export interface DailyLog {
   date: string;
   groupName: string;
@@ -32,7 +57,7 @@ export interface GeoJSONGeometry {
 export interface DrawnFeature {
   id: number;
   title: string;
-  type: "point" | "polyline" | "polygon";
+  type: FeatureType;
   description?: string;
   color?: string;
   locked?: boolean;

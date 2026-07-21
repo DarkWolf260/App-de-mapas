@@ -9,11 +9,14 @@ import Compass from "@arcgis/core/widgets/Compass";
 import TextSymbol from "@arcgis/core/symbols/TextSymbol";
 import { execute as centroidExecute } from "@arcgis/core/geometry/operators/centroidOperator";
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
-import { Color, PALETTE, hexToRgb } from "./ColorPicker";
+import type { Color } from "../utils/colorUtils";
+import { PALETTE, hexToRgb } from "../utils/colorUtils";
 import { ToolId } from "./DrawingToolbar";
-import { geoToJSON, buildParentsMap } from "../utils/spatialUtils";
-import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapValue, typeLabel, makeSymbols, getLabelText, symbolForType } from "../utils/mapUtils";
-import type { DrawnFeature, LayerVisibility, RemoveFeatureId } from "../types";
+import { geoToJSON } from "../utils/spatialUtils";
+import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapValue, typeLabel, makeSymbols, getLabelText } from "../utils/mapUtils";
+import { deconflictGraphics } from "../utils/labelDeconfliction";
+import { syncDrawnFeaturesToGraphics, syncImportedFeatures } from "../utils/graphicsSync";
+import type { DrawnFeature, HtmlLabel, LayerVisibility, RemoveFeatureId } from "../types";
 
 export interface UseMapSetupProps {
   apiKey: string;
@@ -53,17 +56,13 @@ export const useMapSetup = ({
   }, [layerVisibility]);
 
   const onFeatureAddedRef = useRef(onFeatureAdded);
-  useEffect(() => {
-    onFeatureAddedRef.current = onFeatureAdded;
-  }, [onFeatureAdded]);
+  useEffect(() => { onFeatureAddedRef.current = onFeatureAdded; }, [onFeatureAdded]);
 
   const onFeatureDeletedRef = useRef(onFeatureDeleted);
-  useEffect(() => {
-    onFeatureDeletedRef.current = onFeatureDeleted;
-  }, [onFeatureDeleted]);
+  useEffect(() => { onFeatureDeletedRef.current = onFeatureDeleted; }, [onFeatureDeleted]);
 
   const hiddenFeaturesRef = useRef(hiddenFeatures);
-  const deconflictGraphicsRef = useRef<() => void>(() => { });
+  const deconflictGraphicsRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     hiddenFeaturesRef.current = hiddenFeatures;
@@ -71,19 +70,17 @@ export const useMapSetup = ({
   }, [hiddenFeatures]);
 
   const drawnFeaturesRef = useRef(drawnFeatures);
-  useEffect(() => {
-    drawnFeaturesRef.current = drawnFeatures;
-  }, [drawnFeatures]);
+  useEffect(() => { drawnFeaturesRef.current = drawnFeatures; }, [drawnFeatures]);
 
   const [mapReady, setMapReady] = useState(false);
-  const [customPopup, setCustomPopup] = useState<{ mapPoint: any; feat: DrawnFeature } | null>(null);
-  const [showHistoryInPopup, setShowHistoryInPopup] = useState(false);
-  const [popupEditDate, setPopupEditDate] = useState(new Date().toLocaleDateString('en-CA'));
+  const [customPopup, setCustomPopup] = useState<{ mapPoint: __esri.Point; feat: DrawnFeature } | null>(null);
+  const [_showHistoryInPopup, setShowHistoryInPopup] = useState(false);
+  const [popupEditDate, setPopupEditDate] = useState(new Date().toLocaleDateString("en-CA"));
   const [popupTick, setPopupTick] = useState(0);
 
   useEffect(() => {
     setShowHistoryInPopup(false);
-    setPopupEditDate(new Date().toLocaleDateString('en-CA'));
+    setPopupEditDate(new Date().toLocaleDateString("en-CA"));
   }, [customPopup?.feat?.id]);
 
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
@@ -91,18 +88,23 @@ export const useMapSetup = ({
   const [editMode, setEditMode] = useState<"transform" | "reshape">("transform");
   const [activeColor, setActiveColor] = useState<Color>(PALETTE[0]);
   const activeColorRef = useRef(activeColor);
-  useEffect(() => {
-    activeColorRef.current = activeColor;
-  }, [activeColor]);
+  useEffect(() => { activeColorRef.current = activeColor; }, [activeColor]);
 
   const [currentZoom, setCurrentZoom] = useState<number>(DEFAULT_ZOOM);
-  const [htmlLabels, setHtmlLabels] = useState<Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string; placement: "top" | "bottom" | "left" | "right"; hasArrived?: boolean }>>([]);
+  const [htmlLabels, setHtmlLabels] = useState<HtmlLabel[]>([]);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number; visible: boolean }>({
-    text: "",
-    x: 0,
-    y: 0,
-    visible: false,
+    text: "", x: 0, y: 0, visible: false,
   });
+
+  const callDeconflict = useCallback(() => {
+    const sketchLayer = sketchLayerRef.current;
+    const view = viewRef.current;
+    if (sketchLayer && view) {
+      deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef }, setHtmlLabels);
+    }
+  }, []);
+
+  useEffect(() => { deconflictGraphicsRef.current = callDeconflict; }, [callDeconflict]);
 
   const applyColorToVM = useCallback((color: Color) => {
     const svm = sketchVMRef.current;
@@ -116,13 +118,9 @@ export const useMapSetup = ({
   const applyColorToGraphic = useCallback((graphic: Graphic, color: Color) => {
     if (!graphic?.geometry) return;
     const syms = makeSymbols(hexToRgb(color.hex));
-    if (graphic.geometry.type === "point") {
-      graphic.symbol = syms.point as any;
-    } else if (graphic.geometry.type === "polyline") {
-      graphic.symbol = syms.polyline as any;
-    } else {
-      graphic.symbol = syms.polygon as any;
-    }
+    if (graphic.geometry.type === "point") graphic.symbol = syms.point;
+    else if (graphic.geometry.type === "polyline") graphic.symbol = syms.polyline;
+    else graphic.symbol = syms.polygon;
   }, []);
 
   // ── 1. Map Init ─────────────────────────────────────────────────────────────
@@ -155,9 +153,9 @@ export const useMapSetup = ({
         view,
         layer: sketchLayer,
         updateOnGraphicClick: false,
-        pointSymbol: initialSyms.point as any,
-        polylineSymbol: initialSyms.polyline as any,
-        polygonSymbol: initialSyms.polygon as any,
+        pointSymbol: initialSyms.point,
+        polylineSymbol: initialSyms.polyline,
+        polygonSymbol: initialSyms.polygon,
         defaultUpdateOptions: {
           tool: "transform",
           enableRotation: true,
@@ -168,256 +166,25 @@ export const useMapSetup = ({
       });
       sketchVMRef.current = svm;
 
-      const deconflictGraphics = () => {
-        try {
-          if (!sketchLayer || !view) return;
-          const points = sketchLayer.graphics.filter((x: any) => x.geometry?.type === "point" && !x.attributes?.isLabel).toArray();
-          const labels = sketchLayer.graphics.filter((x: any) => !!x.attributes?.isLabel).toArray();
-
-          points.forEach((g: any) => {
-            const pid = g.attributes?.id || (g as any).uid;
-            g.visible = !hiddenFeaturesRef.current[pid];
-          });
-
-          const currentZoom = view.zoom !== undefined && view.zoom !== null ? view.zoom : DEFAULT_ZOOM;
-          const { parentsMap } = buildParentsMap(drawnFeaturesRef.current || []);
-          const candidateLabels = labels.filter((lbl: any) => {
-            const pid = lbl.attributes?.parentId;
-            const isPolygonLabel = lbl.attributes?.isPolygonLabel;
-            const parentGraphic = sketchLayer.graphics.find((x: any) => !x.attributes?.isLabel && (String((x as any).uid) === String(pid) || String(x.attributes?.id) === String(pid)));
-            if (!parentGraphic || !parentGraphic.visible || !parentGraphic.geometry) return false;
-
-            const isParentHidden = hiddenFeaturesRef.current[pid];
-            if (isParentHidden) return false;
-
-            const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
-            const isSubpolygon = isPolygonLabel && feat && parentsMap[feat.id] !== undefined;
-            const requiredZoom = (isPolygonLabel && !isSubpolygon) ? 14 : 16;
-
-            if (currentZoom === undefined || currentZoom === null || isNaN(currentZoom) || currentZoom < requiredZoom) return false;
-
-            if (isPolygonLabel) {
-              if (!layerVisibilityRef.current.polygonLabels) return false;
-            } else {
-              if (!layerVisibilityRef.current.pointLabels) return false;
-            }
-
-            return true;
-          });
-
-          labels.forEach((lbl: any) => {
-            if (!candidateLabels.includes(lbl)) {
-              lbl.visible = false;
-            }
-          });
-
-          const screenLabels = candidateLabels.map((lbl: any) => {
-            const screenPt = lbl.geometry ? view.toScreen(lbl.geometry) : null;
-            const pid = lbl.attributes?.parentId;
-            const isPolygonLabel = lbl.attributes?.isPolygonLabel;
-            let priority = 2; // Default point label
-            if (isPolygonLabel) {
-              priority = 3; // Polygon label (lowest priority)
-            } else {
-              const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
-              if (feat?.type === "point") {
-                const todayStr = new Date().toLocaleDateString('en-CA');
-                 const todayLog = feat.dailyLogs?.find((l: any) => l.date === todayStr);
-                 const hasPersonnel = todayLog !== undefined;
-                 if (hasPersonnel) {
-                   priority = 1; // Point label active today (highest priority)
-                 }
-              }
-            }
-            return {
-              graphic: lbl,
-              x: screenPt ? screenPt.x : null,
-              y: screenPt ? screenPt.y : null,
-              visible: screenPt !== null,
-              priority
-            };
-          });
-
-          // Sort screenLabels by priority: highest priority (1) first
-          screenLabels.sort((a, b) => a.priority - b.priority);
-
-          const allowOverlap = layerVisibilityRef.current.allowLabelOverlap;
-          if (!allowOverlap) {
-            const minLabelDistance = 55;
-            for (let i = 0; i < screenLabels.length; i++) {
-              const l1 = screenLabels[i];
-              if (!l1.visible || l1.x === null || l1.y === null) continue;
-              for (let j = i + 1; j < screenLabels.length; j++) {
-                const l2 = screenLabels[j];
-                if (!l2.visible || l2.x === null || l2.y === null) continue;
-                const dx = l1.x - l2.x;
-                const dy = l1.y - l2.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < minLabelDistance) {
-                  l2.visible = false;
-                  l2.graphic.visible = false;
-                }
-              }
-            }
-          }
-
-          const activeHtmlLabels: Array<{ id: number | string; title: string; info: string; x: number; y: number; themeColor?: string; placement: "top" | "bottom" | "left" | "right"; hasArrived?: boolean }> = [];
-          const placedBoxes: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
-
-          screenLabels.forEach((item) => {
-            const lbl = item.graphic;
-            const pid = lbl.attributes?.parentId;
-            const isPolygonLabel = lbl.attributes?.isPolygonLabel;
-            const todayStr = new Date().toLocaleDateString('en-CA');
-
-            const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
-            let title = feat ? feat.title : (lbl.symbol as any)?.text || "";
-            let info = "";
-
-            if (feat && feat.type === "point") {
-              const todayLog = feat.dailyLogs?.find((l: any) => l.date === todayStr);
-              if (todayLog) {
-                const parts: string[] = [];
-                const g1 = todayLog.groupName?.trim();
-                const u1 = todayLog.unitOut?.trim();
-                if (g1 && u1) parts.push(`${g1}, ${u1}`);
-                else if (g1) parts.push(g1);
-                else if (u1) parts.push(u1);
-
-                const g2 = todayLog.groupName2?.trim();
-                const u2 = todayLog.unitOut2?.trim();
-                if (g2 && u2) parts.push(`${g2}, ${u2}`);
-                else if (g2) parts.push(g2);
-                else if (u2) parts.push(u2);
-
-                 if (parts.length > 0) {
-                   info = parts.join(" | ");
-                 } else {
-                   info = "Sin personal registrado";
-                 }
-               }
-             }
-
-             const hasPersonnel = feat?.type === "point" && feat.dailyLogs?.some((l: any) => l.date === todayStr);
-
-            if (item.visible && !isPolygonLabel && hasPersonnel) {
-              const charWidth = 6;
-              const padding = 20;
-              const textLength = Math.max(title.length, info.length);
-              const w = Math.min(220, Math.max(100, textLength * charWidth + padding));
-              const h = info ? 42 : 28;
-              const offset = 12;
-              const x = item.x!;
-              const y = item.y!;
-
-              const directions: Array<"top" | "bottom" | "right" | "left"> = ["top", "bottom", "right", "left"];
-              let chosenPlacement: "top" | "bottom" | "right" | "left" = "top";
-              let chosenBox = { x1: x - w / 2, y1: y - offset - h, x2: x + w / 2, y2: y - offset };
-              let found = false;
-
-              if (allowOverlap) {
-                found = true;
-              } else {
-                for (const dir of directions) {
-                  let box = { x1: 0, y1: 0, x2: 0, y2: 0 };
-                  if (dir === "top") {
-                    box = { x1: x - w / 2, y1: y - offset - h, x2: x + w / 2, y2: y - offset };
-                  } else if (dir === "bottom") {
-                    box = { x1: x - w / 2, y1: y + offset, x2: x + w / 2, y2: y + offset + h };
-                  } else if (dir === "right") {
-                    box = { x1: x + offset, y1: y - h / 2, x2: x + offset + w, y2: y + h / 2 };
-                  } else if (dir === "left") {
-                    box = { x1: x - offset - w, y1: y - h / 2, x2: x - offset, y2: y + h / 2 };
-                  }
-
-                  const hasOverlap = placedBoxes.some((b) => {
-                    return box.x1 < b.x2 && box.x2 > b.x1 && box.y1 < b.y2 && box.y2 > b.y1;
-                  });
-
-                  if (!hasOverlap) {
-                    chosenPlacement = dir;
-                    chosenBox = box;
-                    found = true;
-                    break;
-                  }
-                }
-              }
-
-              if (!found) {
-                chosenPlacement = "top";
-                chosenBox = { x1: x - w / 2, y1: y - offset - h, x2: x + w / 2, y2: y - offset };
-              }
-
-              const todayLog = feat?.dailyLogs?.find((l: any) => l.date === todayStr);
-              const g1Arrived = todayLog ? (!!todayLog.hasArrivedG1 || (!!todayLog.arrivalTime && todayLog.arrivalTime.trim() !== "")) : false;
-              const g2Arrived = todayLog ? (!!todayLog.hasArrivedG2 || (!!todayLog.arrivalTime2 && todayLog.arrivalTime2.trim() !== "")) : false;
-              const arrived = g1Arrived || g2Arrived;
-
-              activeHtmlLabels.push({
-                id: pid,
-                title,
-                info,
-                x,
-                y,
-                themeColor: feat?.color,
-                placement: chosenPlacement,
-                hasArrived: arrived
-              });
-              placedBoxes.push(chosenBox);
-              lbl.visible = false;
-            } else {
-              lbl.visible = item.visible;
-              if (lbl.symbol) {
-                lbl.symbol = lbl.symbol.clone();
-              }
-            }
-          });
-
-          setHtmlLabels(activeHtmlLabels);
-        } catch (err) {
-          console.error("Error in deconflictGraphics:", err);
-        }
+      const runDeconflict = () => {
+        deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef }, setHtmlLabels);
       };
-      deconflictGraphicsRef.current = deconflictGraphics;
-      deconflictGraphics();
+      deconflictGraphicsRef.current = runDeconflict;
+      runDeconflict();
 
-      reactiveUtils.watch(
-        () => view.extent,
-        () => {
-          deconflictGraphics();
-          setPopupTick((t) => t + 1);
-        }
-      );
-      reactiveUtils.watch(
-        () => view.zoom,
-        (z) => {
-          if (typeof z === "number") {
-            setCurrentZoom(z);
-          }
-        }
-      );
-      reactiveUtils.watch(
-        () => view.stationary,
-        (isStationary) => {
-          if (isStationary) {
-            deconflictGraphics();
-            setPopupTick((t) => t + 1);
-          }
-        }
-      );
+      reactiveUtils.watch(() => view.extent, () => { runDeconflict(); setPopupTick((t) => t + 1); });
+      reactiveUtils.watch(() => view.zoom, (z) => { if (typeof z === "number") setCurrentZoom(z); });
+      reactiveUtils.watch(() => view.stationary, (isStationary) => { if (isStationary) { runDeconflict(); setPopupTick((t) => t + 1); } });
 
-      svm.on("create", (evt: any) => {
+      svm.on("create", (evt) => {
         if (evt.state === "complete") {
           const g = evt.graphic;
-          const count = sketchLayer.graphics.filter((x: any) => !x.attributes?.isLabel && x.geometry?.type === g.geometry?.type).length + 1;
+          const count = sketchLayer.graphics.filter((x) => !x.attributes?.isLabel && x.geometry?.type === g.geometry?.type).length + 1;
           const title = typeLabel(g.geometry.type) + " " + count;
           g.attributes = { title };
-          g.popupTemplate = {
-            title: "<b>{title}</b>",
-            content: "<div style=\"font:13px sans-serif;color:#0f172a;padding:4px\">Elemento de dibujo personalizado.</div>",
-          } as any;
 
           if (g.geometry.type === "point" || g.geometry.type === "polygon") {
+            const isPolyLabel = g.geometry.type === "polygon";
             const labelSym = new TextSymbol({
               text: title,
               color: "white",
@@ -426,96 +193,84 @@ export const useMapSetup = ({
               font: { size: 11, family: "sans-serif", weight: "bold" },
               yoffset: g.geometry.type === "point" ? 12 : 0,
             });
-            const isPolyLabel = g.geometry!.type === "polygon";
-            const currentZoom = view.zoom;
+            const currentZ = view.zoom;
             const requiredZoom = isPolyLabel ? 14 : 16;
-            const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= requiredZoom;
-            const labelG = new Graphic({
+            const isZoomOk = currentZ !== undefined && !isNaN(currentZ) && currentZ >= requiredZoom;
+            sketchLayer.add(new Graphic({
               geometry: isPolyLabel ? centroidExecute(g.geometry!) : g.geometry!.clone(),
               symbol: labelSym,
               visible: isZoomOk && (isPolyLabel ? layerVisibility.polygonLabels : layerVisibility.pointLabels),
               attributes: { isLabel: true, parentId: g.uid, isPolygonLabel: isPolyLabel },
-            });
-            sketchLayer.add(labelG);
+            }));
           }
 
           setActiveTool(null);
           if (onFeatureAddedRef.current) {
             onFeatureAddedRef.current({
-              id: (g as any).uid,
+              id: g.uid,
               title,
-              type: g.geometry.type as any,
+              type: g.geometry.type as DrawnFeature["type"],
               color: activeColorRef.current.hex,
               geojsonGeometry: geoToJSON(g.geometry),
             });
           }
-          setTimeout(deconflictGraphics, 50);
+          setTimeout(runDeconflict, 50);
         }
         if (evt.state === "cancel") setActiveTool(null);
       });
 
-      svm.on("update", (evt: any) => {
-        evt.graphics?.forEach((g: any) => {
-          const label = sketchLayer.graphics.find((x: any) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
+      svm.on("update", (evt) => {
+        evt.graphics?.forEach((g) => {
+          const label = sketchLayer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
           if (label) {
-            if (g.geometry?.type === "polygon") {
-              label.geometry = centroidExecute(g.geometry!);
-            } else {
-              label.geometry = g.geometry!.clone();
-            }
+            label.geometry = g.geometry?.type === "polygon" ? centroidExecute(g.geometry!) : g.geometry!.clone();
           }
         });
-
         if (evt.state === "complete") {
           setSelectedGraphic(null);
-          evt.graphics?.forEach((g: any) => {
+          evt.graphics?.forEach((g) => {
             if (onFeatureAddedRef.current && g.geometry) {
-              const featId = g.attributes?.id || (g as any).uid;
+              const featId = g.attributes?.id || g.uid;
               const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
               onFeatureAddedRef.current({
                 id: featId,
                 title: g.attributes?.title || "Elemento",
-                type: g.geometry.type as any,
+                type: g.geometry.type as DrawnFeature["type"],
                 color: feat?.color || activeColorRef.current.hex,
                 geojsonGeometry: geoToJSON(g.geometry),
                 _isUpdate: true,
               });
             }
           });
-          deconflictGraphics();
+          runDeconflict();
         }
-        if (evt.state === "start") {
-          setSelectedGraphic(evt.graphics?.[0] || null);
-        }
+        if (evt.state === "start") setSelectedGraphic(evt.graphics?.[0] || null);
       });
 
-      svm.on("delete", (evt: any) => {
+      svm.on("delete", (evt) => {
         setSelectedGraphic(null);
-        evt.graphics?.forEach((g: any) => {
-          const label = sketchLayer.graphics.find((x: any) => x.attributes?.isLabel && (x.attributes?.parentId === (g as any).uid || x.attributes?.parentId === g.attributes?.id));
+        evt.graphics?.forEach((g) => {
+          const label = sketchLayer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
           if (label) sketchLayer.remove(label);
-          if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(g.attributes?.id || (g as any).uid);
+          if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(g.attributes?.id || g.uid);
         });
-        deconflictGraphics();
+        runDeconflict();
       });
 
-      view.on("click", async (evt: any) => {
+      view.on("click", async (evt) => {
         if (sketchVMRef.current?.activeTool) return;
         const hit = await view.hitTest(evt);
-        const result = hit.results.find((r: any) => r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel) as any;
+        const result = hit.results.find((r) => r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel);
 
         if (result) {
           const g = result.graphic;
-          const featId = g.attributes?.id || (g as any).uid;
+          const featId = g.attributes?.id || g.uid;
           const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-
           if (feat) {
-            const mapPoint = view.toMap(evt);
-            setCustomPopup({ mapPoint, feat });
+            setCustomPopup({ mapPoint: view.toMap(evt), feat });
           } else {
             setCustomPopup(null);
           }
-
           if (layerVisibilityRef.current.sketch && !feat?.locked) {
             setSelectedGraphic(g);
             setEditMode("transform");
@@ -531,26 +286,18 @@ export const useMapSetup = ({
         }
       });
 
-      view.on("pointer-move", (evt: any) => {
+      view.on("pointer-move", (evt) => {
         if (sketchVMRef.current?.activeTool || sketchVMRef.current?.state === "active") {
           setTooltip((t) => (t.visible ? { ...t, visible: false } : t));
           return;
         }
-        view.hitTest(evt).then((response: any) => {
-          const result = response.results.find(
-            (r: any) => r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel
-          ) as any;
+        view.hitTest(evt).then((response) => {
+          const result = response.results.find((r) => r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel);
           if (result) {
             const g = result.graphic;
-            const featId = g.attributes?.id || (g as any).uid;
+            const featId = g.attributes?.id || g.uid;
             const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-            const tooltipText = feat ? getLabelText(feat) : (g.attributes?.title || "Elemento");
-            setTooltip({
-              text: tooltipText,
-              x: evt.x,
-              y: evt.y,
-              visible: true,
-            });
+            setTooltip({ text: feat ? getLabelText(feat) : (g.attributes?.title || "Elemento"), x: evt.x, y: evt.y, visible: true });
             return;
           }
           setTooltip((t) => (t.visible ? { ...t, visible: false } : t));
@@ -571,19 +318,14 @@ export const useMapSetup = ({
   // ── 2. Sync basemap ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (viewRef.current?.map) {
-      const currentBasemap = viewRef.current.map.basemap;
-      if (currentBasemap && currentBasemap.id === activeBasemap) {
-        return;
-      }
+      if (viewRef.current.map.basemap?.id === activeBasemap) return;
       viewRef.current.map.basemap = getBasemapValue(activeBasemap);
     }
   }, [activeBasemap]);
 
   // ── 3. Sync layer visibility ─────────────────────────────────────────────────
   useEffect(() => {
-    if (sketchLayerRef.current) {
-      sketchLayerRef.current.visible = true;
-    }
+    if (sketchLayerRef.current) sketchLayerRef.current.visible = true;
     if (!layerVisibility.sketch) {
       setActiveTool(null);
       setSelectedGraphic(null);
@@ -610,16 +352,14 @@ export const useMapSetup = ({
   const handleDeleteSelected = () => {
     const svm = sketchVMRef.current;
     if (!svm || !selectedGraphic) return;
-    const featId = selectedGraphic.attributes?.id || (selectedGraphic as any).uid;
+    const featId = selectedGraphic.attributes?.id || selectedGraphic.uid;
     const layer = sketchLayerRef.current;
     if (layer) {
       layer.remove(selectedGraphic);
-      const label = layer.graphics.find((x: any) => x.attributes?.isLabel && (x.attributes?.parentId === (selectedGraphic as any).uid || x.attributes?.parentId === selectedGraphic.attributes?.id));
+      const label = layer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === selectedGraphic.uid || x.attributes?.parentId === selectedGraphic.attributes?.id));
       if (label) layer.remove(label);
     }
-    if (onFeatureDeletedRef.current) {
-      onFeatureDeletedRef.current(featId);
-    }
+    if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(featId);
     svm.delete();
     setSelectedGraphic(null);
     setCustomPopup(null);
@@ -638,19 +378,13 @@ export const useMapSetup = ({
     applyColorToVM(color);
     if (selectedGraphic) {
       applyColorToGraphic(selectedGraphic, color);
-      const featId = selectedGraphic.attributes?.id || (selectedGraphic as any).uid;
+      const featId = selectedGraphic.attributes?.id || selectedGraphic.uid;
       const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
       if (feat && onFeatureAddedRef.current) {
-        onFeatureAddedRef.current({
-          ...feat,
-          color: color.hex,
-          _isUpdate: true
-        });
+        onFeatureAddedRef.current({ ...feat, color: color.hex, _isUpdate: true });
       }
       const svm = sketchVMRef.current;
-      if (svm && svm.state === "active") {
-        svm.update([selectedGraphic], { tool: editMode });
-      }
+      if (svm?.state === "active") svm.update([selectedGraphic], { tool: editMode });
     }
   };
 
@@ -658,210 +392,39 @@ export const useMapSetup = ({
   useEffect(() => {
     const layer = sketchLayerRef.current;
     if (zoomToFeature && viewRef.current && layer) {
-      const g = layer.graphics.find((x: any) => (x as any).uid === zoomToFeature.id || x.attributes?.id === zoomToFeature.id);
-      if (g && g.geometry) viewRef.current.goTo(g.geometry as any);
+      const g = layer.graphics.find((x) => x.uid === zoomToFeature.id || x.attributes?.id === zoomToFeature.id);
+      if (g?.geometry) viewRef.current.goTo(g.geometry);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Uses ref.current only
   }, [zoomToFeature]);
 
   useEffect(() => {
     const layer = sketchLayerRef.current;
     if (removeFeatureId && layer) {
-      const g = layer.graphics.find((x: any) => (x as any).uid === removeFeatureId.id || x.attributes?.id === removeFeatureId.id);
+      const g = layer.graphics.find((x) => x.uid === removeFeatureId.id || x.attributes?.id === removeFeatureId.id);
       if (g) layer.remove(g);
-      const label = layer.graphics.find((x: any) => x.attributes?.isLabel && x.attributes?.parentId === removeFeatureId.id);
+      const label = layer.graphics.find((x) => x.attributes?.isLabel && x.attributes?.parentId === removeFeatureId.id);
       if (label) layer.remove(label);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Uses ref.current only
   }, [removeFeatureId]);
 
-  // ── Sync drawnFeatures to map graphics ─────────────────────────────────────────
+  // ── 6. Sync drawnFeatures to map graphics ────────────────────────────────────
   useEffect(() => {
     const layer = sketchLayerRef.current;
     if (!layer) return;
-
-    // Fast O(1) containment calculations
-    const { parentsMap, polygonAreas } = buildParentsMap(drawnFeatures);
-
-    drawnFeatures?.forEach((feat) => {
-      const g = layer.graphics.find((x: any) => (x as any).uid === feat.id || x.attributes?.id === feat.id);
-      const isHidden = !!hiddenFeatures[feat.id];
-      const isNestedArea = feat.type === "polygon" && parentsMap[feat.id] !== undefined;
-      const shouldHideNested = isNestedArea && layerVisibility.hideNestedAreas;
-      const featColor = feat.color || "#3b82f6";
-
-      if (g) {
-        g.visible = !isHidden && !shouldHideNested;
-        const storedColor = g.attributes?._color;
-        if (storedColor !== featColor) {
-          g.symbol = symbolForType(feat.type, featColor) as any;
-          g.attributes = { ...g.attributes, _color: featColor };
-        }
-
-        const label = layer.graphics.find((x: any) => x.attributes?.isLabel && String(x.attributes?.parentId) === String(feat.id));
-        if (label) {
-          const isPolygonLabel = label.attributes?.isPolygonLabel;
-          const isSubpolygon = isPolygonLabel && parentsMap[feat.id] !== undefined;
-          const requiredZoom = (isPolygonLabel && !isSubpolygon) ? 14 : 16;
-          const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= requiredZoom;
-          if (isPolygonLabel) {
-            label.visible = !isHidden && !shouldHideNested && layerVisibility.polygonLabels && isZoomOk;
-          } else {
-            label.visible = !isHidden && layerVisibility.pointLabels && isZoomOk;
-          }
-
-          if (feat.type === "polygon" && g.geometry) {
-            label.geometry = centroidExecute(g.geometry!);
-          }
-
-          if (g.attributes && g.attributes.title !== feat.title) {
-            g.attributes = { ...g.attributes, title: feat.title };
-          }
-          if (label.symbol) {
-            const ts = label.symbol as TextSymbol;
-            const targetText = getLabelText(feat);
-            const isPolygonLabel = label.attributes?.isPolygonLabel;
-            const hasPersonnel = !isPolygonLabel && targetText !== feat.title;
-            const showBox = hasPersonnel;
-            const currentHasBox = ts.backgroundColor !== null && ts.backgroundColor !== undefined;
-            if (ts.text !== targetText || currentHasBox !== showBox) {
-              ts.text = targetText;
-              ts.backgroundColor = showBox ? [15, 23, 42, 0.95] as any : null as any;
-              ts.borderLineColor = showBox ? [56, 189, 248, 0.95] as any : null as any;
-              ts.borderLineSize = showBox ? 1 : null as any;
-              ts.haloColor = showBox ? null as any : "black";
-              ts.haloSize = showBox ? null as any : "1.5px";
-              ts.yoffset = feat.geojsonGeometry?.type === "Point" ? (showBox ? 18 : 12) : 0;
-              label.symbol = ts.clone();
-            }
-          }
-        }
-      } else {
-        let geomCfg: any = null;
-        if (feat.geojsonGeometry) {
-          if (feat.geojsonGeometry.type === "Point") {
-            geomCfg = { type: "point", longitude: (feat.geojsonGeometry.coordinates as number[])[0], latitude: (feat.geojsonGeometry.coordinates as number[])[1], spatialReference: { wkid: 4326 } };
-          } else if (feat.geojsonGeometry.type === "LineString") {
-            geomCfg = { type: "polyline", paths: [feat.geojsonGeometry.coordinates], spatialReference: { wkid: 4326 } };
-          } else if (feat.geojsonGeometry.type === "Polygon") {
-            geomCfg = { type: "polygon", rings: feat.geojsonGeometry.coordinates, spatialReference: { wkid: 4326 } };
-          }
-        }
-
-        if (geomCfg) {
-          const isNestedArea = feat.type === "polygon" && parentsMap[feat.id] !== undefined;
-          const shouldHideNested = isNestedArea && layerVisibility.hideNestedAreas;
-          const ng = new Graphic({
-            geometry: geomCfg,
-            attributes: { id: feat.id, title: feat.title, _color: featColor },
-            symbol: symbolForType(feat.type, featColor) as any,
-            visible: !isHidden && !shouldHideNested,
-            popupTemplate: { title: "<b>{title}</b>", content: "<div style=\"font:13px sans-serif;color:#0f172a;padding:4px\">Elemento guardado.</div>" } as any
-          });
-          layer.add(ng);
-
-          if (feat.geojsonGeometry && (feat.geojsonGeometry.type === "Point" || feat.geojsonGeometry.type === "Polygon")) {
-            const isPolyLabel = feat.geojsonGeometry.type === "Polygon";
-            const labelGeom = feat.geojsonGeometry.type === "Point"
-              ? ng.geometry!.clone()
-              : centroidExecute(ng.geometry!);
-
-            const hasPersonnel = !isPolyLabel && getLabelText(feat) !== feat.title;
-            const showBox = hasPersonnel;
-            const labelSym = new TextSymbol({
-              text: getLabelText(feat),
-              color: "white",
-              backgroundColor: showBox ? [15, 23, 42, 0.95] as any : null as any,
-              borderLineColor: showBox ? [56, 189, 248, 0.95] as any : null as any,
-              borderLineSize: showBox ? 1 : null as any,
-              haloColor: showBox ? null as any : "black",
-              haloSize: showBox ? null as any : "1.5px",
-              font: { size: 10, family: "sans-serif", weight: "bold" },
-              yoffset: feat.geojsonGeometry.type === "Point" ? (showBox ? 18 : 12) : 0
-            });
-
-            const isSubpolygon = isPolyLabel && parentsMap[feat.id] !== undefined;
-            const requiredZoom = (isPolyLabel && !isSubpolygon) ? 14 : 16;
-            const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= requiredZoom;
-            const labelG = new Graphic({
-              geometry: labelGeom,
-              symbol: labelSym,
-              visible: !isHidden && !shouldHideNested && (isPolyLabel
-                ? (layerVisibility.polygonLabels && isZoomOk)
-                : (layerVisibility.pointLabels && isZoomOk)),
-              attributes: { isLabel: true, parentId: feat.id, isPolygonLabel: isPolyLabel }
-            });
-            layer.add(labelG);
-          }
-        }
-      }
-    });
-
-    if (drawnFeatures) {
-      const polysList = drawnFeatures.filter((f) => f.type === "polygon");
-      const lines = drawnFeatures.filter((f) => f.type === "polyline");
-      const pts = drawnFeatures.filter((f) => f.type === "point");
-
-      const polysWithArea = polysList.map((feat) => ({
-        feat,
-        area: polygonAreas[feat.id] ?? 0
-      }));
-      polysWithArea.sort((a, b) => b.area - a.area);
-      const sortedPolys = polysWithArea.map((p) => p.feat);
-
-      const drawingOrdered = [...sortedPolys, ...lines, ...pts];
-
-      drawingOrdered.forEach((feat, index) => {
-        const g = layer.graphics.find((x: any) => (x as any).uid === feat.id || x.attributes?.id === feat.id);
-        if (g) {
-          layer.graphics.reorder(g, index);
-        }
-      });
-      drawingOrdered.forEach((feat, index) => {
-        const label = layer.graphics.find((x: any) => x.attributes?.isLabel && String(x.attributes?.parentId) === String(feat.id));
-        if (label) {
-          layer.graphics.reorder(label, drawingOrdered.length + index);
-        }
-      });
-    }
+    syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, currentZoom, layer);
     deconflictGraphicsRef.current?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- layerVisibility sub-props are sufficient
   }, [drawnFeatures, activeColor, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.hideNestedAreas, mapReady, currentZoom]);
 
+  // ── 7. Sync imported features ────────────────────────────────────────────────
   useEffect(() => {
     const layer = sketchLayerRef.current;
     if (!importedFeatures?.length || !layer) return;
-    importedFeatures.forEach((feat) => {
-      if (layer.graphics.some((g: any) => (g as any).uid === feat.id || g.attributes?.id === feat.id)) return;
-      let geomCfg: any = null;
-      if (feat.geojsonGeometry) {
-        if (feat.geojsonGeometry.type === "Point") geomCfg = { type: "point", longitude: (feat.geojsonGeometry.coordinates as number[])[0], latitude: (feat.geojsonGeometry.coordinates as number[])[1], spatialReference: { wkid: 4326 } };
-        else if (feat.geojsonGeometry.type === "LineString") geomCfg = { type: "polyline", paths: [feat.geojsonGeometry.coordinates], spatialReference: { wkid: 4326 } };
-        else if (feat.geojsonGeometry.type === "Polygon") geomCfg = { type: "polygon", rings: feat.geojsonGeometry.coordinates, spatialReference: { wkid: 4326 } };
-      }
-      if (geomCfg) {
-        const ng = new Graphic({ geometry: geomCfg, attributes: { id: feat.id, title: feat.title || ("Importado " + feat.type), _color: PALETTE[0].hex }, symbol: symbolForType(feat.geojsonGeometry.type, PALETTE[0].hex) as any, popupTemplate: { title: "<b>{title}</b>", content: "<div style=\"font:13px sans-serif;color:#0f172a;padding:4px\">Importado via GeoJSON.</div>" } as any });
-        layer.add(ng);
-
-        if (feat.geojsonGeometry.type === "Point") {
-          const currentZoom = viewRef.current?.zoom;
-          const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= 16;
-          const labelSym = new TextSymbol({
-            text: feat.title || "Importado Punto",
-            color: "white",
-            haloColor: "black",
-            haloSize: "1px",
-            font: { size: 11, family: "sans-serif", weight: "bold" },
-            yoffset: 12,
-          });
-          const labelG = new Graphic({
-            geometry: ng.geometry!.clone(),
-            symbol: labelSym,
-            visible: isZoomOk && layerVisibility.pointLabels,
-            attributes: { isLabel: true, parentId: feat.id, isPolygonLabel: false },
-          });
-          layer.add(labelG);
-        }
-      }
-    });
+    syncImportedFeatures(importedFeatures, layerVisibility, viewRef, layer);
     deconflictGraphicsRef.current?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- layerVisibility.pointLabels is sufficient
   }, [importedFeatures, mapReady, layerVisibility.pointLabels]);
 
   useEffect(() => {
@@ -873,9 +436,7 @@ export const useMapSetup = ({
   let popupScreenPos = null;
   if (customPopup && viewRef.current) {
     const screenPt = viewRef.current.toScreen(customPopup.mapPoint);
-    if (screenPt) {
-      popupScreenPos = { x: screenPt.x, y: screenPt.y };
-    }
+    if (screenPt) popupScreenPos = { x: screenPt.x, y: screenPt.y };
   }
 
   return {
@@ -888,13 +449,11 @@ export const useMapSetup = ({
     customPopup,
     popupTick,
     popupScreenPos,
-    showHistoryInPopup,
     popupEditDate,
     sketchLayer: sketchLayerRef.current,
     currentZoom,
     htmlLabels,
     setCustomPopup,
-    setShowHistoryInPopup,
     setPopupEditDate,
     handleSelectTool,
     handleCancel,

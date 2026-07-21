@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { DrawnFeature, DailyLog, LayerVisibility } from "../types";
-import * as webMercatorUtils from "@arcgis/core/geometry/support/webMercatorUtils";
-import { execute as containsExecute } from "@arcgis/core/geometry/operators/containsOperator";
+import { computeContainedItems } from "../utils/spatialUtils";
 import { Lock, Unlock, FileText, Settings, History, Layers } from "lucide-react";
 import { TAB_BTN_BASE } from "./popup/popupStyles";
 import { GeneralTab } from "./popup/GeneralTab";
@@ -71,52 +70,6 @@ function tabBtnStyle(active: boolean): React.CSSProperties {
     background: active ? "rgba(255,255,255,0.08)" : "transparent",
     color: active ? "var(--color-info)" : "var(--text-muted)",
   };
-}
-
-function computeContainedItems(activeFeat: DrawnFeature, sketchLayer: __esri.GraphicsLayer, drawnFeatures: DrawnFeature[]): Array<{ title: string; type: string }> {
-  const items: Array<{ title: string; type: string }> = [];
-  if (activeFeat.type !== "polygon" || !sketchLayer) return items;
-
-  const polyGraphic = sketchLayer.graphics.find((x: __esri.Graphic) => {
-    if (x.attributes?.isLabel) return false;
-    const xId = x.attributes?.id || x.uid;
-    return String(xId) === String(activeFeat.id);
-  });
-
-  if (!polyGraphic?.geometry) return items;
-
-  const polyGeom = polyGraphic.geometry.spatialReference?.isWebMercator
-    ? webMercatorUtils.webMercatorToGeographic(polyGraphic.geometry)
-    : polyGraphic.geometry;
-
-  if (!polyGeom) return items;
-
-  const others = sketchLayer.graphics
-    .filter((x: __esri.Graphic) => {
-      if (x.attributes?.isLabel) return false;
-      const xId = x.attributes?.id || x.uid;
-      return String(xId) !== String(activeFeat.id);
-    })
-    .toArray();
-
-  for (const g of others) {
-    if (!g.geometry) continue;
-    const gGeom = g.geometry.spatialReference?.isWebMercator
-      ? webMercatorUtils.webMercatorToGeographic(g.geometry)
-      : g.geometry;
-    if (gGeom && containsExecute(polyGeom, gGeom)) {
-      const gId = g.attributes?.id || g.uid;
-      const feat = drawnFeatures.find((f) => String(f.id) === String(gId));
-      if (feat) {
-        items.push({
-          title: feat.title || `${feat.type === "polygon" ? "Área" : feat.type === "polyline" ? "Línea" : "Punto"} ${gId}`,
-          type: feat.type,
-        });
-      }
-    }
-  }
-
-  return items;
 }
 
 export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({

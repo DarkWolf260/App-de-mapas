@@ -1,0 +1,227 @@
+import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
+import MapView from "@arcgis/core/views/MapView";
+import Graphic from "@arcgis/core/Graphic";
+import TextSymbol from "@arcgis/core/symbols/TextSymbol";
+import { execute as centroidExecute } from "@arcgis/core/geometry/operators/centroidOperator";
+import { buildParentsMap } from "./spatialUtils";
+import { symbolForType, getLabelText } from "./mapUtils";
+import { PALETTE } from "./colorUtils";
+import type { DrawnFeature, LayerVisibility } from "../types";
+
+export function syncDrawnFeaturesToGraphics(
+  drawnFeatures: DrawnFeature[],
+  hiddenFeatures: Record<number, boolean>,
+  layerVisibility: LayerVisibility,
+  currentZoom: number,
+  layer: GraphicsLayer
+): void {
+  const { parentsMap, polygonAreas } = buildParentsMap(drawnFeatures);
+
+  drawnFeatures.forEach((feat) => {
+    const g = layer.graphics.find((x) => x.uid === feat.id || x.attributes?.id === feat.id);
+    const isHidden = !!hiddenFeatures[feat.id];
+    const isNestedArea = feat.type === "polygon" && parentsMap[feat.id] !== undefined;
+    const shouldHideNested = isNestedArea && layerVisibility.hideNestedAreas;
+    const featColor = feat.color || "#3b82f6";
+
+    if (g) {
+      g.visible = !isHidden && !shouldHideNested;
+      const storedColor = g.attributes?._color;
+      if (storedColor !== featColor) {
+        g.symbol = symbolForType(feat.type, featColor);
+        g.attributes = { ...g.attributes, _color: featColor };
+      }
+
+      const label = layer.graphics.find((x) => x.attributes?.isLabel && String(x.attributes?.parentId) === String(feat.id));
+      if (label) {
+        syncExistingLabel(label, feat, g, parentsMap, currentZoom, layerVisibility, isHidden, shouldHideNested);
+      }
+    } else {
+      addFeatureGraphic(feat, hiddenFeatures, layerVisibility, currentZoom, parentsMap, isHidden, shouldHideNested, layer);
+    }
+  });
+
+  reorderGraphics(drawnFeatures, polygonAreas, layer);
+}
+
+function syncExistingLabel(
+  label: __esri.Graphic,
+  feat: DrawnFeature,
+  g: __esri.Graphic,
+  parentsMap: Record<number, number | undefined>,
+  currentZoom: number,
+  layerVisibility: LayerVisibility,
+  isHidden: boolean,
+  shouldHideNested: boolean
+): void {
+  const isPolygonLabel = label.attributes?.isPolygonLabel;
+  const isSubpolygon = isPolygonLabel && parentsMap[feat.id] !== undefined;
+  const requiredZoom = isPolygonLabel && !isSubpolygon ? 14 : 16;
+  const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= requiredZoom;
+
+  if (isPolygonLabel) {
+    label.visible = !isHidden && !shouldHideNested && layerVisibility.polygonLabels && isZoomOk;
+  } else {
+    label.visible = !isHidden && layerVisibility.pointLabels && isZoomOk;
+  }
+
+  if (feat.type === "polygon" && g.geometry) {
+    label.geometry = centroidExecute(g.geometry);
+  }
+
+  if (g.attributes?.title !== feat.title) {
+    g.attributes = { ...g.attributes, title: feat.title };
+  }
+
+  if (label.symbol) {
+    const ts = label.symbol as TextSymbol;
+    const targetText = getLabelText(feat);
+    const hasPersonnel = !isPolygonLabel && targetText !== feat.title;
+    const showBox = hasPersonnel;
+    const currentHasBox = ts.backgroundColor !== null && ts.backgroundColor !== undefined;
+    if (ts.text !== targetText || currentHasBox !== showBox) {
+      const clone = ts.clone();
+      clone.text = targetText;
+      clone.backgroundColor = showBox ? [15, 23, 42, 0.95] : null;
+      clone.borderLineColor = showBox ? [56, 189, 248, 0.95] : null;
+      clone.borderLineSize = showBox ? 1 : null;
+      clone.haloColor = showBox ? null : "black";
+      clone.haloSize = showBox ? null : "1.5px";
+      clone.yoffset = feat.geojsonGeometry?.type === "Point" ? (showBox ? 18 : 12) : 0;
+      label.symbol = clone;
+    }
+  }
+}
+
+function addFeatureGraphic(
+  feat: DrawnFeature,
+  hiddenFeatures: Record<number, boolean>,
+  layerVisibility: LayerVisibility,
+  currentZoom: number,
+  parentsMap: Record<number, number | undefined>,
+  isHidden: boolean,
+  shouldHideNested: boolean,
+  layer: GraphicsLayer
+): void {
+  const geomCfg = convertGeoJSONGeometry(feat);
+  if (!geomCfg) return;
+
+  const featColor = feat.color || "#3b82f6";
+  const ng = new Graphic({
+    geometry: geomCfg,
+    attributes: { id: feat.id, title: feat.title, _color: featColor },
+    symbol: symbolForType(feat.type, featColor),
+    visible: !isHidden && !shouldHideNested,
+    popupTemplate: { title: "<b>{title}</b>", content: "<div style=\"font:13px sans-serif;color:#0f172a;padding:4px\">Elemento guardado.</div>" },
+  });
+  layer.add(ng);
+
+  if (feat.geojsonGeometry && (feat.geojsonGeometry.type === "Point" || feat.geojsonGeometry.type === "Polygon")) {
+    const isPolyLabel = feat.geojsonGeometry.type === "Polygon";
+    const labelGeom = feat.geojsonGeometry.type === "Point" ? ng.geometry!.clone() : centroidExecute(ng.geometry!);
+    const hasPersonnel = !isPolyLabel && getLabelText(feat) !== feat.title;
+    const showBox = hasPersonnel;
+
+    const labelSym = new TextSymbol({
+      text: getLabelText(feat),
+      color: "white",
+      backgroundColor: showBox ? [15, 23, 42, 0.95] : null,
+      borderLineColor: showBox ? [56, 189, 248, 0.95] : null,
+      borderLineSize: showBox ? 1 : null,
+      haloColor: showBox ? null : "black",
+      haloSize: showBox ? null : "1.5px",
+      font: { size: 10, family: "sans-serif", weight: "bold" },
+      yoffset: feat.geojsonGeometry.type === "Point" ? (showBox ? 18 : 12) : 0,
+    });
+
+    const isSubpolygon = isPolyLabel && parentsMap[feat.id] !== undefined;
+    const requiredZoom = isPolyLabel && !isSubpolygon ? 14 : 16;
+    const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= requiredZoom;
+
+    layer.add(new Graphic({
+      geometry: labelGeom,
+      symbol: labelSym,
+      visible: !isHidden && !shouldHideNested && (isPolyLabel ? layerVisibility.polygonLabels && isZoomOk : layerVisibility.pointLabels && isZoomOk),
+      attributes: { isLabel: true, parentId: feat.id, isPolygonLabel: isPolyLabel },
+    }));
+  }
+}
+
+function convertGeoJSONGeometry(feat: DrawnFeature): Record<string, unknown> | null {
+  if (!feat.geojsonGeometry) return null;
+  const coords = feat.geojsonGeometry.coordinates;
+  if (feat.geojsonGeometry.type === "Point") {
+    return { type: "point", longitude: (coords as number[])[0], latitude: (coords as number[])[1], spatialReference: { wkid: 4326 } };
+  }
+  if (feat.geojsonGeometry.type === "LineString") {
+    return { type: "polyline", paths: [coords], spatialReference: { wkid: 4326 } };
+  }
+  if (feat.geojsonGeometry.type === "Polygon") {
+    return { type: "polygon", rings: coords, spatialReference: { wkid: 4326 } };
+  }
+  return null;
+}
+
+function reorderGraphics(
+  drawnFeatures: DrawnFeature[],
+  polygonAreas: Record<number, number>,
+  layer: GraphicsLayer
+): void {
+  if (!drawnFeatures) return;
+  const polys = drawnFeatures.filter((f) => f.type === "polygon").map((f) => ({ f, area: polygonAreas[f.id] ?? 0 }));
+  polys.sort((a, b) => b.area - a.area);
+  const sortedPolys = polys.map((p) => p.f);
+  const lines = drawnFeatures.filter((f) => f.type === "polyline");
+  const pts = drawnFeatures.filter((f) => f.type === "point");
+  const drawingOrdered = [...sortedPolys, ...lines, ...pts];
+
+  drawingOrdered.forEach((feat, index) => {
+    const g = layer.graphics.find((x) => x.uid === feat.id || x.attributes?.id === feat.id);
+    if (g) layer.graphics.reorder(g, index);
+  });
+  drawingOrdered.forEach((feat, index) => {
+    const label = layer.graphics.find((x) => x.attributes?.isLabel && String(x.attributes?.parentId) === String(feat.id));
+    if (label) layer.graphics.reorder(label, drawingOrdered.length + index);
+  });
+}
+
+export function syncImportedFeatures(
+  importedFeatures: DrawnFeature[],
+  layerVisibility: LayerVisibility,
+  viewRef: React.MutableRefObject<MapView | null>,
+  layer: GraphicsLayer
+): void {
+  importedFeatures.forEach((feat) => {
+    if (layer.graphics.some((g) => g.uid === feat.id || g.attributes?.id === feat.id)) return;
+
+    const geomCfg = convertGeoJSONGeometry(feat);
+    if (!geomCfg) return;
+
+    const ng = new Graphic({
+      geometry: geomCfg,
+      attributes: { id: feat.id, title: feat.title || `Importado ${feat.type}`, _color: PALETTE[0].hex },
+      symbol: symbolForType(feat.geojsonGeometry?.type ?? feat.type, PALETTE[0].hex),
+      popupTemplate: { title: "<b>{title}</b>", content: "<div style=\"font:13px sans-serif;color:#0f172a;padding:4px\">Importado via GeoJSON.</div>" },
+    });
+    layer.add(ng);
+
+    if (feat.geojsonGeometry?.type === "Point") {
+      const currentZoom = viewRef.current?.zoom;
+      const isZoomOk = currentZoom !== undefined && !isNaN(currentZoom) && currentZoom >= 16;
+      const labelSym = new TextSymbol({
+        text: feat.title || "Importado Punto",
+        color: "white",
+        haloColor: "black",
+        haloSize: "1px",
+        font: { size: 11, family: "sans-serif", weight: "bold" },
+        yoffset: 12,
+      });
+      layer.add(new Graphic({
+        geometry: ng.geometry!.clone(),
+        symbol: labelSym,
+        visible: isZoomOk && layerVisibility.pointLabels,
+        attributes: { isLabel: true, parentId: feat.id, isPolygonLabel: false },
+      }));
+    }
+  });
+}

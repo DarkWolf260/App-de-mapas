@@ -1,348 +1,61 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import MapComponent from "./components/MapComponent";
 import Sidebar from "./components/Sidebar";
 import { ChevronLeft, Menu } from "lucide-react";
-import { initDatabase, RxDrawnDatabase } from "./db/database";
 import { RangeReportModal } from "./components/RangeReportModal";
 import { FloatingSearchBar } from "./components/FloatingSearchBar";
 import { GlobalStatsWidget } from "./components/GlobalStatsWidget";
-import type { DailyLog, DrawnFeature, GeoJSONGeometry, LayerVisibility, RemoveFeatureId } from "./types";
-
-// ── Component ─────────────────────────────────────────────────────────────────
+import type { DrawnFeature, LayerVisibility, RemoveFeatureId } from "./types";
+import { useFeatureDB } from "./hooks/useFeatureDB";
+import { useFeatureVisibility } from "./hooks/useFeatureVisibility";
+import { useFeatureOrder } from "./hooks/useFeatureOrder";
+import { useGeoJSONIO } from "./hooks/useGeoJSONIO";
+import { useLocalStorageState } from "./hooks/useLocalStorageState";
 
 function App() {
   const apiKey: string = import.meta.env.VITE_ARCGIS_API_KEY ?? "";
   const [activeCity] = useState<string>("venezuela");
-  const [showSidebar, setShowSidebar] = useState<boolean>(() => {
-    const saved = localStorage.getItem("pc_show_sidebar");
-    return saved !== null ? saved === "true" : true;
+  const [showSidebar, setShowSidebar] = useLocalStorageState<boolean>("pc_show_sidebar", true);
+  const [layerVisibility, setLayerVisibility] = useLocalStorageState<LayerVisibility>("pc_layer_visibility", {
+    sketch: true,
+    polygonLabels: true,
+    pointLabels: true,
+    hideNestedAreas: false,
+    allowLabelOverlap: false,
   });
-  const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>(() => {
-    const saved = localStorage.getItem("pc_layer_visibility");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Error parsing layer visibility:", e);
-      }
-    }
-    return {
-      sketch: true,
-      polygonLabels: true,
-      pointLabels: true,
-      hideNestedAreas: false,
-      allowLabelOverlap: false,
-    };
-  });
-  const [drawnFeatures, setDrawnFeatures] = useState<DrawnFeature[]>([]);
   const [zoomToFeature, setZoomToFeature] = useState<DrawnFeature | null>(null);
   const [removeFeatureId, setRemoveFeatureId] = useState<RemoveFeatureId | null>(null);
   const [importedFeatures, setImportedFeatures] = useState<DrawnFeature[]>([]);
   const [rangeReportFeature, setRangeReportFeature] = useState<DrawnFeature | "all" | null>(null);
 
-  // RxDB instance
-  const [db, setDb] = useState<RxDrawnDatabase | null>(null);
+  const {
+    db,
+    drawnFeatures,
+    handleFeatureAdded,
+    handleRenameFeature,
+    handleUpdateFeatureDescription,
+    handleUpdateFeatureColor,
+    handleToggleFeatureLock,
+    handleSaveDailyLog,
+  } = useFeatureDB();
 
-  // 1. Initialize RxDB
-  useEffect(() => {
-    initDatabase().then((database) => {
-      setDb(database);
-    });
-  }, []);
-
-  // 2. Reactively subscribe to database changes
-  useEffect(() => {
-    if (!db) return;
-    const sub = db.features.find().$.subscribe((docs) => {
-      const list = docs.map((doc) => ({
-        id: isNaN(Number(doc.id)) ? (doc.id as any) : Number(doc.id),
-        title: doc.title,
-        type: doc.type,
-        description: doc.description || "",
-        color: doc.color || "#3b82f6",
-        locked: !!doc.locked,
-        dailyLogs: doc.dailyLogs || [],
-        geojsonGeometry: doc.geojsonGeometry,
-      }));
-      setDrawnFeatures(list);
-    });
-    return () => sub.unsubscribe();
-  }, [db]);
-
-  const handleToggleLayer = (layerName: keyof LayerVisibility): void => {
-    setLayerVisibility((prev) => {
-      const next = { ...prev, [layerName]: !prev[layerName] };
-      localStorage.setItem("pc_layer_visibility", JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const handleFeatureAdded = async (newFeat: DrawnFeature): Promise<void> => {
-    if (!db) return;
-    const idStr = String(newFeat.id);
-    const doc = await db.features.findOne(idStr).exec();
-    if (doc) {
-      try {
-        await doc.patch({
-          geojsonGeometry: newFeat.geojsonGeometry,
-          title: newFeat.title || doc.title,
-          color: newFeat.color || doc.color || "#3b82f6",
-          description: newFeat.description || doc.description || "",
-        });
-      } catch (err) {
-        console.warn("RxDB: Patch conflict (concurrency), safely ignored:", err);
-      }
-    } else {
-      // Document does not exist, insert it
-      await db.features.insert({
-        id: idStr,
-        title: newFeat.title,
-        type: newFeat.type,
-        color: newFeat.color || "#3b82f6",
-        geojsonGeometry: newFeat.geojsonGeometry,
-      });
-    }
-  };
+  const { hiddenFeatures, handleToggleFeatureVisibility, handleToggleFeaturesVisibility } = useFeatureVisibility();
+  const { sortedDrawnFeatures, handleReorderFeature } = useFeatureOrder(drawnFeatures);
+  const { handleExportGeoJSON, handleImportGeoJSON } = useGeoJSONIO(db, drawnFeatures, setImportedFeatures);
 
   const handleFeatureDeleted = async (id: number): Promise<void> => {
     setRemoveFeatureId({ id, timestamp: Date.now() });
     if (!db) return;
     try {
       const doc = await db.features.findOne(String(id)).exec();
-      if (doc) {
-        await doc.remove();
-      }
+      if (doc) await doc.remove();
     } catch (e) {
       console.warn("RxDB: Conflict during delete ignored safely", e);
     }
   };
 
-  const handleRenameFeature = async (id: number, newTitle: string): Promise<void> => {
-    if (!db) return;
-    const doc = await db.features.findOne(String(id)).exec();
-    if (doc) {
-      await doc.patch({
-        title: newTitle,
-      });
-    }
-  };
-
-  const handleUpdateFeatureDescription = async (id: number, newDesc: string): Promise<void> => {
-    if (!db) return;
-    const doc = await db.features.findOne(String(id)).exec();
-    if (doc) {
-      await doc.patch({
-        description: newDesc,
-      });
-    }
-  };
-  const handleUpdateFeatureColor = async (id: number, newColor: string): Promise<void> => {
-    if (!db) return;
-    const doc = await db.features.findOne(String(id)).exec();
-    if (doc) {
-      await doc.patch({
-        color: newColor,
-      });
-    }
-  };
-  const handleToggleFeatureLock = async (id: number, locked: boolean): Promise<void> => {
-    if (!db) return;
-    const doc = await db.features.findOne(String(id)).exec();
-    if (doc) {
-      await doc.patch({
-        locked: locked,
-      });
-    }
-  };
-  const handleSaveDailyLog = async (
-    featureId: number,
-    log: DailyLog
-  ): Promise<void> => {
-    if (!db) return;
-    const doc = await db.features.findOne(String(featureId)).exec();
-    if (doc) {
-      const logs = doc.dailyLogs ? [...doc.dailyLogs] : [];
-      const idx = logs.findIndex((l) => l.date === log.date);
-      if (idx >= 0) {
-        logs[idx] = log;
-      } else {
-        logs.push(log);
-      }
-      await doc.patch({
-        dailyLogs: logs
-      });
-    }
-  };
-
-  const handleExportGeoJSON = (): void => {
-    const geojson = {
-      type: "FeatureCollection",
-      features: drawnFeatures.map((feat) => ({
-        type: "Feature",
-        geometry: feat.geojsonGeometry,
-        properties: {
-          title: feat.title,
-          type: feat.type,
-          color: feat.color,
-          description: feat.description,
-          locked: !!feat.locked,
-          dailyLogs: feat.dailyLogs || [],
-          source: "custom_drawing"
-        },
-      })),
-    };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(geojson, null, 2));
-    const a = document.createElement("a");
-    a.setAttribute("href", dataStr);
-    a.setAttribute("download", `mapa_proteccion_civil_${Date.now()}.geojson`);
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
-  const handleImportGeoJSON = async (geojsonText: string): Promise<void> => {
-    try {
-      const geojson = JSON.parse(geojsonText) as { type: string; features: Array<{ id?: string; geometry: GeoJSONGeometry; properties?: Record<string, any> }> };
-      if (geojson.type !== "FeatureCollection" || !Array.isArray(geojson.features)) {
-        alert("El archivo no es un FeatureCollection GeoJSON válido.");
-        return;
-      }
-      const newDrawn: DrawnFeature[] = [];
-      const toInsert: any[] = [];
-      geojson.features.forEach((feat, index) => {
-        const title = feat.properties?.title ?? `Elemento ${index + 1}`;
-        const id = feat.id ? String(feat.id) : `draw-imp-${Date.now()}-${index}`;
-        const color = feat.properties?.color || "#3b82f6";
-        const description = feat.properties?.description || "";
-        const locked = !!feat.properties?.locked;
-        const dailyLogs = Array.isArray(feat.properties?.dailyLogs) ? feat.properties.dailyLogs : [];
-
-        if (feat.geometry.type === "Point") {
-          const item = { id, title, type: "point" as const, color, description, locked, dailyLogs, geojsonGeometry: feat.geometry };
-          newDrawn.push(item as any);
-          toInsert.push(item);
-        } else if (feat.geometry.type === "LineString" || feat.geometry.type === "Polygon") {
-          const item = {
-            id,
-            title,
-            type: feat.geometry.type === "LineString" ? ("polyline" as const) : ("polygon" as const),
-            color,
-            description,
-            locked,
-            dailyLogs,
-            geojsonGeometry: feat.geometry
-          };
-          newDrawn.push(item as any);
-          toInsert.push(item);
-        }
-      });
-      if (toInsert.length > 0 && db) {
-        await db.features.bulkInsert(toInsert);
-        setImportedFeatures(newDrawn);
-      }
-      alert(`Se importaron con éxito ${toInsert.length} geometrías.`);
-    } catch (e) {
-      alert("Error al parsear el archivo GeoJSON.");
-      console.error(e);
-    }
-  };
-
-  const [hiddenFeatures, setHiddenFeatures] = useState<Record<number, boolean>>(() => {
-    const saved = localStorage.getItem("pc_hidden_features");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Error parsing hidden features:", e);
-      }
-    }
-    return {};
-  });
-
-  const handleToggleFeatureVisibility = (id: number): void => {
-    setHiddenFeatures((prev) => {
-      const next = { ...prev, [id]: !prev[id] };
-      localStorage.setItem("pc_hidden_features", JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const handleToggleFeaturesVisibility = (ids: number[], visible: boolean): void => {
-    setHiddenFeatures((prev) => {
-      const next = { ...prev };
-      ids.forEach((id) => {
-        next[id] = !visible;
-      });
-      localStorage.setItem("pc_hidden_features", JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const [featureOrder, setFeatureOrder] = useState<number[]>([]);
-
-  // Load order from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem("pc_feature_order");
-    if (saved) {
-      try {
-        setFeatureOrder(JSON.parse(saved));
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, []);
-
-  // Automatically keep featureOrder in sync when drawnFeatures list changes
-  useEffect(() => {
-    if (drawnFeatures.length > 0) {
-      setFeatureOrder((prev) => {
-        const next = [...prev];
-        let changed = false;
-        drawnFeatures.forEach((f) => {
-          if (!next.includes(f.id)) {
-            next.unshift(f.id); // Add new drawings to the top by default
-            changed = true;
-          }
-        });
-        if (changed) {
-          localStorage.setItem("pc_feature_order", JSON.stringify(next));
-          return next;
-        }
-        return prev;
-      });
-    }
-  }, [drawnFeatures]);
-
-  const sortedDrawnFeatures = useMemo(() => {
-    return [...drawnFeatures].sort((a, b) => {
-      const indexA = featureOrder.indexOf(a.id);
-      const indexB = featureOrder.indexOf(b.id);
-      if (indexA === -1 && indexB === -1) return 0;
-      if (indexA === -1) return 1;
-      if (indexB === -1) return -1;
-      return indexA - indexB;
-    });
-  }, [drawnFeatures, featureOrder]);
-
-  const handleReorderFeature = (id: number, direction: "up" | "down"): void => {
-    setFeatureOrder((prev) => {
-      const index = prev.indexOf(id);
-      if (index === -1) return prev;
-      const next = [...prev];
-      if (direction === "up" && index > 0) {
-        // Swap with the previous element (move up in the list, drawn on top)
-        const temp = next[index];
-        next[index] = next[index - 1];
-        next[index - 1] = temp;
-      } else if (direction === "down" && index < next.length - 1) {
-        // Swap with the next element (move down in the list, drawn below)
-        const temp = next[index];
-        next[index] = next[index + 1];
-        next[index + 1] = temp;
-      }
-      localStorage.setItem("pc_feature_order", JSON.stringify(next));
-      return next;
-    });
+  const handleToggleLayer = (layerName: keyof LayerVisibility): void => {
+    setLayerVisibility((prev) => ({ ...prev, [layerName]: !prev[layerName] }));
   };
 
   return (
@@ -380,11 +93,7 @@ function App() {
 
       <button
         className={`sidebar-toggle ${!showSidebar ? "collapsed" : ""}`}
-        onClick={() => {
-          const next = !showSidebar;
-          setShowSidebar(next);
-          localStorage.setItem("pc_show_sidebar", String(next));
-        }}
+        onClick={() => setShowSidebar((prev) => !prev)}
         title={showSidebar ? "Ocultar panel lateral" : "Mostrar panel lateral"}
       >
         {showSidebar ? <ChevronLeft size={18} /> : <Menu size={18} />}

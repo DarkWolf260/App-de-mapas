@@ -1,7 +1,7 @@
 import Basemap from "@arcgis/core/Basemap";
 import TileLayer from "@arcgis/core/layers/TileLayer";
 import type { DrawnFeature } from "../types";
-import { hexToRgb } from "../components/ColorPicker";
+import { hexToRgb } from "./colorUtils";
 
 export const DEFAULT_CENTER: [number, number] = [-66.9303, 10.6011];
 export const DEFAULT_ZOOM = 14;

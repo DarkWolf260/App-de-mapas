@@ -1,4 +1,5 @@
 import * as webMercatorUtils from "@arcgis/core/geometry/support/webMercatorUtils";
+import { execute as containsExecute } from "@arcgis/core/geometry/operators/containsOperator";
 import type { DrawnFeature } from "../types";
 
 /**
@@ -50,6 +51,7 @@ export const calculatePolygonArea = (coords: number[][][]): number => {
  * Test de inclusión de punto en polígono (Ray Casting / Jordan Curve Theorem).
  */
 export const isPointInPolygon = (x: number, y: number, vs: number[][]): boolean => {
+  if (!vs || vs.length === 0) return false;
   let inside = false;
   for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
     const xi = vs[i][0], yi = vs[i][1];
@@ -125,3 +127,53 @@ export const buildParentsMap = (drawnFeatures: DrawnFeature[]): {
 
   return { parentsMap, polygonAreas };
 };
+
+export function computeContainedItems(
+  activeFeat: DrawnFeature,
+  sketchLayer: __esri.GraphicsLayer,
+  drawnFeatures: DrawnFeature[]
+): Array<{ title: string; type: string }> {
+  const items: Array<{ title: string; type: string }> = [];
+  if (activeFeat.type !== "polygon" || !sketchLayer) return items;
+
+  const polyGraphic = sketchLayer.graphics.find((x) => {
+    if (x.attributes?.isLabel) return false;
+    const xId = x.attributes?.id || x.uid;
+    return String(xId) === String(activeFeat.id);
+  });
+
+  if (!polyGraphic?.geometry) return items;
+
+  const polyGeom = polyGraphic.geometry.spatialReference?.isWebMercator
+    ? webMercatorUtils.webMercatorToGeographic(polyGraphic.geometry)
+    : polyGraphic.geometry;
+
+  if (!polyGeom) return items;
+
+  const others = sketchLayer.graphics
+    .filter((x) => {
+      if (x.attributes?.isLabel) return false;
+      const xId = x.attributes?.id || x.uid;
+      return String(xId) !== String(activeFeat.id);
+    })
+    .toArray();
+
+  for (const g of others) {
+    if (!g.geometry) continue;
+    const gGeom = g.geometry.spatialReference?.isWebMercator
+      ? webMercatorUtils.webMercatorToGeographic(g.geometry)
+      : g.geometry;
+    if (gGeom && containsExecute(polyGeom, gGeom)) {
+      const gId = g.attributes?.id || g.uid;
+      const feat = drawnFeatures.find((f) => String(f.id) === String(gId));
+      if (feat) {
+        items.push({
+          title: feat.title || `${feat.type === "polygon" ? "Área" : feat.type === "polyline" ? "Línea" : "Punto"} ${gId}`,
+          type: feat.type,
+        });
+      }
+    }
+  }
+
+  return items;
+}
