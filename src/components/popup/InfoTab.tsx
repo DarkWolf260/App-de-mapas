@@ -108,8 +108,8 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 
   const containedWithLogs = useMemo(() => {
     return containedPoints.map((pt) => {
-      const log = pt.dailyLogs?.find((l) => l.date === popupEditDate);
-      return { point: pt, log: log || {} };
+      const log = pt.dailyLogs?.find((l) => l.date === popupEditDate) || {} as Partial<DailyLog>;
+      return { point: pt, log };
     });
   }, [containedPoints, popupEditDate]);
 
