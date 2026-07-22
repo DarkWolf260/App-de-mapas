@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import ImageryTileLayer from "@arcgis/core/layers/ImageryTileLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
 import RasterStretchRenderer from "@arcgis/core/renderers/RasterStretchRenderer";
-import { X, ChevronLeft, ChevronRight, AlertTriangle, Loader, Layers } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, AlertTriangle, Layers, Check, Loader } from "lucide-react";
 import type MapView from "@arcgis/core/views/MapView";
 
 import "@arcgis/map-components/components/arcgis-swipe";
@@ -37,6 +37,8 @@ const stretchRenderer = new RasterStretchRenderer({
   useGamma: true,
 });
 
+type LayerStatus = "loading" | "ok" | "error";
+
 interface SwipeComparisonProps {
   view: MapView;
   onClose: () => void;
@@ -44,12 +46,15 @@ interface SwipeComparisonProps {
 
 export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose }) => {
   const [warning, setWarning] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [panelOpen, setPanelOpen] = useState(false);
   const [layerVis, setLayerVis] = useState<Record<string, boolean>>({ cogA: true, cogB: true });
+  const [layerStatus, setLayerStatus] = useState<Record<string, LayerStatus>>({ cogA: "loading", cogB: "loading" });
   const cogLayersRef = useRef<Map<string, ImageryTileLayer>>(new Map());
-  const groupLayerRef = useRef<GroupLayer | null>(null);
   const cleanupRef = useRef<() => void>(() => {});
+
+  const setStatus = useCallback((id: string, status: LayerStatus) => {
+    setLayerStatus((prev) => ({ ...prev, [id]: status }));
+  }, []);
 
   const toggleLayer = useCallback((id: string) => {
     setLayerVis((prev) => {
@@ -62,44 +67,11 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
 
   useEffect(() => {
     let disposed = false;
-    const allLayers: (ImageryTileLayer | GroupLayer)[] = [];
+    const addedLayers: (ImageryTileLayer | GroupLayer)[] = [];
 
     const init = async () => {
-      const loadPromises = COG_SOURCES.map((src) => {
-        const layer = new ImageryTileLayer({
-          url: src.url,
-          bandIds: [2, 1, 0],
-          renderer: stretchRenderer,
-          title: src.label,
-        });
-        cogLayersRef.current.set(src.id, layer);
-        return layer.load().then(() => ({ id: src.id, ok: true, layer })).catch(() => ({ id: src.id, ok: false, layer }));
-      });
-
-      const results = await Promise.all(loadPromises);
-      if (disposed) return;
-
-      const loaded = results.filter((r) => r.ok);
-      const failed = results.filter((r) => !r.ok);
-
-      if (loaded.length === 0) {
-        setWarning("No se pudieron cargar las imagenes post-sismo");
-        setLoading(false);
-        return;
-      }
-
-      if (failed.length > 0) {
-        const names = failed.map((r) => r.id === "cogA" ? "Escena A" : "Escena B").join(", ");
-        setWarning(`${names} no disponible(s)`);
-        setTimeout(() => setWarning(null), 6000);
-      }
-
-      const groupLayer = new GroupLayer({
-        layers: loaded.map((r) => r.layer),
-        title: "Post-sismo",
-      });
-      groupLayerRef.current = groupLayer;
-      allLayers.push(groupLayer);
+      const groupLayer = new GroupLayer({ title: "Post-sismo" });
+      addedLayers.push(groupLayer);
 
       const map = view.map!;
       if (!map.layers.includes(groupLayer)) map.add(groupLayer, 0);
@@ -116,14 +88,36 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
         swipeEl.position = 50;
       }
 
-      setLoading(false);
-
       view
         .goTo(
           { center: LA_GUAIRA_CENTER, zoom: LA_GUAIRA_ZOOM },
           { duration: 1200, easing: "ease-in-out" },
         )
         .catch(() => {});
+
+      const loadOne = async (src: (typeof COG_SOURCES)[number]) => {
+        const layer = new ImageryTileLayer({
+          url: src.url,
+          bandIds: [2, 1, 0],
+          renderer: stretchRenderer,
+          title: src.label,
+        });
+        cogLayersRef.current.set(src.id, layer);
+
+        try {
+          await layer.load();
+          if (disposed) return;
+          groupLayer.add(layer);
+          setStatus(src.id, "ok");
+        } catch {
+          if (disposed) return;
+          setStatus(src.id, "error");
+          setWarning(`${src.label} no disponible`);
+          setTimeout(() => setWarning(null), 6000);
+        }
+      };
+
+      await Promise.all(COG_SOURCES.map(loadOne));
     };
 
     init();
@@ -139,17 +133,16 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
         }
         const map = view.map;
         if (map) {
-          allLayers.forEach((l) => {
+          addedLayers.forEach((l) => {
             try { map.remove(l); } catch {}
           });
         }
         cogLayersRef.current.clear();
-        groupLayerRef.current = null;
       } catch {}
     };
 
     return () => cleanupRef.current();
-  }, [view]);
+  }, [view, setStatus]);
 
   const handleClose = () => {
     cleanupRef.current();
@@ -197,15 +190,13 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
                 onChange={() => toggleLayer(src.id)}
               />
               <span>{src.label}</span>
+              <span className="swipe-layer-status">
+                {layerStatus[src.id] === "loading" && <Loader size={12} className="spin" />}
+                {layerStatus[src.id] === "ok" && <Check size={12} />}
+                {layerStatus[src.id] === "error" && <X size={12} />}
+              </span>
             </label>
           ))}
-        </div>
-      )}
-
-      {loading && (
-        <div className="swipe-loading">
-          <Loader size={16} className="spin" />
-          Cargando imagenes satelitales...
         </div>
       )}
 
