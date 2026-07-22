@@ -16,6 +16,7 @@ interface ActivePoint {
   color: string;
   totalOff: number;
   groups: number;
+  activeGroups: number;
 }
 
 function computeActivePoints(drawnFeatures: DrawnFeature[]): ActivePoint[] {
@@ -27,10 +28,17 @@ function computeActivePoints(drawnFeatures: DrawnFeature[]): ActivePoint[] {
       if (!log) return null;
       const totalOff = getTotalPersonnel(log);
       let groups = 0;
-      if (log.groupName || log.unitOut || log.managerName) groups++;
-      if (log.groupName2 || log.unitOut2 || log.managerName2) groups++;
+      let activeGroups = 0;
+      if (log.groupName || log.unitOut || log.managerName) {
+        groups++;
+        if (!log.hasArrivedG1 && !log.arrivalTime) activeGroups++;
+      }
+      if (log.groupName2 || log.unitOut2 || log.managerName2) {
+        groups++;
+        if (!log.hasArrivedG2 && !log.arrivalTime2) activeGroups++;
+      }
       if (totalOff === 0 && groups === 0) return null;
-      return { id: f.id, title: f.title, color: f.color || "#22c55e", totalOff, groups };
+      return { id: f.id, title: f.title, color: f.color || "#22c55e", totalOff, groups, activeGroups };
     })
     .filter(Boolean) as ActivePoint[];
 }
@@ -45,6 +53,7 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   const activePoints = computeActivePoints(drawnFeatures);
   const totalOff = activePoints.reduce((acc, item) => acc + item.totalOff, 0);
   const totalGroups = activePoints.reduce((acc, item) => acc + item.groups, 0);
+  const totalActiveGroups = activePoints.reduce((acc, item) => acc + item.activeGroups, 0);
 
   const statDivider = <div style={{ width: "1px", height: "28px", background: "rgba(255,255,255,0.1)" }} />;
 
@@ -121,6 +130,12 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
           {renderStat("Funcionarios", totalOff, "rgba(56, 189, 248, 0.7)")}
           {statDivider}
           {renderStat("Grupos", totalGroups, "rgba(139, 92, 246, 0.7)")}
+          {totalActiveGroups > 0 && (
+            <>
+              {statDivider}
+              {renderStat("Activos", totalActiveGroups, "rgba(234, 179, 8, 0.9)")}
+            </>
+          )}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -136,13 +151,17 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
               title={`Haga clic para enfocar ${pt.title}`}
             >
-              <span style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>{pt.title}</span>
-              <span style={{ flexShrink: 0, fontWeight: 700, color: "var(--color-green)" }}>👮 {pt.totalOff} | 👥 {pt.groups}</span>
+              <span style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100px" }}>{pt.title}</span>
+              <span style={{ flexShrink: 0, fontWeight: 700, color: "var(--color-green)", fontSize: "9px" }}>
+                👮{pt.totalOff} 👥{pt.groups}{pt.activeGroups > 0 && <span style={{ color: "#eab308", marginLeft: "4px" }}>●{pt.activeGroups}</span>}
+              </span>
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", fontWeight: 800, marginTop: "4px", paddingTop: "4px", borderTop: "1px solid rgba(255,255,255,0.1)", color: "var(--color-green)" }}>
             <span>TOTALES:</span>
-            <span>👮 {totalOff} | 👥 {totalGroups}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              👮{totalOff} 👥{totalGroups}{totalActiveGroups > 0 && <span style={{ color: "#eab308" }}>●{totalActiveGroups}</span>}
+            </span>
           </div>
         </div>
       )}
