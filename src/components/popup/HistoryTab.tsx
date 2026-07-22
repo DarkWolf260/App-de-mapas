@@ -1,5 +1,6 @@
 import React from "react";
 import type { DailyLog } from "../../types";
+import { Calendar, Heart, Cross, PawPrint, Users, Clock, FileText } from "lucide-react";
 
 interface HistoryTabProps {
   logs: DailyLog[] | undefined;
@@ -29,15 +30,17 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ logs }) => (
               }}
             >
               <div style={{ fontWeight: 800, color: "var(--text-main)", display: "flex", justifyContent: "space-between" }}>
-                <span>📅 {log.date}</span>
-                <span style={{ color: "var(--color-green)" }}>🛟 {log.rescuedCount || "0"} | 🩹 {log.recoveredCount || "0"} | 🐾 {log.rescuedPetsCount || "0"}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><Calendar size={11} /> {log.date}</span>
+                <span style={{ color: "var(--color-green)", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Heart size={11} /> {log.rescuedCount || "0"} | <Cross size={11} /> {log.recoveredCount || "0"} | <PawPrint size={11} /> {log.rescuedPetsCount || "0"}
+                </span>
               </div>
 
               <div style={{ color: "var(--text-muted)" }}>
                 <strong style={{ color: "var(--color-info)" }}>G1: </strong> {log.groupName || "-"}
                 {log.unitOut ? ` (${log.unitOut})` : ""}
                 {log.managerName ? ` - Enc: ${log.managerName}` : ""}
-                {log.officersCount ? ` [👮 ${log.officersCount}]` : ""}
+                {log.officersCount ? <span style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>[<Users size={10} /> {log.officersCount}]</span> : ""}
               </div>
 
               {hasG2 && (
@@ -45,18 +48,18 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ logs }) => (
                   <strong style={{ color: "var(--color-purple)" }}>G2: </strong> {log.groupName2 || "-"}
                   {log.unitOut2 ? ` (${log.unitOut2})` : ""}
                   {log.managerName2 ? ` - Enc: ${log.managerName2}` : ""}
-                  {log.officersCount2 ? ` [👮 ${log.officersCount2}]` : ""}
+                  {log.officersCount2 ? <span style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>[<Users size={10} /> {log.officersCount2}]</span> : ""}
                 </div>
               )}
 
               {(log.departureTime || log.arrivalTime) && (
-                <div style={{ fontSize: "0.58rem", color: "var(--color-info)", display: "flex", gap: "6px", marginTop: "1px" }}>
-                  ⏱️ Horario: {log.departureTime || "--:--"} - {log.arrivalTime || "--:--"}
+                <div style={{ fontSize: "0.58rem", color: "var(--color-info)", display: "flex", gap: "6px", marginTop: "1px", alignItems: "center" }}>
+                  <Clock size={10} /> Horario: {log.departureTime || "--:--"} - {log.arrivalTime || "--:--"}
                 </div>
               )}
               {log.observations && (
                 <div style={{ fontSize: "0.58rem", color: "var(--color-info)", marginTop: "1px", background: "rgba(56, 189, 248, 0.04)", borderLeft: "2px solid var(--color-info)", padding: "2px 4px", borderRadius: "0 3px 3px 0" }}>
-                  <strong>📝 Obs:</strong> {log.observations}
+                  <strong style={{ display: "flex", alignItems: "center", gap: "3px" }}><FileText size={10} /> Obs:</strong> {log.observations}
                 </div>
               )}
             </div>

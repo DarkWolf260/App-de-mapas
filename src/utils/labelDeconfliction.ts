@@ -9,6 +9,7 @@ interface DeconflictRefs {
   drawnFeaturesRef: React.MutableRefObject<DrawnFeature[]>;
   hiddenFeaturesRef: React.MutableRefObject<Record<number, boolean>>;
   layerVisibilityRef: React.MutableRefObject<LayerVisibility>;
+  selectedDateRef: React.MutableRefObject<string>;
 }
 
 interface ScreenLabel {
@@ -52,7 +53,8 @@ function filterCandidateLabels(
 function computeScreenLabels(
   candidateLabels: __esri.Graphic[],
   view: MapView,
-  drawnFeaturesRef: DeconflictRefs["drawnFeaturesRef"]
+  drawnFeaturesRef: DeconflictRefs["drawnFeaturesRef"],
+  dateStr: string,
 ): ScreenLabel[] {
   const screenLabels = candidateLabels.map((lbl) => {
     const screenPt = lbl.geometry ? view.toScreen(lbl.geometry) : null;
@@ -64,8 +66,7 @@ function computeScreenLabels(
     } else {
       const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
       if (feat?.type === "point") {
-        const todayStr = new Date().toLocaleDateString("en-CA");
-        const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
+        const todayLog = feat.dailyLogs?.find((l) => l.date === dateStr);
         if (todayLog !== undefined) priority = 1;
       }
     }
@@ -124,7 +125,8 @@ function choosePlacement(
 function buildHtmlLabels(
   screenLabels: ScreenLabel[],
   refs: DeconflictRefs,
-  allowOverlap: boolean
+  allowOverlap: boolean,
+  dateStr: string,
 ): HtmlLabel[] {
   const activeHtmlLabels: HtmlLabel[] = [];
   const placedBoxes: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
@@ -133,7 +135,7 @@ function buildHtmlLabels(
     const lbl = item.graphic;
     const pid = lbl.attributes?.parentId;
     const isPolygonLabel = lbl.attributes?.isPolygonLabel;
-    const todayStr = new Date().toLocaleDateString("en-CA");
+    const todayStr = dateStr;
     const feat = (refs.drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
     let title = feat ? feat.title : (lbl.symbol as TextSymbol)?.text || "";
     let info = "";
@@ -218,12 +220,13 @@ export function deconflictGraphics(
       if (!candidateLabels.includes(lbl)) lbl.visible = false;
     });
 
-    const screenLabels = computeScreenLabels(candidateLabels, view, refs.drawnFeaturesRef);
+    const dateStr = refs.selectedDateRef.current;
+    const screenLabels = computeScreenLabels(candidateLabels, view, refs.drawnFeaturesRef, dateStr);
     if (!refs.layerVisibilityRef.current.allowLabelOverlap) {
       deconflictOverlappingLabels(screenLabels);
     }
 
-    const activeHtmlLabels = buildHtmlLabels(screenLabels, refs, refs.layerVisibilityRef.current.allowLabelOverlap);
+    const activeHtmlLabels = buildHtmlLabels(screenLabels, refs, refs.layerVisibilityRef.current.allowLabelOverlap, dateStr);
     setHtmlLabels(activeHtmlLabels);
   } catch (err) {
     console.error("Error in deconflictGraphics:", err);

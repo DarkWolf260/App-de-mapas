@@ -45,12 +45,12 @@ export const makeSymbols = ([r, g, b]: [number, number, number]) => ({
   },
 });
 
-export const getLabelText = (feat: DrawnFeature): string => {
+export const getLabelText = (feat: DrawnFeature, dateStr?: string): string => {
   if (feat.type !== "point") {
     return feat.title;
   }
 
-  const todayStr = new Date().toLocaleDateString("en-CA");
+  const todayStr = dateStr || new Date().toLocaleDateString("en-CA");
   const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
   if (todayLog) {
     const parts: string[] = [];

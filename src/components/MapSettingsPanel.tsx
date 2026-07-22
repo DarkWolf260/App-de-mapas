@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Settings } from "lucide-react";
 import type { LayerVisibility } from "../types";
 
 interface MapSettingsPanelProps {
@@ -43,7 +43,7 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
       }}
     >
       {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-      ⚙️ Ajustes del Mapa y Visibilidad
+      <Settings size={14} /> Ajustes del Mapa y Visibilidad
     </button>
 
     {expanded && (

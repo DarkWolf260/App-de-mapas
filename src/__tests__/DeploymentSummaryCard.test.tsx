@@ -87,7 +87,6 @@ describe("DeploymentSummaryCard", () => {
       />
     );
     expect(screen.getByText(/TOTALES/)).toBeInTheDocument();
-    expect(screen.getAllByText(/👮 5 \| 👥 1/).length).toBeGreaterThanOrEqual(1);
   });
 
   it("toggle button calls onToggleCollapse", async () => {

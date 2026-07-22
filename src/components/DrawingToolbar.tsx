@@ -1,12 +1,13 @@
 import React from "react";
 import { ColorPicker, Color } from "./ColorPicker";
+import { MapPin, Ruler, Hexagon, Square, Circle, Move, Pencil, Trash2, X } from "lucide-react";
 
 export const DRAW_TOOLS = [
-  { id: "point",     label: "Punto",     icon: "📍" },
-  { id: "polyline",  label: "Linea",     icon: "📏" },
-  { id: "polygon",   label: "Poligono",  icon: "⬡"  },
-  { id: "rectangle", label: "Rect.",     icon: "▭"  },
-  { id: "circle",    label: "Circulo",   icon: "○"  },
+  { id: "point",     label: "Punto",     icon: <MapPin size={14} /> },
+  { id: "polyline",  label: "Linea",     icon: <Ruler size={14} /> },
+  { id: "polygon",   label: "Poligono",  icon: <Hexagon size={14} /> },
+  { id: "rectangle", label: "Rect.",     icon: <Square size={14} /> },
+  { id: "circle",    label: "Circulo",   icon: <Circle size={14} /> },
 ] as const;
 
 export type ToolId = typeof DRAW_TOOLS[number]["id"];
@@ -53,12 +54,10 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
 
     <div className="draw-toolbar-divider" />
 
-    {/* Color picker */}
     <ColorPicker activeColor={activeColor} onColorChange={onColorChange} direction={popoverDirection} />
 
     <div className="draw-toolbar-divider" />
 
-    {/* Edit mode toggle — only when something is selected or no active draw tool */}
     {hasSelection && !activeTool && (
       <>
         <button
@@ -66,7 +65,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
           title="Mover / Escalar"
           onClick={() => onToggleEditMode("transform")}
         >
-          <span className="draw-tool-icon">✥</span>
+          <span className="draw-tool-icon"><Move size={14} /></span>
           <span className="draw-tool-label">Mover</span>
         </button>
         <button
@@ -74,11 +73,11 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
           title="Editar vertices"
           onClick={() => onToggleEditMode("reshape")}
         >
-          <span className="draw-tool-icon">⟡</span>
+          <span className="draw-tool-icon"><Pencil size={14} /></span>
           <span className="draw-tool-label">Vertices</span>
         </button>
         <button className="draw-tool-btn danger" title="Eliminar seleccionado" onClick={onDelete}>
-          <span className="draw-tool-icon">🗑</span>
+          <span className="draw-tool-icon"><Trash2 size={14} /></span>
           <span className="draw-tool-label">Eliminar</span>
         </button>
       </>
@@ -86,7 +85,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
 
     {activeTool && (
       <button className="draw-tool-btn cancel" title="Cancelar" onClick={onCancel}>
-        <span className="draw-tool-icon">✕</span>
+        <span className="draw-tool-icon"><X size={14} /></span>
         <span className="draw-tool-label">Cancelar</span>
       </button>
     )}

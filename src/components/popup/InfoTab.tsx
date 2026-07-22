@@ -287,7 +287,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
           <ReadRow label="H. Salida" value={log.departureTime} />
           <ReadRow label="H. Llegada" value={log.arrivalTime} />
           {log.hasArrivedG1 && (
-            <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600 }}>✓ Llegó</span>
+            <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Llegó</span>
           )}
         </div>
       )}
@@ -306,7 +306,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
           <ReadRow label="H. Salida" value={log.departureTime2} />
           <ReadRow label="H. Llegada" value={log.arrivalTime2} />
           {log.hasArrivedG2 && (
-            <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600 }}>✓ Llegó</span>
+            <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Llegó</span>
           )}
         </div>
       )}

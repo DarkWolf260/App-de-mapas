@@ -1,13 +1,14 @@
 import React from "react";
 import type { DrawnFeature } from "../types";
 import { getTotalPersonnel } from "../utils/logUtils";
-import { Minimize2, Maximize2 } from "lucide-react";
+import { Minimize2, Maximize2, LayoutDashboard, Users } from "lucide-react";
 
 interface DeploymentSummaryCardProps {
   drawnFeatures: DrawnFeature[];
   widgetCollapsed: boolean;
   onToggleCollapse: (collapsed: boolean) => void;
   onZoomToFeature?: (feat: DrawnFeature) => void;
+  selectedDate?: string;
 }
 
 interface ActivePoint {
@@ -48,8 +49,9 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   widgetCollapsed,
   onToggleCollapse,
   onZoomToFeature,
+  selectedDate,
 }) => {
-  const todayStr = new Date().toLocaleDateString("en-CA");
+  const todayStr = selectedDate || new Date().toLocaleDateString("en-CA");
   const activePoints = computeActivePoints(drawnFeatures);
   const totalOff = activePoints.reduce((acc, item) => acc + item.totalOff, 0);
   const totalGroups = activePoints.reduce((acc, item) => acc + item.groups, 0);
@@ -103,7 +105,7 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
           alignItems: "center",
         }}
       >
-        <span>📊 DESPLIEGUE ACTIVO</span>
+        <span><LayoutDashboard size={12} style={{ verticalAlign: "middle", marginRight: "4px" }} />DESPLIEGUE ACTIVO</span>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span style={{ fontSize: "9px", color: "var(--text-muted)", fontWeight: 500 }}>{todayStr}</span>
           <button
@@ -152,15 +154,15 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
               title={`Haga clic para enfocar ${pt.title}`}
             >
               <span style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100px" }}>{pt.title}</span>
-              <span style={{ flexShrink: 0, fontWeight: 700, color: "var(--color-green)", fontSize: "9px" }}>
-                👮{pt.totalOff} 👥{pt.groups}{pt.activeGroups > 0 && <span style={{ color: "#eab308", marginLeft: "4px" }}>●{pt.activeGroups}</span>}
+              <span style={{ flexShrink: 0, fontWeight: 700, color: "var(--color-green)", fontSize: "9px", display: "flex", alignItems: "center", gap: "3px" }}>
+                <Users size={9} />{pt.totalOff} <Users size={9} />{pt.groups}{pt.activeGroups > 0 && <span style={{ color: "#eab308", marginLeft: "4px" }}>●{pt.activeGroups}</span>}
               </span>
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", fontWeight: 800, marginTop: "4px", paddingTop: "4px", borderTop: "1px solid rgba(255,255,255,0.1)", color: "var(--color-green)" }}>
             <span>TOTALES:</span>
             <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              👮{totalOff} 👥{totalGroups}{totalActiveGroups > 0 && <span style={{ color: "#eab308" }}>●{totalActiveGroups}</span>}
+              <Users size={9} />{totalOff} <Users size={9} />{totalGroups}{totalActiveGroups > 0 && <span style={{ color: "#eab308" }}>●{totalActiveGroups}</span>}
             </span>
           </div>
         </div>

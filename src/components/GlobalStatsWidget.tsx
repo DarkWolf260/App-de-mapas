@@ -4,10 +4,11 @@ import { ChevronUp, ChevronDown } from "lucide-react";
 
 interface GlobalStatsWidgetProps {
   drawnFeatures: DrawnFeature[];
+  selectedDate?: string;
 }
 
-export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({ drawnFeatures }) => {
-  const todayStr = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
+export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({ drawnFeatures, selectedDate }) => {
+  const todayStr = useMemo(() => selectedDate || new Date().toLocaleDateString('en-CA'), [selectedDate]);
 
   // Compute auto values from map features (ONLY today's logs)
   const stats = useMemo(() => {

@@ -1,5 +1,5 @@
 import React from "react";
-import { Save } from "lucide-react";
+import { Save, Lock } from "lucide-react";
 import type { DrawnFeature } from "../../types";
 import { inputStyle, labelStyle, saveBtnStyle, PRESET_COLORS } from "./popupStyles";
 
@@ -85,7 +85,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
           marginTop: "2px",
         }}
       >
-        🔒 Ubicación bloqueada. Para mover este punto, haz clic en el candado arriba.
+        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><Lock size={10} /> Ubicación bloqueada. Para mover este punto, haz clic en el candado arriba.</span>
       </div>
     )}
 

@@ -30,6 +30,7 @@ export interface UseMapSetupProps {
   removeFeatureId: RemoveFeatureId | null;
   importedFeatures: DrawnFeature[];
   hiddenFeatures: Record<number, boolean>;
+  selectedDate: string;
 }
 
 export const useMapSetup = ({
@@ -43,6 +44,7 @@ export const useMapSetup = ({
   removeFeatureId,
   importedFeatures,
   hiddenFeatures,
+  selectedDate,
 }: UseMapSetupProps) => {
   const mapDiv = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
@@ -72,11 +74,18 @@ export const useMapSetup = ({
   const drawnFeaturesRef = useRef(drawnFeatures);
   useEffect(() => { drawnFeaturesRef.current = drawnFeatures; }, [drawnFeatures]);
 
+  const selectedDateRef = useRef(selectedDate);
+  useEffect(() => { selectedDateRef.current = selectedDate; }, [selectedDate]);
+
   const [mapReady, setMapReady] = useState(false);
   const [customPopup, setCustomPopup] = useState<{ mapPoint: __esri.Point; feat: DrawnFeature } | null>(null);
   const [_showHistoryInPopup, setShowHistoryInPopup] = useState(false);
   const [popupEditDate, setPopupEditDate] = useState(new Date().toLocaleDateString("en-CA"));
   const [popupTick, setPopupTick] = useState(0);
+
+  useEffect(() => {
+    setPopupEditDate(selectedDate);
+  }, [selectedDate]);
 
   useEffect(() => {
     setShowHistoryInPopup(false);
@@ -100,7 +109,7 @@ export const useMapSetup = ({
     const sketchLayer = sketchLayerRef.current;
     const view = viewRef.current;
     if (sketchLayer && view) {
-      deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef }, setHtmlLabels);
+      deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef, selectedDateRef }, setHtmlLabels);
     }
   }, []);
 
@@ -167,7 +176,7 @@ export const useMapSetup = ({
       sketchVMRef.current = svm;
 
       const runDeconflict = () => {
-        deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef }, setHtmlLabels);
+        deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef, selectedDateRef }, setHtmlLabels);
       };
       deconflictGraphicsRef.current = runDeconflict;
       runDeconflict();
@@ -297,7 +306,7 @@ export const useMapSetup = ({
             const g = result.graphic;
             const featId = g.attributes?.id || g.uid;
             const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-            setTooltip({ text: feat ? getLabelText(feat) : (g.attributes?.title || "Elemento"), x: evt.x, y: evt.y, visible: true });
+            setTooltip({ text: feat ? getLabelText(feat, selectedDateRef.current) : (g.attributes?.title || "Elemento"), x: evt.x, y: evt.y, visible: true });
             return;
           }
           setTooltip((t) => (t.visible ? { ...t, visible: false } : t));
@@ -413,10 +422,10 @@ export const useMapSetup = ({
   useEffect(() => {
     const layer = sketchLayerRef.current;
     if (!layer) return;
-    syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, currentZoom, layer);
+    syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, currentZoom, layer, selectedDateRef.current);
     deconflictGraphicsRef.current?.();
   // eslint-disable-next-line react-hooks/exhaustive-deps -- layerVisibility sub-props are sufficient
-  }, [drawnFeatures, activeColor, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.hideNestedAreas, mapReady, currentZoom]);
+  }, [drawnFeatures, activeColor, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.hideNestedAreas, mapReady, currentZoom, selectedDate]);
 
   // ── 7. Sync imported features ────────────────────────────────────────────────
   useEffect(() => {

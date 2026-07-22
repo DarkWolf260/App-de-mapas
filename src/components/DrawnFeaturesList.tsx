@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Calendar, FolderOpen } from "lucide-react";
 import type { DrawnFeature } from "../types";
 import { FeatureCard } from "./FeatureCard";
 
@@ -238,7 +238,7 @@ export const DrawnFeaturesList: React.FC<DrawnFeaturesListProps> = ({
                       }}
                       title="Ver bitácoras de todos los Sitios de Trabajo a la vez"
                     >
-                      📅 Ver Bitácoras
+                      <Calendar size={11} /> Ver Bitácoras
                     </button>
                   )
                 }
@@ -278,7 +278,7 @@ export const DrawnFeaturesList: React.FC<DrawnFeaturesListProps> = ({
                               letterSpacing: "0.02em",
                             }}
                           >
-                            📁 Sector: {parentPoly?.title || "Sector"}
+                            <FolderOpen size={10} style={{ flexShrink: 0 }} /> Sector: {parentPoly?.title || "Sector"}
                           </div>
                           <div
                             style={{

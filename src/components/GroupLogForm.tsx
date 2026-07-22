@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import type { DailyLog } from "../types";
-import { Save } from "lucide-react";
+import { Save, Check } from "lucide-react";
 import { GroupFields } from "./GroupFields";
 
 const INPUT_STYLE: React.CSSProperties = {
@@ -116,7 +116,7 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
       {/* Save button */}
       {onSave && (
         <div className="rr-editor-footer" style={{ marginTop: "4px" }}>
-          {saved && <span className="rr-saved-msg">✓ Guardado</span>}
+          {saved && <span className="rr-saved-msg" style={{ display: "flex", alignItems: "center", gap: "3px" }}><Check size={11} /> Guardado</span>}
           <button className="rr-save-btn" onClick={onSave} disabled={saving}>
             <Save size={12} />
             {saving ? "Guardando…" : "Guardar registro"}

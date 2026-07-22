@@ -13,7 +13,8 @@ export function syncDrawnFeaturesToGraphics(
   hiddenFeatures: Record<number, boolean>,
   layerVisibility: LayerVisibility,
   currentZoom: number,
-  layer: GraphicsLayer
+  layer: GraphicsLayer,
+  dateStr?: string,
 ): void {
   const { parentsMap, polygonAreas } = buildParentsMap(drawnFeatures);
 
@@ -34,10 +35,10 @@ export function syncDrawnFeaturesToGraphics(
 
       const label = layer.graphics.find((x) => x.attributes?.isLabel && String(x.attributes?.parentId) === String(feat.id));
       if (label) {
-        syncExistingLabel(label, feat, g, parentsMap, currentZoom, layerVisibility, isHidden, shouldHideNested);
+        syncExistingLabel(label, feat, g, parentsMap, currentZoom, layerVisibility, isHidden, shouldHideNested, dateStr);
       }
     } else {
-      addFeatureGraphic(feat, hiddenFeatures, layerVisibility, currentZoom, parentsMap, isHidden, shouldHideNested, layer);
+      addFeatureGraphic(feat, hiddenFeatures, layerVisibility, currentZoom, parentsMap, isHidden, shouldHideNested, layer, dateStr);
     }
   });
 
@@ -52,7 +53,8 @@ function syncExistingLabel(
   currentZoom: number,
   layerVisibility: LayerVisibility,
   isHidden: boolean,
-  shouldHideNested: boolean
+  shouldHideNested: boolean,
+  dateStr?: string,
 ): void {
   const isPolygonLabel = label.attributes?.isPolygonLabel;
   const isSubpolygon = isPolygonLabel && parentsMap[feat.id] !== undefined;
@@ -75,7 +77,7 @@ function syncExistingLabel(
 
   if (label.symbol) {
     const ts = label.symbol as TextSymbol;
-    const targetText = getLabelText(feat);
+    const targetText = getLabelText(feat, dateStr);
     const hasPersonnel = !isPolygonLabel && targetText !== feat.title;
     const showBox = hasPersonnel;
     const currentHasBox = ts.backgroundColor !== null && ts.backgroundColor !== undefined;
@@ -101,7 +103,8 @@ function addFeatureGraphic(
   parentsMap: Record<number, number | undefined>,
   isHidden: boolean,
   shouldHideNested: boolean,
-  layer: GraphicsLayer
+  layer: GraphicsLayer,
+  dateStr?: string,
 ): void {
   const geomCfg = convertGeoJSONGeometry(feat);
   if (!geomCfg) return;
@@ -119,11 +122,11 @@ function addFeatureGraphic(
   if (feat.geojsonGeometry && (feat.geojsonGeometry.type === "Point" || feat.geojsonGeometry.type === "Polygon")) {
     const isPolyLabel = feat.geojsonGeometry.type === "Polygon";
     const labelGeom = feat.geojsonGeometry.type === "Point" ? ng.geometry!.clone() : centroidExecute(ng.geometry!);
-    const hasPersonnel = !isPolyLabel && getLabelText(feat) !== feat.title;
+    const hasPersonnel = !isPolyLabel && getLabelText(feat, dateStr) !== feat.title;
     const showBox = hasPersonnel;
 
     const labelSym = new TextSymbol({
-      text: getLabelText(feat),
+      text: getLabelText(feat, dateStr),
       color: "white",
       backgroundColor: showBox ? [15, 23, 42, 0.95] : null,
       borderLineColor: showBox ? [56, 189, 248, 0.95] : null,

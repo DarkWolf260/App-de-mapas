@@ -1,6 +1,6 @@
 import React from "react";
 import type { DrawnFeature } from "../types";
-import { Activity, Square, MapPin, Maximize2, Trash2, Lock, Unlock } from "lucide-react";
+import { Activity, Square, MapPin, Maximize2, Trash2, Lock, Unlock, ChevronUp, ChevronDown, ChevronRight, Calendar } from "lucide-react";
 
 interface FeatureCardProps {
   feat: DrawnFeature;
@@ -152,7 +152,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           }}
           title="Subir orden (traer al frente)"
         >
-          ▲ Subir
+          <span style={{ display: "flex", alignItems: "center", gap: "1px" }}><ChevronUp size={11} /> Subir</span>
         </button>
         <button
           onClick={() => onReorderFeature(feat.id, "down")}
@@ -168,7 +168,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           }}
           title="Bajar orden (llevar al fondo)"
         >
-          ▼ Bajar
+          <span style={{ display: "flex", alignItems: "center", gap: "1px" }}><ChevronDown size={11} /> Bajar</span>
         </button>
         {feat.type === "point" && onOpenRangeReport && (
           <button
@@ -186,7 +186,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             }}
             title="Ver bitácora del 24 a hoy"
           >
-            📅 Rango (24-Hoy)
+            <Calendar size={11} /> Rango (24-Hoy)
           </button>
         )}
         {feat.type === "polygon" && hasChildren && onToggleChildren && (
@@ -208,7 +208,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             }}
             title={isChildrenCollapsed ? "Mostrar elementos contenidos" : "Ocultar elementos contenidos"}
           >
-            {isChildrenCollapsed ? `▶ Contenidos (${childrenCount})` : `▼ Contenidos (${childrenCount})`}
+            {isChildrenCollapsed ? <span style={{ display: "flex", alignItems: "center", gap: "2px" }}><ChevronRight size={11} /> Contenidos ({childrenCount})</span> : <span style={{ display: "flex", alignItems: "center", gap: "2px" }}><ChevronDown size={11} /> Contenidos ({childrenCount})</span>}
           </button>
         )}
         <button

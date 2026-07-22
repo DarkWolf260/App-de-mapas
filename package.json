@@ -15,6 +15,7 @@
     "@arcgis/core": "^5.1.12",
     "lucide-react": "^1.25.0",
     "react": "^19.2.7",
+    "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.7",
     "rxdb": "^17.4.0",
     "rxjs": "^7.8.2"

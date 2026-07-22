@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { DrawnFeature, DailyLog, LayerVisibility } from "../types";
 import { computeContainedItems } from "../utils/spatialUtils";
-import { Lock, Unlock, FileText, Settings, History, Layers, Info } from "lucide-react";
+import { Lock, Unlock, FileText, Settings, History, Layers, Info, X } from "lucide-react";
 import { TAB_BTN_BASE } from "./popup/popupStyles";
 import { GeneralTab } from "./popup/GeneralTab";
 import { OperationTab } from "./popup/OperationTab";
@@ -196,8 +196,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
             {activeFeat.locked ? <Lock size={12} /> : <Unlock size={12} style={{ opacity: 0.4 }} />}
           </button>
         </div>
-        <button onClick={onClose} style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.85rem", padding: "2px", lineHeight: 1 }} title="Cerrar">
-          ✕
+        <button onClick={onClose} style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: "2px", lineHeight: 1, display: "flex", alignItems: "center" }} title="Cerrar">
+          <X size={14} />
         </button>
       </div>
 

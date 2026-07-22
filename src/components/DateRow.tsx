@@ -1,6 +1,6 @@
 import React from "react";
 import type { DrawnFeature, DailyLog } from "../types";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Calendar, Users, FileText } from "lucide-react";
 import { GroupLogForm } from "./GroupLogForm";
 import { useLogEditor } from "../hooks/useLogEditor";
 import { emptyLog, logHasAnyData, getGroupData } from "../utils/logUtils";
@@ -55,8 +55,8 @@ export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDail
         onClick={toggleExpand}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-main)" }}>
-            📅 {dateStr}
+          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: "4px" }}>
+            <Calendar size={12} /> {dateStr}
           </span>
           <span
             style={{
@@ -83,7 +83,7 @@ export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDail
               <strong style={{ color: "var(--color-info)" }}>G1:</strong> {g1.groupName}
               {g1.unitOut ? ` (${g1.unitOut})` : ""}
               {g1.managerName ? ` - ${g1.managerName}` : ""}
-              {g1.officersCount ? ` [👮 ${g1.officersCount}]` : ""}
+              {g1.officersCount ? <span style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>[<Users size={10} /> {g1.officersCount}]</span> : ""}
             </div>
           )}
           {hasG2 && g2.groupName && (
@@ -91,12 +91,12 @@ export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDail
               <strong style={{ color: "var(--color-purple)" }}>G2:</strong> {g2.groupName}
               {g2.unitOut ? ` (${g2.unitOut})` : ""}
               {g2.managerName ? ` - ${g2.managerName}` : ""}
-              {g2.officersCount ? ` [👮 ${g2.officersCount}]` : ""}
+              {g2.officersCount ? <span style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>[<Users size={10} /> {g2.officersCount}]</span> : ""}
             </div>
           )}
           {effectiveLog.observations && (
             <div style={{ color: "var(--color-info)", fontSize: "0.62rem", marginTop: "2px", fontStyle: "italic" }}>
-              📝 {effectiveLog.observations}
+              <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><FileText size={10} /> {effectiveLog.observations}</span>
             </div>
           )}
         </div>

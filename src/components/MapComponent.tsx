@@ -27,6 +27,8 @@ interface MapComponentProps {
   onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
   onUpdateFeatureColor?: (id: number, newColor: string) => Promise<void>;
   onZoomToFeature?: (feat: DrawnFeature) => void;
+  selectedDate: string;
+  onSelectedDateChange?: (date: string) => void;
 }
   
   const MapComponent: React.FC<MapComponentProps> = (props) => {
@@ -154,6 +156,7 @@ interface MapComponentProps {
           localStorage.setItem("pc_widget_collapsed", String(collapsed));
         }}
         onZoomToFeature={onZoomToFeature}
+        selectedDate={props.selectedDate}
       />
 
       {/* Floating Zoom level indicator in bottom-right */}

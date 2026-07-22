@@ -5,6 +5,7 @@ import { ChevronLeft, Menu } from "lucide-react";
 import { RangeReportModal } from "./components/RangeReportModal";
 import { FloatingSearchBar } from "./components/FloatingSearchBar";
 import { GlobalStatsWidget } from "./components/GlobalStatsWidget";
+import { DateTimeline } from "./components/DateTimeline";
 import type { DrawnFeature, LayerVisibility, RemoveFeatureId } from "./types";
 import { useFeatureDB } from "./hooks/useFeatureDB";
 import { useFeatureVisibility } from "./hooks/useFeatureVisibility";
@@ -27,6 +28,7 @@ function App() {
   const [removeFeatureId, setRemoveFeatureId] = useState<RemoveFeatureId | null>(null);
   const [importedFeatures, setImportedFeatures] = useState<DrawnFeature[]>([]);
   const [rangeReportFeature, setRangeReportFeature] = useState<DrawnFeature | "all" | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toLocaleDateString("en-CA"));
 
   const {
     db,
@@ -79,6 +81,8 @@ function App() {
         onUpdateFeatureDescription={handleUpdateFeatureDescription}
         onUpdateFeatureColor={handleUpdateFeatureColor}
         onZoomToFeature={setZoomToFeature}
+        selectedDate={selectedDate}
+        onSelectedDateChange={setSelectedDate}
       />
 
       <FloatingSearchBar
@@ -89,6 +93,12 @@ function App() {
 
       <GlobalStatsWidget
         drawnFeatures={sortedDrawnFeatures}
+        selectedDate={selectedDate}
+      />
+
+      <DateTimeline
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
       />
 
       <button
