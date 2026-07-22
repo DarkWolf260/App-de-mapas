@@ -200,24 +200,32 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         <>
           <div style={sectionStyle}>
             <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <span>Puntos en esta zona ({containedWithLogs.length})</span>
+              <span>Puntos con reporte ({containedWithLogs.filter(({ log }) => {
+                const rc = String(log.rescuedCount || "").trim();
+                const rr = String(log.recoveredCount || "").trim();
+                const rp = String(log.rescuedPetsCount || "").trim();
+                return (rc && rc !== "0") || (rr && rr !== "0") || (rp && rp !== "0");
+              }).length})</span>
               <span style={{ fontWeight: 400, fontSize: "0.5rem", color: "var(--text-muted)", textAlign: "right" }}>
                 <span style={{ color: "var(--color-green)" }}>Resc</span> | <span style={{ color: "var(--color-info)" }}>Recup</span> | <span style={{ color: "var(--color-purple)" }}>Masc</span>
               </span>
             </div>
             {containedWithLogs.map(({ point, log }) => {
-              const stats: React.ReactNode[] = [];
-              if (log.rescuedCount) stats.push(<span key="r" style={{ color: "var(--color-green)", fontWeight: 700 }}>{log.rescuedCount}</span>);
-              if (log.recoveredCount) stats.push(<span key="c" style={{ color: "var(--color-info)", fontWeight: 700 }}>{log.recoveredCount}</span>);
-              if (log.rescuedPetsCount) stats.push(<span key="p" style={{ color: "var(--color-purple)", fontWeight: 700 }}>{log.rescuedPetsCount}</span>);
+              const rc = String(log.rescuedCount || "0").trim();
+              const rr = String(log.recoveredCount || "0").trim();
+              const rp = String(log.rescuedPetsCount || "0").trim();
+              const hasData = (rc && rc !== "0") || (rr && rr !== "0") || (rp && rp !== "0");
+              if (!hasData) return null;
               return (
                 <div key={point.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
                   <span style={{ fontSize: "0.62rem", fontWeight: 600, color: "var(--text-main)" }}>{point.title}</span>
-                  <div style={{ display: "flex", gap: "6px", fontSize: "0.6rem", alignItems: "center" }}>
-                    {stats.map((s, i) => (
-                      <React.Fragment key={i}>{i > 0 && <span style={{ color: "var(--text-muted)" }}>|</span>}{s}</React.Fragment>
-                    ))}
-                  </div>
+                <div style={{ display: "flex", gap: "6px", fontSize: "0.6rem", alignItems: "center" }}>
+                  <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{rc}</span>
+                  <span style={{ color: "var(--text-muted)" }}>|</span>
+                  <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{rr}</span>
+                  <span style={{ color: "var(--text-muted)" }}>|</span>
+                  <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>{rp}</span>
+                </div>
                 </div>
               );
             })}
