@@ -1937,6 +1937,17 @@ input:checked + .slider:before {
   box-shadow: 0 4px 16px rgba(56, 189, 248, 0.2);
 }
 
+.swipe-toggle-btn.active {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: rgba(244, 63, 94, 0.4);
+  color: #f43f5e;
+}
+
+.swipe-toggle-btn.active:hover {
+  background: rgba(244, 63, 94, 0.25);
+  border-color: rgba(244, 63, 94, 0.6);
+}
+
 .swipe-toggle-label {
   line-height: 1;
 }
@@ -2045,7 +2056,7 @@ input:checked + .slider:before {
 /* --- Swipe Layer Toggle Button --- */
 .swipe-layer-toggle {
   position: absolute;
-  bottom: 16px;
+  bottom: 56px;
   left: 16px;
   z-index: 200;
   display: flex;
@@ -2074,7 +2085,7 @@ input:checked + .slider:before {
 /* --- Swipe Layer Panel --- */
 .swipe-layer-panel {
   position: absolute;
-  bottom: 60px;
+  bottom: 100px;
   left: 16px;
   z-index: 200;
   display: flex;

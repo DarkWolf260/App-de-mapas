@@ -198,17 +198,15 @@ interface MapComponentProps {
         <SwipeComparison view={viewRef.current} onClose={deactivateSwipe} />
       )}
 
-      {/* Floating satellite comparison button — always visible, bottom-left */}
-      {!swipeActive && (
-        <button
-          className="swipe-toggle-btn"
-          onClick={activateSwipe}
-          title="Comparar imagenes satelitales antes/despues"
-        >
-          <Satellite size={18} />
-          <span className="swipe-toggle-label">Antes / Despues</span>
-        </button>
-      )}
+      {/* Floating comparison toggle button — always visible, bottom-left */}
+      <button
+        className={`swipe-toggle-btn ${swipeActive ? "active" : ""}`}
+        onClick={swipeActive ? deactivateSwipe : activateSwipe}
+        title={swipeActive ? "Cerrar comparacion" : "Comparar antes/despues"}
+      >
+        <Satellite size={18} />
+        <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Despues"}</span>
+      </button>
     </div>
   );
 };

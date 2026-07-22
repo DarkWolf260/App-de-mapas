@@ -18,18 +18,20 @@ declare module "react" {
 const COG_SOURCES = [
   {
     id: "cogA",
-    url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B140001100B5C810.tif",
+    url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B140001100B5CA10.tif",
     label: "Escena A — Jun 29",
   },
   {
     id: "cogB",
-    url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B040001100075610.tif",
-    label: "Escena B — Jun 26",
+    url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B140001100B5C810.tif",
+    label: "Escena B — Jun 29",
+  },
+  {
+    id: "cogC",
+    url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B140001100B5C710.tif",
+    label: "Escena C — Jun 29",
   },
 ] as const;
-
-const LA_GUAIRA_CENTER: [number, number] = [-66.959, 10.603];
-const LA_GUAIRA_ZOOM = 14;
 
 const stretchRenderer = new RasterStretchRenderer({
   stretchType: "min-max",
@@ -37,7 +39,7 @@ const stretchRenderer = new RasterStretchRenderer({
   useGamma: true,
 });
 
-type LayerStatus = "loading" | "ok" | "error";
+type LayerStatus = "idle" | "loading" | "ok" | "error";
 
 interface SwipeComparisonProps {
   view: MapView;
@@ -47,31 +49,76 @@ interface SwipeComparisonProps {
 export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose }) => {
   const [warning, setWarning] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [layerVis, setLayerVis] = useState<Record<string, boolean>>({ cogA: true, cogB: true });
-  const [layerStatus, setLayerStatus] = useState<Record<string, LayerStatus>>({ cogA: "loading", cogB: "loading" });
+  const [layerVis, setLayerVis] = useState<Record<string, boolean>>({ cogA: false, cogB: true, cogC: false });
+  const [layerStatus, setLayerStatus] = useState<Record<string, LayerStatus>>({ cogA: "idle", cogB: "idle", cogC: "idle" });
   const cogLayersRef = useRef<Map<string, ImageryTileLayer>>(new Map());
+  const groupLayerRef = useRef<GroupLayer | null>(null);
   const cleanupRef = useRef<() => void>(() => {});
 
   const setStatus = useCallback((id: string, status: LayerStatus) => {
     setLayerStatus((prev) => ({ ...prev, [id]: status }));
   }, []);
 
+  const loadCog = useCallback(async (id: string) => {
+    const src = COG_SOURCES.find((s) => s.id === id);
+    if (!src || !groupLayerRef.current) return;
+
+    const existing = cogLayersRef.current.get(id);
+    if (existing) {
+      groupLayerRef.current.add(existing);
+      setStatus(id, "ok");
+      return;
+    }
+
+    setStatus(id, "loading");
+    const layer = new ImageryTileLayer({
+      url: src.url,
+      bandIds: [2, 1, 0],
+      renderer: stretchRenderer,
+      title: src.label,
+    });
+    cogLayersRef.current.set(id, layer);
+
+    try {
+      await layer.load();
+      groupLayerRef.current?.add(layer);
+      setStatus(id, "ok");
+    } catch {
+      setStatus(id, "error");
+      cogLayersRef.current.delete(id);
+      setWarning(`${src.label} no disponible`);
+      setTimeout(() => setWarning(null), 6000);
+    }
+  }, [setStatus]);
+
+  const unloadCog = useCallback((id: string) => {
+    const layer = cogLayersRef.current.get(id);
+    if (layer && groupLayerRef.current) {
+      groupLayerRef.current.remove(layer);
+      layer.destroy();
+      cogLayersRef.current.delete(id);
+      setStatus(id, "idle");
+    }
+  }, [setStatus]);
+
   const toggleLayer = useCallback((id: string) => {
     setLayerVis((prev) => {
       const next = { ...prev, [id]: !prev[id] };
-      const layer = cogLayersRef.current.get(id);
-      if (layer) layer.visible = next[id];
+      if (next[id]) {
+        loadCog(id);
+      } else {
+        unloadCog(id);
+      }
       return next;
     });
-  }, []);
+  }, [loadCog, unloadCog]);
 
   useEffect(() => {
     let disposed = false;
-    const addedLayers: (ImageryTileLayer | GroupLayer)[] = [];
 
     const init = async () => {
       const groupLayer = new GroupLayer({ title: "Post-sismo" });
-      addedLayers.push(groupLayer);
+      groupLayerRef.current = groupLayer;
 
       const map = view.map!;
       if (!map.layers.includes(groupLayer)) map.add(groupLayer, 0);
@@ -88,36 +135,7 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
         swipeEl.position = 50;
       }
 
-      view
-        .goTo(
-          { center: LA_GUAIRA_CENTER, zoom: LA_GUAIRA_ZOOM },
-          { duration: 1200, easing: "ease-in-out" },
-        )
-        .catch(() => {});
-
-      const loadOne = async (src: (typeof COG_SOURCES)[number]) => {
-        const layer = new ImageryTileLayer({
-          url: src.url,
-          bandIds: [2, 1, 0],
-          renderer: stretchRenderer,
-          title: src.label,
-        });
-        cogLayersRef.current.set(src.id, layer);
-
-        try {
-          await layer.load();
-          if (disposed) return;
-          groupLayer.add(layer);
-          setStatus(src.id, "ok");
-        } catch {
-          if (disposed) return;
-          setStatus(src.id, "error");
-          setWarning(`${src.label} no disponible`);
-          setTimeout(() => setWarning(null), 6000);
-        }
-      };
-
-      await Promise.all(COG_SOURCES.map(loadOne));
+      loadCog("cogB");
     };
 
     init();
@@ -133,16 +151,16 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
         }
         const map = view.map;
         if (map) {
-          addedLayers.forEach((l) => {
-            try { map.remove(l); } catch {}
-          });
+          try { map.remove(groupLayerRef.current!); } catch {}
         }
+        cogLayersRef.current.forEach((l) => { try { l.destroy(); } catch {} });
         cogLayersRef.current.clear();
+        groupLayerRef.current = null;
       } catch {}
     };
 
     return () => cleanupRef.current();
-  }, [view, setStatus]);
+  }, [view, loadCog]);
 
   const handleClose = () => {
     cleanupRef.current();
@@ -166,10 +184,6 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
           </span>
         </div>
       </div>
-
-      <button className="swipe-close-btn" onClick={handleClose} title="Cerrar comparacion">
-        <X size={18} />
-      </button>
 
       <button
         className="swipe-layer-toggle"
