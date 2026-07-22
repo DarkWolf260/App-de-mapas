@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import type { DrawnFeature, DailyLog, LayerVisibility } from "../types";
 import { computeContainedItems } from "../utils/spatialUtils";
-import { Lock, Unlock, FileText, Settings, History, Layers } from "lucide-react";
+import { Lock, Unlock, FileText, Settings, History, Layers, Info } from "lucide-react";
 import { TAB_BTN_BASE } from "./popup/popupStyles";
 import { GeneralTab } from "./popup/GeneralTab";
 import { OperationTab } from "./popup/OperationTab";
 import { HistoryTab } from "./popup/HistoryTab";
 import { ContainedTab } from "./popup/ContainedTab";
+import { InfoTab } from "./popup/InfoTab";
 
 interface CustomMapPopupProps {
   customPopup: { mapPoint: __esri.Point; feat: DrawnFeature } | null;
@@ -24,7 +25,7 @@ interface CustomMapPopupProps {
   onClose: () => void;
 }
 
-type TabId = "general" | "operation" | "history" | "contained";
+type TabId = "info" | "general" | "operation" | "history" | "contained";
 
 const EMPTY_LOG: Omit<DailyLog, "date"> = {
   groupName: "", managerName: "", managerPhone: "", unitOut: "",
@@ -108,9 +109,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
   useEffect(() => {
     if (!activeFeat || !layerVisibility.sketch) {
-      if (activeFeat?.type === "point") setActiveTab("operation");
-      else if (activeFeat?.type === "polygon") setActiveTab("contained");
-      else setActiveTab("general");
+      setActiveTab("info");
     } else {
       setActiveTab("general");
     }
@@ -187,7 +186,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: "6px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span style={{ fontWeight: 800, fontSize: "0.72rem", color: localColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            {isPolygon ? "🗺️ Polígono" : activeFeat.type === "polyline" ? "📏 Línea" : "📍 Punto"}
+            {activeFeat.title}
           </span>
           <button
             onClick={() => onToggleFeatureLock?.(activeFeat.id, !activeFeat.locked)}
@@ -202,18 +201,26 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         </button>
       </div>
 
-      {/* Tab Selector — point */}
-      {isPoint && (
+      {/* Tab Selector — when sketch is off */}
+      {!showSketchTabs && (
         <div style={TAB_BAR_STYLE}>
-          {showSketchTabs && (
-            <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={10} /> General</button>
+          <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={10} /> Información</button>
+          {activeTab === "operation" && (
+            <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(true)}><FileText size={10} /> Editar</button>
           )}
+        </div>
+      )}
+
+      {/* Tab Selector — point (sketch on) */}
+      {isPoint && showSketchTabs && (
+        <div style={TAB_BAR_STYLE}>
+          <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={10} /> General</button>
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={10} /> Operación</button>
           <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}><History size={10} /> Historial</button>
         </div>
       )}
 
-      {/* Tab Selector — polygon */}
+      {/* Tab Selector — polygon (sketch on) */}
       {isPolygon && showSketchTabs && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={10} /> General</button>
@@ -221,7 +228,25 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         </div>
       )}
 
-      {/* Tab Content */}
+      {/* Tab Selector — polyline (sketch on) */}
+      {!isPoint && !isPolygon && showSketchTabs && (
+        <div style={TAB_BAR_STYLE}>
+          <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={10} /> General</button>
+        </div>
+      )}
+
+      {/* Tab Content — Info (sketch off) */}
+      {activeTab === "info" && (
+        <InfoTab
+          activeFeat={activeFeat}
+          dailyLog={localLog}
+          onEdit={() => setActiveTab("operation")}
+          drawnFeatures={drawnFeatures}
+          popupEditDate={popupEditDate}
+        />
+      )}
+
+      {/* Tab Content — General (sketch on) */}
       {activeTab === "general" && (
         <GeneralTab
           activeFeat={activeFeat}
