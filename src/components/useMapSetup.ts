@@ -18,6 +18,9 @@ import { deconflictGraphics } from "../utils/labelDeconfliction";
 import { syncDrawnFeaturesToGraphics, syncImportedFeatures } from "../utils/graphicsSync";
 import type { DrawnFeature, HtmlLabel, LayerVisibility, RemoveFeatureId } from "../types";
 
+const LA_GUAIRA_CENTER: [number, number] = [-66.959, 10.603];
+const LA_GUAIRA_ZOOM = 14;
+
 export interface UseMapSetupProps {
   apiKey: string;
   activeBasemap: string;
@@ -104,6 +107,7 @@ export const useMapSetup = ({
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number; visible: boolean }>({
     text: "", x: 0, y: 0, visible: false,
   });
+  const [swipeActive, setSwipeActive] = useState(false);
 
   const callDeconflict = useCallback(() => {
     const sketchLayer = sketchLayerRef.current;
@@ -340,6 +344,7 @@ export const useMapSetup = ({
       setSelectedGraphic(null);
       if (sketchVMRef.current?.state === "active") sketchVMRef.current.cancel();
     }
+    if (layerVisibility.sketch) setSwipeActive(false);
   }, [layerVisibility.sketch]);
 
   // ── 4. Toolbar handlers ──────────────────────────────────────────────────────
@@ -442,6 +447,23 @@ export const useMapSetup = ({
     }
   }, [activeCity]);
 
+  const activateSwipe = useCallback(() => {
+    if (layerVisibilityRef.current.sketch) {
+      setActiveTool(null);
+      setSelectedGraphic(null);
+      if (sketchVMRef.current?.state === "active") sketchVMRef.current.cancel();
+    }
+    setSwipeActive(true);
+    viewRef.current?.goTo(
+      { center: LA_GUAIRA_CENTER, zoom: LA_GUAIRA_ZOOM },
+      { duration: 1200, easing: "ease-in-out" },
+    ).catch(() => {});
+  }, []);
+
+  const deactivateSwipe = useCallback(() => {
+    setSwipeActive(false);
+  }, []);
+
   let popupScreenPos = null;
   if (customPopup && viewRef.current) {
     const screenPt = viewRef.current.toScreen(customPopup.mapPoint);
@@ -462,6 +484,10 @@ export const useMapSetup = ({
     sketchLayer: sketchLayerRef.current,
     currentZoom,
     htmlLabels,
+    swipeActive,
+    viewRef,
+    activateSwipe,
+    deactivateSwipe,
     setCustomPopup,
     setPopupEditDate,
     handleSelectTool,

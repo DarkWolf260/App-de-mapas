@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@arcgis/core": "^5.1.12",
+    "@arcgis/map-components": "^5.1.13",
     "lucide-react": "^1.25.0",
     "react": "^19.2.7",
     "react-datepicker": "^9.1.0",

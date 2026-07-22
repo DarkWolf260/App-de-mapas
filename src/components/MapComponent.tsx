@@ -5,8 +5,10 @@ import { DrawingToolbar } from "./DrawingToolbar";
 import { CustomMapPopup } from "./CustomMapPopup";
 import { DeploymentSummaryCard } from "./DeploymentSummaryCard";
 import { HtmlPointLabels } from "./HtmlPointLabels";
+import { SwipeComparison } from "./SwipeComparison";
 import { useMapSetup } from "./useMapSetup";
 import { useDraggable } from "../hooks/useDraggable";
+import { Satellite } from "lucide-react";
 
 interface MapComponentProps {
   apiKey: string;
@@ -60,6 +62,10 @@ interface MapComponentProps {
     sketchLayer,
     currentZoom,
     htmlLabels,
+    swipeActive,
+    viewRef,
+    activateSwipe,
+    deactivateSwipe,
     setCustomPopup,
     setPopupEditDate,
     handleSelectTool,
@@ -186,6 +192,23 @@ interface MapComponentProps {
 
       {/* HTML point labels with background (personnel info) */}
       <HtmlPointLabels labels={htmlLabels} />
+
+      {/* Satellite Swipe Comparison */}
+      {swipeActive && viewRef.current && (
+        <SwipeComparison view={viewRef.current} onClose={deactivateSwipe} />
+      )}
+
+      {/* Floating satellite comparison button — always visible, bottom-left */}
+      {!swipeActive && (
+        <button
+          className="swipe-toggle-btn"
+          onClick={activateSwipe}
+          title="Comparar imagenes satelitales antes/despues"
+        >
+          <Satellite size={18} />
+          <span className="swipe-toggle-label">Satelital</span>
+        </button>
+      )}
     </div>
   );
 };

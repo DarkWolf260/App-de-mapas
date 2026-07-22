@@ -16,7 +16,7 @@ interface CustomMapPopupProps {
   layerVisibility: LayerVisibility;
   popupEditDate: string;
   setPopupEditDate: (date: string) => void;
-  onSaveDailyLog?: (featureId: number, log: Partial<DailyLog>) => Promise<void>;
+  onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
   onToggleFeatureLock?: (id: number, locked: boolean) => void;
   onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
   onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
@@ -91,7 +91,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   const [generalSaveSuccess, setGeneralSaveSuccess] = useState(false);
   const [logSaveSuccess, setLogSaveSuccess] = useState(false);
 
-  const [localLog, setLocalLog] = useState<Partial<DailyLog>>({ date: popupEditDate, ...EMPTY_LOG });
+  const [localLog, setLocalLog] = useState<DailyLog>({ date: popupEditDate, ...EMPTY_LOG });
 
   useEffect(() => {
     if (!activeFeat) return;
