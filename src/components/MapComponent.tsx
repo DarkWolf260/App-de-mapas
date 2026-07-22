@@ -206,7 +206,7 @@ interface MapComponentProps {
           title="Comparar imagenes satelitales antes/despues"
         >
           <Satellite size={18} />
-          <span className="swipe-toggle-label">Satelital</span>
+          <span className="swipe-toggle-label">Antes / Despues</span>
         </button>
       )}
     </div>

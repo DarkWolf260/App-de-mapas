@@ -1,9 +1,8 @@
-import { useEffect, useState, useRef } from "react";
-import TileLayer from "@arcgis/core/layers/TileLayer";
+import { useEffect, useState, useRef, useCallback } from "react";
 import ImageryTileLayer from "@arcgis/core/layers/ImageryTileLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
 import RasterStretchRenderer from "@arcgis/core/renderers/RasterStretchRenderer";
-import { X, ChevronLeft, ChevronRight, AlertTriangle, Loader } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, AlertTriangle, Loader, Layers } from "lucide-react";
 import type MapView from "@arcgis/core/views/MapView";
 
 import "@arcgis/map-components/components/arcgis-swipe";
@@ -16,22 +15,21 @@ declare module "react" {
   }
 }
 
-const VANTOR_BEFORE_URL =
-  "https://tiles.arcgis.com/tiles/F4wmVgGRtJMzSu8M/arcgis/rest/services/Vantor_Antes_WTL1/MapServer";
-
-const VANTOR_AFTER_COG_A =
-  "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B140001100B5C810.tif";
-
-const VANTOR_AFTER_COG_B =
-  "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B040001100075610.tif";
-
-const WORLD_IMAGERY_URL =
-  "https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer";
+const COG_SOURCES = [
+  {
+    id: "cogA",
+    url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B140001100B5C810.tif",
+    label: "Escena A — Jun 29",
+  },
+  {
+    id: "cogB",
+    url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B040001100075610.tif",
+    label: "Escena B — Jun 26",
+  },
+] as const;
 
 const LA_GUAIRA_CENTER: [number, number] = [-66.959, 10.603];
 const LA_GUAIRA_ZOOM = 14;
-
-type SwipeLayer = TileLayer | ImageryTileLayer | GroupLayer;
 
 const stretchRenderer = new RasterStretchRenderer({
   stretchType: "min-max",
@@ -47,84 +45,73 @@ interface SwipeComparisonProps {
 export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose }) => {
   const [warning, setWarning] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [layerVis, setLayerVis] = useState<Record<string, boolean>>({ cogA: true, cogB: true });
+  const cogLayersRef = useRef<Map<string, ImageryTileLayer>>(new Map());
+  const groupLayerRef = useRef<GroupLayer | null>(null);
   const cleanupRef = useRef<() => void>(() => {});
+
+  const toggleLayer = useCallback((id: string) => {
+    setLayerVis((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      const layer = cogLayersRef.current.get(id);
+      if (layer) layer.visible = next[id];
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     let disposed = false;
-    const allLayers: SwipeLayer[] = [];
+    const allLayers: (ImageryTileLayer | GroupLayer)[] = [];
 
     const init = async () => {
-      const beforeLayer = new TileLayer({ url: VANTOR_BEFORE_URL });
-      allLayers.push(beforeLayer);
-
-      const cogA = new ImageryTileLayer({
-        url: VANTOR_AFTER_COG_A,
-        bandIds: [2, 1, 0],
-        renderer: stretchRenderer,
-        title: "Post-sismo A",
+      const loadPromises = COG_SOURCES.map((src) => {
+        const layer = new ImageryTileLayer({
+          url: src.url,
+          bandIds: [2, 1, 0],
+          renderer: stretchRenderer,
+          title: src.label,
+        });
+        cogLayersRef.current.set(src.id, layer);
+        return layer.load().then(() => ({ id: src.id, ok: true, layer })).catch(() => ({ id: src.id, ok: false, layer }));
       });
 
-      const cogB = new ImageryTileLayer({
-        url: VANTOR_AFTER_COG_B,
-        bandIds: [2, 1, 0],
-        renderer: stretchRenderer,
-        title: "Post-sismo B",
-      });
-      allLayers.push(cogA, cogB);
-
-      const loadBefore = beforeLayer.load().then(() => true).catch(() => false);
-      const loadA = cogA.load().then(() => true).catch(() => false);
-      const loadB = cogB.load().then(() => true).catch(() => false);
-
-      const [beforeOk, aOk, bOk] = await Promise.all([loadBefore, loadA, loadB]);
+      const results = await Promise.all(loadPromises);
       if (disposed) return;
 
-      if (!beforeOk) {
-        setWarning("No se pudo cargar imagen pre-sismo");
+      const loaded = results.filter((r) => r.ok);
+      const failed = results.filter((r) => !r.ok);
+
+      if (loaded.length === 0) {
+        setWarning("No se pudieron cargar las imagenes post-sismo");
+        setLoading(false);
+        return;
       }
 
-      let afterLayer: SwipeLayer;
-
-      if (aOk || bOk) {
-        const cogs: ImageryTileLayer[] = [];
-        if (aOk) cogs.push(cogA);
-        if (bOk) cogs.push(cogB);
-        afterLayer = new GroupLayer({ layers: cogs, title: "Post-sismo" });
-        allLayers.push(afterLayer);
-      } else {
-        const fallback = new TileLayer({ url: WORLD_IMAGERY_URL });
-        allLayers.push(fallback);
-        const fallbackOk = await fallback.load().then(() => true).catch(() => false);
-        if (!fallbackOk) {
-          setWarning("No se pudieron cargar las capas satelitales");
-          setLoading(false);
-          return;
-        }
-        afterLayer = fallback;
-        setWarning("Imagen post-sismo no disponible — usando imagen actual");
+      if (failed.length > 0) {
+        const names = failed.map((r) => r.id === "cogA" ? "Escena A" : "Escena B").join(", ");
+        setWarning(`${names} no disponible(s)`);
         setTimeout(() => setWarning(null), 6000);
       }
 
-      if (disposed) return;
+      const groupLayer = new GroupLayer({
+        layers: loaded.map((r) => r.layer),
+        title: "Post-sismo",
+      });
+      groupLayerRef.current = groupLayer;
+      allLayers.push(groupLayer);
 
       const map = view.map!;
-      if (!map.layers.includes(beforeLayer)) map.add(beforeLayer, 0);
-      if (!map.layers.includes(afterLayer)) map.add(afterLayer, 0);
+      if (!map.layers.includes(groupLayer)) map.add(groupLayer, 0);
 
-      const waitForLayerView = (layer: SwipeLayer) =>
-        view.whenLayerView(layer).then(() => {}).catch(() => {});
-
-      await Promise.all([
-        waitForLayerView(beforeLayer),
-        waitForLayerView(afterLayer),
-      ]);
+      await view.whenLayerView(groupLayer).then(() => {}).catch(() => {});
       if (disposed) return;
 
       const swipeEl = document.querySelector("arcgis-swipe") as any;
       if (swipeEl) {
         swipeEl.view = view;
-        swipeEl.leadingLayers = [beforeLayer];
-        swipeEl.trailingLayers = [afterLayer];
+        swipeEl.leadingLayers = [];
+        swipeEl.trailingLayers = [groupLayer];
         swipeEl.direction = "horizontal";
         swipeEl.position = 50;
       }
@@ -156,6 +143,8 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
             try { map.remove(l); } catch {}
           });
         }
+        cogLayersRef.current.clear();
+        groupLayerRef.current = null;
       } catch {}
     };
 
@@ -175,11 +164,11 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
         <div className="swipe-label-bar">
           <span className="swipe-label swipe-label-before">
             <ChevronLeft size={14} />
-            ANTES
+            ACTUAL
           </span>
           <span className="swipe-label swipe-label-divider">|</span>
           <span className="swipe-label swipe-label-after">
-            DESPUÉS
+            POST-SISMO
             <ChevronRight size={14} />
           </span>
         </div>
@@ -188,6 +177,30 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
       <button className="swipe-close-btn" onClick={handleClose} title="Cerrar comparacion">
         <X size={18} />
       </button>
+
+      <button
+        className="swipe-layer-toggle"
+        onClick={() => setPanelOpen((p) => !p)}
+        title="Seleccionar capas"
+      >
+        <Layers size={16} />
+      </button>
+
+      {panelOpen && (
+        <div className="swipe-layer-panel">
+          <div className="swipe-layer-panel-title">Capas post-sismo</div>
+          {COG_SOURCES.map((src) => (
+            <label key={src.id} className="swipe-layer-item">
+              <input
+                type="checkbox"
+                checked={layerVis[src.id]}
+                onChange={() => toggleLayer(src.id)}
+              />
+              <span>{src.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
 
       {loading && (
         <div className="swipe-loading">
