@@ -1,23 +1,56 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import type { DrawnFeature } from "../types";
-import { Search, MapPin, Activity, Square, X } from "lucide-react";
+import { Search, MapPin, Activity, Square, X, Crosshair, Plus } from "lucide-react";
 
 interface FloatingSearchBarProps {
   drawnFeatures: DrawnFeature[];
   onZoomToFeature: (feat: DrawnFeature) => void;
+  onGoToCoords: (lat: number, lon: number) => void;
+  onCreatePointAtCoords: (lat: number, lon: number) => void;
   showSidebar: boolean;
+}
+
+function parseCoords(input: string): { lat: number; lon: number } | null {
+  const cleaned = input.replace(/\s+/g, " ").trim();
+  const parts = cleaned.split(/[;,]/).map((s) => s.trim());
+  let nums: number[];
+
+  if (parts.length === 2) {
+    nums = parts.map(Number);
+    if (nums.some(isNaN)) return null;
+  } else {
+    const spaceParts = cleaned.split(" ");
+    if (spaceParts.length >= 2) {
+      nums = spaceParts.map(Number).filter((n) => !isNaN(n));
+      if (nums.length < 2) return null;
+    } else {
+      return null;
+    }
+  }
+
+  const [a, b] = nums;
+
+  if (a >= -90 && a <= 90 && b >= -180 && b <= 180) {
+    return { lat: a, lon: b };
+  }
+  if (b >= -90 && b <= 90 && a >= -180 && a <= 180) {
+    return { lat: b, lon: a };
+  }
+
+  return null;
 }
 
 export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
   drawnFeatures,
   onZoomToFeature,
+  onGoToCoords,
+  onCreatePointAtCoords,
   showSidebar,
 }) => {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Click outside to close
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -30,7 +63,6 @@ export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
     };
   }, []);
 
-  // Filter drawn features
   const filtered = query.trim()
     ? drawnFeatures.filter((feat) => {
         const titleMatch = feat.title?.toLowerCase().includes(query.toLowerCase());
@@ -39,8 +71,28 @@ export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
       })
     : [];
 
+  const coords = useMemo(() => {
+    if (!query.trim()) return null;
+    return parseCoords(query);
+  }, [query]);
+
+  const showDropdown = isOpen && query.trim() && (filtered.length > 0 || coords);
+
   const handleSelect = (feat: DrawnFeature) => {
     onZoomToFeature(feat);
+    setIsOpen(false);
+    setQuery("");
+  };
+
+  const handleGoToCoords = () => {
+    if (!coords) return;
+    onGoToCoords(coords.lat, coords.lon);
+    setIsOpen(false);
+  };
+
+  const handleCreatePoint = () => {
+    if (!coords) return;
+    onCreatePointAtCoords(coords.lat, coords.lon);
     setIsOpen(false);
     setQuery("");
   };
@@ -68,7 +120,6 @@ export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
     }
   };
 
-  // Compute absolute left dynamically to follow sidebar transition smoothly
   const leftPos = showSidebar ? "470px" : "80px";
 
   return (
@@ -81,7 +132,7 @@ export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
         <Search className="floating-search-icon" size={16} />
         <input
           type="text"
-          placeholder="Buscar puntos o polígonos..."
+          placeholder="Buscar puntos o coordenadas..."
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -103,28 +154,54 @@ export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
         )}
       </div>
 
-      {isOpen && query.trim() && (
+      {showDropdown && (
         <div className="floating-search-dropdown scrollable-thin">
-          {filtered.length > 0 ? (
-            filtered.map((feat) => (
-              <div
-                key={feat.id}
-                onClick={() => handleSelect(feat)}
-                className="floating-search-item"
-              >
-                <div className="floating-search-item-header">
-                  {getFeatureIcon(feat.type, feat.color || "")}
-                  <span className="floating-search-item-title">{feat.title}</span>
-                  <span className="floating-search-item-badge">
-                    {getFeatureTypeText(feat.type)}
-                  </span>
-                </div>
-                {feat.description && (
-                  <p className="floating-search-item-desc">{feat.description}</p>
-                )}
+          {coords && (
+            <div className="floating-search-coord-result">
+              <div className="floating-search-coord-header">
+                <Crosshair size={14} style={{ color: "rgba(56, 189, 248, 0.9)" }} />
+                <span className="floating-search-coord-label">Coordenadas</span>
+                <span className="floating-search-coord-value">
+                  {coords.lat.toFixed(5)}, {coords.lon.toFixed(5)}
+                </span>
               </div>
-            ))
-          ) : (
+              <div className="floating-search-coord-actions">
+                <button className="floating-search-coord-btn" onClick={handleGoToCoords}>
+                  <Crosshair size={12} />
+                  Ir al punto
+                </button>
+                <button className="floating-search-coord-btn accent" onClick={handleCreatePoint}>
+                  <Plus size={12} />
+                  Crear punto
+                </button>
+              </div>
+            </div>
+          )}
+
+          {filtered.length > 0 && (
+            <>
+              {filtered.map((feat) => (
+                <div
+                  key={feat.id}
+                  onClick={() => handleSelect(feat)}
+                  className="floating-search-item"
+                >
+                  <div className="floating-search-item-header">
+                    {getFeatureIcon(feat.type, feat.color || "")}
+                    <span className="floating-search-item-title">{feat.title}</span>
+                    <span className="floating-search-item-badge">
+                      {getFeatureTypeText(feat.type)}
+                    </span>
+                  </div>
+                  {feat.description && (
+                    <p className="floating-search-item-desc">{feat.description}</p>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
+
+          {!coords && filtered.length === 0 && (
             <div className="floating-search-empty">No se encontraron elementos</div>
           )}
         </div>

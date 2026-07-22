@@ -1629,6 +1629,76 @@ input:checked + .slider:before {
   color: var(--text-muted);
 }
 
+/* --- Coordinate Search Result --- */
+.floating-search-coord-result {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.floating-search-coord-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.floating-search-coord-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(56, 189, 248, 0.8);
+}
+
+.floating-search-coord-value {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin-left: auto;
+  font-family: var(--font-mono);
+}
+
+.floating-search-coord-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.floating-search-coord-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.08);
+  color: #cbd5e1;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.floating-search-coord-btn:hover {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #e2f8ff;
+}
+
+.floating-search-coord-btn.accent {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+  color: #6ee7b7;
+}
+
+.floating-search-coord-btn.accent:hover {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #a7f3d0;
+}
+
 /* Ensure ESRI UI controls (Zoom/Compass) stay above HTML overlay labels */
 .esri-ui {
   z-index: 10 !important;

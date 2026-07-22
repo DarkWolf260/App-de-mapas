@@ -18,9 +18,6 @@ import { deconflictGraphics } from "../utils/labelDeconfliction";
 import { syncDrawnFeaturesToGraphics, syncImportedFeatures } from "../utils/graphicsSync";
 import type { DrawnFeature, HtmlLabel, LayerVisibility, RemoveFeatureId } from "../types";
 
-const LA_GUAIRA_CENTER: [number, number] = [-66.959, 10.603];
-const LA_GUAIRA_ZOOM = 14;
-
 export interface UseMapSetupProps {
   apiKey: string;
   activeBasemap: string;
@@ -34,6 +31,7 @@ export interface UseMapSetupProps {
   importedFeatures: DrawnFeature[];
   hiddenFeatures: Record<number, boolean>;
   selectedDate: string;
+  zoomToCoords?: { lat: number; lon: number } | null;
 }
 
 export const useMapSetup = ({
@@ -48,6 +46,7 @@ export const useMapSetup = ({
   importedFeatures,
   hiddenFeatures,
   selectedDate,
+  zoomToCoords,
 }: UseMapSetupProps) => {
   const mapDiv = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
@@ -413,6 +412,16 @@ export const useMapSetup = ({
   }, [zoomToFeature]);
 
   useEffect(() => {
+    if (zoomToCoords && viewRef.current) {
+      viewRef.current.goTo(
+        { center: [zoomToCoords.lon, zoomToCoords.lat], zoom: 16 },
+        { duration: 800, easing: "ease-in-out" },
+      ).catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoomToCoords]);
+
+  useEffect(() => {
     const layer = sketchLayerRef.current;
     if (removeFeatureId && layer) {
       const g = layer.graphics.find((x) => x.uid === removeFeatureId.id || x.attributes?.id === removeFeatureId.id);
@@ -454,10 +463,6 @@ export const useMapSetup = ({
       if (sketchVMRef.current?.state === "active") sketchVMRef.current.cancel();
     }
     setSwipeActive(true);
-    viewRef.current?.goTo(
-      { center: LA_GUAIRA_CENTER, zoom: LA_GUAIRA_ZOOM },
-      { duration: 1200, easing: "ease-in-out" },
-    ).catch(() => {});
   }, []);
 
   const deactivateSwipe = useCallback(() => {

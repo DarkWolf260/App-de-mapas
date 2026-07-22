@@ -8,7 +8,7 @@ export const SidebarHeader: React.FC = () => (
       Centro de Mando
     </h2>
     <p className="panel-subtitle" style={{ fontSize: "0.8rem", marginBottom: "4px" }}>
-      Protección Civil - Dibujos y Polígonos
+      C.O.E - La Guaira
     </p>
   </div>
 );

@@ -25,6 +25,7 @@ function App() {
     allowLabelOverlap: false,
   });
   const [zoomToFeature, setZoomToFeature] = useState<DrawnFeature | null>(null);
+  const [zoomToCoords, setZoomToCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [removeFeatureId, setRemoveFeatureId] = useState<RemoveFeatureId | null>(null);
   const [importedFeatures, setImportedFeatures] = useState<DrawnFeature[]>([]);
   const [rangeReportFeature, setRangeReportFeature] = useState<DrawnFeature | "all" | null>(null);
@@ -60,6 +61,23 @@ function App() {
     setLayerVisibility((prev) => ({ ...prev, [layerName]: !prev[layerName] }));
   };
 
+  const handleGoToCoords = (lat: number, lon: number) => {
+    setZoomToCoords({ lat, lon });
+  };
+
+  const handleCreatePointAtCoords = async (lat: number, lon: number) => {
+    const id = Date.now();
+    const feat: DrawnFeature = {
+      id,
+      title: `Punto ${lat.toFixed(4)}, ${lon.toFixed(4)}`,
+      type: "point",
+      color: "#3b82f6",
+      geojsonGeometry: { type: "Point", coordinates: [lon, lat] },
+    };
+    await handleFeatureAdded(feat);
+    setZoomToFeature(feat);
+  };
+
   return (
     <div className="app-container">
       <MapComponent
@@ -81,6 +99,7 @@ function App() {
         onUpdateFeatureDescription={handleUpdateFeatureDescription}
         onUpdateFeatureColor={handleUpdateFeatureColor}
         onZoomToFeature={setZoomToFeature}
+        zoomToCoords={zoomToCoords}
         selectedDate={selectedDate}
         onSelectedDateChange={setSelectedDate}
       />
@@ -88,6 +107,8 @@ function App() {
       <FloatingSearchBar
         drawnFeatures={sortedDrawnFeatures}
         onZoomToFeature={setZoomToFeature}
+        onGoToCoords={handleGoToCoords}
+        onCreatePointAtCoords={handleCreatePointAtCoords}
         showSidebar={showSidebar}
       />
 

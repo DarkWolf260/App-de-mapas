@@ -29,6 +29,7 @@ interface MapComponentProps {
   onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
   onUpdateFeatureColor?: (id: number, newColor: string) => Promise<void>;
   onZoomToFeature?: (feat: DrawnFeature) => void;
+  zoomToCoords?: { lat: number; lon: number } | null;
   selectedDate: string;
   onSelectedDateChange?: (date: string) => void;
 }
