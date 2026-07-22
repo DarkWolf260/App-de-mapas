@@ -3,13 +3,13 @@ import { Download, Upload, Calendar } from "lucide-react";
 
 interface DataToolsBarProps {
   onExportGeoJSON: () => void;
-  onImportGeoJSON: (text: string) => void;
+  onImportPreview: (text: string) => void;
   onOpenRangeReport?: () => void;
 }
 
 export const DataToolsBar: React.FC<DataToolsBarProps> = ({
   onExportGeoJSON,
-  onImportGeoJSON,
+  onImportPreview,
   onOpenRangeReport,
 }) => {
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>): void => {
@@ -17,9 +17,10 @@ export const DataToolsBar: React.FC<DataToolsBarProps> = ({
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
-      if (event.target?.result) onImportGeoJSON(event.target.result as string);
+      if (event.target?.result) onImportPreview(event.target.result as string);
     };
     reader.readAsText(file);
+    e.target.value = "";
   };
 
   return (

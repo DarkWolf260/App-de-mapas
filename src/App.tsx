@@ -3,10 +3,12 @@ import MapComponent from "./components/MapComponent";
 import Sidebar from "./components/Sidebar";
 import { ChevronLeft, Menu } from "lucide-react";
 import { RangeReportModal } from "./components/RangeReportModal";
+import { ImportPreviewModal } from "./components/ImportPreviewModal";
 import { FloatingSearchBar } from "./components/FloatingSearchBar";
 import { GlobalStatsWidget } from "./components/GlobalStatsWidget";
 import { DateTimeline } from "./components/DateTimeline";
 import type { DrawnFeature, LayerVisibility, RemoveFeatureId } from "./types";
+import type { ParsedFeature } from "./hooks/useGeoJSONIO";
 import { useFeatureDB } from "./hooks/useFeatureDB";
 import { useFeatureVisibility } from "./hooks/useFeatureVisibility";
 import { useFeatureOrder } from "./hooks/useFeatureOrder";
@@ -30,6 +32,7 @@ function App() {
   const [importedFeatures, setImportedFeatures] = useState<DrawnFeature[]>([]);
   const [rangeReportFeature, setRangeReportFeature] = useState<DrawnFeature | "all" | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toLocaleDateString("en-CA"));
+  const [importPreview, setImportPreview] = useState<ParsedFeature[] | null>(null);
 
   const {
     db,
@@ -44,7 +47,7 @@ function App() {
 
   const { hiddenFeatures, handleToggleFeatureVisibility, handleToggleFeaturesVisibility } = useFeatureVisibility();
   const { sortedDrawnFeatures, handleReorderFeature } = useFeatureOrder(drawnFeatures);
-  const { handleExportGeoJSON, handleImportGeoJSON } = useGeoJSONIO(db, drawnFeatures, setImportedFeatures);
+  const { handleExportGeoJSON, parseAndCheckDuplicates, handleImportFeatures } = useGeoJSONIO(db, drawnFeatures, setImportedFeatures);
 
   const handleFeatureDeleted = async (id: number): Promise<void> => {
     setRemoveFeatureId({ id, timestamp: Date.now() });
@@ -76,6 +79,25 @@ function App() {
     };
     await handleFeatureAdded(feat);
     setZoomToFeature(feat);
+  };
+
+  const handleImportPreview = (text: string) => {
+    const parsed = parseAndCheckDuplicates(text);
+    if (!parsed || parsed.length === 0) {
+      alert("No se encontraron geometrías válidas en el archivo.");
+      return;
+    }
+    setImportPreview(parsed);
+  };
+
+  const handleImportConfirmed = async (features: ParsedFeature[]) => {
+    const result = await handleImportFeatures(features);
+    setImportPreview(null);
+    if (result.imported > 0) {
+      const parts = [`Se importaron ${result.imported} geometrías`];
+      if (result.skipped > 0) parts.push(`${result.skipped} omitida(s)`);
+      alert(parts.join(". ") + ".");
+    }
   };
 
   return (
@@ -139,7 +161,7 @@ function App() {
         onDeleteFeature={handleFeatureDeleted}
         onZoomToFeature={setZoomToFeature}
         onExportGeoJSON={handleExportGeoJSON}
-        onImportGeoJSON={handleImportGeoJSON}
+        onImportPreview={handleImportPreview}
         hiddenFeatures={hiddenFeatures}
         onToggleFeatureVisibility={handleToggleFeatureVisibility}
         onToggleFeaturesVisibility={handleToggleFeaturesVisibility}
@@ -157,6 +179,14 @@ function App() {
         onClose={() => setRangeReportFeature(null)}
         onSaveDailyLog={handleSaveDailyLog}
       />
+
+      {importPreview && (
+        <ImportPreviewModal
+          features={importPreview}
+          onImport={handleImportConfirmed}
+          onClose={() => setImportPreview(null)}
+        />
+      )}
     </div>
   );
 }

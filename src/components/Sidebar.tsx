@@ -15,7 +15,7 @@ interface SidebarProps {
   onDeleteFeature: (id: number) => void;
   onZoomToFeature: (feat: DrawnFeature) => void;
   onExportGeoJSON: () => void;
-  onImportGeoJSON: (text: string) => void;
+  onImportPreview: (text: string) => void;
   hiddenFeatures: Record<number, boolean>;
   onToggleFeatureVisibility: (id: number) => void;
   onToggleFeaturesVisibility: (ids: number[], visible: boolean) => void;
@@ -38,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onDeleteFeature,
   onZoomToFeature,
   onExportGeoJSON,
-  onImportGeoJSON,
+  onImportPreview,
   hiddenFeatures,
   onToggleFeatureVisibility,
   onToggleFeaturesVisibility,
@@ -88,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       />
       <DataToolsBar
         onExportGeoJSON={onExportGeoJSON}
-        onImportGeoJSON={onImportGeoJSON}
+        onImportPreview={onImportPreview}
         onOpenRangeReport={onOpenRangeReport ? () => onOpenRangeReport("all") : undefined}
       />
     </div>
