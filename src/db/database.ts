@@ -9,7 +9,7 @@ addRxPlugin(RxDBMigrationSchemaPlugin);
 
 export const FeatureSchema = {
   title: "feature schema",
-  version: 11,
+  version: 12,
   primaryKey: "id",
   type: "object",
   properties: {
@@ -25,6 +25,7 @@ export const FeatureSchema = {
         type: "object",
         properties: {
           date: { type: "string" },
+          department: { type: "string" },
           groupName: { type: "string" },
           managerName: { type: "string" },
           managerPhone: { type: "string" },
@@ -191,6 +192,15 @@ export const initDatabase = (): Promise<RxDrawnDatabase> => {
                 oldDoc.dailyLogs = oldDoc.dailyLogs.map((log: any) => ({
                   ...log,
                   observations: ""
+                }));
+              }
+              return oldDoc;
+            },
+            12: (oldDoc: any) => {
+              if (oldDoc.dailyLogs && Array.isArray(oldDoc.dailyLogs)) {
+                oldDoc.dailyLogs = oldDoc.dailyLogs.map((log: any) => ({
+                  ...log,
+                  department: "pc"
                 }));
               }
               return oldDoc;

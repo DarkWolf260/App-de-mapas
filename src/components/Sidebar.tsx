@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import type { DrawnFeature, LayerVisibility } from "../types";
+import type { DrawnFeature, LayerVisibility, DepartmentView } from "../types";
 import { useSpatialHierarchy, useCollapsedGroups, useCollapsedChildren } from "../hooks/useSpatialHierarchy";
 import { SidebarHeader } from "./SidebarHeader";
+import { DepartmentTabs } from "./DepartmentTabs";
 import { MapSettingsPanel } from "./MapSettingsPanel";
 import { DrawnFeaturesList } from "./DrawnFeaturesList";
 import { DataToolsBar } from "./DataToolsBar";
@@ -27,6 +28,8 @@ interface SidebarProps {
     log: { date: string; groupName: string; managerName: string; managerPhone: string; unitOut: string; departureTime?: string; arrivalTime?: string; officersCount?: string }
   ) => Promise<void>;
   onOpenRangeReport?: (feat: DrawnFeature | "all") => void;
+  activeDepartment: DepartmentView;
+  onDepartmentChange: (dept: DepartmentView) => void;
   className?: string;
 }
 
@@ -47,6 +50,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onToggleFeatureLock,
   onSaveDailyLog: _onSaveDailyLog,
   onOpenRangeReport,
+  activeDepartment,
+  onDepartmentChange,
   className,
 }) => {
   const [showMapSettings, setShowMapSettings] = useState(false);
@@ -57,6 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className={`sidebar glass-panel ${className ?? ""}`}>
       <SidebarHeader />
+      <DepartmentTabs activeDepartment={activeDepartment} onDepartmentChange={onDepartmentChange} />
       <MapSettingsPanel
         layerVisibility={layerVisibility}
         onToggleLayer={onToggleLayer}

@@ -7,7 +7,7 @@ import { ImportPreviewModal } from "./components/ImportPreviewModal";
 import { FloatingSearchBar } from "./components/FloatingSearchBar";
 import { GlobalStatsWidget } from "./components/GlobalStatsWidget";
 import { DateTimeline } from "./components/DateTimeline";
-import type { DrawnFeature, LayerVisibility, RemoveFeatureId } from "./types";
+import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DepartmentView } from "./types";
 import type { ParsedFeature } from "./hooks/useGeoJSONIO";
 import { useFeatureDB } from "./hooks/useFeatureDB";
 import { useFeatureVisibility } from "./hooks/useFeatureVisibility";
@@ -33,6 +33,7 @@ function App() {
   const [rangeReportFeature, setRangeReportFeature] = useState<DrawnFeature | "all" | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toLocaleDateString("en-CA"));
   const [importPreview, setImportPreview] = useState<ParsedFeature[] | null>(null);
+  const [activeDepartment, setActiveDepartment] = useLocalStorageState<DepartmentView>("pc_active_department", "pc");
 
   const {
     db,
@@ -124,6 +125,7 @@ function App() {
         zoomToCoords={zoomToCoords}
         selectedDate={selectedDate}
         onSelectedDateChange={setSelectedDate}
+        activeDepartment={activeDepartment}
       />
 
       <FloatingSearchBar
@@ -137,6 +139,7 @@ function App() {
       <GlobalStatsWidget
         drawnFeatures={sortedDrawnFeatures}
         selectedDate={selectedDate}
+        activeDepartment={activeDepartment}
       />
 
       <DateTimeline
@@ -170,6 +173,8 @@ function App() {
         onToggleFeatureLock={handleToggleFeatureLock}
         onSaveDailyLog={handleSaveDailyLog}
         onOpenRangeReport={(feat) => setRangeReportFeature(feat)}
+        activeDepartment={activeDepartment}
+        onDepartmentChange={setActiveDepartment}
         className={showSidebar ? "" : "collapsed"}
       />
 
@@ -178,6 +183,7 @@ function App() {
         allFeatures={sortedDrawnFeatures.filter((f) => f.type === "point")}
         onClose={() => setRangeReportFeature(null)}
         onSaveDailyLog={handleSaveDailyLog}
+        activeDepartment={activeDepartment}
       />
 
       {importPreview && (

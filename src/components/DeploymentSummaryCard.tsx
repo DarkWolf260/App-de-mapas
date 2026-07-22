@@ -1,5 +1,5 @@
 import React from "react";
-import type { DrawnFeature } from "../types";
+import type { DrawnFeature, DepartmentView } from "../types";
 import { getTotalPersonnel } from "../utils/logUtils";
 import { Minimize2, Maximize2, LayoutDashboard, Users } from "lucide-react";
 
@@ -9,6 +9,7 @@ interface DeploymentSummaryCardProps {
   onToggleCollapse: (collapsed: boolean) => void;
   onZoomToFeature?: (feat: DrawnFeature) => void;
   selectedDate?: string;
+  activeDepartment?: DepartmentView;
 }
 
 interface ActivePoint {
@@ -20,12 +21,15 @@ interface ActivePoint {
   activeGroups: number;
 }
 
-function computeActivePoints(drawnFeatures: DrawnFeature[]): ActivePoint[] {
+function computeActivePoints(drawnFeatures: DrawnFeature[], activeDepartment?: DepartmentView): ActivePoint[] {
   const todayStr = new Date().toLocaleDateString("en-CA");
   return drawnFeatures
     .filter((f) => f.type === "point")
     .map((f) => {
-      const log = f.dailyLogs?.find((l) => l.date === todayStr);
+      const logs = f.dailyLogs?.filter((l) =>
+        l.date === todayStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+      ) || [];
+      const log = logs[0];
       if (!log) return null;
       const totalOff = getTotalPersonnel(log);
       let groups = 0;
@@ -50,9 +54,10 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   onToggleCollapse,
   onZoomToFeature,
   selectedDate,
+  activeDepartment,
 }) => {
   const todayStr = selectedDate || new Date().toLocaleDateString("en-CA");
-  const activePoints = computeActivePoints(drawnFeatures);
+  const activePoints = computeActivePoints(drawnFeatures, activeDepartment);
   const totalOff = activePoints.reduce((acc, item) => acc + item.totalOff, 0);
   const totalGroups = activePoints.reduce((acc, item) => acc + item.groups, 0);
   const totalActiveGroups = activePoints.reduce((acc, item) => acc + item.activeGroups, 0);

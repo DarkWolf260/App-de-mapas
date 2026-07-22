@@ -1,6 +1,6 @@
 import React from "react";
 import "@arcgis/core/assets/esri/themes/dark/main.css";
-import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DailyLog } from "../types";
+import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DailyLog, DepartmentView } from "../types";
 import { DrawingToolbar } from "./DrawingToolbar";
 import { CustomMapPopup } from "./CustomMapPopup";
 import { DeploymentSummaryCard } from "./DeploymentSummaryCard";
@@ -32,6 +32,7 @@ interface MapComponentProps {
   zoomToCoords?: { lat: number; lon: number } | null;
   selectedDate: string;
   onSelectedDateChange?: (date: string) => void;
+  activeDepartment?: DepartmentView;
 }
   
   const MapComponent: React.FC<MapComponentProps> = (props) => {
@@ -124,6 +125,7 @@ interface MapComponentProps {
         onUpdateFeatureColor={onUpdateFeatureColor}
         sketchLayer={sketchLayer}
         onClose={() => setCustomPopup(null)}
+        activeDepartment={props.activeDepartment}
       />
 
       {/* Floating hover tooltip for lines and polygons */}
@@ -164,6 +166,7 @@ interface MapComponentProps {
         }}
         onZoomToFeature={onZoomToFeature}
         selectedDate={props.selectedDate}
+        activeDepartment={props.activeDepartment}
       />
 
       {/* Floating Zoom level indicator in bottom-right */}

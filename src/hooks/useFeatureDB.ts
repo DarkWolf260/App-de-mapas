@@ -83,7 +83,7 @@ export function useFeatureDB() {
     const doc = await db.features.findOne(String(featureId)).exec();
     if (doc) {
       const logs = doc.dailyLogs ? [...doc.dailyLogs] : [];
-      const idx = logs.findIndex((l) => l.date === log.date);
+      const idx = logs.findIndex((l) => l.date === log.date && l.department === log.department);
       if (idx >= 0) {
         logs[idx] = log;
       } else {

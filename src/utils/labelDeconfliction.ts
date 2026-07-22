@@ -2,7 +2,7 @@ import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import MapView from "@arcgis/core/views/MapView";
 import TextSymbol from "@arcgis/core/symbols/TextSymbol";
 import { buildParentsMap } from "./spatialUtils";
-import type { DrawnFeature, LayerVisibility } from "../types";
+import type { DrawnFeature, LayerVisibility, DepartmentView } from "../types";
 import type { HtmlLabel } from "../types";
 
 interface DeconflictRefs {
@@ -10,6 +10,7 @@ interface DeconflictRefs {
   hiddenFeaturesRef: React.MutableRefObject<Record<number, boolean>>;
   layerVisibilityRef: React.MutableRefObject<LayerVisibility>;
   selectedDateRef: React.MutableRefObject<string>;
+  activeDepartmentRef?: React.MutableRefObject<DepartmentView>;
 }
 
 interface ScreenLabel {
@@ -55,6 +56,7 @@ function computeScreenLabels(
   view: MapView,
   drawnFeaturesRef: DeconflictRefs["drawnFeaturesRef"],
   dateStr: string,
+  activeDepartment?: DepartmentView,
 ): ScreenLabel[] {
   const screenLabels = candidateLabels.map((lbl) => {
     const screenPt = lbl.geometry ? view.toScreen(lbl.geometry) : null;
@@ -66,8 +68,10 @@ function computeScreenLabels(
     } else {
       const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
       if (feat?.type === "point") {
-        const todayLog = feat.dailyLogs?.find((l) => l.date === dateStr);
-        if (todayLog !== undefined) priority = 1;
+        const todayLogs = feat.dailyLogs?.filter((l) =>
+          l.date === dateStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+        ) || [];
+        if (todayLogs.length > 0) priority = 1;
       }
     }
     return { graphic: lbl, x: screenPt?.x ?? null, y: screenPt?.y ?? null, visible: screenPt !== null, priority };
@@ -130,6 +134,7 @@ function buildHtmlLabels(
 ): HtmlLabel[] {
   const activeHtmlLabels: HtmlLabel[] = [];
   const placedBoxes: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+  const activeDept = refs.activeDepartmentRef?.current;
 
   screenLabels.forEach((item) => {
     const lbl = item.graphic;
@@ -141,8 +146,11 @@ function buildHtmlLabels(
     let info = "";
 
     if (feat && feat.type === "point") {
-      const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
-      if (todayLog) {
+      const todayLogs = feat.dailyLogs?.filter((l) =>
+        l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
+      ) || [];
+
+      for (const todayLog of todayLogs) {
         const g1 = todayLog.groupName?.trim();
         const g2 = todayLog.groupName2?.trim();
         if (g1 || g2) {
@@ -156,11 +164,14 @@ function buildHtmlLabels(
           else if (g2) parts.push(g2);
           else if (u2) parts.push(u2);
           info = parts.join(" | ");
+          break;
         }
       }
     }
 
-    const hasPersonnel = feat?.type === "point" && feat.dailyLogs?.some((l) => l.date === todayStr && (l.groupName || l.groupName2));
+    const hasPersonnel = feat?.type === "point" && (feat.dailyLogs?.some((l) =>
+      l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && (l.groupName || l.groupName2)
+    ) || false);
 
     if (item.visible && !isPolygonLabel && hasPersonnel) {
       const charWidth = 6;
@@ -173,7 +184,10 @@ function buildHtmlLabels(
 
       const { placement, box } = choosePlacement(x, y, w, h, allowOverlap, placedBoxes);
 
-      const todayLog = feat?.dailyLogs?.find((l) => l.date === todayStr);
+      const todayLogs = feat?.dailyLogs?.filter((l) =>
+        l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
+      ) || [];
+      const todayLog = todayLogs[0];
       const g1Arrived = todayLog ? (!!todayLog.hasArrivedG1 || (!!todayLog.arrivalTime && todayLog.arrivalTime.trim() !== "")) : false;
       const g2Arrived = todayLog ? (!!todayLog.hasArrivedG2 || (!!todayLog.arrivalTime2 && todayLog.arrivalTime2.trim() !== "")) : false;
 
@@ -221,7 +235,7 @@ export function deconflictGraphics(
     });
 
     const dateStr = refs.selectedDateRef.current;
-    const screenLabels = computeScreenLabels(candidateLabels, view, refs.drawnFeaturesRef, dateStr);
+    const screenLabels = computeScreenLabels(candidateLabels, view, refs.drawnFeaturesRef, dateStr, refs.activeDepartmentRef?.current);
     if (!refs.layerVisibilityRef.current.allowLabelOverlap) {
       deconflictOverlappingLabels(screenLabels);
     }

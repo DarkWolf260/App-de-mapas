@@ -1,6 +1,6 @@
 import Basemap from "@arcgis/core/Basemap";
 import TileLayer from "@arcgis/core/layers/TileLayer";
-import type { DrawnFeature } from "../types";
+import type { DrawnFeature, DepartmentView } from "../types";
 import { hexToRgb } from "./colorUtils";
 
 export const DEFAULT_CENTER: [number, number] = [-66.9303, 10.6011];
@@ -45,14 +45,17 @@ export const makeSymbols = ([r, g, b]: [number, number, number]) => ({
   },
 });
 
-export const getLabelText = (feat: DrawnFeature, dateStr?: string): string => {
+export const getLabelText = (feat: DrawnFeature, dateStr?: string, activeDepartment?: DepartmentView): string => {
   if (feat.type !== "point") {
     return feat.title;
   }
 
   const todayStr = dateStr || new Date().toLocaleDateString("en-CA");
-  const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
-  if (todayLog) {
+  const todayLogs = feat.dailyLogs?.filter((l) =>
+    l.date === todayStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+  ) || [];
+
+  for (const todayLog of todayLogs) {
     const parts: string[] = [];
 
     const g1 = todayLog.groupName?.trim();

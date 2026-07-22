@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import type { DrawnFeature, DailyLog } from "../types";
+import type { DrawnFeature, DailyLog, DepartmentView } from "../types";
 import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight } from "lucide-react";
 import { DateRow } from "./DateRow";
 import { InlineRowEditor } from "./InlineRowEditor";
@@ -20,6 +20,7 @@ interface RangeReportModalProps {
   allFeatures?: DrawnFeature[];
   onClose: () => void;
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
+  activeDepartment?: DepartmentView;
 }
 
 const RangeReportModal: React.FC<RangeReportModalProps> = ({
@@ -27,6 +28,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   allFeatures = [],
   onClose,
   onSaveDailyLog,
+  activeDepartment = "pc",
 }) => {
   const [activeDateIndex, setActiveDateIndex] = useState(0);
   const [activeEditFeatureId, setActiveEditFeatureId] = useState<number | null>(null);
@@ -38,8 +40,8 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const activeDate = dates[activeDateIndex];
 
   const dayStats = useMemo(
-    () => (feat ? (isAllMode ? getDayStats(allFeatures, activeDate) : getDayStats([feat], activeDate)) : null),
-    [isAllMode, allFeatures, feat, activeDate],
+    () => (feat ? (isAllMode ? getDayStats(allFeatures, activeDate, activeDepartment) : getDayStats([feat], activeDate, activeDepartment)) : null),
+    [isAllMode, allFeatures, feat, activeDate, activeDepartment],
   );
 
   const activePoints = useMemo(() => {
@@ -48,40 +50,54 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     return pts.filter((pt) => {
       if (activeEditFeatureId === pt.id) return true;
       if (!featureMatchesSearch(pt, searchQuery, activeDate)) return false;
-      const log = pt.dailyLogs?.find((l) => l.date === activeDate);
+      const logs = pt.dailyLogs?.filter((l) =>
+        l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+      ) || [];
+      const log = logs[0];
       if (!log || !logHasPersonnel(log)) return false;
       return logMatchesArrivalFilter(log, arrivalFilter);
     });
-  }, [isAllMode, allFeatures, feat, activeEditFeatureId, searchQuery, activeDate, arrivalFilter]);
+  }, [isAllMode, allFeatures, feat, activeEditFeatureId, searchQuery, activeDate, arrivalFilter, activeDepartment]);
 
   const inactivePoints = useMemo(() => {
     if (!feat) return [];
     const pts = isAllMode ? allFeatures : [feat];
     return pts.filter((pt) => {
       if (!featureMatchesSearch(pt, searchQuery, activeDate)) return false;
-      const log = pt.dailyLogs?.find((l) => l.date === activeDate);
+      const logs = pt.dailyLogs?.filter((l) =>
+        l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+      ) || [];
+      const log = logs[0];
       return !log || !logHasPersonnel(log);
     });
-  }, [isAllMode, allFeatures, feat, searchQuery, activeDate]);
+  }, [isAllMode, allFeatures, feat, searchQuery, activeDate, activeDepartment]);
 
   const filteredDates = useMemo(() => {
     if (!feat) return [];
     return dates.filter((dateStr) => {
       if (isAllMode) return true;
-      const log = feat.dailyLogs?.find((l) => l.date === dateStr);
+      const logs = feat.dailyLogs?.filter((l) =>
+        l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+      ) || [];
+      const log = logs[0];
       return logMatchesArrivalFilter(log, arrivalFilter);
     });
-  }, [dates, isAllMode, feat, arrivalFilter]);
+  }, [dates, isAllMode, feat, arrivalFilter, activeDepartment]);
 
   const daysWithData = useMemo(() => {
     if (!feat) return 0;
     return dates.reduce((acc, dateStr) => {
       if (isAllMode) {
-        return acc + (allFeatures.some((f) => f.dailyLogs?.some((l) => l.date === dateStr && logHasPersonnel(l))) ? 1 : 0);
+        return acc + (allFeatures.some((f) => f.dailyLogs?.some((l) =>
+          l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department) && logHasPersonnel(l)
+        )) ? 1 : 0);
       }
-      return acc + (feat.dailyLogs?.some((l) => l.date === dateStr && logHasPersonnel(l)) ? 1 : 0);
+      const logs = feat.dailyLogs?.filter((l) =>
+        l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+      ) || [];
+      return acc + (logs.some((l) => logHasPersonnel(l)) ? 1 : 0);
     }, 0);
-  }, [dates, isAllMode, allFeatures, feat]);
+  }, [dates, isAllMode, allFeatures, feat, activeDepartment]);
 
   if (!feat) return null;
 
@@ -269,7 +285,10 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   {activePoints.map((pt) => {
-                    const log = pt.dailyLogs?.find((l) => l.date === activeDate);
+                    const logs = pt.dailyLogs?.filter((l) =>
+                      l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+                    ) || [];
+                    const log = logs[0];
                     const isEditingThis = activeEditFeatureId === pt.id;
                     const hasG2 = !!(log?.groupName2 || log?.unitOut2);
 
@@ -354,7 +373,10 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
               </div>
             ) : (
               filteredDates.map((dateStr) => {
-                const log = feat.dailyLogs?.find((l) => l.date === dateStr);
+                const logs = feat.dailyLogs?.filter((l) =>
+                  l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+                ) || [];
+                const log = logs[0];
                 return <DateRow key={dateStr} dateStr={dateStr} log={log} feat={feat} onSaveDailyLog={onSaveDailyLog} />;
               })
             )

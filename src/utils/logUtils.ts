@@ -1,4 +1,4 @@
-import type { DailyLog } from "../types";
+import type { DailyLog, Department, DepartmentView } from "../types";
 
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
@@ -22,9 +22,10 @@ export function getDatesRange(startStr: string): string[] {
   return dates.reverse();
 }
 
-export function emptyLog(date: string): DailyLog {
+export function emptyLog(date: string, department?: Department): DailyLog {
   return {
     date,
+    department,
     groupName: "",
     managerName: "",
     managerPhone: "",
@@ -143,6 +144,7 @@ export interface DayStats {
 export function getDayStats(
   features: { dailyLogs?: DailyLog[] }[],
   dateStr: string,
+  activeDepartment?: DepartmentView,
 ): DayStats {
   let totalPersonnel = 0;
   let totalRescued = 0;
@@ -152,7 +154,10 @@ export function getDayStats(
   let groupsArrived = 0;
 
   for (const f of features) {
-    const log = f.dailyLogs?.find((l) => l.date === dateStr);
+    const logs = f.dailyLogs?.filter((l) =>
+      l.date === dateStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+    ) || [];
+    const log = logs[0];
     if (!log || !logHasPersonnel(log)) continue;
 
     activePoints++;

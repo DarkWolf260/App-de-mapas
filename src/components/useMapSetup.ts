@@ -16,7 +16,7 @@ import { geoToJSON } from "../utils/spatialUtils";
 import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapValue, typeLabel, makeSymbols, getLabelText } from "../utils/mapUtils";
 import { deconflictGraphics } from "../utils/labelDeconfliction";
 import { syncDrawnFeaturesToGraphics, syncImportedFeatures } from "../utils/graphicsSync";
-import type { DrawnFeature, HtmlLabel, LayerVisibility, RemoveFeatureId } from "../types";
+import type { DrawnFeature, HtmlLabel, LayerVisibility, RemoveFeatureId, DepartmentView } from "../types";
 
 export interface UseMapSetupProps {
   apiKey: string;
@@ -32,6 +32,7 @@ export interface UseMapSetupProps {
   hiddenFeatures: Record<number, boolean>;
   selectedDate: string;
   zoomToCoords?: { lat: number; lon: number } | null;
+  activeDepartment?: DepartmentView;
 }
 
 export const useMapSetup = ({
@@ -47,6 +48,7 @@ export const useMapSetup = ({
   hiddenFeatures,
   selectedDate,
   zoomToCoords,
+  activeDepartment = "pc",
 }: UseMapSetupProps) => {
   const mapDiv = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
@@ -78,6 +80,9 @@ export const useMapSetup = ({
 
   const selectedDateRef = useRef(selectedDate);
   useEffect(() => { selectedDateRef.current = selectedDate; }, [selectedDate]);
+
+  const activeDepartmentRef = useRef(activeDepartment);
+  useEffect(() => { activeDepartmentRef.current = activeDepartment; }, [activeDepartment]);
 
   const [mapReady, setMapReady] = useState(false);
   const [customPopup, setCustomPopup] = useState<{ mapPoint: __esri.Point; feat: DrawnFeature } | null>(null);
@@ -112,7 +117,7 @@ export const useMapSetup = ({
     const sketchLayer = sketchLayerRef.current;
     const view = viewRef.current;
     if (sketchLayer && view) {
-      deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef, selectedDateRef }, setHtmlLabels);
+      deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef, selectedDateRef, activeDepartmentRef }, setHtmlLabels);
     }
   }, []);
 
@@ -179,7 +184,7 @@ export const useMapSetup = ({
       sketchVMRef.current = svm;
 
       const runDeconflict = () => {
-        deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef, selectedDateRef }, setHtmlLabels);
+        deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef, selectedDateRef, activeDepartmentRef }, setHtmlLabels);
       };
       deconflictGraphicsRef.current = runDeconflict;
       runDeconflict();
@@ -436,10 +441,10 @@ export const useMapSetup = ({
   useEffect(() => {
     const layer = sketchLayerRef.current;
     if (!layer) return;
-    syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, currentZoom, layer, selectedDateRef.current);
+    syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, currentZoom, layer, selectedDateRef.current, activeDepartmentRef.current);
     deconflictGraphicsRef.current?.();
   // eslint-disable-next-line react-hooks/exhaustive-deps -- layerVisibility sub-props are sufficient
-  }, [drawnFeatures, activeColor, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.hideNestedAreas, mapReady, currentZoom, selectedDate]);
+  }, [drawnFeatures, activeColor, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.hideNestedAreas, mapReady, currentZoom, selectedDate, activeDepartment]);
 
   // ── 7. Sync imported features ────────────────────────────────────────────────
   useEffect(() => {

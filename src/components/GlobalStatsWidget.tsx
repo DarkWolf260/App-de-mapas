@@ -1,24 +1,27 @@
 import React, { useState, useMemo } from "react";
-import type { DrawnFeature } from "../types";
+import type { DrawnFeature, DepartmentView } from "../types";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
 interface GlobalStatsWidgetProps {
   drawnFeatures: DrawnFeature[];
   selectedDate?: string;
+  activeDepartment?: DepartmentView;
 }
 
-export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({ drawnFeatures, selectedDate }) => {
+export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({ drawnFeatures, selectedDate, activeDepartment = "pc" }) => {
   const todayStr = useMemo(() => selectedDate || new Date().toLocaleDateString('en-CA'), [selectedDate]);
 
-  // Compute auto values from map features (ONLY today's logs)
+  // Compute auto values from map features (ONLY today's logs, filtered by department)
   const stats = useMemo(() => {
     let rescuedPeople = 0;
     let recoveredBodies = 0;
     let rescuedPets = 0;
 
     drawnFeatures.forEach((feat) => {
-      const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
-      if (todayLog) {
+      const todayLogs = feat.dailyLogs?.filter((l) =>
+        l.date === todayStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+      ) || [];
+      for (const todayLog of todayLogs) {
         rescuedPeople += todayLog.rescuedCount ? Number(todayLog.rescuedCount) : 0;
         recoveredBodies += todayLog.recoveredCount ? Number(todayLog.recoveredCount) : 0;
         rescuedPets += todayLog.rescuedPetsCount ? Number(todayLog.rescuedPetsCount) : 0;
@@ -26,7 +29,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({ drawnFeatu
     });
 
     return { rescuedPeople, recoveredBodies, rescuedPets };
-  }, [drawnFeatures, todayStr]);
+  }, [drawnFeatures, todayStr, activeDepartment]);
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     return localStorage.getItem("pc_stats_widget_collapsed") === "true";

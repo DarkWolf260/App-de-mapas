@@ -6,7 +6,7 @@ import { execute as centroidExecute } from "@arcgis/core/geometry/operators/cent
 import { buildParentsMap } from "./spatialUtils";
 import { symbolForType, getLabelText } from "./mapUtils";
 import { PALETTE } from "./colorUtils";
-import type { DrawnFeature, LayerVisibility } from "../types";
+import type { DrawnFeature, LayerVisibility, DepartmentView } from "../types";
 
 export function syncDrawnFeaturesToGraphics(
   drawnFeatures: DrawnFeature[],
@@ -15,6 +15,7 @@ export function syncDrawnFeaturesToGraphics(
   currentZoom: number,
   layer: GraphicsLayer,
   dateStr?: string,
+  activeDepartment?: DepartmentView,
 ): void {
   const { parentsMap, polygonAreas } = buildParentsMap(drawnFeatures);
 
@@ -35,10 +36,10 @@ export function syncDrawnFeaturesToGraphics(
 
       const label = layer.graphics.find((x) => x.attributes?.isLabel && String(x.attributes?.parentId) === String(feat.id));
       if (label) {
-        syncExistingLabel(label, feat, g, parentsMap, currentZoom, layerVisibility, isHidden, shouldHideNested, dateStr);
+        syncExistingLabel(label, feat, g, parentsMap, currentZoom, layerVisibility, isHidden, shouldHideNested, dateStr, activeDepartment);
       }
     } else {
-      addFeatureGraphic(feat, hiddenFeatures, layerVisibility, currentZoom, parentsMap, isHidden, shouldHideNested, layer, dateStr);
+      addFeatureGraphic(feat, hiddenFeatures, layerVisibility, currentZoom, parentsMap, isHidden, shouldHideNested, layer, dateStr, activeDepartment);
     }
   });
 
@@ -55,6 +56,7 @@ function syncExistingLabel(
   isHidden: boolean,
   shouldHideNested: boolean,
   dateStr?: string,
+  activeDepartment?: DepartmentView,
 ): void {
   const isPolygonLabel = label.attributes?.isPolygonLabel;
   const isSubpolygon = isPolygonLabel && parentsMap[feat.id] !== undefined;
@@ -77,7 +79,7 @@ function syncExistingLabel(
 
   if (label.symbol) {
     const ts = label.symbol as TextSymbol;
-    const targetText = getLabelText(feat, dateStr);
+    const targetText = getLabelText(feat, dateStr, activeDepartment);
     const hasPersonnel = !isPolygonLabel && targetText !== feat.title;
     const showBox = hasPersonnel;
     const currentHasBox = ts.backgroundColor !== null && ts.backgroundColor !== undefined;
@@ -105,6 +107,7 @@ function addFeatureGraphic(
   shouldHideNested: boolean,
   layer: GraphicsLayer,
   dateStr?: string,
+  activeDepartment?: DepartmentView,
 ): void {
   const geomCfg = convertGeoJSONGeometry(feat);
   if (!geomCfg) return;
@@ -122,11 +125,11 @@ function addFeatureGraphic(
   if (feat.geojsonGeometry && (feat.geojsonGeometry.type === "Point" || feat.geojsonGeometry.type === "Polygon")) {
     const isPolyLabel = feat.geojsonGeometry.type === "Polygon";
     const labelGeom = feat.geojsonGeometry.type === "Point" ? ng.geometry!.clone() : centroidExecute(ng.geometry!);
-    const hasPersonnel = !isPolyLabel && getLabelText(feat, dateStr) !== feat.title;
+    const hasPersonnel = !isPolyLabel && getLabelText(feat, dateStr, activeDepartment) !== feat.title;
     const showBox = hasPersonnel;
 
     const labelSym = new TextSymbol({
-      text: getLabelText(feat, dateStr),
+      text: getLabelText(feat, dateStr, activeDepartment),
       color: "white",
       backgroundColor: showBox ? [15, 23, 42, 0.95] : null,
       borderLineColor: showBox ? [56, 189, 248, 0.95] : null,

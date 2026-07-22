@@ -1,5 +1,9 @@
 export type FeatureType = "point" | "polyline" | "polygon";
 
+export type Department = "pc" | "bomberos";
+
+export type DepartmentView = Department | "mixto";
+
 export type BasemapKey = "topo-vector" | "satellite" | "hybrid" | "streets-vector" | "dark-gray-vector" | "osm";
 
 export interface HtmlLabel {
@@ -25,6 +29,7 @@ export interface ContainedItem {
 
 export interface DailyLog {
   date: string;
+  department?: Department;
   groupName: string;
   managerName: string;
   managerPhone: string;
