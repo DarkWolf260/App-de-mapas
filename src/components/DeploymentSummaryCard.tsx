@@ -29,11 +29,11 @@ function computeActivePoints(drawnFeatures: DrawnFeature[]): ActivePoint[] {
       const totalOff = getTotalPersonnel(log);
       let groups = 0;
       let activeGroups = 0;
-      if (log.groupName || log.unitOut || log.managerName) {
+      if (log.groupName) {
         groups++;
         if (!log.hasArrivedG1 && !log.arrivalTime) activeGroups++;
       }
-      if (log.groupName2 || log.unitOut2 || log.managerName2) {
+      if (log.groupName2) {
         groups++;
         if (!log.hasArrivedG2 && !log.arrivalTime2) activeGroups++;
       }

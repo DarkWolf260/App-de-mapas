@@ -141,22 +141,24 @@ function buildHtmlLabels(
     if (feat && feat.type === "point") {
       const todayLog = feat.dailyLogs?.find((l) => l.date === todayStr);
       if (todayLog) {
-        const parts: string[] = [];
         const g1 = todayLog.groupName?.trim();
-        const u1 = todayLog.unitOut?.trim();
-        if (g1 && u1) parts.push(`${g1}, ${u1}`);
-        else if (g1) parts.push(g1);
-        else if (u1) parts.push(u1);
         const g2 = todayLog.groupName2?.trim();
-        const u2 = todayLog.unitOut2?.trim();
-        if (g2 && u2) parts.push(`${g2}, ${u2}`);
-        else if (g2) parts.push(g2);
-        else if (u2) parts.push(u2);
-        info = parts.length > 0 ? parts.join(" | ") : "Sin personal registrado";
+        if (g1 || g2) {
+          const parts: string[] = [];
+          const u1 = todayLog.unitOut?.trim();
+          if (g1 && u1) parts.push(`${g1}, ${u1}`);
+          else if (g1) parts.push(g1);
+          else if (u1) parts.push(u1);
+          const u2 = todayLog.unitOut2?.trim();
+          if (g2 && u2) parts.push(`${g2}, ${u2}`);
+          else if (g2) parts.push(g2);
+          else if (u2) parts.push(u2);
+          info = parts.join(" | ");
+        }
       }
     }
 
-    const hasPersonnel = feat?.type === "point" && feat.dailyLogs?.some((l) => l.date === todayStr);
+    const hasPersonnel = feat?.type === "point" && feat.dailyLogs?.some((l) => l.date === todayStr && (l.groupName || l.groupName2));
 
     if (item.visible && !isPolygonLabel && hasPersonnel) {
       const charWidth = 6;

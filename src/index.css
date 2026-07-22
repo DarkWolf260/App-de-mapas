@@ -1162,6 +1162,330 @@ input:checked + .slider:before {
 }
 
 /* ==========================================================================
+   Bitácora — Search Bar
+   ========================================================================== */
+.rr-search-bar {
+  padding: 6px 20px;
+  background: rgba(255, 255, 255, 0.01);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.rr-search-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 5px 10px 5px 28px;
+  color: var(--text-main);
+  font-size: 0.72rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.rr-search-input:focus {
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.rr-search-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.rr-search-icon {
+  position: absolute;
+  left: 28px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.rr-search-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.rr-search-clear {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s ease;
+}
+
+.rr-search-clear:hover {
+  color: var(--text-main);
+}
+
+/* ==========================================================================
+   Bitácora — Day Stats Bar
+   ========================================================================== */
+.rr-stats-bar {
+  padding: 8px 20px;
+  background: linear-gradient(to right, rgba(34, 197, 94, 0.04), rgba(56, 189, 248, 0.03));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.rr-stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.rr-stat-chip .stat-val {
+  font-weight: 800;
+  font-size: 0.78rem;
+}
+
+.rr-stat-chip--personnel .stat-val { color: var(--color-info); }
+.rr-stat-chip--rescued .stat-val { color: var(--color-green); }
+.rr-stat-chip--recovered .stat-val { color: var(--color-medium); }
+.rr-stat-chip--pets .stat-val { color: var(--color-purple); }
+.rr-stat-chip--points .stat-val { color: var(--text-main); }
+
+.rr-stats-sep {
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Bitácora — Compact Card Improvements
+   ========================================================================== */
+.rr-point-card {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.rr-point-card--data {
+  background: rgba(34, 197, 94, 0.02);
+  border: 1px solid rgba(34, 197, 94, 0.18);
+}
+
+.rr-point-card--editing {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.rr-point-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.rr-point-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+
+.rr-point-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rr-point-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.rr-point-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 13px;
+}
+
+.rr-point-obs {
+  margin-top: 2px;
+  padding: 3px 7px;
+  background: rgba(56, 189, 248, 0.04);
+  border-left: 2px solid var(--color-info);
+  border-radius: 0 4px 4px 0;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.rr-point-edit-zone {
+  margin-top: 2px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.06);
+  padding-top: 6px;
+}
+
+.rr-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  text-align: center;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   Bitácora — Pagination improvements
+   ========================================================================== */
+.rr-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+
+.rr-pagination select {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.rr-pagination select:focus {
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.rr-day-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.rr-nav-btn {
+  padding: 4px 12px;
+  font-size: 0.7rem;
+}
+
+/* ==========================================================================
+   Bitácora — Footer improvements
+   ========================================================================== */
+.rr-footer {
+  padding: 8px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(8, 14, 28, 0.5);
+  flex-shrink: 0;
+}
+
+.rr-footer-left {
+  display: flex;
+  gap: 8px;
+}
+
+.rr-print-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 6px;
+  color: var(--color-info);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.rr-print-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+}
+
+/* ==========================================================================
+   Bitácora — Print styles
+   ========================================================================== */
+@media print {
+  .rr-backdrop {
+    position: static !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+  }
+
+  .rr-modal {
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    background: #fff !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    color: #1a1a1a !important;
+  }
+
+  .rr-header {
+    background: none !important;
+    border-bottom: 2px solid #333 !important;
+  }
+
+  .rr-title, .rr-point-title {
+    color: #1a1a1a !important;
+  }
+
+  .rr-subtitle, .rr-filter-bar, .rr-search-bar, .rr-pagination, .rr-footer, .rr-legend, .rr-stats-bar, .sim-btn, button[class*="rr-"] {
+    display: none !important;
+  }
+
+  .rr-list {
+    padding: 8px 0 !important;
+  }
+
+  .rr-point-card, .rr-point-card--data, .rr-point-card--editing {
+    background: none !important;
+    border: 1px solid #ddd !important;
+    break-inside: avoid;
+  }
+
+  .rr-point-dot {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .rr-point-groups {
+    color: #333 !important;
+  }
+
+  .rr-point-groups strong {
+    color: #1a1a1a !important;
+  }
+}
+
+/* ==========================================================================
    Floating Search Bar Styles
    ========================================================================== */
 .floating-search-container {

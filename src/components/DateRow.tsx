@@ -102,12 +102,6 @@ export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDail
         </div>
       )}
 
-      {!expanded && !hasData && (
-        <div style={{ paddingLeft: "16px", fontSize: "0.68rem", color: "var(--text-muted)", fontStyle: "italic" }}>
-          Sin registros para este día.
-        </div>
-      )}
-
       {expanded && (
         <div style={{ marginTop: "4px", borderTop: "1px dashed rgba(255, 255, 255, 0.08)", paddingTop: "8px" }}>
           <GroupLogForm

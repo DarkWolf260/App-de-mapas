@@ -1,10 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import type { DrawnFeature, DailyLog } from "../types";
-import { X, Calendar, ShieldAlert, Users } from "lucide-react";
+import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight } from "lucide-react";
 import { DateRow } from "./DateRow";
 import { InlineRowEditor } from "./InlineRowEditor";
 import { GroupDisplay } from "./GroupDisplay";
-import { formatDateFriendly, getDatesRange, getGroupData, logMatchesArrivalFilter, logHasPersonnel, REPORT_START_DATE } from "../utils/logUtils";
+import {
+  formatDateFriendly,
+  getDatesRange,
+  getGroupData,
+  logMatchesArrivalFilter,
+  logHasPersonnel,
+  getDayStats,
+  featureMatchesSearch,
+  REPORT_START_DATE,
+} from "../utils/logUtils";
 
 interface RangeReportModalProps {
   feat: DrawnFeature | "all" | null;
@@ -22,37 +31,59 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const [activeDateIndex, setActiveDateIndex] = useState(0);
   const [activeEditFeatureId, setActiveEditFeatureId] = useState<number | null>(null);
   const [arrivalFilter, setArrivalFilter] = useState<"all" | "arrived" | "not_arrived">("all");
-
-  if (!feat) return null;
+  const [searchQuery, setSearchQuery] = useState("");
 
   const dates = getDatesRange(REPORT_START_DATE);
   const isAllMode = feat === "all";
   const activeDate = dates[activeDateIndex];
 
-  const activePoints = allFeatures.filter((pt) => {
-    if (activeEditFeatureId === pt.id) return true;
-    const log = pt.dailyLogs?.find((l) => l.date === activeDate);
-    if (!log || !logHasPersonnel(log)) return false;
-    return logMatchesArrivalFilter(log, arrivalFilter);
-  });
+  const dayStats = useMemo(
+    () => (feat ? (isAllMode ? getDayStats(allFeatures, activeDate) : getDayStats([feat], activeDate)) : null),
+    [isAllMode, allFeatures, feat, activeDate],
+  );
 
-  const inactivePoints = allFeatures.filter((pt) => {
-    const log = pt.dailyLogs?.find((l) => l.date === activeDate);
-    return !log || !logHasPersonnel(log);
-  });
+  const activePoints = useMemo(() => {
+    if (!feat) return [];
+    const pts = isAllMode ? allFeatures : [feat];
+    return pts.filter((pt) => {
+      if (activeEditFeatureId === pt.id) return true;
+      if (!featureMatchesSearch(pt, searchQuery, activeDate)) return false;
+      const log = pt.dailyLogs?.find((l) => l.date === activeDate);
+      if (!log || !logHasPersonnel(log)) return false;
+      return logMatchesArrivalFilter(log, arrivalFilter);
+    });
+  }, [isAllMode, allFeatures, feat, activeEditFeatureId, searchQuery, activeDate, arrivalFilter]);
 
-  const filteredDates = dates.filter((dateStr) => {
-    if (isAllMode) return true;
-    const log = feat.dailyLogs?.find((l) => l.date === dateStr);
-    return logMatchesArrivalFilter(log, arrivalFilter);
-  });
+  const inactivePoints = useMemo(() => {
+    if (!feat) return [];
+    const pts = isAllMode ? allFeatures : [feat];
+    return pts.filter((pt) => {
+      if (!featureMatchesSearch(pt, searchQuery, activeDate)) return false;
+      const log = pt.dailyLogs?.find((l) => l.date === activeDate);
+      return !log || !logHasPersonnel(log);
+    });
+  }, [isAllMode, allFeatures, feat, searchQuery, activeDate]);
 
-  const daysWithData = dates.reduce((acc, dateStr) => {
-    if (isAllMode) {
-      return acc + (allFeatures.some((f) => f.dailyLogs?.some((l) => l.date === dateStr && logHasPersonnel(l))) ? 1 : 0);
-    }
-    return acc + (feat.dailyLogs?.some((l) => l.date === dateStr && logHasPersonnel(l)) ? 1 : 0);
-  }, 0);
+  const filteredDates = useMemo(() => {
+    if (!feat) return [];
+    return dates.filter((dateStr) => {
+      if (isAllMode) return true;
+      const log = feat.dailyLogs?.find((l) => l.date === dateStr);
+      return logMatchesArrivalFilter(log, arrivalFilter);
+    });
+  }, [dates, isAllMode, feat, arrivalFilter]);
+
+  const daysWithData = useMemo(() => {
+    if (!feat) return 0;
+    return dates.reduce((acc, dateStr) => {
+      if (isAllMode) {
+        return acc + (allFeatures.some((f) => f.dailyLogs?.some((l) => l.date === dateStr && logHasPersonnel(l))) ? 1 : 0);
+      }
+      return acc + (feat.dailyLogs?.some((l) => l.date === dateStr && logHasPersonnel(l)) ? 1 : 0);
+    }, 0);
+  }, [dates, isAllMode, allFeatures, feat]);
+
+  if (!feat) return null;
 
   const handlePrevDay = () => {
     if (activeDateIndex < dates.length - 1) {
@@ -68,6 +99,10 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     }
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="rr-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="rr-modal">
@@ -77,18 +112,16 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
             <Calendar style={{ color: isAllMode ? "var(--color-info)" : "var(--color-green)", flexShrink: 0 }} size={20} />
             <div>
               <h3 className="rr-title">
-                {isAllMode ? "Bitácora General — Sitios de Trabajo" : "Bitácora de Rango — 24 Jun a Hoy"}
+                {isAllMode ? "Bitácora General" : "Bitácora de Rango"}
               </h3>
               <p className="rr-subtitle">
                 {isAllMode ? (
                   <span>
-                    Mostrando <strong style={{ color: "var(--text-main)" }}>todos los puntos</strong> por día · Excluyendo puntos sin personal
+                    <strong style={{ color: "var(--text-main)" }}>Todos los sitios</strong> · {daysWithData} días con operaciones
                   </span>
                 ) : (
                   <span>
-                    Punto: <strong style={{ color: "var(--text-main)" }}>{feat.title}</strong>
-                    {" · "}
-                    <span style={{ color: "var(--color-info)" }}>Clic en cada día para editar</span>
+                    <strong style={{ color: "var(--text-main)" }}>{feat.title}</strong> · 24 Jun a Hoy
                   </span>
                 )}
               </p>
@@ -103,7 +136,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
         <div className="rr-legend">
           <div className="rr-legend-item">
             <div className="rr-legend-dot rr-legend-dot--data" />
-            Con datos registrados
+            Con datos
           </div>
           <div className="rr-legend-item">
             <div className="rr-legend-dot" />
@@ -111,13 +144,13 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
           </div>
           <div className="rr-legend-stat">
             <Users size={11} />
-            {daysWithData} / {dates.length} días con ops.
+            {daysWithData} / {dates.length} días
           </div>
         </div>
 
         {/* Filter bar */}
         <div className="rr-filter-bar">
-          <span className="rr-filter-label">Filtrar grupos:</span>
+          <span className="rr-filter-label">Grupos:</span>
           <div className="rr-filter-buttons">
             {(["all", "arrived", "not_arrived"] as const).map((key) => (
               <button
@@ -125,38 +158,94 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                 className={`rr-filter-btn ${arrivalFilter === key ? "active" : ""}`}
                 onClick={() => setArrivalFilter(key)}
               >
-                {key === "all" ? "Todos" : key === "arrived" ? "Ya llegaron" : "No han llegado"}
+                {key === "all" ? "Todos" : key === "arrived" ? "Llegaron" : "Pendientes"}
               </button>
             ))}
           </div>
         </div>
 
+        {/* Search bar (all-mode only) */}
+        {isAllMode && (
+          <div className="rr-search-bar">
+            <div className="rr-search-wrapper">
+              <Search size={13} className="rr-search-icon" />
+              <input
+                type="text"
+                className="rr-search-input"
+                placeholder="Buscar por nombre, grupo, encargado..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ paddingLeft: "28px" }}
+              />
+              {searchQuery && (
+                <button className="rr-search-clear" onClick={() => setSearchQuery("")} title="Limpiar">
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Pagination (all-mode) */}
         {isAllMode && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 20px", background: "rgba(255, 255, 255, 0.02)", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", flexShrink: 0 }}>
-            <button onClick={handlePrevDay} disabled={activeDateIndex === dates.length - 1} className="sim-btn" style={{ padding: "5px 12px", fontSize: "0.72rem", opacity: activeDateIndex === dates.length - 1 ? 0.4 : 1, cursor: activeDateIndex === dates.length - 1 ? "not-allowed" : "pointer" }}>
-              ← Día Anterior
+          <div className="rr-pagination">
+            <button onClick={handlePrevDay} disabled={activeDateIndex === dates.length - 1} className="sim-btn rr-nav-btn" style={{ opacity: activeDateIndex === dates.length - 1 ? 0.4 : 1, cursor: activeDateIndex === dates.length - 1 ? "not-allowed" : "pointer" }}>
+              <ChevronLeft size={12} /> Anterior
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600 }}>Día Seleccionado:</span>
+              <span className="rr-day-label">Día:</span>
               <select
                 value={activeDateIndex}
                 onChange={(e) => { setActiveDateIndex(parseInt(e.target.value, 10)); setActiveEditFeatureId(null); }}
-                style={{ background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255, 255, 255, 0.15)", borderRadius: "6px", color: "var(--text-main)", fontSize: "0.75rem", padding: "4px 10px", outline: "none", cursor: "pointer", fontFamily: "inherit" }}
               >
                 {dates.map((dateStr, idx) => {
                   const dayHasData = allFeatures.some((f) => f.dailyLogs?.some((l) => l.date === dateStr && logHasPersonnel(l)));
                   return (
                     <option key={dateStr} value={idx} style={{ background: "#0f172a", color: "#f8fafc" }}>
-                      {formatDateFriendly(dateStr)} {dateStr.split("-")[0]} {dayHasData ? "•" : ""}
+                      {formatDateFriendly(dateStr)} {dayHasData ? "•" : ""}
                     </option>
                   );
                 })}
               </select>
             </div>
-            <button onClick={handleNextDay} disabled={activeDateIndex === 0} className="sim-btn" style={{ padding: "5px 12px", fontSize: "0.72rem", opacity: activeDateIndex === 0 ? 0.4 : 1, cursor: activeDateIndex === 0 ? "not-allowed" : "pointer" }}>
-              Día Siguiente →
+            <button onClick={handleNextDay} disabled={activeDateIndex === 0} className="sim-btn rr-nav-btn" style={{ opacity: activeDateIndex === 0 ? 0.4 : 1, cursor: activeDateIndex === 0 ? "not-allowed" : "pointer" }}>
+              Siguiente <ChevronRight size={12} />
             </button>
+          </div>
+        )}
+
+        {/* Day stats bar (all-mode) */}
+        {isAllMode && dayStats && dayStats.activePoints > 0 && (
+          <div className="rr-stats-bar">
+            <div className="rr-stat-chip rr-stat-chip--personnel">
+              <Users size={11} />
+              <span className="stat-val">{dayStats.totalPersonnel}</span>
+              Personal
+            </div>
+            <div className="rr-stats-sep" />
+            <div className="rr-stat-chip rr-stat-chip--rescued">
+              <span className="stat-val">{dayStats.totalRescued}</span>
+              Resc.
+            </div>
+            <div className="rr-stats-sep" />
+            <div className="rr-stat-chip rr-stat-chip--recovered">
+              <span className="stat-val">{dayStats.totalRecovered}</span>
+              Recup.
+            </div>
+            {dayStats.totalPets > 0 && (
+              <>
+                <div className="rr-stats-sep" />
+                <div className="rr-stat-chip rr-stat-chip--pets">
+                  <span className="stat-val">{dayStats.totalPets}</span>
+                  Masc.
+                </div>
+              </>
+            )}
+            <div className="rr-stats-sep" />
+            <div className="rr-stat-chip rr-stat-chip--points">
+              <span className="stat-val">{dayStats.activePoints}</span>
+              Sitios
+            </div>
           </div>
         )}
 
@@ -165,18 +254,20 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
           {isAllMode ? (
             <>
               {activePoints.length === 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", color: "var(--text-muted)", fontSize: "0.8rem", textAlign: "center", gap: "10px" }}>
+                <div className="rr-empty-state">
                   <ShieldAlert size={28} style={{ opacity: 0.5, color: "var(--color-info)" }} />
                   <div>
-                    {arrivalFilter === "all"
-                      ? "No hay personal reportado en ningún Sitio de Trabajo para este día."
-                      : arrivalFilter === "arrived"
-                        ? "No hay grupos que hayan llegado para este día."
-                        : "Todos los grupos de este día ya han llegado o no hay personal reportado."}
+                    {searchQuery
+                      ? `No se encontraron resultados para "${searchQuery}"`
+                      : arrivalFilter === "all"
+                        ? "No hay personal reportado en ningún Sitio de Trabajo para este día."
+                        : arrivalFilter === "arrived"
+                          ? "No hay grupos que hayan llegado para este día."
+                          : "Todos los grupos de este día ya han llegado o no hay personal reportado."}
                   </div>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   {activePoints.map((pt) => {
                     const log = pt.dailyLogs?.find((l) => l.date === activeDate);
                     const isEditingThis = activeEditFeatureId === pt.id;
@@ -185,45 +276,49 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                     return (
                       <div
                         key={pt.id}
-                        className="rr-row rr-row--data"
-                        style={{
-                          padding: "12px 14px",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "8px",
-                          background: isEditingThis ? "rgba(255, 255, 255, 0.02)" : "rgba(34, 197, 94, 0.02)",
-                          border: isEditingThis ? "1px solid rgba(255, 255, 255, 0.15)" : "1px solid rgba(34, 197, 94, 0.2)",
-                        }}
+                        className={`rr-point-card ${isEditingThis ? "rr-point-card--editing" : "rr-point-card--data"}`}
                       >
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: pt.color || "var(--color-green)", boxShadow: `0 0 8px ${pt.color || "var(--color-green)"}80` }} />
-                            <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-main)" }}>{pt.title}</span>
+                        <div className="rr-point-header">
+                          <div className="rr-point-name">
+                            <span
+                              className="rr-point-dot"
+                              style={{
+                                backgroundColor: pt.color || "var(--color-green)",
+                                boxShadow: `0 0 6px ${pt.color || "var(--color-green)"}80`,
+                              }}
+                            />
+                            <span className="rr-point-title">{pt.title}</span>
                           </div>
                           <button
                             onClick={() => setActiveEditFeatureId(isEditingThis ? null : pt.id)}
                             className="sim-btn"
-                            style={{ fontSize: "0.65rem", padding: "2px 8px", background: isEditingThis ? "rgba(255, 255, 255, 0.08)" : "rgba(56, 189, 248, 0.08)", border: isEditingThis ? "1px solid var(--border-subtle)" : "1px solid rgba(56, 189, 248, 0.2)", color: isEditingThis ? "var(--text-main)" : "var(--color-info)" }}
+                            style={{
+                              fontSize: "0.62rem",
+                              padding: "2px 7px",
+                              background: isEditingThis ? "rgba(255, 255, 255, 0.06)" : "rgba(56, 189, 248, 0.06)",
+                              border: isEditingThis ? "1px solid var(--border-subtle)" : "1px solid rgba(56, 189, 248, 0.18)",
+                              color: isEditingThis ? "var(--text-main)" : "var(--color-info)",
+                            }}
                           >
                             {isEditingThis ? "Cerrar" : "Editar"}
                           </button>
                         </div>
 
                         {!isEditingThis && log && (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingLeft: "16px" }}>
-                            <GroupDisplay group={getGroupData(log, 1)} label="GRUPO 1" accentColor="var(--color-green)" showBorder={!!hasG2} />
-                            {hasG2 && <GroupDisplay group={getGroupData(log, 2)} label="GRUPO 2" accentColor="var(--color-info)" showBorder={false} />}
+                          <div className="rr-point-groups">
+                            <GroupDisplay group={getGroupData(log, 1)} label="G1" accentColor="var(--color-green)" showBorder={!!hasG2} />
+                            {hasG2 && <GroupDisplay group={getGroupData(log, 2)} label="G2" accentColor="var(--color-info)" showBorder={false} />}
                           </div>
                         )}
 
                         {log?.observations && !isEditingThis && (
-                          <div style={{ marginTop: "4px", padding: "4px 8px", background: "rgba(56, 189, 248, 0.04)", borderLeft: "2px solid var(--color-info)", borderRadius: "0 4px 4px 0", fontSize: "0.72rem" }}>
-                            <strong style={{ color: "var(--color-info)" }}>📝 Observación:</strong> {log.observations}
+                          <div className="rr-point-obs">
+                            <strong style={{ color: "var(--color-info)" }}>Nota:</strong> {log.observations}
                           </div>
                         )}
 
                         {isEditingThis && (
-                          <div style={{ marginTop: "4px", borderTop: "1px dashed rgba(255, 255, 255, 0.08)", paddingTop: "8px" }}>
+                          <div className="rr-point-edit-zone">
                             <InlineRowEditor dateStr={activeDate} log={log} feat={pt} onSaveDailyLog={onSaveDailyLog} onCloseEditor={() => setActiveEditFeatureId(null)} />
                           </div>
                         )}
@@ -234,28 +329,26 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
               )}
 
               {inactivePoints.length > 0 && (
-                <div style={{ marginTop: "16px", padding: "12px", background: "rgba(255, 255, 255, 0.01)", border: "1px dashed rgba(255, 255, 255, 0.08)", borderRadius: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em" }}>
-                    ➕ REGISTRAR PERSONAL EN OTRO SITIO DE TRABAJO
+                <div style={{ marginTop: "10px", padding: "8px 10px", background: "rgba(255, 255, 255, 0.01)", border: "1px dashed rgba(255, 255, 255, 0.08)", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em" }}>
+                    + REGISTRAR EN OTRO SITIO
                   </div>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <select
-                      defaultValue=""
-                      onChange={(e) => { const val = e.target.value; if (val) { setActiveEditFeatureId(parseInt(val, 10)); e.target.value = ""; } }}
-                      style={{ background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "5px", color: "var(--text-main)", fontSize: "0.7rem", padding: "5px 10px", outline: "none", flex: 1, cursor: "pointer" }}
-                    >
-                      <option value="" disabled style={{ background: "#1e293b" }}>-- Seleccionar Sitio de Trabajo --</option>
-                      {inactivePoints.map((pt) => (
-                        <option key={pt.id} value={pt.id} style={{ background: "#1e293b" }}>{pt.title}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <select
+                    defaultValue=""
+                    onChange={(e) => { const val = e.target.value; if (val) { setActiveEditFeatureId(parseInt(val, 10)); e.target.value = ""; } }}
+                    style={{ background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "5px", color: "var(--text-main)", fontSize: "0.68rem", padding: "4px 8px", outline: "none", width: "100%", cursor: "pointer" }}
+                  >
+                    <option value="" disabled style={{ background: "#1e293b" }}>-- Seleccionar Sitio --</option>
+                    {inactivePoints.map((pt) => (
+                      <option key={pt.id} value={pt.id} style={{ background: "#1e293b" }}>{pt.title}</option>
+                    ))}
+                  </select>
                 </div>
               )}
             </>
           ) : (
             filteredDates.length === 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", color: "var(--text-muted)", fontSize: "0.8rem", textAlign: "center", gap: "10px" }}>
+              <div className="rr-empty-state">
                 <ShieldAlert size={28} style={{ opacity: 0.5, color: "var(--color-info)" }} />
                 <div>No hay registros que coincidan con el filtro en este rango de fechas.</div>
               </div>
@@ -270,7 +363,13 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
 
         {/* Footer */}
         <div className="rr-footer">
-          <button onClick={onClose} className="sim-btn" style={{ padding: "6px 20px", fontSize: "0.75rem" }}>
+          <div className="rr-footer-left">
+            <button onClick={handlePrint} className="rr-print-btn">
+              <Printer size={12} />
+              Imprimir
+            </button>
+          </div>
+          <button onClick={onClose} className="sim-btn" style={{ padding: "5px 18px", fontSize: "0.72rem" }}>
             Cerrar
           </button>
         </div>

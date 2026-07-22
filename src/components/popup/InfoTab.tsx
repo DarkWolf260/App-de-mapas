@@ -266,8 +266,15 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
+      {/* Punto: sin datos */}
+      {!isPolygon && !(log.groupName || log.unitOut || log.managerName || log.officersCount) && !(log.rescuedCount || log.recoveredCount || log.rescuedPetsCount || log.observations) && (
+        <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
+          Sin datos registrados para hoy
+        </div>
+      )}
+
       {/* Punto: Grupo Primario */}
-      {!isPolygon && (
+      {!isPolygon && (log.groupName || log.unitOut || log.managerName || log.officersCount) && (
         <div style={sectionStyle}>
           <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
             <Users size={10} /> Grupo Primario
@@ -304,8 +311,8 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
-      {/* Reportes de Hoy — solo para puntos */}
-      {!isPolygon && (
+      {/* Reportes de Hoy — solo para puntos con datos */}
+      {!isPolygon && (log.rescuedCount || log.recoveredCount || log.rescuedPetsCount || log.observations) && (
         <div style={sectionStyle}>
           <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
             <PawPrint size={10} /> Reportes de Hoy
