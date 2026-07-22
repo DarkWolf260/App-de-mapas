@@ -45,32 +45,56 @@ export function useGeoJSONIO(
         alert("El archivo no es un FeatureCollection GeoJSON válido.");
         return;
       }
+
+      const existingDocs = db ? await db.features.find().exec() : [];
+      const existingKeys = new Set(
+        existingDocs.map((d) => {
+          const g = d.geojsonGeometry;
+          const coords = g?.coordinates;
+          const firstCoord = Array.isArray(coords) ? JSON.stringify(coords[0]) : "";
+          return `${d.title}|${d.type}|${firstCoord}`;
+        })
+      );
+
       const newDrawn: DrawnFeature[] = [];
       const toInsert: RxDrawnFeatureDocument[] = [];
+      let skipped = 0;
+
       geojson.features.forEach((feat, index) => {
         const title = (feat.properties?.title as string) ?? `Elemento ${index + 1}`;
-        const id = feat.id ? String(feat.id) : `draw-imp-${Date.now()}-${index}`;
         const color = (feat.properties?.color as string) || "#3b82f6";
         const description = (feat.properties?.description as string) || "";
         const locked = !!feat.properties?.locked;
         const dailyLogs = Array.isArray(feat.properties?.dailyLogs) ? (feat.properties.dailyLogs as DrawnFeature["dailyLogs"]) : [];
 
-        if (feat.geometry.type === "Point") {
-          const item: RxDrawnFeatureDocument = { id, title, type: "point", color, description, locked, dailyLogs, geojsonGeometry: feat.geometry };
-          newDrawn.push(item);
-          toInsert.push(item);
-        } else if (feat.geometry.type === "LineString" || feat.geometry.type === "Polygon") {
-          const type = feat.geometry.type === "LineString" ? "polyline" : "polygon";
-          const item: RxDrawnFeatureDocument = { id, title, type, color, description, locked, dailyLogs, geojsonGeometry: feat.geometry };
-          newDrawn.push(item);
-          toInsert.push(item);
+        let type: DrawnFeature["type"] | null = null;
+        if (feat.geometry.type === "Point") type = "point";
+        else if (feat.geometry.type === "LineString") type = "polyline";
+        else if (feat.geometry.type === "Polygon") type = "polygon";
+        if (!type) return;
+
+        const firstCoord = Array.isArray(feat.geometry.coordinates) ? JSON.stringify(feat.geometry.coordinates[0]) : "";
+        const key = `${title}|${type}|${firstCoord}`;
+        if (existingKeys.has(key)) {
+          skipped++;
+          return;
         }
+
+        const id = feat.id ? String(feat.id) : `draw-imp-${Date.now()}-${index}`;
+        const item: RxDrawnFeatureDocument = { id, title, type, color, description, locked, dailyLogs, geojsonGeometry: feat.geometry };
+        newDrawn.push(item);
+        toInsert.push(item);
+        existingKeys.add(key);
       });
+
       if (toInsert.length > 0 && db) {
         await db.features.bulkInsert(toInsert);
         setImportedFeatures(newDrawn);
       }
-      alert(`Se importaron con éxito ${toInsert.length} geometrías.`);
+
+      const parts = [`Se importaron ${toInsert.length} geometrías`];
+      if (skipped > 0) parts.push(`${skipped} duplicado(s) omitido(s)`);
+      alert(parts.join(". ") + ".");
     } catch (e) {
       alert("Error al parsear el archivo GeoJSON.");
       console.error(e);
