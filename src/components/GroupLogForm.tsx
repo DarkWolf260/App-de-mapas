@@ -102,6 +102,35 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
         </div>
       )}
 
+      {/* Resultados y Métricas Operativas */}
+      <div style={{ marginTop: "4px", background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "6px", padding: "6px" }}>
+        <label style={LABEL_STYLE}>Métricas Operativas de Hoy</label>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px", marginBottom: "4px" }}>
+          <div>
+            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block" }}>Rescatados</span>
+            <input type="number" min="0" placeholder="0" value={draft.rescuedCount || ""} onChange={(e) => onChange("rescuedCount", e.target.value)} style={INPUT_STYLE} />
+          </div>
+          <div>
+            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block" }}>Recuperados</span>
+            <input type="number" min="0" placeholder="0" value={draft.recoveredCount || ""} onChange={(e) => onChange("recoveredCount", e.target.value)} style={INPUT_STYLE} />
+          </div>
+          <div>
+            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block" }}>Mascotas</span>
+            <input type="number" min="0" placeholder="0" value={draft.rescuedPetsCount || ""} onChange={(e) => onChange("rescuedPetsCount", e.target.value)} style={INPUT_STYLE} />
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
+          <div>
+            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block" }}>Atenciones Prehosp.</span>
+            <input type="number" min="0" placeholder="0" value={draft.prehospitalCareCount || ""} onChange={(e) => onChange("prehospitalCareCount", e.target.value)} style={INPUT_STYLE} />
+          </div>
+          <div>
+            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block" }}>Traslados Realizados</span>
+            <input type="number" min="0" placeholder="0" value={draft.transfersCount || ""} onChange={(e) => onChange("transfersCount", e.target.value)} style={INPUT_STYLE} />
+          </div>
+        </div>
+      </div>
+
       {/* Observaciones */}
       <div>
         <label style={LABEL_STYLE}>Observación / Notas del Día</label>

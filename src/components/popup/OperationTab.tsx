@@ -94,21 +94,31 @@ export const OperationTab: React.FC<OperationTabProps> = ({
         </div>
       )}
 
-      {/* Counts */}
+      {/* Counts / Métricas Operativas */}
       <div style={sectionBox}>
-        <div style={sectionHeader("var(--color-green)")}>Reportes de Hoy</div>
-        <div style={{ display: "flex", gap: "4px" }}>
-          <div style={{ flex: 1 }}>
+        <div style={sectionHeader("var(--color-green)")}>Reportes y Resultados de Hoy</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
+          <div>
             <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Rescatados</span>
             <input type="number" min="0" placeholder="0" value={localLog.rescuedCount || ""} onChange={(e) => onFieldChange("rescuedCount", e.target.value)} style={inputStyle} />
           </div>
-          <div style={{ flex: 1 }}>
+          <div>
             <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Recuperados</span>
             <input type="number" min="0" placeholder="0" value={localLog.recoveredCount || ""} onChange={(e) => onFieldChange("recoveredCount", e.target.value)} style={inputStyle} />
           </div>
-          <div style={{ flex: 1 }}>
+          <div>
             <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Mascotas</span>
             <input type="number" min="0" placeholder="0" value={localLog.rescuedPetsCount || ""} onChange={(e) => onFieldChange("rescuedPetsCount", e.target.value)} style={inputStyle} />
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px", marginTop: "4px" }}>
+          <div>
+            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Atenciones Prehosp.</span>
+            <input type="number" min="0" placeholder="0" value={localLog.prehospitalCareCount || ""} onChange={(e) => onFieldChange("prehospitalCareCount", e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Traslados Realizados</span>
+            <input type="number" min="0" placeholder="0" value={localLog.transfersCount || ""} onChange={(e) => onFieldChange("transfersCount", e.target.value)} style={inputStyle} />
           </div>
         </div>
         <div style={{ marginTop: "4px" }}>

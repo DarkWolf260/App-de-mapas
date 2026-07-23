@@ -178,56 +178,6 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
-        <div>
-          <span className="rr-editor-label">Rescatados</span>
-          <input
-            type="number"
-            min="0"
-            className="rr-editor-input"
-            placeholder="0"
-            value={(log[rescuedKey] as string) || ""}
-            onChange={(e) => onFieldChange(rescuedKey, e.target.value)}
-          />
-        </div>
-        <div>
-          <span className="rr-editor-label">Recuperados</span>
-          <input
-            type="number"
-            min="0"
-            className="rr-editor-input"
-            placeholder="0"
-            value={(log[recoveredKey] as string) || ""}
-            onChange={(e) => onFieldChange(recoveredKey, e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
-        <div>
-          <span className="rr-editor-label">Atenciones Prehosp.</span>
-          <input
-            type="number"
-            min="0"
-            className="rr-editor-input"
-            placeholder="0"
-            value={(log[prehospitalKey] as string) || ""}
-            onChange={(e) => onFieldChange(prehospitalKey, e.target.value)}
-          />
-        </div>
-        <div>
-          <span className="rr-editor-label">Traslados Realizados</span>
-          <input
-            type="number"
-            min="0"
-            className="rr-editor-input"
-            placeholder="0"
-            value={(log[transfersKey] as string) || ""}
-            onChange={(e) => onFieldChange(transfersKey, e.target.value)}
-          />
-        </div>
-      </div>
-
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginTop: "2px" }}>
         <div>
           <span className="rr-editor-label">Hora Salida</span>

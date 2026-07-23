@@ -113,29 +113,48 @@ export const InfoTab: React.FC<InfoTabProps> = ({
     });
   }, [containedPoints, popupEditDate]);
 
+  const polygonOwnLog: Partial<DailyLog> = useMemo(() => {
+    if (!isPolygon) return {};
+    return (activeFeat.dailyLogs?.find((l) => l.date === popupEditDate) || {}) as Partial<DailyLog>;
+  }, [isPolygon, activeFeat, popupEditDate]);
+
   const aggregatedLog = useMemo(() => {
     if (!isPolygon) return dailyLog || {};
-    const sum: Record<string, number> = {};
-    let hasAnyLog = false;
-    let observations = "";
+    const sum = {
+      rescuedCount: Number(polygonOwnLog.rescuedCount || 0) + Number(polygonOwnLog.rescuedCount2 || 0),
+      recoveredCount: Number(polygonOwnLog.recoveredCount || 0) + Number(polygonOwnLog.recoveredCount2 || 0),
+      rescuedPetsCount: Number(polygonOwnLog.rescuedPetsCount || 0),
+      prehospitalCareCount: Number(polygonOwnLog.prehospitalCareCount || 0) + Number(polygonOwnLog.prehospitalCareCount2 || 0),
+      transfersCount: Number(polygonOwnLog.transfersCount || 0) + Number(polygonOwnLog.transfersCount2 || 0),
+    };
+    let hasAnyLog = Object.values(sum).some((v) => v > 0);
+    let observations = polygonOwnLog.observations ? `Polígono: ${polygonOwnLog.observations}` : "";
 
     for (const { point, log } of containedWithLogs) {
-      if (log.rescuedCount) { sum.rescuedCount = (sum.rescuedCount || 0) + Number(log.rescuedCount); hasAnyLog = true; }
-      if (log.recoveredCount) { sum.recoveredCount = (sum.recoveredCount || 0) + Number(log.recoveredCount); hasAnyLog = true; }
-      if (log.rescuedPetsCount) { sum.rescuedPetsCount = (sum.rescuedPetsCount || 0) + Number(log.rescuedPetsCount); hasAnyLog = true; }
-      if (log.prehospitalCareCount) { sum.prehospitalCareCount = (sum.prehospitalCareCount || 0) + Number(log.prehospitalCareCount); hasAnyLog = true; }
-      if (log.transfersCount) { sum.transfersCount = (sum.transfersCount || 0) + Number(log.transfersCount); hasAnyLog = true; }
+      if (log.rescuedCount) { sum.rescuedCount += Number(log.rescuedCount); hasAnyLog = true; }
+      if (log.rescuedCount2) { sum.rescuedCount += Number(log.rescuedCount2); hasAnyLog = true; }
+      if (log.recoveredCount) { sum.recoveredCount += Number(log.recoveredCount); hasAnyLog = true; }
+      if (log.recoveredCount2) { sum.recoveredCount += Number(log.recoveredCount2); hasAnyLog = true; }
+      if (log.rescuedPetsCount) { sum.rescuedPetsCount += Number(log.rescuedPetsCount); hasAnyLog = true; }
+      if (log.prehospitalCareCount) { sum.prehospitalCareCount += Number(log.prehospitalCareCount); hasAnyLog = true; }
+      if (log.prehospitalCareCount2) { sum.prehospitalCareCount += Number(log.prehospitalCareCount2); hasAnyLog = true; }
+      if (log.transfersCount) { sum.transfersCount += Number(log.transfersCount); hasAnyLog = true; }
+      if (log.transfersCount2) { sum.transfersCount += Number(log.transfersCount2); hasAnyLog = true; }
       if (log.observations) {
         observations += (observations ? "\n" : "") + `${point.title}: ${log.observations}`;
       }
     }
 
     return {
-      ...sum,
+      rescuedCount: sum.rescuedCount > 0 ? String(sum.rescuedCount) : undefined,
+      recoveredCount: sum.recoveredCount > 0 ? String(sum.recoveredCount) : undefined,
+      rescuedPetsCount: sum.rescuedPetsCount > 0 ? String(sum.rescuedPetsCount) : undefined,
+      prehospitalCareCount: sum.prehospitalCareCount > 0 ? String(sum.prehospitalCareCount) : undefined,
+      transfersCount: sum.transfersCount > 0 ? String(sum.transfersCount) : undefined,
       observations: observations || undefined,
       _hasData: hasAnyLog || containedWithLogs.length > 0,
     } as Partial<DailyLog> & { _hasData?: boolean };
-  }, [isPolygon, dailyLog, containedWithLogs]);
+  }, [isPolygon, dailyLog, containedWithLogs, polygonOwnLog]);
 
   const log = isPolygon ? aggregatedLog : (dailyLog || {});
 
@@ -155,6 +174,14 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  const hasPolygonManualLog = isPolygon && (
+    Number(polygonOwnLog.rescuedCount || 0) > 0 ||
+    Number(polygonOwnLog.recoveredCount || 0) > 0 ||
+    Number(polygonOwnLog.prehospitalCareCount || 0) > 0 ||
+    Number(polygonOwnLog.transfersCount || 0) > 0 ||
+    Number(polygonOwnLog.rescuedPetsCount || 0) > 0
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -198,49 +225,67 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       )}
 
       {/* Polígono: puntos contenidos con estadísticas */}
-      {isPolygon && containedWithLogs.length > 0 && (
+      {isPolygon && (
         <>
-          <div style={sectionStyle}>
-            <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <span>Puntos con reporte ({containedWithLogs.filter(({ log }) => {
-                const rc = String(log.rescuedCount || "").trim();
-                const rr = String(log.recoveredCount || "").trim();
-                const ph = String(log.prehospitalCareCount || "").trim();
-                const tr = String(log.transfersCount || "").trim();
-                const rp = String(log.rescuedPetsCount || "").trim();
-                return (rc && rc !== "0") || (rr && rr !== "0") || (ph && ph !== "0") || (tr && tr !== "0") || (rp && rp !== "0");
-              }).length})</span>
-              <span style={{ fontWeight: 400, fontSize: "0.5rem", color: "var(--text-muted)", textAlign: "right" }}>
-                <span style={{ color: "var(--color-green)" }}>Resc</span> | <span style={{ color: "var(--color-info)" }}>Recup</span> | <span style={{ color: "#38bdf8" }}>Atenc</span> | <span style={{ color: "var(--color-purple)" }}>Trasl</span> | <span style={{ color: "#a855f7" }}>Masc</span>
-              </span>
-            </div>
-            {containedWithLogs.map(({ point, log }) => {
-              const rc = String(log.rescuedCount || "0").trim();
-              const rr = String(log.recoveredCount || "0").trim();
-              const ph = String(log.prehospitalCareCount || "0").trim();
-              const tr = String(log.transfersCount || "0").trim();
-              const rp = String(log.rescuedPetsCount || "0").trim();
-              const hasData = (rc && rc !== "0") || (rr && rr !== "0") || (ph && ph !== "0") || (tr && tr !== "0") || (rp && rp !== "0");
-              if (!hasData) return null;
-              return (
-                <div key={point.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                  <span style={{ fontSize: "0.62rem", fontWeight: 600, color: "var(--text-main)" }}>{point.title}</span>
-                  <div style={{ display: "flex", gap: "4px", fontSize: "0.6rem", alignItems: "center" }}>
-                    {rc !== "0" && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{rc}R</span>}
-                    {rr !== "0" && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{rr}Rec</span>}
-                    {ph !== "0" && <span style={{ color: "#38bdf8", fontWeight: 700 }}>{ph}A</span>}
-                    {tr !== "0" && <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>{tr}T</span>}
-                    {rp !== "0" && <span style={{ color: "#a855f7", fontWeight: 700 }}>{rp}M</span>}
+          {containedWithLogs.length > 0 && (
+            <div style={sectionStyle}>
+              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <span>Puntos con reporte ({containedWithLogs.filter(({ log }) => {
+                  const rc = String(log.rescuedCount || "").trim();
+                  const rr = String(log.recoveredCount || "").trim();
+                  const ph = String(log.prehospitalCareCount || "").trim();
+                  const tr = String(log.transfersCount || "").trim();
+                  const rp = String(log.rescuedPetsCount || "").trim();
+                  return (rc && rc !== "0") || (rr && rr !== "0") || (ph && ph !== "0") || (tr && tr !== "0") || (rp && rp !== "0");
+                }).length})</span>
+                <span style={{ fontWeight: 400, fontSize: "0.5rem", color: "var(--text-muted)", textAlign: "right" }}>
+                  <span style={{ color: "var(--color-green)" }}>Resc</span> | <span style={{ color: "var(--color-info)" }}>Recup</span> | <span style={{ color: "#38bdf8" }}>Atenc</span> | <span style={{ color: "var(--color-purple)" }}>Trasl</span> | <span style={{ color: "#a855f7" }}>Masc</span>
+                </span>
+              </div>
+              {containedWithLogs.map(({ point, log }) => {
+                const rc = String(log.rescuedCount || "0").trim();
+                const rr = String(log.recoveredCount || "0").trim();
+                const ph = String(log.prehospitalCareCount || "0").trim();
+                const tr = String(log.transfersCount || "0").trim();
+                const rp = String(log.rescuedPetsCount || "0").trim();
+                const hasData = (rc && rc !== "0") || (rr && rr !== "0") || (ph && ph !== "0") || (tr && tr !== "0") || (rp && rp !== "0");
+                if (!hasData) return null;
+                return (
+                  <div key={point.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                    <span style={{ fontSize: "0.62rem", fontWeight: 600, color: "var(--text-main)" }}>{point.title}</span>
+                    <div style={{ display: "flex", gap: "4px", fontSize: "0.6rem", alignItems: "center" }}>
+                      {rc !== "0" && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{rc}R</span>}
+                      {rr !== "0" && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{rr}Rec</span>}
+                      {ph !== "0" && <span style={{ color: "#38bdf8", fontWeight: 700 }}>{ph}A</span>}
+                      {tr !== "0" && <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>{tr}T</span>}
+                      {rp !== "0" && <span style={{ color: "#a855f7", fontWeight: 700 }}>{rp}M</span>}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Muestra estadística manual ingresada directamente al polígono si existe */}
+          {hasPolygonManualLog && (
+            <div style={{ ...sectionStyle, background: "rgba(56, 189, 248, 0.04)", borderColor: "rgba(56, 189, 248, 0.2)" }}>
+              <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "var(--color-info)" }}>
+                Estadística manual directa del polígono:
+              </span>
+              <div style={{ display: "flex", gap: "8px", fontSize: "0.6rem", flexWrap: "wrap", marginTop: "2px" }}>
+                {polygonOwnLog.rescuedCount && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{polygonOwnLog.rescuedCount} Rescat.</span>}
+                {polygonOwnLog.recoveredCount && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{polygonOwnLog.recoveredCount} Recup.</span>}
+                {polygonOwnLog.prehospitalCareCount && <span style={{ color: "#38bdf8", fontWeight: 700 }}>{polygonOwnLog.prehospitalCareCount} Atenc.</span>}
+                {polygonOwnLog.transfersCount && <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>{polygonOwnLog.transfersCount} Trasl.</span>}
+                {polygonOwnLog.rescuedPetsCount && <span style={{ color: "#a855f7", fontWeight: 700 }}>{polygonOwnLog.rescuedPetsCount} Masc.</span>}
+              </div>
+            </div>
+          )}
 
           {/* Total de la zona */}
           <div style={sectionStyle}>
             <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
-              <Activity size={10} /> Total Zona
+              <Activity size={10} /> Total Zona (Puntos + Manual Polígono)
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "2px" }}>
               <div style={{ textAlign: "center" }}>
@@ -274,9 +319,9 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </>
       )}
 
-      {isPolygon && containedWithLogs.length === 0 && (
+      {isPolygon && containedWithLogs.length === 0 && !hasPolygonManualLog && (
         <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
-          No hay puntos en esta zona
+          No hay puntos ni datos cargados en esta zona
         </div>
       )}
 
@@ -362,33 +407,31 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
-      {/* Botón Editar — solo para puntos */}
-      {!isPolygon && (
-        <button
-          type="button"
-          onClick={onEdit}
-          style={{
-            width: "100%",
-            background: "var(--color-info)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "6px",
-            padding: "6px 12px",
-            fontSize: "0.7rem",
-            fontWeight: 700,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "6px",
-            transition: "all 0.2s ease",
-            boxShadow: "0 0 10px rgba(56, 189, 248, 0.2)",
-            marginTop: "4px",
-          }}
-        >
-          <Edit3 size={12} /> Editar Registro
-        </button>
-      )}
+      {/* Botón Editar — para puntos y polígonos */}
+      <button
+        type="button"
+        onClick={onEdit}
+        style={{
+          width: "100%",
+          background: "var(--color-info)",
+          color: "#fff",
+          border: "none",
+          borderRadius: "6px",
+          padding: "6px 12px",
+          fontSize: "0.7rem",
+          fontWeight: 700,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "6px",
+          transition: "all 0.2s ease",
+          boxShadow: "0 0 10px rgba(56, 189, 248, 0.2)",
+          marginTop: "4px",
+        }}
+      >
+        <Edit3 size={12} /> {isPolygon ? "Añadir Estadísticas Directas al Polígono" : "Editar Registro"}
+      </button>
     </div>
   );
 };

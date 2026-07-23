@@ -9,8 +9,12 @@ import { HistoryTab } from "./popup/HistoryTab";
 import { ContainedTab } from "./popup/ContainedTab";
 import { InfoTab } from "./popup/InfoTab";
 
+import Graphic from "@arcgis/core/Graphic";
+import Point from "@arcgis/core/geometry/Point";
+import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
+
 interface CustomMapPopupProps {
-  customPopup: { mapPoint: __esri.Point; feat: DrawnFeature } | null;
+  customPopup: { mapPoint: Point; feat: DrawnFeature } | null;
   popupScreenPos: { x: number; y: number } | null;
   drawnFeatures: DrawnFeature[];
   layerVisibility: LayerVisibility;
@@ -21,7 +25,7 @@ interface CustomMapPopupProps {
   onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
   onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
   onUpdateFeatureColor?: (id: number, newColor: string) => Promise<void>;
-  sketchLayer: __esri.GraphicsLayer;
+  sketchLayer: GraphicsLayer;
   onClose: () => void;
   activeDepartment?: DepartmentView;
 }
@@ -210,9 +214,9 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       {!showSketchTabs && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={10} /> Información</button>
-          {activeTab === "operation" && (
-            <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(true)}><FileText size={10} /> Editar</button>
-          )}
+          <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
+            <FileText size={10} /> {isPolygon ? "Estadísticas Directas" : "Editar"}
+          </button>
         </div>
       )}
 
@@ -229,6 +233,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       {isPolygon && showSketchTabs && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={10} /> General</button>
+          <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={10} /> Estadísticas</button>
           <button onClick={() => setActiveTab("contained")} style={tabBtnStyle(activeTab === "contained")}><Layers size={10} /> Elementos</button>
         </div>
       )}

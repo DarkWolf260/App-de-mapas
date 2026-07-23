@@ -49,29 +49,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
       />
     </div>
 
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      <label style={labelStyle}>Color en el mapa</label>
-      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "2px" }}>
-        {PRESET_COLORS.map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => onColor(c)}
-            style={{
-              width: "20px",
-              height: "20px",
-              borderRadius: "50%",
-              background: c,
-              border: localColor === c ? "2px solid #fff" : "1px solid rgba(0,0,0,0.4)",
-              cursor: "pointer",
-              boxShadow: localColor === c ? `0 0 8px ${c}` : "none",
-              transform: localColor === c ? "scale(1.15)" : "scale(1)",
-              transition: "transform 0.15s ease",
-            }}
-          />
-        ))}
-      </div>
-    </div>
+
 
     {activeFeat.locked && (
       <div
