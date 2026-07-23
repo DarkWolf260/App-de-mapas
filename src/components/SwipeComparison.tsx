@@ -31,6 +31,11 @@ const COG_SOURCES = [
     url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B140001100B5C710.tif",
     label: "Escena C — Jun 29",
   },
+  {
+    id: "cogD",
+    url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B140001100B5C710.tif",
+    label: "Escena D — Jun 29",
+  },
 ] as const;
 
 const stretchRenderer = new RasterStretchRenderer({
@@ -78,8 +83,8 @@ interface SwipeComparisonProps {
 export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose, showSidebar = false }) => {
   const [warning, setWarning] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [layerVis, setLayerVis] = useState<Record<string, boolean>>({ cogA: false, cogB: true, cogC: false });
-  const [layerStatus, setLayerStatus] = useState<Record<string, LayerStatus>>({ cogA: "idle", cogB: "idle", cogC: "idle" });
+  const [layerVis, setLayerVis] = useState<Record<string, boolean>>({ cogA: false, cogB: true, cogC: false, cogD: false });
+  const [layerStatus, setLayerStatus] = useState<Record<string, LayerStatus>>({ cogA: "idle", cogB: "idle", cogC: "idle", cogD: "idle" });
   const groupLayerRef = useRef<GroupLayer | null>(null);
   const cleanupRef = useRef<() => void>(() => {});
 
