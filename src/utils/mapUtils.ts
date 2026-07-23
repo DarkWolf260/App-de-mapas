@@ -46,41 +46,41 @@ export const makeSymbols = ([r, g, b]: [number, number, number]) => ({
 });
 
 export const getLabelText = (feat: DrawnFeature, dateStr?: string, activeDepartment?: DepartmentView): string => {
-  if (feat.type !== "point") {
-    return feat.title;
-  }
-
   const todayStr = dateStr || new Date().toLocaleDateString("en-CA");
   const todayLogs = feat.dailyLogs?.filter((l) =>
     l.date === todayStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
   ) || [];
 
+  const parts: string[] = [];
+
   for (const todayLog of todayLogs) {
-    const parts: string[] = [];
+    if (feat.type === "point") {
+      const g1 = todayLog.groupName?.trim();
+      const u1 = todayLog.unitOut?.trim();
+      if (g1 && u1) parts.push(`${g1}, ${u1}`);
+      else if (g1) parts.push(g1);
+      else if (u1) parts.push(u1);
 
-    const g1 = todayLog.groupName?.trim();
-    const u1 = todayLog.unitOut?.trim();
-    if (g1 && u1) {
-      parts.push(`${g1}, ${u1}`);
-    } else if (g1) {
-      parts.push(g1);
-    } else if (u1) {
-      parts.push(u1);
+      const g2 = todayLog.groupName2?.trim();
+      const u2 = todayLog.unitOut2?.trim();
+      if (g2 && u2) parts.push(`${g2}, ${u2}`);
+      else if (g2) parts.push(g2);
+      else if (u2) parts.push(u2);
     }
 
-    const g2 = todayLog.groupName2?.trim();
-    const u2 = todayLog.unitOut2?.trim();
-    if (g2 && u2) {
-      parts.push(`${g2}, ${u2}`);
-    } else if (g2) {
-      parts.push(g2);
-    } else if (u2) {
-      parts.push(u2);
-    }
+    const rescued = (parseInt(todayLog.rescuedCount || "0", 10) || 0) + (parseInt(todayLog.rescuedCount2 || "0", 10) || 0);
+    const recovered = (parseInt(todayLog.recoveredCount || "0", 10) || 0) + (parseInt(todayLog.recoveredCount2 || "0", 10) || 0);
+    const prehospital = (parseInt(todayLog.prehospitalCareCount || "0", 10) || 0) + (parseInt(todayLog.prehospitalCareCount2 || "0", 10) || 0);
+    const transfers = (parseInt(todayLog.transfersCount || "0", 10) || 0) + (parseInt(todayLog.transfersCount2 || "0", 10) || 0);
 
-    if (parts.length > 0) {
-      return `${feat.title} (${parts.join(" | ")})`;
-    }
+    if (rescued > 0) parts.push(`${rescued} Resc.`);
+    if (recovered > 0) parts.push(`${recovered} Recup.`);
+    if (prehospital > 0) parts.push(`${prehospital} Atenc.`);
+    if (transfers > 0) parts.push(`${transfers} Trasl.`);
+  }
+
+  if (parts.length > 0) {
+    return `${feat.title} (${parts.join(" | ")})`;
   }
 
   return feat.title;

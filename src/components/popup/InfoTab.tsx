@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Copy, Check, Edit3, Users, PawPrint, AlertTriangle } from "lucide-react";
+import { Copy, Check, Edit3, Users, Activity, Dog, AlertTriangle } from "lucide-react";
 import type { DrawnFeature, DailyLog } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
 import { labelStyle } from "./popupStyles";
@@ -123,6 +123,8 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       if (log.rescuedCount) { sum.rescuedCount = (sum.rescuedCount || 0) + Number(log.rescuedCount); hasAnyLog = true; }
       if (log.recoveredCount) { sum.recoveredCount = (sum.recoveredCount || 0) + Number(log.recoveredCount); hasAnyLog = true; }
       if (log.rescuedPetsCount) { sum.rescuedPetsCount = (sum.rescuedPetsCount || 0) + Number(log.rescuedPetsCount); hasAnyLog = true; }
+      if (log.prehospitalCareCount) { sum.prehospitalCareCount = (sum.prehospitalCareCount || 0) + Number(log.prehospitalCareCount); hasAnyLog = true; }
+      if (log.transfersCount) { sum.transfersCount = (sum.transfersCount || 0) + Number(log.transfersCount); hasAnyLog = true; }
       if (log.observations) {
         observations += (observations ? "\n" : "") + `${point.title}: ${log.observations}`;
       }
@@ -203,29 +205,33 @@ export const InfoTab: React.FC<InfoTabProps> = ({
               <span>Puntos con reporte ({containedWithLogs.filter(({ log }) => {
                 const rc = String(log.rescuedCount || "").trim();
                 const rr = String(log.recoveredCount || "").trim();
+                const ph = String(log.prehospitalCareCount || "").trim();
+                const tr = String(log.transfersCount || "").trim();
                 const rp = String(log.rescuedPetsCount || "").trim();
-                return (rc && rc !== "0") || (rr && rr !== "0") || (rp && rp !== "0");
+                return (rc && rc !== "0") || (rr && rr !== "0") || (ph && ph !== "0") || (tr && tr !== "0") || (rp && rp !== "0");
               }).length})</span>
               <span style={{ fontWeight: 400, fontSize: "0.5rem", color: "var(--text-muted)", textAlign: "right" }}>
-                <span style={{ color: "var(--color-green)" }}>Resc</span> | <span style={{ color: "var(--color-info)" }}>Recup</span> | <span style={{ color: "var(--color-purple)" }}>Masc</span>
+                <span style={{ color: "var(--color-green)" }}>Resc</span> | <span style={{ color: "var(--color-info)" }}>Recup</span> | <span style={{ color: "#38bdf8" }}>Atenc</span> | <span style={{ color: "var(--color-purple)" }}>Trasl</span> | <span style={{ color: "#a855f7" }}>Masc</span>
               </span>
             </div>
             {containedWithLogs.map(({ point, log }) => {
               const rc = String(log.rescuedCount || "0").trim();
               const rr = String(log.recoveredCount || "0").trim();
+              const ph = String(log.prehospitalCareCount || "0").trim();
+              const tr = String(log.transfersCount || "0").trim();
               const rp = String(log.rescuedPetsCount || "0").trim();
-              const hasData = (rc && rc !== "0") || (rr && rr !== "0") || (rp && rp !== "0");
+              const hasData = (rc && rc !== "0") || (rr && rr !== "0") || (ph && ph !== "0") || (tr && tr !== "0") || (rp && rp !== "0");
               if (!hasData) return null;
               return (
                 <div key={point.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
                   <span style={{ fontSize: "0.62rem", fontWeight: 600, color: "var(--text-main)" }}>{point.title}</span>
-                <div style={{ display: "flex", gap: "6px", fontSize: "0.6rem", alignItems: "center" }}>
-                  <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{rc}</span>
-                  <span style={{ color: "var(--text-muted)" }}>|</span>
-                  <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{rr}</span>
-                  <span style={{ color: "var(--text-muted)" }}>|</span>
-                  <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>{rp}</span>
-                </div>
+                  <div style={{ display: "flex", gap: "4px", fontSize: "0.6rem", alignItems: "center" }}>
+                    {rc !== "0" && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{rc}R</span>}
+                    {rr !== "0" && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{rr}Rec</span>}
+                    {ph !== "0" && <span style={{ color: "#38bdf8", fontWeight: 700 }}>{ph}A</span>}
+                    {tr !== "0" && <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>{tr}T</span>}
+                    {rp !== "0" && <span style={{ color: "#a855f7", fontWeight: 700 }}>{rp}M</span>}
+                  </div>
                 </div>
               );
             })}
@@ -234,20 +240,28 @@ export const InfoTab: React.FC<InfoTabProps> = ({
           {/* Total de la zona */}
           <div style={sectionStyle}>
             <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
-              <PawPrint size={10} /> Total Zona
+              <Activity size={10} /> Total Zona
             </div>
-            <div style={{ display: "flex", gap: "6px" }}>
-              <div style={{ flex: 1, textAlign: "center" }}>
-                <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block" }}>Rescatados</span>
-                <span style={{ fontSize: "1rem", fontWeight: 800, color: "var(--color-green)" }}>{aggregatedLog.rescuedCount || "0"}</span>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "2px" }}>
+              <div style={{ textAlign: "center" }}>
+                <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Rescat.</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--color-green)" }}>{aggregatedLog.rescuedCount || "0"}</span>
               </div>
-              <div style={{ flex: 1, textAlign: "center" }}>
-                <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block" }}>Recuperados</span>
-                <span style={{ fontSize: "1rem", fontWeight: 800, color: "var(--color-info)" }}>{aggregatedLog.recoveredCount || "0"}</span>
+              <div style={{ textAlign: "center" }}>
+                <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Recuper.</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--color-info)" }}>{aggregatedLog.recoveredCount || "0"}</span>
               </div>
-              <div style={{ flex: 1, textAlign: "center" }}>
-                <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block" }}>Mascotas</span>
-                <span style={{ fontSize: "1rem", fontWeight: 800, color: "var(--color-purple)" }}>{aggregatedLog.rescuedPetsCount || "0"}</span>
+              <div style={{ textAlign: "center" }}>
+                <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Atenc.</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#38bdf8" }}>{aggregatedLog.prehospitalCareCount || "0"}</span>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Trasl.</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--color-purple)" }}>{aggregatedLog.transfersCount || "0"}</span>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Mascotas</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#a855f7" }}>{aggregatedLog.rescuedPetsCount || "0"}</span>
               </div>
             </div>
             {aggregatedLog.observations && (
@@ -267,7 +281,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       )}
 
       {/* Punto: sin datos */}
-      {!isPolygon && !(log.groupName || log.unitOut || log.managerName || log.officersCount) && !(log.rescuedCount || log.recoveredCount || log.rescuedPetsCount || log.observations) && (
+      {!isPolygon && !(log.groupName || log.unitOut || log.managerName || log.officersCount) && !(log.rescuedCount || log.recoveredCount || log.rescuedPetsCount || log.prehospitalCareCount || log.transfersCount || log.observations) && (
         <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
           Sin datos registrados para hoy
         </div>
@@ -312,23 +326,31 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       )}
 
       {/* Reportes de Hoy — solo para puntos con datos */}
-      {!isPolygon && (log.rescuedCount || log.recoveredCount || log.rescuedPetsCount || log.observations) && (
+      {!isPolygon && (log.rescuedCount || log.recoveredCount || log.rescuedPetsCount || log.prehospitalCareCount || log.transfersCount || log.observations) && (
         <div style={sectionStyle}>
           <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
-            <PawPrint size={10} /> Reportes de Hoy
+            <Activity size={10} /> Reportes de Hoy
           </div>
-          <div style={{ display: "flex", gap: "6px" }}>
-            <div style={{ flex: 1, textAlign: "center" }}>
-              <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block" }}>Rescatados</span>
-              <span style={{ fontSize: "1rem", fontWeight: 800, color: "var(--color-green)" }}>{log.rescuedCount || "0"}</span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "2px" }}>
+            <div style={{ textAlign: "center" }}>
+              <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Rescat.</span>
+              <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--color-green)" }}>{log.rescuedCount || "0"}</span>
             </div>
-            <div style={{ flex: 1, textAlign: "center" }}>
-              <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block" }}>Recuperados</span>
-              <span style={{ fontSize: "1rem", fontWeight: 800, color: "var(--color-info)" }}>{log.recoveredCount || "0"}</span>
+            <div style={{ textAlign: "center" }}>
+              <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Recuper.</span>
+              <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--color-info)" }}>{log.recoveredCount || "0"}</span>
             </div>
-            <div style={{ flex: 1, textAlign: "center" }}>
-              <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block" }}>Mascotas</span>
-              <span style={{ fontSize: "1rem", fontWeight: 800, color: "var(--color-purple)" }}>{log.rescuedPetsCount || "0"}</span>
+            <div style={{ textAlign: "center" }}>
+              <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Atenc.</span>
+              <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#38bdf8" }}>{log.prehospitalCareCount || "0"}</span>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Trasl.</span>
+              <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--color-purple)" }}>{log.transfersCount || "0"}</span>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Mascotas</span>
+              <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#a855f7" }}>{log.rescuedPetsCount || "0"}</span>
             </div>
           </div>
           {log.observations && (

@@ -1,5 +1,6 @@
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import MapView from "@arcgis/core/views/MapView";
+import Graphic from "@arcgis/core/Graphic";
 import TextSymbol from "@arcgis/core/symbols/TextSymbol";
 import { buildParentsMap } from "./spatialUtils";
 import type { DrawnFeature, LayerVisibility, DepartmentView } from "../types";
@@ -14,19 +15,20 @@ interface DeconflictRefs {
 }
 
 interface ScreenLabel {
-  graphic: __esri.Graphic;
+  graphic: Graphic;
   x: number | null;
   y: number | null;
   visible: boolean;
   priority: number;
+  hasPersonnel?: boolean;
 }
 
 function filterCandidateLabels(
-  labels: __esri.Graphic[],
+  labels: Graphic[],
   sketchLayer: GraphicsLayer,
   view: MapView,
   refs: DeconflictRefs
-): __esri.Graphic[] {
+): Graphic[] {
   const currentZoom = view.zoom ?? 16;
   const { parentsMap } = buildParentsMap(refs.drawnFeaturesRef.current || []);
 
@@ -34,7 +36,7 @@ function filterCandidateLabels(
     const pid = lbl.attributes?.parentId;
     const isPolygonLabel = lbl.attributes?.isPolygonLabel;
     const parentGraphic = sketchLayer.graphics.find(
-      (x) => !x.attributes?.isLabel && (String(x.uid) === String(pid) || String(x.attributes?.id) === String(pid))
+      (x) => !x.attributes?.isLabel && (String((x as any).uid) === String(pid) || String(x.attributes?.id) === String(pid))
     );
     if (!parentGraphic || !parentGraphic.visible || !parentGraphic.geometry) return false;
     if (refs.hiddenFeaturesRef.current[pid]) return false;
@@ -52,47 +54,83 @@ function filterCandidateLabels(
 }
 
 function computeScreenLabels(
-  candidateLabels: __esri.Graphic[],
+  candidateLabels: Graphic[],
   view: MapView,
   drawnFeaturesRef: DeconflictRefs["drawnFeaturesRef"],
   dateStr: string,
   activeDepartment?: DepartmentView,
 ): ScreenLabel[] {
+  const activeDept = activeDepartment;
   const screenLabels = candidateLabels.map((lbl) => {
-    const screenPt = lbl.geometry ? view.toScreen(lbl.geometry) : null;
+    const screenPt = lbl.geometry ? view.toScreen(lbl.geometry as any) : null;
     const pid = lbl.attributes?.parentId;
     const isPolygonLabel = lbl.attributes?.isPolygonLabel;
     let priority = 2;
+    let hasPersonnel = false;
+
     if (isPolygonLabel) {
       priority = 3;
     } else {
       const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
       if (feat?.type === "point") {
         const todayLogs = feat.dailyLogs?.filter((l) =>
-          l.date === dateStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+          l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
         ) || [];
-        if (todayLogs.length > 0) priority = 1;
+        if (todayLogs.length > 0) {
+          hasPersonnel = feat.dailyLogs?.some((l) =>
+            l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && (l.groupName || l.groupName2)
+          ) || false;
+          if (hasPersonnel) priority = 1;
+        }
       }
     }
-    return { graphic: lbl, x: screenPt?.x ?? null, y: screenPt?.y ?? null, visible: screenPt !== null, priority };
+    return { graphic: lbl, x: screenPt?.x ?? null, y: screenPt?.y ?? null, visible: screenPt !== null, priority, hasPersonnel };
   });
   screenLabels.sort((a, b) => a.priority - b.priority);
   return screenLabels;
 }
 
-function deconflictOverlappingLabels(screenLabels: ScreenLabel[]): void {
-  const minLabelDistance = 55;
-  for (let i = 0; i < screenLabels.length; i++) {
-    const l1 = screenLabels[i];
+/**
+ * Descarte de solapamiento para ETIQUETAS SIN PERSONAL (puntos sin actividad y polígonos).
+ * SIEMPRE se descolisionan (se comportan siempre como si la opción de solapamiento estuviera desactivada).
+ */
+function deconflictNativeNoPersonnelLabels(screenLabels: ScreenLabel[]): void {
+  const minLabelDistance = 50;
+  const noPersonnelLabels = screenLabels.filter((item) => !item.hasPersonnel);
+
+  for (let i = 0; i < noPersonnelLabels.length; i++) {
+    const l1 = noPersonnelLabels[i];
     if (!l1.visible || l1.x === null || l1.y === null) continue;
-    for (let j = i + 1; j < screenLabels.length; j++) {
-      const l2 = screenLabels[j];
+    for (let j = i + 1; j < noPersonnelLabels.length; j++) {
+      const l2 = noPersonnelLabels[j];
       if (!l2.visible || l2.x === null || l2.y === null) continue;
       const dx = l1.x - l2.x;
       const dy = l1.y - l2.y;
       if (Math.sqrt(dx * dx + dy * dy) < minLabelDistance) {
         l2.visible = false;
-        l2.graphic.visible = false;
+      }
+    }
+  }
+}
+
+/**
+ * Descarte de solapamiento para TARJETAS NEGRAS (puntos con personal).
+ * Solo se descolisionan cuando la opción "Permitir Solapamiento de Etiquetas" está DESACTIVADA.
+ */
+function deconflictPersonnelHtmlLabels(screenLabels: ScreenLabel[]): void {
+  const minLabelDistance = 55;
+  const personnelLabels = screenLabels.filter((item) => item.hasPersonnel);
+
+  for (let i = 0; i < personnelLabels.length; i++) {
+    const l1 = personnelLabels[i];
+    if (!l1.visible || l1.x === null || l1.y === null) continue;
+    for (let j = i + 1; j < personnelLabels.length; j++) {
+      const l2 = personnelLabels[j];
+      if (!l2.visible || l2.x === null || l2.y === null) continue;
+      const dx = l1.x - l2.x;
+      const dy = l1.y - l2.y;
+      if (Math.sqrt(dx * dx + dy * dy) < minLabelDistance) {
+        l2.visible = false;
       }
     }
   }
@@ -173,37 +211,59 @@ function buildHtmlLabels(
       l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && (l.groupName || l.groupName2)
     ) || false);
 
-    if (item.visible && !isPolygonLabel && hasPersonnel) {
-      const charWidth = 6;
-      const padding = 20;
-      const textLength = Math.max(title.length, info.length);
-      const w = Math.min(220, Math.max(100, textLength * charWidth + padding));
-      const h = info ? 42 : 28;
-      const x = item.x!;
-      const y = item.y!;
-
-      const { placement, box } = choosePlacement(x, y, w, h, allowOverlap, placedBoxes);
-
-      const todayLogs = feat?.dailyLogs?.filter((l) =>
-        l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
-      ) || [];
-      const todayLog = todayLogs[0];
-      const g1Arrived = todayLog ? (!!todayLog.hasArrivedG1 || (!!todayLog.arrivalTime && todayLog.arrivalTime.trim() !== "")) : false;
-      const g2Arrived = todayLog ? (!!todayLog.hasArrivedG2 || (!!todayLog.arrivalTime2 && todayLog.arrivalTime2.trim() !== "")) : false;
-
-      activeHtmlLabels.push({
-        id: pid,
-        title,
-        info,
-        x,
-        y,
-        themeColor: feat?.color,
-        placement,
-        hasArrived: g1Arrived || g2Arrived,
-      });
-      placedBoxes.push(box);
+    if (hasPersonnel && !isPolygonLabel) {
+      // La etiqueta gráfica nativa de ESRI siempre se oculta para puntos con personal
       lbl.visible = false;
+
+      if (item.visible && item.x !== null && item.y !== null) {
+        const charWidth = 6;
+        const padding = 20;
+        const textLength = Math.max(title.length, info.length);
+        const w = Math.min(220, Math.max(100, textLength * charWidth + padding));
+        const h = info ? 42 : 28;
+        const x = item.x!;
+        const y = item.y!;
+
+        const { placement, box } = choosePlacement(x, y, w, h, allowOverlap, placedBoxes);
+
+        const todayLogs = feat?.dailyLogs?.filter((l) =>
+          l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
+        ) || [];
+        const todayLog = todayLogs[0];
+        const g1Arrived = todayLog ? (!!todayLog.hasArrivedG1 || (!!todayLog.arrivalTime && todayLog.arrivalTime.trim() !== "")) : false;
+        const g2Arrived = todayLog ? (!!todayLog.hasArrivedG2 || (!!todayLog.arrivalTime2 && todayLog.arrivalTime2.trim() !== "")) : false;
+
+        let prehospitalCount = 0;
+        let transfersCount = 0;
+        let rescuedCount = 0;
+        let recoveredCount = 0;
+
+        todayLogs.forEach((l) => {
+          prehospitalCount += (parseInt(l.prehospitalCareCount || "0", 10) || 0) + (parseInt(l.prehospitalCareCount2 || "0", 10) || 0);
+          transfersCount += (parseInt(l.transfersCount || "0", 10) || 0) + (parseInt(l.transfersCount2 || "0", 10) || 0);
+          rescuedCount += (parseInt(l.rescuedCount || "0", 10) || 0) + (parseInt(l.rescuedCount2 || "0", 10) || 0);
+          recoveredCount += (parseInt(l.recoveredCount || "0", 10) || 0) + (parseInt(l.recoveredCount2 || "0", 10) || 0);
+        });
+
+        activeHtmlLabels.push({
+          id: pid,
+          title,
+          info,
+          x,
+          y,
+          themeColor: feat?.color,
+          placement,
+          hasArrived: g1Arrived || g2Arrived,
+          prehospitalCount: prehospitalCount || undefined,
+          transfersCount: transfersCount || undefined,
+          rescuedCount: rescuedCount || undefined,
+          recoveredCount: recoveredCount || undefined,
+        });
+        placedBoxes.push(box);
+      }
     } else {
+      // Para puntos sin actividad y etiquetas de polígonos/líneas (etiquetas nativas):
+      // Obedecen item.visible para que se descarten si están solapadas
       lbl.visible = item.visible;
       if (lbl.symbol) lbl.symbol = lbl.symbol.clone();
     }
@@ -225,7 +285,7 @@ export function deconflictGraphics(
     const labels = sketchLayer.graphics.filter((x) => !!x.attributes?.isLabel).toArray();
 
     points.forEach((g) => {
-      const pid = g.attributes?.id || g.uid;
+      const pid = g.attributes?.id || (g as any).uid;
       g.visible = !refs.hiddenFeaturesRef.current[pid];
     });
 
@@ -236,11 +296,17 @@ export function deconflictGraphics(
 
     const dateStr = refs.selectedDateRef.current;
     const screenLabels = computeScreenLabels(candidateLabels, view, refs.drawnFeaturesRef, dateStr, refs.activeDepartmentRef?.current);
-    if (!refs.layerVisibilityRef.current.allowLabelOverlap) {
-      deconflictOverlappingLabels(screenLabels);
+    const allowOverlapSetting = refs.layerVisibilityRef.current.allowLabelOverlap;
+
+    // 1. Las etiquetas sin personal (y polígonos) SIEMPRE se descolisionan (se comportan siempre como si la opción estuviera desactivada)
+    deconflictNativeNoPersonnelLabels(screenLabels);
+
+    // 2. Las etiquetas con personal (tarjetas negras) SOLO se descolisionan si allowLabelOverlap está DESACTIVADO (false)
+    if (!allowOverlapSetting) {
+      deconflictPersonnelHtmlLabels(screenLabels);
     }
 
-    const activeHtmlLabels = buildHtmlLabels(screenLabels, refs, refs.layerVisibilityRef.current.allowLabelOverlap, dateStr);
+    const activeHtmlLabels = buildHtmlLabels(screenLabels, refs, allowOverlapSetting, dateStr);
     setHtmlLabels(activeHtmlLabels);
   } catch (err) {
     console.error("Error in deconflictGraphics:", err);

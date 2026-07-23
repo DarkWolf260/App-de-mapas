@@ -100,6 +100,32 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels }) => (
               {lbl.title}
             </div>
             <div style={{ fontWeight: 500, fontSize: "9px", opacity: 0.85 }}>{lbl.info}</div>
+
+            {/* Badges para Atenciones y Traslados / Rescates */}
+            {(!!lbl.prehospitalCount || !!lbl.transfersCount || !!lbl.rescuedCount || !!lbl.recoveredCount) && (
+              <div style={{ display: "flex", gap: "4px", marginTop: "3px", fontSize: "8px", fontWeight: 700 }}>
+                {!!lbl.rescuedCount && (
+                  <span style={{ color: "#22c55e", background: "rgba(34,197,94,0.15)", padding: "1px 4px", borderRadius: "4px" }}>
+                    🤝 {lbl.rescuedCount}
+                  </span>
+                )}
+                {!!lbl.recoveredCount && (
+                  <span style={{ color: "#38bdf8", background: "rgba(56,189,248,0.15)", padding: "1px 4px", borderRadius: "4px" }}>
+                    🛡️ {lbl.recoveredCount}
+                  </span>
+                )}
+                {!!lbl.prehospitalCount && (
+                  <span style={{ color: "#38bdf8", background: "rgba(56,189,248,0.15)", padding: "1px 4px", borderRadius: "4px" }}>
+                    🩺 {lbl.prehospitalCount} Atenc.
+                  </span>
+                )}
+                {!!lbl.transfersCount && (
+                  <span style={{ color: "var(--color-purple)", background: "rgba(167,139,250,0.15)", padding: "1px 4px", borderRadius: "4px" }}>
+                    🚑 {lbl.transfersCount} Trasl.
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <div style={{ position: "absolute", width: "8px", height: "8px", background: "rgba(10, 15, 29, 0.95)", ...arrowStyle }} />
         </div>

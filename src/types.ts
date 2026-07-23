@@ -15,6 +15,10 @@ export interface HtmlLabel {
   themeColor?: string;
   placement: "top" | "bottom" | "left" | "right";
   hasArrived?: boolean;
+  prehospitalCount?: number;
+  transfersCount?: number;
+  rescuedCount?: number;
+  recoveredCount?: number;
 }
 
 export interface MapPoint {

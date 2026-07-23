@@ -1,6 +1,6 @@
 import React from "react";
 import type { DailyLog } from "../../types";
-import { Calendar, Heart, Cross, PawPrint, Users, Clock, FileText } from "lucide-react";
+import { Calendar, HeartHandshake, ShieldAlert, HeartPulse, Ambulance, Dog, Users, Clock, FileText } from "lucide-react";
 
 interface HistoryTabProps {
   logs: DailyLog[] | undefined;
@@ -16,6 +16,12 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ logs }) => (
       <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "260px", overflowY: "auto", paddingRight: "2px" }}>
         {logs.map((log, idx) => {
           const hasG2 = !!log.groupName2 || !!log.unitOut2;
+          const rescued = (parseInt(log.rescuedCount || "0", 10) || 0) + (parseInt(log.rescuedCount2 || "0", 10) || 0);
+          const recovered = (parseInt(log.recoveredCount || "0", 10) || 0) + (parseInt(log.recoveredCount2 || "0", 10) || 0);
+          const prehospital = (parseInt(log.prehospitalCareCount || "0", 10) || 0) + (parseInt(log.prehospitalCareCount2 || "0", 10) || 0);
+          const transfers = (parseInt(log.transfersCount || "0", 10) || 0) + (parseInt(log.transfersCount2 || "0", 10) || 0);
+          const pets = parseInt(log.rescuedPetsCount || "0", 10) || 0;
+
           return (
             <div
               key={idx}
@@ -29,10 +35,14 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ logs }) => (
                 gap: "2px",
               }}
             >
-              <div style={{ fontWeight: 800, color: "var(--text-main)", display: "flex", justifyContent: "space-between" }}>
+              <div style={{ fontWeight: 800, color: "var(--text-main)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><Calendar size={11} /> {log.date}</span>
-                <span style={{ color: "var(--color-green)", display: "flex", alignItems: "center", gap: "4px" }}>
-                  <Heart size={11} /> {log.rescuedCount || "0"} | <Cross size={11} /> {log.recoveredCount || "0"} | <PawPrint size={11} /> {log.rescuedPetsCount || "0"}
+                <span style={{ color: "var(--color-green)", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.6rem" }}>
+                  {rescued > 0 && <span title="Rescatados" style={{ display: "inline-flex", alignItems: "center", gap: "2px", color: "var(--color-green)" }}><HeartHandshake size={11} /> {rescued}</span>}
+                  {recovered > 0 && <span title="Recuperados" style={{ display: "inline-flex", alignItems: "center", gap: "2px", color: "var(--color-info)" }}><ShieldAlert size={11} /> {recovered}</span>}
+                  {prehospital > 0 && <span title="Atenciones" style={{ display: "inline-flex", alignItems: "center", gap: "2px", color: "#38bdf8" }}><HeartPulse size={11} /> {prehospital}</span>}
+                  {transfers > 0 && <span title="Traslados" style={{ display: "inline-flex", alignItems: "center", gap: "2px", color: "var(--color-purple)" }}><Ambulance size={11} /> {transfers}</span>}
+                  {pets > 0 && <span title="Mascotas" style={{ display: "inline-flex", alignItems: "center", gap: "2px", color: "var(--color-purple)" }}><Dog size={11} /> {pets}</span>}
                 </span>
               </div>
 
