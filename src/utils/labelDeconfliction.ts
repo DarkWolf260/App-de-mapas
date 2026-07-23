@@ -23,6 +23,18 @@ interface ScreenLabel {
   hasPersonnel?: boolean;
 }
 
+function logHasData(l: any): boolean {
+  if (!l) return false;
+  const hasGroup = !!(l.groupName?.trim() || l.groupName2?.trim() || l.unitOut?.trim() || l.unitOut2?.trim());
+  const officers = (parseInt(l.officersCount || "0", 10) || 0) + (parseInt(l.officersCount2 || "0", 10) || 0);
+  const rescued = (parseInt(l.rescuedCount || "0", 10) || 0) + (parseInt(l.rescuedCount2 || "0", 10) || 0);
+  const recovered = (parseInt(l.recoveredCount || "0", 10) || 0) + (parseInt(l.recoveredCount2 || "0", 10) || 0);
+  const prehospital = (parseInt(l.prehospitalCareCount || "0", 10) || 0) + (parseInt(l.prehospitalCareCount2 || "0", 10) || 0);
+  const transfers = (parseInt(l.transfersCount || "0", 10) || 0) + (parseInt(l.transfersCount2 || "0", 10) || 0);
+  const pets = (parseInt(l.rescuedPetsCount || "0", 10) || 0);
+  return hasGroup || officers > 0 || rescued > 0 || recovered > 0 || prehospital > 0 || transfers > 0 || pets > 0;
+}
+
 function filterCandidateLabels(
   labels: Graphic[],
   sketchLayer: GraphicsLayer,
@@ -47,7 +59,7 @@ function filterCandidateLabels(
     const isSubpolygon = isPolygonLabel && feat && parentsMap[feat.id] !== undefined;
 
     const hasPersonnel = feat && (feat.dailyLogs?.some((l) =>
-      l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && (l.groupName || l.groupName2)
+      l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
     ) || false);
 
     let requiredZoom = 16;
@@ -91,7 +103,7 @@ function computeScreenLabels(
         ) || [];
         if (todayLogs.length > 0) {
           hasPersonnel = feat.dailyLogs?.some((l) =>
-            l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && (l.groupName || l.groupName2)
+            l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
           ) || false;
           if (hasPersonnel) priority = 1;
         }
@@ -221,30 +233,18 @@ function buildHtmlLabels(
     }
 
     const hasPersonnel = feat?.type === "point" && (feat.dailyLogs?.some((l) =>
-      l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && (l.groupName || l.groupName2)
+      l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
     ) || false);
 
     if (hasPersonnel && !isPolygonLabel) {
-      // La etiqueta gráfica nativa de ESRI siempre se oculta para puntos con personal
+      // La etiqueta gráfica nativa de ESRI siempre se oculta para puntos con personal o estadísticas
       lbl.visible = false;
 
       if (item.visible && item.x !== null && item.y !== null) {
-        const charWidth = 6;
-        const padding = 20;
-        const textLength = Math.max(title.length, info.length);
-        const w = Math.min(220, Math.max(100, textLength * charWidth + padding));
-        const h = info ? 42 : 28;
-        const x = item.x!;
-        const y = item.y!;
-
-        const { placement, box } = choosePlacement(x, y, w, h, allowOverlap, placedBoxes);
-
         const todayLogs = feat?.dailyLogs?.filter((l) =>
           l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
         ) || [];
         const todayLog = todayLogs[0];
-        const g1Arrived = todayLog ? (!!todayLog.hasArrivedG1 || (!!todayLog.arrivalTime && todayLog.arrivalTime.trim() !== "")) : false;
-        const g2Arrived = todayLog ? (!!todayLog.hasArrivedG2 || (!!todayLog.arrivalTime2 && todayLog.arrivalTime2.trim() !== "")) : false;
 
         let prehospitalCount = 0;
         let transfersCount = 0;
@@ -258,6 +258,22 @@ function buildHtmlLabels(
           recoveredCount += (parseInt(l.recoveredCount || "0", 10) || 0) + (parseInt(l.recoveredCount2 || "0", 10) || 0);
         });
 
+        const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0;
+        const hasGroups = todayLogs.some((l) => l.groupName?.trim() || l.groupName2?.trim());
+        const g1Arrived = todayLog ? (!!todayLog.hasArrivedG1 || (!!todayLog.arrivalTime && todayLog.arrivalTime.trim() !== "")) : false;
+        const g2Arrived = todayLog ? (!!todayLog.hasArrivedG2 || (!!todayLog.arrivalTime2 && todayLog.arrivalTime2.trim() !== "")) : false;
+        const hasArrived = hasGroups ? (g1Arrived || g2Arrived) : true;
+
+        const charWidth = 6;
+        const padding = 20;
+        const textLength = Math.max(title.length, info.length);
+        const w = Math.min(220, Math.max(100, textLength * charWidth + padding));
+        const h = (info || hasBadges) ? 42 : 28;
+        const x = item.x!;
+        const y = item.y!;
+
+        const { placement, box } = choosePlacement(x, y, w, h, allowOverlap, placedBoxes);
+
         activeHtmlLabels.push({
           id: pid,
           title,
@@ -266,7 +282,7 @@ function buildHtmlLabels(
           y,
           themeColor: feat?.color,
           placement,
-          hasArrived: g1Arrived || g2Arrived,
+          hasArrived,
           prehospitalCount: prehospitalCount || undefined,
           transfersCount: transfersCount || undefined,
           rescuedCount: rescuedCount || undefined,

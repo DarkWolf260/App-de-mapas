@@ -99,7 +99,7 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels }) => (
               />
               {lbl.title}
             </div>
-            <div style={{ fontWeight: 500, fontSize: "9px", opacity: 0.85 }}>{lbl.info}</div>
+            {!!lbl.info && <div style={{ fontWeight: 500, fontSize: "9px", opacity: 0.85 }}>{lbl.info}</div>}
 
             {/* Badges para Atenciones y Traslados / Rescates */}
             {(!!lbl.prehospitalCount || !!lbl.transfersCount || !!lbl.rescuedCount || !!lbl.recoveredCount) && (
