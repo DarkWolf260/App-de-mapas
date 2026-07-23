@@ -6,9 +6,15 @@ interface GlobalStatsWidgetProps {
   drawnFeatures: DrawnFeature[];
   selectedDate?: string;
   activeDepartment?: DepartmentView;
+  showSidebar?: boolean;
 }
 
-export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({ drawnFeatures, selectedDate, activeDepartment = "pc" }) => {
+export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
+  drawnFeatures,
+  selectedDate,
+  activeDepartment = "pc",
+  showSidebar = false,
+}) => {
   const todayStr = useMemo(() => selectedDate || new Date().toLocaleDateString('en-CA'), [selectedDate]);
 
   // Compute auto values from map features (ONLY today's logs, filtered by department)
@@ -42,9 +48,9 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({ drawnFeatu
         top: isCollapsed ? "-55px" : "20px",
         left: "50%",
         transform: "translateX(-50%)",
-        background: "rgba(10, 15, 29, 0.85)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        background: "rgba(10, 15, 29, 0.95)",
+        backdropFilter: "blur(10px) saturate(150%)",
+        WebkitBackdropFilter: "blur(10px) saturate(150%)",
         border: "1px solid rgba(56, 189, 248, 0.25)",
         borderRadius: "20px",
         padding: "8px 24px",
@@ -54,7 +60,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({ drawnFeatu
         alignItems: "center",
         gap: "20px",
         fontFamily: "var(--font-sans)",
-        transition: "top 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: "top 0.3s cubic-bezier(0.4, 0, 0.2, 1), left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
       {/* Stats Display */}
@@ -87,7 +93,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({ drawnFeatu
           bottom: "-18px",
           left: "50%",
           transform: "translateX(-50%)",
-          background: "rgba(10, 15, 29, 0.9)",
+          background: "rgba(10, 15, 29, 0.97)",
           border: "1px solid rgba(56, 189, 248, 0.25)",
           borderTop: "none",
           borderRadius: "0 0 10px 10px",

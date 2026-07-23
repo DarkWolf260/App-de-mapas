@@ -97,7 +97,7 @@ describe("DeploymentSummaryCard", () => {
         drawnFeatures={[featureWithLog]}
       />
     );
-    const toggleBtn = screen.getByRole("button");
+    const toggleBtn = screen.getByTitle("Contraer listado (sólo mostrar totales)");
     await user.click(toggleBtn);
     expect(defaultProps.onToggleCollapse).toHaveBeenCalledWith(true);
   });

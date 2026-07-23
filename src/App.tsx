@@ -126,6 +126,7 @@ function App() {
         selectedDate={selectedDate}
         onSelectedDateChange={setSelectedDate}
         activeDepartment={activeDepartment}
+        showSidebar={showSidebar}
       />
 
       <FloatingSearchBar
@@ -140,6 +141,7 @@ function App() {
         drawnFeatures={sortedDrawnFeatures}
         selectedDate={selectedDate}
         activeDepartment={activeDepartment}
+        showSidebar={showSidebar}
       />
 
       <DateTimeline
@@ -175,6 +177,8 @@ function App() {
         onOpenRangeReport={(feat) => setRangeReportFeature(feat)}
         activeDepartment={activeDepartment}
         onDepartmentChange={setActiveDepartment}
+        onGoToCoords={handleGoToCoords}
+        onCreatePointAtCoords={handleCreatePointAtCoords}
         className={showSidebar ? "" : "collapsed"}
       />
 

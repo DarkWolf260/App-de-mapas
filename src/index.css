@@ -2,8 +2,8 @@
 
 :root {
   --bg-dark: #0a0f1d;
-  --bg-card: rgba(15, 23, 42, 0.65);
-  --bg-card-hover: rgba(30, 41, 59, 0.8);
+  --bg-card: rgba(15, 23, 42, 0.92);
+  --bg-card-hover: rgba(30, 41, 59, 0.95);
   --border-glow: rgba(56, 189, 248, 0.2);
   --border-subtle: rgba(255, 255, 255, 0.08);
   --text-main: #f8fafc;
@@ -19,7 +19,7 @@
   
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 1px 1px rgba(255, 255, 255, 0.05) inset;
-  --glass-blur: blur(16px) saturate(180%);
+  --glass-blur: blur(8px) saturate(150%);
 }
 
 * {
@@ -66,7 +66,7 @@ body, html, #root {
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
   box-shadow: var(--shadow-premium);
-  z-index: 10;
+  z-index: 90;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -99,14 +99,132 @@ body, html, #root {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Sidebar Search Container */
+.sidebar-search-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.sidebar-search-container:focus-within {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+}
+
+.sidebar-search-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.sidebar-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-family: var(--font-sans);
+}
+
+.sidebar-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.sidebar-search-clear {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}
+
+.sidebar-search-clear:hover {
+  color: var(--text-main);
+}
+
+/* Sidebar Coordinate Card */
+.sidebar-coord-card {
+  padding: 10px 12px;
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-coord-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.sidebar-coord-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.sidebar-coord-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  background: rgba(56, 189, 248, 0.12);
+  color: #e2f8ff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sidebar-coord-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.5);
+}
+
+.sidebar-coord-btn.accent {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.12);
+  color: #a7f3d0;
+}
+
+.sidebar-coord-btn.accent:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.55);
+}
+
+.sidebar-search-empty {
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 /* Department Tabs */
 .dept-tabs {
   display: flex;
   gap: 4px;
   padding: 2px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .dept-tab {
@@ -221,8 +339,8 @@ body, html, #root {
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   margin-bottom: 4px;
   transition: all 0.2s ease;
@@ -620,9 +738,9 @@ input:checked + .slider:before {
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: rgba(10, 15, 29, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(10, 15, 29, 0.95);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 20px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.05) inset;
@@ -634,8 +752,8 @@ input:checked + .slider:before {
   align-items: center;
   gap: 3px;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   color: #cbd5e1;
   cursor: pointer;
@@ -778,8 +896,8 @@ input:checked + .slider:before {
   left: 50%;
   transform: translateX(-50%);
   background: rgba(10, 15, 29, 0.97);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid rgba(56, 189, 248, 0.2);
   border-radius: 16px;
   padding: 14px;
@@ -1709,7 +1827,7 @@ input:checked + .slider:before {
 .floating-search-container {
   position: absolute;
   top: 20px;
-  z-index: 100;
+  z-index: 150;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1776,6 +1894,7 @@ input:checked + .slider:before {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
+  z-index: 250;
   width: 290px;
   max-height: 280px;
   background: rgba(15, 23, 42, 0.95);
@@ -1972,12 +2091,12 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(10, 15, 29, 0.92);
+  background: rgba(10, 15, 29, 0.97);
   border: 1px solid rgba(56, 189, 248, 0.3);
   border-radius: 12px;
   padding: 4px 6px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   z-index: 100;
 }
@@ -1989,8 +2108,8 @@ input:checked + .slider:before {
   width: 24px;
   height: 24px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -2201,9 +2320,9 @@ input:checked + .slider:before {
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: rgba(10, 15, 29, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(10, 15, 29, 0.95);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 14px;
   color: #cbd5e1;
@@ -2255,9 +2374,9 @@ input:checked + .slider:before {
   align-items: center;
   gap: 0;
   padding: 6px 16px;
-  background: rgba(10, 15, 29, 0.88);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(10, 15, 29, 0.95);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
@@ -2297,9 +2416,9 @@ input:checked + .slider:before {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(10, 15, 29, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(10, 15, 29, 0.95);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid rgba(56, 189, 248, 0.25);
   color: #cbd5e1;
   display: flex;
@@ -2327,9 +2446,9 @@ input:checked + .slider:before {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: rgba(251, 146, 60, 0.15);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(251, 146, 60, 0.25);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid rgba(251, 146, 60, 0.4);
   border-radius: 10px;
   color: #fb923c;
@@ -2353,9 +2472,9 @@ input:checked + .slider:before {
   width: 36px;
   height: 36px;
   padding: 0;
-  background: rgba(10, 15, 29, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(10, 15, 29, 0.95);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid rgba(56, 189, 248, 0.3);
   border-radius: 10px;
   color: #cbd5e1;
@@ -2381,9 +2500,9 @@ input:checked + .slider:before {
   gap: 6px;
   padding: 10px 12px;
   min-width: 180px;
-  background: rgba(10, 15, 29, 0.88);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(10, 15, 29, 0.95);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid rgba(56, 189, 248, 0.3);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -2472,9 +2591,9 @@ input:checked + .slider:before {
   align-items: center;
   gap: 10px;
   padding: 12px 20px;
-  background: rgba(10, 15, 29, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(10, 15, 29, 0.95);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid rgba(56, 189, 248, 0.3);
   border-radius: 12px;
   color: #f8fafc;

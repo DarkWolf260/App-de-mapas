@@ -6,6 +6,7 @@ import { DepartmentTabs } from "./DepartmentTabs";
 import { MapSettingsPanel } from "./MapSettingsPanel";
 import { DrawnFeaturesList } from "./DrawnFeaturesList";
 import { DataToolsBar } from "./DataToolsBar";
+import { Search, X } from "lucide-react";
 
 interface SidebarProps {
   activeCity: string;
@@ -30,6 +31,8 @@ interface SidebarProps {
   onOpenRangeReport?: (feat: DrawnFeature | "all") => void;
   activeDepartment: DepartmentView;
   onDepartmentChange: (dept: DepartmentView) => void;
+  onGoToCoords?: (lat: number, lon: number) => void;
+  onCreatePointAtCoords?: (lat: number, lon: number) => void;
   className?: string;
 }
 
@@ -52,9 +55,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenRangeReport,
   activeDepartment,
   onDepartmentChange,
+  onGoToCoords,
+  onCreatePointAtCoords,
   className,
 }) => {
   const [showMapSettings, setShowMapSettings] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { collapsedGroups, toggleGroupCollapse } = useCollapsedGroups();
   const { collapsedChildren, toggleChildrenCollapse } = useCollapsedChildren();
   const { rootPoints, rootLines, rootPolygons, pointsByParent, childrenMap, polygonAreas } = useSpatialHierarchy(drawnFeatures);
@@ -62,6 +68,21 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className={`sidebar glass-panel ${className ?? ""}`}>
       <SidebarHeader />
+      <div className="sidebar-search-container">
+        <Search size={14} className="sidebar-search-icon" />
+        <input
+          type="text"
+          placeholder="Buscar elementos o coordenadas..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="sidebar-search-input"
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery("")} className="sidebar-search-clear" title="Limpiar búsqueda">
+            <X size={13} />
+          </button>
+        )}
+      </div>
       <DepartmentTabs activeDepartment={activeDepartment} onDepartmentChange={onDepartmentChange} />
       <MapSettingsPanel
         layerVisibility={layerVisibility}
@@ -91,6 +112,9 @@ const Sidebar: React.FC<SidebarProps> = ({
         onUpdateFeatureDescription={onUpdateFeatureDescription}
         onToggleFeatureLock={onToggleFeatureLock}
         onOpenRangeReport={onOpenRangeReport}
+        searchQuery={searchQuery}
+        onGoToCoords={onGoToCoords}
+        onCreatePointAtCoords={onCreatePointAtCoords}
       />
       <DataToolsBar
         onExportGeoJSON={onExportGeoJSON}

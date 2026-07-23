@@ -3,6 +3,8 @@ import { ChevronDown, ChevronRight, Calendar, FolderOpen } from "lucide-react";
 import type { DrawnFeature } from "../types";
 import { FeatureCard } from "./FeatureCard";
 
+import { Crosshair, Plus } from "lucide-react";
+
 interface DrawnFeaturesListProps {
   drawnFeatures: DrawnFeature[];
   hiddenFeatures: Record<number, boolean>;
@@ -25,6 +27,39 @@ interface DrawnFeaturesListProps {
   onUpdateFeatureDescription: (id: number, newDesc: string) => void;
   onToggleFeatureLock: (id: number, locked: boolean) => void;
   onOpenRangeReport?: (feat: DrawnFeature | "all") => void;
+  searchQuery?: string;
+  onGoToCoords?: (lat: number, lon: number) => void;
+  onCreatePointAtCoords?: (lat: number, lon: number) => void;
+}
+
+function parseCoords(input: string): { lat: number; lon: number } | null {
+  const cleaned = input.replace(/\s+/g, " ").trim();
+  const parts = cleaned.split(/[;,]/).map((s) => s.trim());
+  let nums: number[];
+
+  if (parts.length === 2) {
+    nums = parts.map(Number);
+    if (nums.some(isNaN)) return null;
+  } else {
+    const spaceParts = cleaned.split(" ");
+    if (spaceParts.length >= 2) {
+      nums = spaceParts.map(Number).filter((n) => !isNaN(n));
+      if (nums.length < 2) return null;
+    } else {
+      return null;
+    }
+  }
+
+  const [a, b] = nums;
+
+  if (a >= -90 && a <= 90 && b >= -180 && b <= 180) {
+    return { lat: a, lon: b };
+  }
+  if (b >= -90 && b <= 90 && a >= -180 && a <= 180) {
+    return { lat: b, lon: a };
+  }
+
+  return null;
 }
 
 export const DrawnFeaturesList: React.FC<DrawnFeaturesListProps> = ({
@@ -49,6 +84,9 @@ export const DrawnFeaturesList: React.FC<DrawnFeaturesListProps> = ({
   onUpdateFeatureDescription,
   onToggleFeatureLock,
   onOpenRangeReport,
+  searchQuery,
+  onGoToCoords,
+  onCreatePointAtCoords,
 }) => {
   const [groupByType, setGroupByType] = React.useState(true);
 
@@ -57,7 +95,7 @@ export const DrawnFeaturesList: React.FC<DrawnFeaturesListProps> = ({
     return groupFeatures.every((f) => !hiddenFeatures[f.id]);
   };
 
-  const handleGroupVisibilityClick = (groupFeatures: DrawnFeature[], e: React.MouseEvent) => {
+  const handleGroupVisibilityClick = (groupFeatures: DrawnFeature[], e: React.SyntheticEvent) => {
     e.stopPropagation();
     const allVisible = isGroupAllVisible(groupFeatures);
     const ids = groupFeatures.map((f) => f.id);
@@ -124,6 +162,48 @@ export const DrawnFeaturesList: React.FC<DrawnFeaturesListProps> = ({
       </div>
     );
   };
+
+  if (searchQuery && searchQuery.trim().length > 0) {
+    const coords = parseCoords(searchQuery);
+    const qLower = searchQuery.toLowerCase().trim();
+    const matchedFeatures = drawnFeatures.filter(
+      (f) => f.title?.toLowerCase().includes(qLower) || f.description?.toLowerCase().includes(qLower)
+    );
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", marginTop: "4px", minHeight: 0 }}>
+        <div className="list-section-title" style={{ fontSize: "0.78rem", marginBottom: "8px" }}>
+          Resultados de Búsqueda ({matchedFeatures.length})
+        </div>
+        <div className="scrollable-thin" style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "6px", paddingRight: "4px" }}>
+          {coords && (
+            <div className="sidebar-coord-card">
+              <div className="sidebar-coord-header">
+                <Crosshair size={14} style={{ color: "rgba(56, 189, 248, 0.9)" }} />
+                <span>Coordenadas: {coords.lat.toFixed(5)}, {coords.lon.toFixed(5)}</span>
+              </div>
+              <div className="sidebar-coord-actions">
+                <button className="sidebar-coord-btn" onClick={() => onGoToCoords?.(coords.lat, coords.lon)}>
+                  <Crosshair size={12} /> Ir al punto
+                </button>
+                <button className="sidebar-coord-btn accent" onClick={() => onCreatePointAtCoords?.(coords.lat, coords.lon)}>
+                  <Plus size={12} /> Crear punto
+                </button>
+              </div>
+            </div>
+          )}
+
+          {matchedFeatures.map((feat) => renderFeatureCard(feat))}
+
+          {!coords && matchedFeatures.length === 0 && (
+            <div className="sidebar-search-empty">
+              No se encontraron elementos que coincidan con "{searchQuery}"
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const polygons = drawnFeatures.filter((f) => f.type === "polygon");
   const points = drawnFeatures.filter((f) => f.type === "point");
@@ -317,7 +397,7 @@ interface GroupSectionProps {
   collapsed: boolean;
   onToggle: () => void;
   allVisible: boolean;
-  onToggleVisibility: (e: React.MouseEvent) => void;
+  onToggleVisibility: (e: React.SyntheticEvent) => void;
   visibilityTitle: string;
   extra?: React.ReactNode;
   children: React.ReactNode;

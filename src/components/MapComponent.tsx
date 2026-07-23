@@ -33,6 +33,7 @@ interface MapComponentProps {
   selectedDate: string;
   onSelectedDateChange?: (date: string) => void;
   activeDepartment?: DepartmentView;
+  showSidebar?: boolean;
 }
   
   const MapComponent: React.FC<MapComponentProps> = (props) => {
@@ -45,6 +46,7 @@ interface MapComponentProps {
       onUpdateFeatureDescription,
       onUpdateFeatureColor,
       onZoomToFeature,
+      showSidebar = false,
     } = props;
 
   const [widgetCollapsed, setWidgetCollapsed] = React.useState(() => {
@@ -199,14 +201,18 @@ interface MapComponentProps {
 
       {/* Satellite Swipe Comparison */}
       {swipeActive && viewRef.current && (
-        <SwipeComparison view={viewRef.current} onClose={deactivateSwipe} />
+        <SwipeComparison view={viewRef.current} onClose={deactivateSwipe} showSidebar={showSidebar} />
       )}
 
-      {/* Floating comparison toggle button — always visible, bottom-left */}
+      {/* Floating comparison toggle button — bottom-left, shifts when sidebar is open */}
       <button
         className={`swipe-toggle-btn ${swipeActive ? "active" : ""}`}
         onClick={swipeActive ? deactivateSwipe : activateSwipe}
         title={swipeActive ? "Cerrar comparacion" : "Comparar antes/despues"}
+        style={{
+          left: showSidebar ? "410px" : "16px",
+          transition: "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
       >
         <Satellite size={18} />
         <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Despues"}</span>

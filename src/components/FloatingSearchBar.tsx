@@ -120,13 +120,13 @@ export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
     }
   };
 
-  const leftPos = showSidebar ? "470px" : "80px";
+  if (showSidebar) return null;
 
   return (
     <div
       ref={containerRef}
       className="floating-search-container"
-      style={{ left: leftPos }}
+      style={{ left: "80px" }}
     >
       <div className="floating-search-bar">
         <Search className="floating-search-icon" size={16} />

@@ -39,21 +39,51 @@ const stretchRenderer = new RasterStretchRenderer({
   useGamma: true,
 });
 
+const globalCogCache = new Map<string, ImageryTileLayer>();
+
+function getOrCreateCogLayer(id: string): ImageryTileLayer | null {
+  const src = COG_SOURCES.find((s) => s.id === id);
+  if (!src) return null;
+  let layer = globalCogCache.get(id);
+  if (!layer) {
+    layer = new ImageryTileLayer({
+      url: src.url,
+      bandIds: [2, 1, 0],
+      renderer: stretchRenderer,
+      title: src.label,
+    });
+    globalCogCache.set(id, layer);
+    layer.load().catch(() => {
+      globalCogCache.delete(id);
+    });
+  }
+  return layer;
+}
+
+// Precargar metadatos del COG principal en segundo plano
+if (typeof window !== "undefined") {
+  setTimeout(() => {
+    getOrCreateCogLayer("cogB");
+  }, 500);
+}
+
 type LayerStatus = "idle" | "loading" | "ok" | "error";
 
 interface SwipeComparisonProps {
   view: MapView;
   onClose: () => void;
+  showSidebar?: boolean;
 }
 
-export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose }) => {
+export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose, showSidebar = false }) => {
   const [warning, setWarning] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [layerVis, setLayerVis] = useState<Record<string, boolean>>({ cogA: false, cogB: true, cogC: false });
   const [layerStatus, setLayerStatus] = useState<Record<string, LayerStatus>>({ cogA: "idle", cogB: "idle", cogC: "idle" });
-  const cogLayersRef = useRef<Map<string, ImageryTileLayer>>(new Map());
   const groupLayerRef = useRef<GroupLayer | null>(null);
   const cleanupRef = useRef<() => void>(() => {});
+
+  const leftPos = showSidebar ? "410px" : "16px";
 
   const setStatus = useCallback((id: string, status: LayerStatus) => {
     setLayerStatus((prev) => ({ ...prev, [id]: status }));
@@ -63,40 +93,36 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
     const src = COG_SOURCES.find((s) => s.id === id);
     if (!src || !groupLayerRef.current) return;
 
-    const existing = cogLayersRef.current.get(id);
-    if (existing) {
-      groupLayerRef.current.add(existing);
+    const layer = getOrCreateCogLayer(id);
+    if (!layer) return;
+
+    if (layer.loaded) {
+      if (!groupLayerRef.current.layers.includes(layer)) {
+        groupLayerRef.current.add(layer);
+      }
       setStatus(id, "ok");
       return;
     }
 
     setStatus(id, "loading");
-    const layer = new ImageryTileLayer({
-      url: src.url,
-      bandIds: [2, 1, 0],
-      renderer: stretchRenderer,
-      title: src.label,
-    });
-    cogLayersRef.current.set(id, layer);
-
     try {
       await layer.load();
-      groupLayerRef.current?.add(layer);
+      if (groupLayerRef.current && !groupLayerRef.current.layers.includes(layer)) {
+        groupLayerRef.current.add(layer);
+      }
       setStatus(id, "ok");
     } catch {
       setStatus(id, "error");
-      cogLayersRef.current.delete(id);
+      globalCogCache.delete(id);
       setWarning(`${src.label} no disponible`);
       setTimeout(() => setWarning(null), 6000);
     }
   }, [setStatus]);
 
   const unloadCog = useCallback((id: string) => {
-    const layer = cogLayersRef.current.get(id);
+    const layer = globalCogCache.get(id);
     if (layer && groupLayerRef.current) {
       groupLayerRef.current.remove(layer);
-      layer.destroy();
-      cogLayersRef.current.delete(id);
       setStatus(id, "idle");
     }
   }, [setStatus]);
@@ -114,34 +140,24 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
   }, [loadCog, unloadCog]);
 
   useEffect(() => {
-    let disposed = false;
+    const groupLayer = new GroupLayer({ title: "Post-sismo" });
+    groupLayerRef.current = groupLayer;
 
-    const init = async () => {
-      const groupLayer = new GroupLayer({ title: "Post-sismo" });
-      groupLayerRef.current = groupLayer;
+    const map = view.map!;
+    if (!map.layers.includes(groupLayer)) map.add(groupLayer, 0);
 
-      const map = view.map!;
-      if (!map.layers.includes(groupLayer)) map.add(groupLayer, 0);
+    const swipeEl = document.querySelector("arcgis-swipe") as any;
+    if (swipeEl) {
+      swipeEl.view = view;
+      swipeEl.leadingLayers = [];
+      swipeEl.trailingLayers = [groupLayer];
+      swipeEl.direction = "horizontal";
+      swipeEl.position = 50;
+    }
 
-      await view.whenLayerView(groupLayer).then(() => {}).catch(() => {});
-      if (disposed) return;
-
-      const swipeEl = document.querySelector("arcgis-swipe") as any;
-      if (swipeEl) {
-        swipeEl.view = view;
-        swipeEl.leadingLayers = [];
-        swipeEl.trailingLayers = [groupLayer];
-        swipeEl.direction = "horizontal";
-        swipeEl.position = 50;
-      }
-
-      loadCog("cogB");
-    };
-
-    init();
+    loadCog("cogB");
 
     cleanupRef.current = () => {
-      disposed = true;
       try {
         const swipeEl = document.querySelector("arcgis-swipe") as any;
         if (swipeEl) {
@@ -150,11 +166,9 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
           swipeEl.view = null;
         }
         const map = view.map;
-        if (map) {
-          try { map.remove(groupLayerRef.current!); } catch {}
+        if (map && groupLayerRef.current) {
+          try { map.remove(groupLayerRef.current); } catch {}
         }
-        cogLayersRef.current.forEach((l) => { try { l.destroy(); } catch {} });
-        cogLayersRef.current.clear();
         groupLayerRef.current = null;
       } catch {}
     };
@@ -189,12 +203,16 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
         className="swipe-layer-toggle"
         onClick={() => setPanelOpen((p) => !p)}
         title="Seleccionar capas"
+        style={{ left: leftPos, transition: "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)" }}
       >
         <Layers size={16} />
       </button>
 
       {panelOpen && (
-        <div className="swipe-layer-panel">
+        <div
+          className="swipe-layer-panel"
+          style={{ left: leftPos, transition: "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)" }}
+        >
           <div className="swipe-layer-panel-title">Capas post-sismo</div>
           {COG_SOURCES.map((src) => (
             <label key={src.id} className="swipe-layer-item">
