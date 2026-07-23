@@ -3,7 +3,6 @@ import type { DrawnFeature, LayerVisibility, DepartmentView } from "../types";
 import { useSpatialHierarchy, useCollapsedGroups, useCollapsedChildren } from "../hooks/useSpatialHierarchy";
 import { SidebarHeader } from "./SidebarHeader";
 import { DepartmentTabs } from "./DepartmentTabs";
-import { MapSettingsPanel } from "./MapSettingsPanel";
 import { DrawnFeaturesList } from "./DrawnFeaturesList";
 import { DataToolsBar } from "./DataToolsBar";
 import { Search, X } from "lucide-react";
@@ -37,8 +36,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
-  layerVisibility,
-  onToggleLayer,
+  layerVisibility: _layerVisibility,
+  onToggleLayer: _onToggleLayer,
   drawnFeatures,
   onRenameFeature,
   onDeleteFeature,
@@ -59,7 +58,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   onCreatePointAtCoords,
   className,
 }) => {
-  const [showMapSettings, setShowMapSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { collapsedGroups, toggleGroupCollapse } = useCollapsedGroups();
   const { collapsedChildren, toggleChildrenCollapse } = useCollapsedChildren();
@@ -84,12 +82,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
       <DepartmentTabs activeDepartment={activeDepartment} onDepartmentChange={onDepartmentChange} />
-      <MapSettingsPanel
-        layerVisibility={layerVisibility}
-        onToggleLayer={onToggleLayer}
-        expanded={showMapSettings}
-        onToggle={() => setShowMapSettings((v) => !v)}
-      />
       <DrawnFeaturesList
         drawnFeatures={drawnFeatures}
         hiddenFeatures={hiddenFeatures}

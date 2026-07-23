@@ -108,6 +108,7 @@ function App() {
         activeCity={activeCity}
         activeBasemap="satellite-free"
         layerVisibility={layerVisibility}
+        onToggleLayer={handleToggleLayer}
         onFeatureAdded={handleFeatureAdded}
         onFeatureDeleted={handleFeatureDeleted}
         zoomToFeature={zoomToFeature}

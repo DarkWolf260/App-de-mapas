@@ -4,6 +4,7 @@ import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DailyLog, Departme
 import { DrawingToolbar } from "./DrawingToolbar";
 import { CustomMapPopup } from "./CustomMapPopup";
 import { DeploymentSummaryCard } from "./DeploymentSummaryCard";
+import { MapSettingsPanel } from "./MapSettingsPanel";
 import { HtmlPointLabels } from "./HtmlPointLabels";
 import { SwipeComparison } from "./SwipeComparison";
 import { useMapSetup } from "./useMapSetup";
@@ -15,6 +16,7 @@ interface MapComponentProps {
   activeBasemap: string;
   activeCity: string;
   layerVisibility: LayerVisibility;
+  onToggleLayer?: (layerName: keyof LayerVisibility) => void;
   drawnFeatures: DrawnFeature[];
   onFeatureAdded: (newFeat: DrawnFeature) => void;
   onFeatureDeleted: (id: number) => void;
@@ -52,6 +54,7 @@ interface MapComponentProps {
   const [widgetCollapsed, setWidgetCollapsed] = React.useState(() => {
     return localStorage.getItem("pc_widget_collapsed") === "true";
   });
+  const [showMapSettings, setShowMapSettings] = React.useState(false);
 
   const {
     mapDiv,
@@ -158,18 +161,59 @@ interface MapComponentProps {
           {tooltip.text}
         </div>
       )}
-      {/* Floating Active Deployment Summary Card */}
-      <DeploymentSummaryCard
-        drawnFeatures={drawnFeatures}
-        widgetCollapsed={widgetCollapsed}
-        onToggleCollapse={(collapsed) => {
-          setWidgetCollapsed(collapsed);
-          localStorage.setItem("pc_widget_collapsed", String(collapsed));
+      {/* Floating Bottom-Right Container (Map Settings Panel + Deployment Summary Card) */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "52px",
+          right: "16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          alignItems: "flex-end",
+          zIndex: 100,
+          pointerEvents: "none",
         }}
-        onZoomToFeature={onZoomToFeature}
-        selectedDate={props.selectedDate}
-        activeDepartment={props.activeDepartment}
-      />
+      >
+        {/* Map Settings & Layer Visibility Panel */}
+        {props.onToggleLayer && (
+          <div
+            style={{
+              width: "260px",
+              background: "rgba(10, 15, 28, 0.92)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "12px",
+              padding: "8px 12px",
+              boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              pointerEvents: "auto",
+            }}
+          >
+            <MapSettingsPanel
+              layerVisibility={layerVisibility}
+              onToggleLayer={props.onToggleLayer}
+              expanded={showMapSettings}
+              onToggle={() => setShowMapSettings((v) => !v)}
+            />
+          </div>
+        )}
+
+        {/* Floating Active Deployment Summary Card */}
+        <div style={{ pointerEvents: "auto" }}>
+          <DeploymentSummaryCard
+            drawnFeatures={drawnFeatures}
+            widgetCollapsed={widgetCollapsed}
+            onToggleCollapse={(collapsed) => {
+              setWidgetCollapsed(collapsed);
+              localStorage.setItem("pc_widget_collapsed", String(collapsed));
+            }}
+            onZoomToFeature={onZoomToFeature}
+            selectedDate={props.selectedDate}
+            activeDepartment={props.activeDepartment}
+          />
+        </div>
+      </div>
 
       {/* Floating Zoom level indicator in bottom-right */}
       <div

@@ -23,7 +23,7 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
   expanded,
   onToggle,
 }) => (
-  <div style={{ borderBottom: "1px solid var(--border-subtle)", paddingBottom: "6px" }}>
+  <div>
     <button
       onClick={onToggle}
       style={{
@@ -31,26 +31,28 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
         border: "none",
         color: "var(--color-info)",
         cursor: "pointer",
-        fontSize: "0.75rem",
-        fontWeight: 700,
+        fontSize: "0.72rem",
+        fontWeight: 800,
         display: "flex",
         alignItems: "center",
-        gap: "4px",
-        padding: "4px 0",
+        justifyContent: "space-between",
         width: "100%",
         textAlign: "left",
         outline: "none",
+        letterSpacing: "0.04em",
       }}
     >
-      {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-      <Settings size={14} /> Ajustes del Mapa y Visibilidad
+      <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        <Settings size={13} /> Opciones del Mapa
+      </span>
+      {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
     </button>
 
     {expanded && (
-      <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", paddingLeft: "8px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: "6px" }}>
         {TOGGLES.map(({ key, label }) => (
           <div key={key} className="toggle-item">
-            <span className="toggle-label" style={{ fontSize: "0.72rem" }}>
+            <span className="toggle-label" style={{ fontSize: "0.68rem" }}>
               {label}
             </span>
             <label className="toggle-switch">

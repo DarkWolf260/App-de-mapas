@@ -25,7 +25,7 @@ interface CustomMapPopupProps {
   onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
   onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
   onUpdateFeatureColor?: (id: number, newColor: string) => Promise<void>;
-  sketchLayer: GraphicsLayer;
+  sketchLayer: GraphicsLayer | null;
   onClose: () => void;
   activeDepartment?: DepartmentView;
 }

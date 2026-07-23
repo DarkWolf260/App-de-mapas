@@ -10,6 +10,7 @@ interface DeploymentSummaryCardProps {
   onZoomToFeature?: (feat: DrawnFeature) => void;
   selectedDate?: string;
   activeDepartment?: DepartmentView;
+  style?: React.CSSProperties;
 }
 
 interface ActivePoint {
@@ -110,6 +111,7 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   onZoomToFeature,
   selectedDate,
   activeDepartment,
+  style: customStyle,
 }) => {
   const targetDateStr = selectedDate || new Date().toLocaleDateString("en-CA");
   const [viewMode, setViewMode] = useState<ViewMode>("sitios");
@@ -135,9 +137,6 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
     <div
       className="deployed-staff-widget"
       style={{
-        position: "absolute",
-        bottom: "52px",
-        right: "16px",
         background: "rgba(10, 15, 28, 0.92)",
         border: "1px solid rgba(255, 255, 255, 0.1)",
         color: "#f8fafc",
@@ -155,6 +154,7 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
         display: "flex",
         flexDirection: "column",
         gap: "6px",
+        ...customStyle,
       }}
     >
       {/* Header */}
