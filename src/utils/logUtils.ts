@@ -115,7 +115,7 @@ export function getGroupData(log: DailyLog, group: 1 | 2): GroupData {
       recoveredCount: log.recoveredCount2 || "",
       departureTime: log.departureTime2 || "",
       arrivalTime: log.arrivalTime2 || "",
-      hasArrived: !!log.hasArrivedG2,
+      hasArrived: !!log.hasArrivedG2 || !!log.arrivalTime2,
     };
   }
   return {
@@ -128,7 +128,7 @@ export function getGroupData(log: DailyLog, group: 1 | 2): GroupData {
     recoveredCount: log.recoveredCount || "",
     departureTime: log.departureTime || "",
     arrivalTime: log.arrivalTime || "",
-    hasArrived: !!log.hasArrivedG1,
+    hasArrived: !!log.hasArrivedG1 || !!log.arrivalTime,
   };
 }
 

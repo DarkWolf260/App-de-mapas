@@ -13,6 +13,7 @@ import {
   getDayStats,
   featureMatchesSearch,
   REPORT_START_DATE,
+  emptyLog,
 } from "../utils/logUtils";
 
 interface RangeReportModalProps {
@@ -115,6 +116,33 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     }
   };
 
+  const handleToggleArrivalQuick = async (pt: DrawnFeature, groupIndex: 1 | 2, newArrived: boolean) => {
+    if (!onSaveDailyLog) return;
+    const logs = pt.dailyLogs?.filter((l) =>
+      l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+    ) || [];
+    const currentLog = logs[0] || emptyLog(activeDate);
+
+    const nowTime = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+
+    let updatedLog: DailyLog;
+    if (groupIndex === 1) {
+      updatedLog = {
+        ...currentLog,
+        hasArrivedG1: newArrived,
+        arrivalTime: newArrived ? (currentLog.arrivalTime || nowTime) : "",
+      };
+    } else {
+      updatedLog = {
+        ...currentLog,
+        hasArrivedG2: newArrived,
+        arrivalTime2: newArrived ? (currentLog.arrivalTime2 || nowTime) : "",
+      };
+    }
+
+    await onSaveDailyLog(pt.id, updatedLog);
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -123,9 +151,9 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     <div className="rr-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="rr-modal">
         {/* Header */}
-        <div className="rr-header" style={isAllMode ? { background: "linear-gradient(to right, rgba(56, 189, 248, 0.07), transparent)" } : undefined}>
+        <div className="rr-header">
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <Calendar style={{ color: isAllMode ? "var(--color-info)" : "var(--color-green)", flexShrink: 0 }} size={20} />
+            <Calendar style={{ color: isAllMode ? "var(--color-info)" : "var(--color-green)", flexShrink: 0 }} size={18} />
             <div>
               <h3 className="rr-title">
                 {isAllMode ? "Bitácora General" : "Bitácora de Rango"}
@@ -133,11 +161,11 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
               <p className="rr-subtitle">
                 {isAllMode ? (
                   <span>
-                    <strong style={{ color: "var(--text-main)" }}>Todos los sitios</strong> · {daysWithData} días con operaciones
+                    <strong style={{ color: "var(--text-main)" }}>Todos los sitios</strong> · {daysWithData} de {dates.length} días con registros
                   </span>
                 ) : (
                   <span>
-                    <strong style={{ color: "var(--text-main)" }}>{feat.title}</strong> · 24 Jun a Hoy
+                    <strong style={{ color: "var(--text-main)" }}>{feat.title}</strong> · {daysWithData} de {dates.length} días con registros
                   </span>
                 )}
               </p>
@@ -148,26 +176,62 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
           </button>
         </div>
 
-        {/* Legend */}
-        <div className="rr-legend">
-          <div className="rr-legend-item">
-            <div className="rr-legend-dot rr-legend-dot--data" />
-            Con datos
-          </div>
-          <div className="rr-legend-item">
-            <div className="rr-legend-dot" />
-            Sin registros
-          </div>
-          <div className="rr-legend-stat">
-            <Users size={11} />
-            {daysWithData} / {dates.length} días
-          </div>
-        </div>
+        {/* Integrated Sober Toolbar */}
+        <div className="rr-toolbar">
+          {isAllMode && (
+            <div className="rr-toolbar-date">
+              <button
+                onClick={handlePrevDay}
+                disabled={activeDateIndex === dates.length - 1}
+                className="rr-icon-btn"
+                title="Día anterior"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <select
+                value={activeDateIndex}
+                onChange={(e) => { setActiveDateIndex(parseInt(e.target.value, 10)); setActiveEditFeatureId(null); }}
+                className="rr-date-select"
+              >
+                {dates.map((dateStr, idx) => {
+                  const dayHasData = allFeatures.some((f) => f.dailyLogs?.some((l) => l.date === dateStr && logHasPersonnel(l)));
+                  return (
+                    <option key={dateStr} value={idx}>
+                      {formatDateFriendly(dateStr)} {dayHasData ? "•" : ""}
+                    </option>
+                  );
+                })}
+              </select>
+              <button
+                onClick={handleNextDay}
+                disabled={activeDateIndex === 0}
+                className="rr-icon-btn"
+                title="Día siguiente"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          )}
 
-        {/* Filter bar */}
-        <div className="rr-filter-bar">
-          <span className="rr-filter-label">Grupos:</span>
-          <div className="rr-filter-buttons">
+          {isAllMode && (
+            <div className="rr-toolbar-search">
+              <Search size={13} className="rr-search-icon" />
+              <input
+                type="text"
+                className="rr-search-input"
+                placeholder="Buscar por nombre, grupo, encargado..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button className="rr-search-clear" onClick={() => setSearchQuery("")} title="Limpiar">
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="rr-toolbar-filter">
             {(["all", "arrived", "not_arrived"] as const).map((key) => (
               <button
                 key={key}
@@ -180,87 +244,32 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
           </div>
         </div>
 
-        {/* Search bar (all-mode only) */}
-        {isAllMode && (
-          <div className="rr-search-bar">
-            <div className="rr-search-wrapper">
-              <Search size={13} className="rr-search-icon" />
-              <input
-                type="text"
-                className="rr-search-input"
-                placeholder="Buscar por nombre, grupo, encargado..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: "28px" }}
-              />
-              {searchQuery && (
-                <button className="rr-search-clear" onClick={() => setSearchQuery("")} title="Limpiar">
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Pagination (all-mode) */}
-        {isAllMode && (
-          <div className="rr-pagination">
-            <button onClick={handlePrevDay} disabled={activeDateIndex === dates.length - 1} className="sim-btn rr-nav-btn" style={{ opacity: activeDateIndex === dates.length - 1 ? 0.4 : 1, cursor: activeDateIndex === dates.length - 1 ? "not-allowed" : "pointer" }}>
-              <ChevronLeft size={12} /> Anterior
-            </button>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span className="rr-day-label">Día:</span>
-              <select
-                value={activeDateIndex}
-                onChange={(e) => { setActiveDateIndex(parseInt(e.target.value, 10)); setActiveEditFeatureId(null); }}
-              >
-                {dates.map((dateStr, idx) => {
-                  const dayHasData = allFeatures.some((f) => f.dailyLogs?.some((l) => l.date === dateStr && logHasPersonnel(l)));
-                  return (
-                    <option key={dateStr} value={idx} style={{ background: "#0f172a", color: "#f8fafc" }}>
-                      {formatDateFriendly(dateStr)} {dayHasData ? "•" : ""}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-            <button onClick={handleNextDay} disabled={activeDateIndex === 0} className="sim-btn rr-nav-btn" style={{ opacity: activeDateIndex === 0 ? 0.4 : 1, cursor: activeDateIndex === 0 ? "not-allowed" : "pointer" }}>
-              Siguiente <ChevronRight size={12} />
-            </button>
-          </div>
-        )}
-
-        {/* Day stats bar (all-mode) */}
+        {/* Stats Summary Bar */}
         {isAllMode && dayStats && dayStats.activePoints > 0 && (
-          <div className="rr-stats-bar">
-            <div className="rr-stat-chip rr-stat-chip--personnel">
-              <Users size={11} />
-              <span className="stat-val">{dayStats.totalPersonnel}</span>
-              Personal
+          <div className="rr-stats-summary">
+            <div className="rr-stat-item">
+              <Users size={12} style={{ color: "var(--color-info)" }} />
+              <span>Personal: <strong>{dayStats.totalPersonnel}</strong></span>
             </div>
-            <div className="rr-stats-sep" />
-            <div className="rr-stat-chip rr-stat-chip--rescued">
-              <span className="stat-val">{dayStats.totalRescued}</span>
-              Resc.
+            <span className="rr-stat-divider">•</span>
+            <div className="rr-stat-item">
+              <span>Rescatados: <strong style={{ color: "var(--color-green)" }}>{dayStats.totalRescued}</strong></span>
             </div>
-            <div className="rr-stats-sep" />
-            <div className="rr-stat-chip rr-stat-chip--recovered">
-              <span className="stat-val">{dayStats.totalRecovered}</span>
-              Recup.
+            <span className="rr-stat-divider">•</span>
+            <div className="rr-stat-item">
+              <span>Recuperados: <strong style={{ color: "#ef4444" }}>{dayStats.totalRecovered}</strong></span>
             </div>
             {dayStats.totalPets > 0 && (
               <>
-                <div className="rr-stats-sep" />
-                <div className="rr-stat-chip rr-stat-chip--pets">
-                  <span className="stat-val">{dayStats.totalPets}</span>
-                  Masc.
+                <span className="rr-stat-divider">•</span>
+                <div className="rr-stat-item">
+                  <span>Mascotas: <strong>{dayStats.totalPets}</strong></span>
                 </div>
               </>
             )}
-            <div className="rr-stats-sep" />
-            <div className="rr-stat-chip rr-stat-chip--points">
-              <span className="stat-val">{dayStats.activePoints}</span>
-              Sitios
+            <span className="rr-stat-divider">•</span>
+            <div className="rr-stat-item">
+              <span>Sitios Activos: <strong>{dayStats.activePoints}</strong></span>
             </div>
           </div>
         )}
@@ -293,46 +302,48 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                     const hasG2 = !!(log?.groupName2 || log?.unitOut2);
 
                     return (
-                      <div
-                        key={pt.id}
-                        className={`rr-point-card ${isEditingThis ? "rr-point-card--editing" : "rr-point-card--data"}`}
-                      >
-                        <div className="rr-point-header">
-                          <div className="rr-point-name">
+                      <div key={pt.id} className="rr-point-card">
+                        <div className="rr-card-header">
+                          <div className="rr-card-title-group">
                             <span
-                              className="rr-point-dot"
+                              className="rr-card-dot"
                               style={{
                                 backgroundColor: pt.color || "var(--color-green)",
-                                boxShadow: `0 0 6px ${pt.color || "var(--color-green)"}80`,
+                                color: pt.color || "var(--color-green)",
                               }}
                             />
-                            <span className="rr-point-title">{pt.title}</span>
+                            <span className="rr-card-title">{pt.title}</span>
                           </div>
                           <button
                             onClick={() => setActiveEditFeatureId(isEditingThis ? null : pt.id)}
-                            className="sim-btn"
-                            style={{
-                              fontSize: "0.62rem",
-                              padding: "2px 7px",
-                              background: isEditingThis ? "rgba(255, 255, 255, 0.06)" : "rgba(56, 189, 248, 0.06)",
-                              border: isEditingThis ? "1px solid var(--border-subtle)" : "1px solid rgba(56, 189, 248, 0.18)",
-                              color: isEditingThis ? "var(--text-main)" : "var(--color-info)",
-                            }}
+                            className="rr-edit-btn"
                           >
-                            {isEditingThis ? "Cerrar" : "Editar"}
+                            {isEditingThis ? "Cerrar Editor" : "Editar Sitio"}
                           </button>
                         </div>
 
                         {!isEditingThis && log && (
-                          <div className="rr-point-groups">
-                            <GroupDisplay group={getGroupData(log, 1)} label="G1" accentColor="var(--color-green)" showBorder={!!hasG2} />
-                            {hasG2 && <GroupDisplay group={getGroupData(log, 2)} label="G2" accentColor="var(--color-info)" showBorder={false} />}
+                          <div className="rr-card-body">
+                            <GroupDisplay
+                              group={getGroupData(log, 1)}
+                              label="G1"
+                              accentColor="#38bdf8"
+                              onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 1, newArrived)}
+                            />
+                            {hasG2 && (
+                              <GroupDisplay
+                                group={getGroupData(log, 2)}
+                                label="G2"
+                                accentColor="#a855f7"
+                                onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 2, newArrived)}
+                              />
+                            )}
                           </div>
                         )}
 
                         {log?.observations && !isEditingThis && (
-                          <div className="rr-point-obs">
-                            <strong style={{ color: "var(--color-info)" }}>Nota:</strong> {log.observations}
+                          <div className="rr-card-obs">
+                            <span className="rr-obs-label">Nota:</span> {log.observations}
                           </div>
                         )}
 

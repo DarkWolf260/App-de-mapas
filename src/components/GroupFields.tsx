@@ -102,37 +102,105 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
   const inputSt = inputStyleProp || defaultInputStyle;
 
   const defaultHeaderStyle: React.CSSProperties = {
-    fontSize: "0.62rem",
-    fontWeight: 700,
+    fontSize: "0.68rem",
+    fontWeight: 800,
     color: colorVar,
-    borderBottom: "1px solid rgba(255,255,255,0.05)",
-    paddingBottom: "2px",
-    marginBottom: "2px",
+    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+    paddingBottom: "4px",
+    marginBottom: "6px",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
   };
 
   return (
-    <div style={style}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...style }}>
       <div style={headerStyleProp || defaultHeaderStyle}>{headerLabel}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
-        <input type="text" placeholder={fieldsRow1[0].placeholder} value={(log[fieldsRow1[0].key] as string) || ""} onChange={(e) => onFieldChange(fieldsRow1[0].key, e.target.value)} style={inputSt} />
-        <input type="text" placeholder={fieldsRow1[1].placeholder} value={(log[fieldsRow1[1].key] as string) || ""} onChange={(e) => onFieldChange(fieldsRow1[1].key, e.target.value)} style={inputSt} />
-      </div>
-      <GridRow fields={fieldsRow2} log={log} onFieldChange={onFieldChange} inputStyle={inputSt} />
-      <input type="text" placeholder={`Teléfono Encargado${suffix}`} value={(log[phoneKey] as string) || ""} onChange={(e) => onFieldChange(phoneKey, e.target.value)} style={inputSt} />
-
-      <div style={{ display: "flex", gap: "6px", marginTop: "2px" }}>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: "0.55rem", color: "var(--text-muted)" }}>H. Salida{suffix ? " 2" : ""}</span>
-          <input type="time" value={(log[departureKey] as string) || ""} onChange={(e) => onFieldChange(departureKey, e.target.value)} style={{ ...inputSt, padding: "2px 4px" }} />
+      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "6px" }}>
+        <div>
+          <span className="rr-editor-label">Nombre del Grupo</span>
+          <input
+            type="text"
+            className="rr-editor-input"
+            placeholder={fieldsRow1[0].placeholder}
+            value={(log[fieldsRow1[0].key] as string) || ""}
+            onChange={(e) => onFieldChange(fieldsRow1[0].key, e.target.value)}
+          />
         </div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: "0.55rem", color: "var(--text-muted)" }}>H. Llegada{suffix ? " 2" : ""}</span>
-          <input type="time" value={(log[arrivalKey] as string) || ""} onChange={(e) => onFieldChange(arrivalKey, e.target.value)} style={{ ...inputSt, padding: "2px 4px" }} />
+        <div>
+          <span className="rr-editor-label">Unidad / Vehículo</span>
+          <input
+            type="text"
+            className="rr-editor-input"
+            placeholder={fieldsRow1[1].placeholder}
+            value={(log[fieldsRow1[1].key] as string) || ""}
+            onChange={(e) => onFieldChange(fieldsRow1[1].key, e.target.value)}
+          />
         </div>
       </div>
 
-      <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.62rem", color: "var(--text-muted)", cursor: "pointer", marginTop: "4px" }}>
-        <input type="checkbox" checked={!!log[arrivedKey]} onChange={(e) => onFieldChange(arrivedKey, e.target.checked)} style={{ margin: 0, cursor: "pointer" }} />
+      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "6px" }}>
+        <div>
+          <span className="rr-editor-label">Encargado / Responsable</span>
+          <input
+            type="text"
+            className="rr-editor-input"
+            placeholder={fieldsRow2[0].placeholder}
+            value={(log[fieldsRow2[0].key] as string) || ""}
+            onChange={(e) => onFieldChange(fieldsRow2[0].key, e.target.value)}
+          />
+        </div>
+        <div>
+          <span className="rr-editor-label">Funcionarios</span>
+          <input
+            type="number"
+            min="0"
+            className="rr-editor-input"
+            placeholder={fieldsRow2[1].placeholder}
+            value={(log[fieldsRow2[1].key] as string) || ""}
+            onChange={(e) => onFieldChange(fieldsRow2[1].key, e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div>
+        <span className="rr-editor-label">Teléfono de Contacto</span>
+        <input
+          type="text"
+          className="rr-editor-input"
+          placeholder={`Teléfono Encargado${suffix}`}
+          value={(log[phoneKey] as string) || ""}
+          onChange={(e) => onFieldChange(phoneKey, e.target.value)}
+        />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginTop: "2px" }}>
+        <div>
+          <span className="rr-editor-label">Hora Salida</span>
+          <input
+            type="time"
+            className="rr-editor-input"
+            value={(log[departureKey] as string) || ""}
+            onChange={(e) => onFieldChange(departureKey, e.target.value)}
+          />
+        </div>
+        <div>
+          <span className="rr-editor-label">Hora Llegada</span>
+          <input
+            type="time"
+            className="rr-editor-input"
+            value={(log[arrivalKey] as string) || ""}
+            onChange={(e) => onFieldChange(arrivalKey, e.target.value)}
+          />
+        </div>
+      </div>
+
+      <label className="rr-editor-checkbox-label">
+        <input
+          type="checkbox"
+          checked={!!log[arrivedKey]}
+          onChange={(e) => onFieldChange(arrivedKey, e.target.checked)}
+          style={{ margin: 0, cursor: "pointer", width: "13px", height: "13px" }}
+        />
         <span>¿Ya llegó el Grupo{suffix ? " Secundario" : " Primario"}?</span>
       </label>
     </div>
