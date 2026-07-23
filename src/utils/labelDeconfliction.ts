@@ -31,6 +31,8 @@ function filterCandidateLabels(
 ): Graphic[] {
   const currentZoom = view.zoom ?? 16;
   const { parentsMap } = buildParentsMap(refs.drawnFeaturesRef.current || []);
+  const dateStr = refs.selectedDateRef.current;
+  const activeDept = refs.activeDepartmentRef?.current;
 
   return labels.filter((lbl) => {
     const pid = lbl.attributes?.parentId;
@@ -43,7 +45,18 @@ function filterCandidateLabels(
 
     const feat = (refs.drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
     const isSubpolygon = isPolygonLabel && feat && parentsMap[feat.id] !== undefined;
-    const requiredZoom = isPolygonLabel && !isSubpolygon ? 14 : 16;
+
+    const hasPersonnel = feat?.type === "point" && (feat.dailyLogs?.some((l) =>
+      l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && (l.groupName || l.groupName2)
+    ) || false);
+
+    let requiredZoom = 16;
+    if (hasPersonnel) {
+      requiredZoom = 13;
+    } else if (isPolygonLabel && !isSubpolygon) {
+      requiredZoom = 14;
+    }
+
     if (currentZoom === undefined || isNaN(currentZoom) || currentZoom < requiredZoom) return false;
 
     if (isPolygonLabel && !refs.layerVisibilityRef.current.polygonLabels) return false;
