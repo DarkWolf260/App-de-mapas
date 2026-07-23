@@ -170,4 +170,41 @@ describe("DeploymentSummaryCard", () => {
     );
     expect(screen.getByText("Puesto Sur")).toBeInTheDocument();
   });
+
+  it("includes teams placed in sectors (polygon or polyline features)", () => {
+    const sectorFeature: DrawnFeature = {
+      id: 4,
+      title: "Sector Norte - Zona A",
+      type: "polygon",
+      color: "#8b5cf6",
+      geojsonGeometry: {
+        type: "Polygon",
+        coordinates: [[[-66.9, 10.6], [-66.8, 10.6], [-66.8, 10.7], [-66.9, 10.7], [-66.9, 10.6]]],
+      },
+      dailyLogs: [
+        {
+          date: todayStr,
+          groupName: "Equipo Sectorial 1",
+          unitOut: "U-05",
+          managerName: "Roberto",
+          managerPhone: "555-0005",
+          officersCount: "6",
+          rescuedCount: "0",
+          recoveredCount: "0",
+          rescuedPetsCount: "0",
+          hasArrivedG1: false,
+          hasArrivedG2: false,
+          observations: "",
+        },
+      ],
+    };
+
+    render(
+      <DeploymentSummaryCard
+        {...defaultProps}
+        drawnFeatures={[sectorFeature]}
+      />
+    );
+    expect(screen.getByText("Sector Norte - Zona A")).toBeInTheDocument();
+  });
 });

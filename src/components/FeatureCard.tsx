@@ -170,7 +170,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         >
           <span style={{ display: "flex", alignItems: "center", gap: "1px" }}><ChevronDown size={11} /> Bajar</span>
         </button>
-        {feat.type === "point" && onOpenRangeReport && (
+        {onOpenRangeReport && (
           <button
             onClick={() => onOpenRangeReport(feat)}
             style={{

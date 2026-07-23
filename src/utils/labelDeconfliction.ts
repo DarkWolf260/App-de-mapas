@@ -46,7 +46,7 @@ function filterCandidateLabels(
     const feat = (refs.drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
     const isSubpolygon = isPolygonLabel && feat && parentsMap[feat.id] !== undefined;
 
-    const hasPersonnel = feat?.type === "point" && (feat.dailyLogs?.some((l) =>
+    const hasPersonnel = feat && (feat.dailyLogs?.some((l) =>
       l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && (l.groupName || l.groupName2)
     ) || false);
 
@@ -85,7 +85,7 @@ function computeScreenLabels(
       priority = 3;
     } else {
       const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
-      if (feat?.type === "point") {
+      if (feat) {
         const todayLogs = feat.dailyLogs?.filter((l) =>
           l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
         ) || [];

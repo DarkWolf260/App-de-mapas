@@ -37,7 +37,6 @@ type ViewMode = "sitios" | "equipos";
 
 function computeActivePoints(drawnFeatures: DrawnFeature[], targetDate: string, activeDepartment?: DepartmentView): ActivePoint[] {
   return drawnFeatures
-    .filter((f) => f.type === "point")
     .map((f) => {
       const logs = f.dailyLogs?.filter((l) =>
         l.date === targetDate && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
@@ -64,7 +63,6 @@ function computeActivePoints(drawnFeatures: DrawnFeature[], targetDate: string, 
 function computeTeams(drawnFeatures: DrawnFeature[], targetDate: string, activeDepartment?: DepartmentView): TeamEntry[] {
   const teams: TeamEntry[] = [];
   drawnFeatures
-    .filter((f) => f.type === "point")
     .forEach((f) => {
       const logs = f.dailyLogs?.filter((l) =>
         l.date === targetDate && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)

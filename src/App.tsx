@@ -185,7 +185,7 @@ function App() {
 
       <RangeReportModal
         feat={rangeReportFeature}
-        allFeatures={sortedDrawnFeatures.filter((f) => f.type === "point")}
+        allFeatures={sortedDrawnFeatures}
         onClose={() => setRangeReportFeature(null)}
         onSaveDailyLog={handleSaveDailyLog}
         activeDepartment={activeDepartment}

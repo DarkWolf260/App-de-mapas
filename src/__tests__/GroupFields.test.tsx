@@ -78,3 +78,35 @@ describe("GroupFields", () => {
     expect(checkbox).not.toBeChecked();
   });
 });
+
+describe("OperationTab Department Selector in Mixto Mode", () => {
+  it("renders department selector when activeDepartment is mixto and handles selection", async () => {
+    const { OperationTab } = await import("../components/popup/OperationTab");
+    const user = userEvent.setup();
+    const onDepartmentSelect = vi.fn();
+
+    render(
+      <OperationTab
+        localLog={{}}
+        popupEditDate="2026-07-23"
+        setPopupEditDate={vi.fn()}
+        showSecondGroup={false}
+        setShowSecondGroup={vi.fn()}
+        onFieldChange={vi.fn()}
+        onSave={vi.fn()}
+        saveSuccess={false}
+        activeDepartment="mixto"
+        selectedDept="pc"
+        onDepartmentSelect={onDepartmentSelect}
+      />
+    );
+
+    expect(screen.getByText(/Departamento para Estadísticas y Grupos:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Protección Civil/i)).toBeInTheDocument();
+    expect(screen.getByText(/Bomberos/i)).toBeInTheDocument();
+
+    const bomberosBtn = screen.getByRole("button", { name: /Bomberos/i });
+    await user.click(bomberosBtn);
+    expect(onDepartmentSelect).toHaveBeenCalledWith("bomberos");
+  });
+});

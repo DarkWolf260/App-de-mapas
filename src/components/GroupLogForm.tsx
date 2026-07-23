@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
-import type { DailyLog } from "../types";
-import { Save, Check } from "lucide-react";
+import type { DailyLog, DepartmentView } from "../types";
+import { Save, Check, Shield, Flame } from "lucide-react";
 import { GroupFields } from "./GroupFields";
 
 const INPUT_STYLE: React.CSSProperties = {
@@ -32,6 +32,7 @@ interface GroupLogFormProps {
   saving?: boolean;
   saved?: boolean;
   compact?: boolean;
+  activeDepartment?: DepartmentView;
 }
 
 export const GroupLogForm: React.FC<GroupLogFormProps> = ({
@@ -41,6 +42,7 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
   saving = false,
   saved = false,
   compact = false,
+  activeDepartment,
 }) => {
   const [showGroup2, setShowGroup2] = useState(
     !!(draft.groupName2 || draft.unitOut2 || draft.managerName2 || draft.officersCount2)
@@ -61,8 +63,61 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
     setShowGroup2(!showGroup2);
   }, [showGroup2, onChange]);
 
+  const currentDept = draft.department || "pc";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: compact ? "6px" : "8px" }}>
+      {activeDepartment === "mixto" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "3px", background: "rgba(0, 0, 0, 0.25)", padding: "4px 6px", borderRadius: "6px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+          <span style={{ fontSize: "0.56rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+            Departamento:
+          </span>
+          <div style={{ display: "flex", gap: "4px" }}>
+            <button
+              type="button"
+              onClick={() => onChange("department", "pc")}
+              style={{
+                flex: 1,
+                padding: "3px 6px",
+                borderRadius: "5px",
+                border: currentDept === "pc" ? "1px solid rgba(56, 189, 248, 0.6)" : "1px solid transparent",
+                background: currentDept === "pc" ? "rgba(56, 189, 248, 0.18)" : "rgba(255, 255, 255, 0.03)",
+                color: currentDept === "pc" ? "var(--color-info)" : "var(--text-muted)",
+                fontSize: "0.62rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "3px",
+              }}
+            >
+              <Shield size={10} /> Protección Civil
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange("department", "bomberos")}
+              style={{
+                flex: 1,
+                padding: "3px 6px",
+                borderRadius: "5px",
+                border: currentDept === "bomberos" ? "1px solid rgba(239, 68, 68, 0.6)" : "1px solid transparent",
+                background: currentDept === "bomberos" ? "rgba(239, 68, 68, 0.18)" : "rgba(255, 255, 255, 0.03)",
+                color: currentDept === "bomberos" ? "#ef4444" : "var(--text-muted)",
+                fontSize: "0.62rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "3px",
+              }}
+            >
+              <Flame size={10} /> Bomberos
+            </button>
+          </div>
+        </div>
+      )}
       {/* GRUPO 1 */}
       <GroupFields
         groupIndex={1}

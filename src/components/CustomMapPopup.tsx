@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView } from "../types";
+import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, Department } from "../types";
 import { computeContainedItems } from "../utils/spatialUtils";
 import { Lock, Unlock, FileText, Settings, History, Layers, Info, X } from "lucide-react";
 import { TAB_BTN_BASE } from "./popup/popupStyles";
@@ -95,6 +95,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   const [showSecondGroup, setShowSecondGroup] = useState(false);
   const [generalSaveSuccess, setGeneralSaveSuccess] = useState(false);
   const [logSaveSuccess, setLogSaveSuccess] = useState(false);
+  const [selectedDept, setSelectedDept] = useState<Department>(activeDepartment === "bomberos" ? "bomberos" : "pc");
 
   const [localLog, setLocalLog] = useState<DailyLog>({ date: popupEditDate, ...EMPTY_LOG });
 
@@ -106,14 +107,15 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     setGeneralSaveSuccess(false);
     setLogSaveSuccess(false);
 
+    const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
     const todayLogs = activeFeat.dailyLogs?.filter((l) =>
-      l.date === popupEditDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+      l.date === popupEditDate && (activeDepartment === "mixto" ? (l.department === deptToUse || (!l.department && deptToUse === "pc")) : (l.department === activeDepartment || !l.department))
     ) || [];
     const todayLog = todayLogs[0];
-    setLocalLog(todayLog ? { ...todayLog } : { date: popupEditDate, department: activeDepartment === "mixto" ? "pc" : activeDepartment, ...EMPTY_LOG });
+    setLocalLog(todayLog ? { ...todayLog, department: deptToUse } : { date: popupEditDate, department: deptToUse, ...EMPTY_LOG });
     setShowSecondGroup(todayLog ? !!todayLog.groupName2 || !!todayLog.unitOut2 : false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- activeFeat re-creates on every parent render; id+date cover the intended trigger
-  }, [activeFeat?.id, popupEditDate, activeDepartment]);
+  }, [activeFeat?.id, popupEditDate, activeDepartment, selectedDept]);
 
   useEffect(() => {
     if (!activeFeat || !layerVisibility.sketch) {
@@ -167,7 +169,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   const handleLogSave = async () => {
     if (!onSaveDailyLog) return;
     try {
-      const logToSave = { ...localLog, department: localLog.department || (activeDepartment === "mixto" ? "pc" : activeDepartment) };
+      const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
+      const logToSave = { ...localLog, department: deptToUse };
       await onSaveDailyLog(activeFeat.id, logToSave);
       setLogSaveSuccess(true);
       setTimeout(() => setLogSaveSuccess(false), 2000);
@@ -281,6 +284,9 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           onFieldChange={handleLogFieldChange}
           onSave={handleLogSave}
           saveSuccess={logSaveSuccess}
+          activeDepartment={activeDepartment}
+          selectedDept={selectedDept}
+          onDepartmentSelect={(dept) => setSelectedDept(dept)}
         />
       )}
 
