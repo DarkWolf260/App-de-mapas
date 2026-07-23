@@ -1,3 +1,4 @@
+import Point from "@arcgis/core/geometry/Point";
 import { useEffect, useRef, useState, useCallback } from "react";
 import Map from "@arcgis/core/Map";
 import MapView from "@arcgis/core/views/MapView";
@@ -85,9 +86,9 @@ export const useMapSetup = ({
   useEffect(() => { activeDepartmentRef.current = activeDepartment; }, [activeDepartment]);
 
   const [mapReady, setMapReady] = useState(false);
-  const [customPopup, setCustomPopup] = useState<{ mapPoint: __esri.Point; feat: DrawnFeature } | null>(null);
+  const [customPopup, setCustomPopup] = useState<{ mapPoint: Point; feat: DrawnFeature } | null>(null);
   const [_showHistoryInPopup, setShowHistoryInPopup] = useState(false);
-  const [popupEditDate, setPopupEditDate] = useState(new Date().toLocaleDateString("en-CA"));
+  const [popupEditDate, setPopupEditDate] = useState(selectedDate);
   const [popupTick, setPopupTick] = useState(0);
 
   useEffect(() => {
@@ -96,7 +97,7 @@ export const useMapSetup = ({
 
   useEffect(() => {
     setShowHistoryInPopup(false);
-    setPopupEditDate(new Date().toLocaleDateString("en-CA"));
+    setPopupEditDate(selectedDateRef.current || selectedDate);
   }, [customPopup?.feat?.id]);
 
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
@@ -193,7 +194,7 @@ export const useMapSetup = ({
       reactiveUtils.watch(() => view.zoom, (z) => { if (typeof z === "number") setCurrentZoom(z); });
       reactiveUtils.watch(() => view.stationary, (isStationary) => { if (isStationary) { runDeconflict(); setPopupTick((t) => t + 1); } });
 
-      svm.on("create", (evt) => {
+      svm.on("create", (evt: any) => {
         if (evt.state === "complete") {
           const g = evt.graphic;
           const count = sketchLayer.graphics.filter((x) => !x.attributes?.isLabel && x.geometry?.type === g.geometry?.type).length + 1;
@@ -217,14 +218,14 @@ export const useMapSetup = ({
               geometry: isPolyLabel ? centroidExecute(g.geometry!) : g.geometry!.clone(),
               symbol: labelSym,
               visible: isZoomOk && (isPolyLabel ? layerVisibility.polygonLabels : layerVisibility.pointLabels),
-              attributes: { isLabel: true, parentId: g.uid, isPolygonLabel: isPolyLabel },
+              attributes: { isLabel: true, parentId: (g as any).uid, isPolygonLabel: isPolyLabel },
             }));
           }
 
           setActiveTool(null);
           if (onFeatureAddedRef.current) {
             onFeatureAddedRef.current({
-              id: g.uid,
+              id: (g as any).uid,
               title,
               type: g.geometry.type as DrawnFeature["type"],
               color: activeColorRef.current.hex,
@@ -236,8 +237,8 @@ export const useMapSetup = ({
         if (evt.state === "cancel") setActiveTool(null);
       });
 
-      svm.on("update", (evt) => {
-        evt.graphics?.forEach((g) => {
+      svm.on("update", (evt: any) => {
+        evt.graphics?.forEach((g: any) => {
           const label = sketchLayer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
           if (label) {
             label.geometry = g.geometry?.type === "polygon" ? centroidExecute(g.geometry!) : g.geometry!.clone();
@@ -245,7 +246,7 @@ export const useMapSetup = ({
         });
         if (evt.state === "complete") {
           setSelectedGraphic(null);
-          evt.graphics?.forEach((g) => {
+          evt.graphics?.forEach((g: any) => {
             if (onFeatureAddedRef.current && g.geometry) {
               const featId = g.attributes?.id || g.uid;
               const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
@@ -264,9 +265,9 @@ export const useMapSetup = ({
         if (evt.state === "start") setSelectedGraphic(evt.graphics?.[0] || null);
       });
 
-      svm.on("delete", (evt) => {
+      svm.on("delete", (evt: any) => {
         setSelectedGraphic(null);
-        evt.graphics?.forEach((g) => {
+        evt.graphics?.forEach((g: any) => {
           const label = sketchLayer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
           if (label) sketchLayer.remove(label);
           if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(g.attributes?.id || g.uid);
@@ -274,14 +275,16 @@ export const useMapSetup = ({
         runDeconflict();
       });
 
-      view.on("click", async (evt) => {
+      view.on("click", async (evt: any) => {
         if (sketchVMRef.current?.activeTool) return;
         const hit = await view.hitTest(evt);
-        const result = hit.results.find((r) => r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel);
+        const result = hit.results.find(
+          (r: any) => "graphic" in r && r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel
+        );
 
         if (result) {
-          const g = result.graphic;
-          const featId = g.attributes?.id || g.uid;
+          const g = (result as any).graphic;
+          const featId = g.attributes?.id || (g as any).uid;
           const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
           if (feat) {
             setCustomPopup({ mapPoint: view.toMap(evt), feat });
@@ -303,16 +306,18 @@ export const useMapSetup = ({
         }
       });
 
-      view.on("pointer-move", (evt) => {
+      view.on("pointer-move", (evt: any) => {
         if (sketchVMRef.current?.activeTool || sketchVMRef.current?.state === "active") {
           setTooltip((t) => (t.visible ? { ...t, visible: false } : t));
           return;
         }
-        view.hitTest(evt).then((response) => {
-          const result = response.results.find((r) => r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel);
+        view.hitTest(evt).then((response: any) => {
+          const result = response.results.find(
+            (r: any) => "graphic" in r && r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel
+          );
           if (result) {
-            const g = result.graphic;
-            const featId = g.attributes?.id || g.uid;
+            const g = (result as any).graphic;
+            const featId = g.attributes?.id || (g as any).uid;
             const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
             setTooltip({ text: feat ? getLabelText(feat, selectedDateRef.current) : (g.attributes?.title || "Elemento"), x: evt.x, y: evt.y, visible: true });
             return;
@@ -370,11 +375,11 @@ export const useMapSetup = ({
   const handleDeleteSelected = () => {
     const svm = sketchVMRef.current;
     if (!svm || !selectedGraphic) return;
-    const featId = selectedGraphic.attributes?.id || selectedGraphic.uid;
+    const featId = selectedGraphic.attributes?.id || (selectedGraphic as any).uid;
     const layer = sketchLayerRef.current;
     if (layer) {
       layer.remove(selectedGraphic);
-      const label = layer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === selectedGraphic.uid || x.attributes?.parentId === selectedGraphic.attributes?.id));
+      const label = layer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === (selectedGraphic as any).uid || x.attributes?.parentId === selectedGraphic.attributes?.id));
       if (label) layer.remove(label);
     }
     if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(featId);
@@ -396,7 +401,7 @@ export const useMapSetup = ({
     applyColorToVM(color);
     if (selectedGraphic) {
       applyColorToGraphic(selectedGraphic, color);
-      const featId = selectedGraphic.attributes?.id || selectedGraphic.uid;
+      const featId = selectedGraphic.attributes?.id || (selectedGraphic as any).uid;
       const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
       if (feat && onFeatureAddedRef.current) {
         onFeatureAddedRef.current({ ...feat, color: color.hex, _isUpdate: true });
@@ -410,7 +415,7 @@ export const useMapSetup = ({
   useEffect(() => {
     const layer = sketchLayerRef.current;
     if (zoomToFeature && viewRef.current && layer) {
-      const g = layer.graphics.find((x) => x.uid === zoomToFeature.id || x.attributes?.id === zoomToFeature.id);
+      const g = layer.graphics.find((x) => (x as any).uid === zoomToFeature.id || x.attributes?.id === zoomToFeature.id);
       if (g?.geometry) viewRef.current.goTo(g.geometry);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- Uses ref.current only
@@ -429,7 +434,7 @@ export const useMapSetup = ({
   useEffect(() => {
     const layer = sketchLayerRef.current;
     if (removeFeatureId && layer) {
-      const g = layer.graphics.find((x) => x.uid === removeFeatureId.id || x.attributes?.id === removeFeatureId.id);
+      const g = layer.graphics.find((x) => (x as any).uid === removeFeatureId.id || x.attributes?.id === removeFeatureId.id);
       if (g) layer.remove(g);
       const label = layer.graphics.find((x) => x.attributes?.isLabel && x.attributes?.parentId === removeFeatureId.id);
       if (label) layer.remove(label);

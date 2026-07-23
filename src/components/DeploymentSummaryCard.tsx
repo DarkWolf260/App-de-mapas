@@ -34,13 +34,12 @@ interface TeamEntry {
 
 type ViewMode = "sitios" | "equipos";
 
-function computeActivePoints(drawnFeatures: DrawnFeature[], activeDepartment?: DepartmentView): ActivePoint[] {
-  const todayStr = new Date().toLocaleDateString("en-CA");
+function computeActivePoints(drawnFeatures: DrawnFeature[], targetDate: string, activeDepartment?: DepartmentView): ActivePoint[] {
   return drawnFeatures
     .filter((f) => f.type === "point")
     .map((f) => {
       const logs = f.dailyLogs?.filter((l) =>
-        l.date === todayStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+        l.date === targetDate && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
       ) || [];
       const log = logs[0];
       if (!log) return null;
@@ -61,14 +60,13 @@ function computeActivePoints(drawnFeatures: DrawnFeature[], activeDepartment?: D
     .filter(Boolean) as ActivePoint[];
 }
 
-function computeTeams(drawnFeatures: DrawnFeature[], activeDepartment?: DepartmentView): TeamEntry[] {
-  const todayStr = new Date().toLocaleDateString("en-CA");
+function computeTeams(drawnFeatures: DrawnFeature[], targetDate: string, activeDepartment?: DepartmentView): TeamEntry[] {
   const teams: TeamEntry[] = [];
   drawnFeatures
     .filter((f) => f.type === "point")
     .forEach((f) => {
       const logs = f.dailyLogs?.filter((l) =>
-        l.date === todayStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+        l.date === targetDate && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
       ) || [];
       const log = logs[0];
       if (!log) return;
@@ -113,10 +111,10 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   selectedDate,
   activeDepartment,
 }) => {
-  const todayStr = selectedDate || new Date().toLocaleDateString("en-CA");
+  const targetDateStr = selectedDate || new Date().toLocaleDateString("en-CA");
   const [viewMode, setViewMode] = useState<ViewMode>("sitios");
-  const activePoints = useMemo(() => computeActivePoints(drawnFeatures, activeDepartment), [drawnFeatures, activeDepartment]);
-  const teams = useMemo(() => computeTeams(drawnFeatures, activeDepartment), [drawnFeatures, activeDepartment]);
+  const activePoints = useMemo(() => computeActivePoints(drawnFeatures, targetDateStr, activeDepartment), [drawnFeatures, targetDateStr, activeDepartment]);
+  const teams = useMemo(() => computeTeams(drawnFeatures, targetDateStr, activeDepartment), [drawnFeatures, targetDateStr, activeDepartment]);
   const sortedPoints = useMemo(() => [...activePoints].sort((a, b) => a.title.localeCompare(b.title, "es")), [activePoints]);
   const totalOff = activePoints.reduce((acc, item) => acc + item.totalOff, 0);
   const totalGroups = activePoints.reduce((acc, item) => acc + item.groups, 0);
@@ -127,7 +125,7 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   const renderStat = (label: string, value: number, color: string) => (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       <span style={{ fontSize: "7px", fontWeight: 700, color, textTransform: "uppercase" as const, letterSpacing: "0.05em", marginBottom: "1px" }}>{label}</span>
-      <span style={{ fontSize: "18px", fontWeight: 800, color: "#fff", textShadow: `0 0 10px ${color.replace("0.7", "0.3")}` }}>{value}</span>
+      <span style={{ fontSize: "16px", fontWeight: 800, color: "#f8fafc" }}>{value}</span>
     </div>
   );
 
@@ -140,16 +138,16 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
         position: "absolute",
         bottom: "52px",
         right: "16px",
-        background: "rgba(10, 15, 29, 0.97)",
-        border: "1px solid rgba(56, 189, 248, 0.35)",
+        background: "rgba(10, 15, 28, 0.92)",
+        border: "1px solid rgba(255, 255, 255, 0.1)",
         color: "#f8fafc",
         padding: "10px 12px",
-        borderRadius: "10px",
+        borderRadius: "12px",
         fontSize: "11px",
         fontFamily: "var(--font-sans)",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
+        boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
         zIndex: 100,
         width: "260px",
         maxHeight: "240px",
@@ -173,9 +171,9 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
           alignItems: "center",
         }}
       >
-        <span><LayoutDashboard size={12} style={{ verticalAlign: "middle", marginRight: "4px" }} />DESPLIEGUE ACTIVO</span>
+        <span><LayoutDashboard size={12} style={{ verticalAlign: "middle", marginRight: "4px" }} />PERSONAL DESPLEGADO</span>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <span style={{ fontSize: "9px", color: "var(--text-muted)", fontWeight: 500 }}>{todayStr}</span>
+          <span style={{ fontSize: "9px", color: "var(--text-muted)", fontWeight: 500 }}>{targetDateStr}</span>
           <button
             onClick={(e) => { e.stopPropagation(); onToggleCollapse(!widgetCollapsed); }}
             style={{ background: "transparent", border: "1px solid rgba(56, 189, 248, 0.2)", borderRadius: "6px", color: "var(--color-info)", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease" }}
@@ -256,14 +254,14 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
             >
               <span style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>{pt.title}</span>
               <span style={{ flexShrink: 0, fontWeight: 700, color: "var(--color-green)", fontSize: "9px", display: "flex", alignItems: "center", gap: "3px" }}>
-                <Users size={9} />{pt.totalOff} <Users size={9} />{pt.groups}{pt.activeGroups > 0 && <span style={{ color: "#eab308", marginLeft: "2px" }}>●{pt.activeGroups}</span>}
+                <Users size={9} />{pt.totalOff} <Tag size={9} />{pt.groups}{pt.activeGroups > 0 && <span style={{ color: "#eab308", marginLeft: "2px" }}>●{pt.activeGroups}</span>}
               </span>
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", fontWeight: 800, marginTop: "3px", paddingTop: "3px", borderTop: "1px solid rgba(255,255,255,0.1)", color: "var(--color-green)" }}>
             <span>TOTALES:</span>
             <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <Users size={9} />{totalOff} <Users size={9} />{totalGroups}{totalActiveGroups > 0 && <span style={{ color: "#eab308" }}>●{totalActiveGroups}</span>}
+              <Users size={9} />{totalOff} <Tag size={9} />{totalGroups}{totalActiveGroups > 0 && <span style={{ color: "#eab308" }}>●{totalActiveGroups}</span>}
             </span>
           </div>
         </div>
@@ -300,7 +298,7 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", fontWeight: 800, marginTop: "3px", paddingTop: "3px", borderTop: "1px solid rgba(255,255,255,0.1)", color: "var(--color-green)" }}>
             <span>TOTALES:</span>
             <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <Users size={9} />{totalOff} <Users size={9} />{totalGroups}{totalActiveGroups > 0 && <span style={{ color: "#eab308" }}>●{totalActiveGroups}</span>}
+              <Users size={9} />{totalOff} <Tag size={9} />{totalGroups}{totalActiveGroups > 0 && <span style={{ color: "#eab308" }}>●{totalActiveGroups}</span>}
             </span>
           </div>
         </div>

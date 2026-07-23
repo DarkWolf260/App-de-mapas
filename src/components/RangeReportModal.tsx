@@ -259,6 +259,22 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
             <div className="rr-stat-item">
               <span>Recuperados: <strong style={{ color: "#ef4444" }}>{dayStats.totalRecovered}</strong></span>
             </div>
+            {dayStats.totalPrehospitalCare > 0 && (
+              <>
+                <span className="rr-stat-divider">•</span>
+                <div className="rr-stat-item">
+                  <span>Atenciones: <strong style={{ color: "#38bdf8" }}>{dayStats.totalPrehospitalCare}</strong></span>
+                </div>
+              </>
+            )}
+            {dayStats.totalTransfers > 0 && (
+              <>
+                <span className="rr-stat-divider">•</span>
+                <div className="rr-stat-item">
+                  <span>Traslados: <strong style={{ color: "var(--color-purple)" }}>{dayStats.totalTransfers}</strong></span>
+                </div>
+              </>
+            )}
             {dayStats.totalPets > 0 && (
               <>
                 <span className="rr-stat-divider">•</span>

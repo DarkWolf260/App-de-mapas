@@ -35,6 +35,8 @@ export function emptyLog(date: string, department?: Department): DailyLog {
     officersCount: "",
     rescuedCount: "",
     recoveredCount: "",
+    prehospitalCareCount: "",
+    transfersCount: "",
     groupName2: "",
     managerName2: "",
     managerPhone2: "",
@@ -44,6 +46,8 @@ export function emptyLog(date: string, department?: Department): DailyLog {
     officersCount2: "",
     rescuedCount2: "",
     recoveredCount2: "",
+    prehospitalCareCount2: "",
+    transfersCount2: "",
     hasArrivedG1: false,
     hasArrivedG2: false,
     observations: "",
@@ -90,7 +94,7 @@ export function logHasAnyData(log: DailyLog): boolean {
   );
 }
 
-interface GroupData {
+export interface GroupData {
   groupName: string;
   managerName: string;
   managerPhone: string;
@@ -98,6 +102,8 @@ interface GroupData {
   officersCount: string;
   rescuedCount: string;
   recoveredCount: string;
+  prehospitalCareCount: string;
+  transfersCount: string;
   departureTime: string;
   arrivalTime: string;
   hasArrived: boolean;
@@ -113,6 +119,8 @@ export function getGroupData(log: DailyLog, group: 1 | 2): GroupData {
       officersCount: log.officersCount2 || "",
       rescuedCount: log.rescuedCount2 || "",
       recoveredCount: log.recoveredCount2 || "",
+      prehospitalCareCount: log.prehospitalCareCount2 || "",
+      transfersCount: log.transfersCount2 || "",
       departureTime: log.departureTime2 || "",
       arrivalTime: log.arrivalTime2 || "",
       hasArrived: !!log.hasArrivedG2 || !!log.arrivalTime2,
@@ -126,6 +134,8 @@ export function getGroupData(log: DailyLog, group: 1 | 2): GroupData {
     officersCount: log.officersCount || "",
     rescuedCount: log.rescuedCount || "",
     recoveredCount: log.recoveredCount || "",
+    prehospitalCareCount: log.prehospitalCareCount || "",
+    transfersCount: log.transfersCount || "",
     departureTime: log.departureTime || "",
     arrivalTime: log.arrivalTime || "",
     hasArrived: !!log.hasArrivedG1 || !!log.arrivalTime,
@@ -137,6 +147,8 @@ export interface DayStats {
   totalRescued: number;
   totalRecovered: number;
   totalPets: number;
+  totalPrehospitalCare: number;
+  totalTransfers: number;
   activePoints: number;
   groupsArrived: number;
 }
@@ -150,6 +162,8 @@ export function getDayStats(
   let totalRescued = 0;
   let totalRecovered = 0;
   let totalPets = 0;
+  let totalPrehospitalCare = 0;
+  let totalTransfers = 0;
   let activePoints = 0;
   let groupsArrived = 0;
 
@@ -174,6 +188,14 @@ export function getDayStats(
     const rc2 = parseInt(log.recoveredCount2 || "0", 10);
     totalRecovered += rc1 + rc2;
 
+    const ph1 = parseInt(log.prehospitalCareCount || "0", 10);
+    const ph2 = parseInt(log.prehospitalCareCount2 || "0", 10);
+    totalPrehospitalCare += ph1 + ph2;
+
+    const tr1 = parseInt(log.transfersCount || "0", 10);
+    const tr2 = parseInt(log.transfersCount2 || "0", 10);
+    totalTransfers += tr1 + tr2;
+
     const pets = parseInt(log.rescuedPetsCount || "0", 10);
     totalPets += pets;
 
@@ -181,7 +203,7 @@ export function getDayStats(
     if (log.hasArrivedG2) groupsArrived++;
   }
 
-  return { totalPersonnel, totalRescued, totalRecovered, totalPets, activePoints, groupsArrived };
+  return { totalPersonnel, totalRescued, totalRecovered, totalPets, totalPrehospitalCare, totalTransfers, activePoints, groupsArrived };
 }
 
 export function featureMatchesSearch(

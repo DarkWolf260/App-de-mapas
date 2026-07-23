@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DeploymentSummaryCard } from "../components/DeploymentSummaryCard";
@@ -133,5 +134,40 @@ describe("DeploymentSummaryCard", () => {
     const row = screen.getByText("Base Central").closest("div")!;
     await user.click(row);
     expect(defaultProps.onZoomToFeature).toHaveBeenCalledWith(featureWithLog);
+  });
+
+  it("filters correctly when selectedDate is provided", () => {
+    const pastLogFeature: DrawnFeature = {
+      id: 3,
+      title: "Puesto Sur",
+      type: "point",
+      color: "#22c55e",
+      geojsonGeometry: { type: "Point", coordinates: [-66.9, 10.6] },
+      dailyLogs: [
+        {
+          date: "2026-06-25",
+          groupName: "Bravo",
+          unitOut: "U-02",
+          managerName: "Carlos",
+          managerPhone: "555-0002",
+          officersCount: "4",
+          rescuedCount: "0",
+          recoveredCount: "0",
+          rescuedPetsCount: "0",
+          hasArrivedG1: false,
+          hasArrivedG2: false,
+          observations: "",
+        },
+      ],
+    };
+
+    render(
+      <DeploymentSummaryCard
+        {...defaultProps}
+        selectedDate="2026-06-25"
+        drawnFeatures={[pastLogFeature]}
+      />
+    );
+    expect(screen.getByText("Puesto Sur")).toBeInTheDocument();
   });
 });

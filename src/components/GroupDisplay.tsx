@@ -1,6 +1,6 @@
 import React from "react";
 import type { GroupData } from "../utils/logUtils";
-import { Users, User, Clock, CheckCircle2, AlertCircle, HeartHandshake, ShieldAlert } from "lucide-react";
+import { Users, User, Clock, CheckCircle2, AlertCircle, HeartHandshake, ShieldAlert, HeartPulse, Ambulance } from "lucide-react";
 
 interface GroupDisplayProps {
   group: GroupData;
@@ -22,6 +22,8 @@ export const GroupDisplay: React.FC<GroupDisplayProps> = ({
   const personnel = group.officersCount || "0";
   const rescued = group.rescuedCount && group.rescuedCount !== "0" ? group.rescuedCount : null;
   const recovered = group.recoveredCount && group.recoveredCount !== "0" ? group.recoveredCount : null;
+  const prehospitalCare = group.prehospitalCareCount && group.prehospitalCareCount !== "0" ? group.prehospitalCareCount : null;
+  const transfers = group.transfersCount && group.transfersCount !== "0" ? group.transfersCount : null;
 
   return (
     <div className="rr-group-box" style={{ borderColor: `${accentColor}30` }}>
@@ -39,7 +41,7 @@ export const GroupDisplay: React.FC<GroupDisplayProps> = ({
             {label}
           </span>
           <span className="rr-group-name">{group.groupName || "Sin Nombre"}</span>
-          {group.unitOut && <span className="rr-unit-tag">Unidad: {group.unitOut}</span>}
+          {group.unitOut && <span className="rr-unit-tag">{group.unitOut}</span>}
         </div>
 
         <button
@@ -66,7 +68,7 @@ export const GroupDisplay: React.FC<GroupDisplayProps> = ({
         </button>
       </div>
 
-      {/* Group Details Row */}
+      {/* Group Details Grid */}
       <div className="rr-group-details">
         <div className="rr-detail-item">
           <Users size={12} className="rr-detail-icon" style={{ color: accentColor }} />
@@ -93,7 +95,7 @@ export const GroupDisplay: React.FC<GroupDisplayProps> = ({
       </div>
 
       {/* Operational Results Badges */}
-      {(rescued || recovered) && (
+      {(rescued || recovered || prehospitalCare || transfers) && (
         <div className="rr-group-results">
           {rescued && (
             <span className="rr-result-badge rescued">
@@ -103,6 +105,16 @@ export const GroupDisplay: React.FC<GroupDisplayProps> = ({
           {recovered && (
             <span className="rr-result-badge recovered">
               <ShieldAlert size={11} /> {recovered} Recuperados
+            </span>
+          )}
+          {prehospitalCare && (
+            <span className="rr-result-badge prehospital">
+              <HeartPulse size={11} /> {prehospitalCare} Atenciones
+            </span>
+          )}
+          {transfers && (
+            <span className="rr-result-badge transfers">
+              <Ambulance size={11} /> {transfers} Traslados
             </span>
           )}
         </div>

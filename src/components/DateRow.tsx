@@ -34,14 +34,15 @@ export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDail
 
   return (
     <div
-      className="rr-row rr-row--data"
+      className="rr-row"
       style={{
         padding: "10px 14px",
         display: "flex",
         flexDirection: "column",
         gap: "6px",
-        background: "rgba(34, 197, 94, 0.02)",
-        border: "1px solid rgba(34, 197, 94, 0.2)",
+        background: "rgba(255, 255, 255, 0.02)",
+        border: "1px solid rgba(255, 255, 255, 0.07)",
+        borderRadius: "10px",
       }}
     >
       <div

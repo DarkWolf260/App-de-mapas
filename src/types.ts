@@ -40,6 +40,8 @@ export interface DailyLog {
   rescuedCount?: string;
   recoveredCount?: string;
   rescuedPetsCount?: string;
+  prehospitalCareCount?: string;
+  transfersCount?: string;
   groupName2?: string;
   managerName2?: string;
   managerPhone2?: string;
@@ -49,6 +51,8 @@ export interface DailyLog {
   officersCount2?: string;
   rescuedCount2?: string;
   recoveredCount2?: string;
+  prehospitalCareCount2?: string;
+  transfersCount2?: string;
   hasArrivedG1?: boolean;
   hasArrivedG2?: boolean;
   observations?: string;

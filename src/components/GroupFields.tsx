@@ -112,6 +112,11 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
     letterSpacing: "0.04em",
   };
 
+  const rescuedKey = isG2 ? "rescuedCount2" : "rescuedCount";
+  const recoveredKey = isG2 ? "recoveredCount2" : "recoveredCount";
+  const prehospitalKey = isG2 ? "prehospitalCareCount2" : "prehospitalCareCount";
+  const transfersKey = isG2 ? "transfersCount2" : "transfersCount";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...style }}>
       <div style={headerStyleProp || defaultHeaderStyle}>{headerLabel}</div>
@@ -171,6 +176,56 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
           value={(log[phoneKey] as string) || ""}
           onChange={(e) => onFieldChange(phoneKey, e.target.value)}
         />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+        <div>
+          <span className="rr-editor-label">Rescatados</span>
+          <input
+            type="number"
+            min="0"
+            className="rr-editor-input"
+            placeholder="0"
+            value={(log[rescuedKey] as string) || ""}
+            onChange={(e) => onFieldChange(rescuedKey, e.target.value)}
+          />
+        </div>
+        <div>
+          <span className="rr-editor-label">Recuperados</span>
+          <input
+            type="number"
+            min="0"
+            className="rr-editor-input"
+            placeholder="0"
+            value={(log[recoveredKey] as string) || ""}
+            onChange={(e) => onFieldChange(recoveredKey, e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+        <div>
+          <span className="rr-editor-label">Atenciones Prehosp.</span>
+          <input
+            type="number"
+            min="0"
+            className="rr-editor-input"
+            placeholder="0"
+            value={(log[prehospitalKey] as string) || ""}
+            onChange={(e) => onFieldChange(prehospitalKey, e.target.value)}
+          />
+        </div>
+        <div>
+          <span className="rr-editor-label">Traslados Realizados</span>
+          <input
+            type="number"
+            min="0"
+            className="rr-editor-input"
+            placeholder="0"
+            value={(log[transfersKey] as string) || ""}
+            onChange={(e) => onFieldChange(transfersKey, e.target.value)}
+          />
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginTop: "2px" }}>

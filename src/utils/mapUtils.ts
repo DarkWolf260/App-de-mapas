@@ -27,19 +27,19 @@ export const typeLabel = (type: string): "Poligono" | "Linea" | "Punto" => {
 
 export const makeSymbols = ([r, g, b]: [number, number, number]) => ({
   point: {
-    type: "simple-marker",
+    type: "simple-marker" as const,
     color: [r, g, b, 0.9],
     outline: { color: [255, 255, 255, 0.8], width: 1.5 },
     size: "10px",
   },
   polyline: {
-    type: "simple-line",
+    type: "simple-line" as const,
     color: [r, g, b, 0.95],
     width: 3,
-    style: "solid",
+    style: "solid" as const,
   },
   polygon: {
-    type: "simple-fill",
+    type: "simple-fill" as const,
     color: [r, g, b, 0.25],
     outline: { color: [r, g, b, 0.95], width: 2 },
   },
