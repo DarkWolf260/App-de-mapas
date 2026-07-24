@@ -76,6 +76,7 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
   log,
   onFieldChange,
   colorVar,
+  workGroups = [],
   style,
   inputStyle: inputStyleProp,
   headerStyle: headerStyleProp,
