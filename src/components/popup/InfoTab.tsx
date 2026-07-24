@@ -332,40 +332,45 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
-      {/* Punto: Grupo Primario */}
-      {!isPolygon && (log.groupName || log.unitOut || log.managerName || log.officersCount) && (
-        <div style={sectionStyle}>
-          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
-            <Users size={10} /> Grupo Primario
-          </div>
-          <ReadRow label="Grupo" value={log.groupName} />
-          <ReadRow label="Unidad" value={log.unitOut} />
-          <ReadRow label="Encargado" value={log.managerName} />
-          <ReadRow label="Funcionarios" value={log.officersCount} />
-          <ReadRow label="Teléfono" value={log.managerPhone} />
-          <ReadRow label="H. Salida" value={log.departureTime} />
-          <ReadRow label="H. Llegada" value={log.arrivalTime} />
-          {log.hasArrivedG1 && (
-            <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Llegó</span>
+      {/* Punto: Grupos en disposición vertical (uno abajo del otro) */}
+      {!isPolygon && ((log.groupName || log.unitOut || log.managerName || log.officersCount) || log.groupName2) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {/* Grupo Primario */}
+          {(log.groupName || log.unitOut || log.managerName || log.officersCount) && (
+            <div style={sectionStyle}>
+              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
+                <Users size={10} /> Grupo Primario
+              </div>
+              <ReadRow label="Grupo" value={log.groupName} />
+              <ReadRow label="Unidad" value={log.unitOut} />
+              <ReadRow label="Encargado" value={log.managerName} />
+              <ReadRow label="Funcionarios" value={log.officersCount} />
+              <ReadRow label="Teléfono" value={log.managerPhone} />
+              <ReadRow label="H. Salida" value={log.departureTime} />
+              <ReadRow label="H. Llegada" value={log.arrivalTime} />
+              {log.hasArrivedG1 && (
+                <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Llegó</span>
+              )}
+            </div>
           )}
-        </div>
-      )}
 
-      {/* Punto: Grupo Secundario */}
-      {!isPolygon && log.groupName2 && (
-        <div style={sectionStyle}>
-          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-purple)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
-            Grupo Secundario
-          </div>
-          <ReadRow label="Grupo" value={log.groupName2} />
-          <ReadRow label="Unidad" value={log.unitOut2} />
-          <ReadRow label="Encargado" value={log.managerName2} />
-          <ReadRow label="Funcionarios" value={log.officersCount2} />
-          <ReadRow label="Teléfono" value={log.managerPhone2} />
-          <ReadRow label="H. Salida" value={log.departureTime2} />
-          <ReadRow label="H. Llegada" value={log.arrivalTime2} />
-          {log.hasArrivedG2 && (
-            <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Llegó</span>
+          {/* Grupo Secundario */}
+          {log.groupName2 && (
+            <div style={sectionStyle}>
+              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-purple)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
+                Grupo Secundario
+              </div>
+              <ReadRow label="Grupo" value={log.groupName2} />
+              <ReadRow label="Unidad" value={log.unitOut2} />
+              <ReadRow label="Encargado" value={log.managerName2} />
+              <ReadRow label="Funcionarios" value={log.officersCount2} />
+              <ReadRow label="Teléfono" value={log.managerPhone2} />
+              <ReadRow label="H. Salida" value={log.departureTime2} />
+              <ReadRow label="H. Llegada" value={log.arrivalTime2} />
+              {log.hasArrivedG2 && (
+                <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Llegó</span>
+              )}
+            </div>
           )}
         </div>
       )}

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from "react";
+import React, { useCallback, useRef, useState } from "react";
 
 const STORAGE_KEY = "pc_toolbar_position";
 
@@ -29,6 +29,7 @@ export function useDraggable(defaultX: number, defaultY: number) {
     return saved ?? { x: defaultX, y: defaultY };
   });
 
+  const [isDragging, setIsDragging] = useState(false);
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
 
@@ -36,6 +37,7 @@ export function useDraggable(defaultX: number, defaultY: number) {
     (e: React.PointerEvent) => {
       if (e.button !== 0) return;
       dragging.current = true;
+      setIsDragging(true);
       offset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
       e.preventDefault();
@@ -45,8 +47,8 @@ export function useDraggable(defaultX: number, defaultY: number) {
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging.current) return;
-    const x = e.clientX - offset.current.x;
-    const y = e.clientY - offset.current.y;
+    const x = Math.max(16, Math.min(window.innerWidth - 300, e.clientX - offset.current.x));
+    const y = Math.max(20, Math.min(window.innerHeight - 80, e.clientY - offset.current.y));
     setPos({ x, y });
   }, []);
 
@@ -54,6 +56,7 @@ export function useDraggable(defaultX: number, defaultY: number) {
     (e: React.PointerEvent) => {
       if (!dragging.current) return;
       dragging.current = false;
+      setIsDragging(false);
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
       setPos((prev) => {
         savePosition(prev);
@@ -72,8 +75,8 @@ export function useDraggable(defaultX: number, defaultY: number) {
     onPointerDown,
     onPointerMove,
     onPointerUp,
-    style: { cursor: dragging.current ? "grabbing" : "grab" } as React.CSSProperties,
+    style: { cursor: dragging ? "grabbing" : "grab" } as React.CSSProperties,
   };
 
-  return { position: pos, dragHandleProps, resetPosition };
+  return { position: pos, dragHandleProps, resetPosition, isDragging };
 }

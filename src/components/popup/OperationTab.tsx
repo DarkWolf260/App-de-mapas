@@ -48,23 +48,23 @@ export const OperationTab: React.FC<OperationTabProps> = ({
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px", height: "100%" }}>
       {/* Header & Date Selector */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
-        <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--color-green)", display: "flex", alignItems: "center", gap: "4px" }}>
-          <Calendar size={12} /> Registro Diario
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--color-green)", display: "flex", alignItems: "center", gap: "4px" }}>
+          <Calendar size={13} /> Registro Diario
         </span>
         <input
           type="date"
           value={popupEditDate}
           onChange={(e) => setPopupEditDate(e.target.value)}
-          style={{ background: "rgba(0, 0, 0, 0.3)", border: "1px solid var(--border-subtle)", borderRadius: "4px", color: "var(--text-main)", fontSize: "0.62rem", padding: "2px 4px", cursor: "pointer", outline: "none" }}
+          style={{ background: "rgba(0, 0, 0, 0.3)", border: "1px solid var(--border-subtle)", borderRadius: "4px", color: "var(--text-main)", fontSize: "0.68rem", padding: "3px 6px", cursor: "pointer", outline: "none" }}
         />
       </div>
 
       {/* Department Selector for Mixto Mode */}
       {activeDepartment === "mixto" && onDepartmentSelect && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "3px", background: "rgba(0, 0, 0, 0.25)", padding: "5px 7px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)", marginBottom: "2px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "3px", background: "rgba(0, 0, 0, 0.25)", padding: "5px 7px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
           <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
             Departamento para Estadísticas y Grupos:
           </span>
@@ -117,48 +117,51 @@ export const OperationTab: React.FC<OperationTabProps> = ({
         </div>
       )}
 
-      {/* Group 1 */}
-      <div style={sectionBox}>
-        <GroupFields
-          groupIndex={1}
-          log={localLog}
-          onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
-          colorVar="var(--color-info)"
-          headerStyle={groupHeaderStyle("var(--color-info)")}
-        />
-      </div>
-
-      {/* Group 2 */}
-      {!showSecondGroup ? (
-        <button
-          type="button"
-          onClick={() => setShowSecondGroup(true)}
-          style={{ background: "transparent", border: "1px dashed rgba(255,255,255,0.15)", borderRadius: "6px", color: "var(--text-muted)", fontSize: "0.62rem", padding: "4px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
-        >
-          <Plus size={10} /> Añadir Segundo Grupo
-        </button>
-      ) : (
-        <div style={{ ...sectionBox, position: "relative" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
-            <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-purple)" }}>Grupo Secundario</span>
-            <button type="button" onClick={clearGroup2} style={{ background: "transparent", border: "none", color: "var(--color-high)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }} title="Quitar segundo grupo">
-              <Trash2 size={10} />
-            </button>
-          </div>
+      {/* Grupos en disposición vertical (uno abajo del otro) */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {/* Group 1 */}
+        <div style={sectionBox}>
           <GroupFields
-            groupIndex={2}
+            groupIndex={1}
             log={localLog}
             onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
-            colorVar="var(--color-purple)"
-            headerStyle={{ display: "none" }}
+            colorVar="var(--color-info)"
+            headerStyle={groupHeaderStyle("var(--color-info)")}
           />
         </div>
-      )}
 
-      {/* Counts / Métricas Operativas */}
+        {/* Group 2 */}
+        {!showSecondGroup ? (
+          <button
+            type="button"
+            onClick={() => setShowSecondGroup(true)}
+            style={{ background: "transparent", border: "1px dashed rgba(255,255,255,0.15)", borderRadius: "6px", color: "var(--text-muted)", fontSize: "0.62rem", padding: "6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
+          >
+            <Plus size={10} /> Añadir Segundo Grupo (Secundario)
+          </button>
+        ) : (
+          <div style={{ ...sectionBox, position: "relative" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
+              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-purple)" }}>Grupo Secundario</span>
+              <button type="button" onClick={clearGroup2} style={{ background: "transparent", border: "none", color: "var(--color-high)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }} title="Quitar segundo grupo">
+                <Trash2 size={10} />
+              </button>
+            </div>
+            <GroupFields
+              groupIndex={2}
+              log={localLog}
+              onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
+              colorVar="var(--color-purple)"
+              headerStyle={{ display: "none" }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Counts / Métricas Operativas en fila horizontal de 5 columnas */}
       <div style={sectionBox}>
-        <div style={sectionHeader("var(--color-green)")}>Reportes y Resultados de Hoy</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
+        <div style={sectionHeader("var(--color-green)")}>Resultados Operativos de Hoy</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px" }}>
           <div>
             <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Rescatados</span>
             <input type="number" min="0" placeholder="0" value={localLog.rescuedCount || ""} onChange={(e) => onFieldChange("rescuedCount", e.target.value)} style={inputStyle} />
@@ -171,31 +174,34 @@ export const OperationTab: React.FC<OperationTabProps> = ({
             <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Mascotas</span>
             <input type="number" min="0" placeholder="0" value={localLog.rescuedPetsCount || ""} onChange={(e) => onFieldChange("rescuedPetsCount", e.target.value)} style={inputStyle} />
           </div>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px", marginTop: "4px" }}>
           <div>
-            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Atenciones Prehosp.</span>
+            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Atenc. Prehosp.</span>
             <input type="number" min="0" placeholder="0" value={localLog.prehospitalCareCount || ""} onChange={(e) => onFieldChange("prehospitalCareCount", e.target.value)} style={inputStyle} />
           </div>
           <div>
-            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Traslados Realizados</span>
+            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Traslados</span>
             <input type="number" min="0" placeholder="0" value={localLog.transfersCount || ""} onChange={(e) => onFieldChange("transfersCount", e.target.value)} style={inputStyle} />
           </div>
         </div>
-        <div style={{ marginTop: "4px" }}>
-          <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Observación del Día</span>
-          <textarea
-            value={localLog.observations || ""}
-            onChange={(e) => onFieldChange("observations", e.target.value)}
-            style={{ ...inputStyle, resize: "none", height: "36px" }}
-            placeholder="Notas u observaciones de hoy..."
-          />
-        </div>
       </div>
 
-      <button type="button" onClick={onSave} style={saveBtnStyle(saveSuccess)}>
-        <Save size={12} /> {saveSuccess ? "¡Registro Guardado!" : "Guardar Registro"}
-      </button>
+      {/* Observaciones */}
+      <div>
+        <span style={{ fontSize: "0.58rem", color: "var(--text-muted)", display: "block", marginBottom: "2px", fontWeight: 700, textTransform: "uppercase" }}>Observación del Día</span>
+        <textarea
+          value={localLog.observations || ""}
+          onChange={(e) => onFieldChange("observations", e.target.value)}
+          style={{ ...inputStyle, resize: "vertical", height: "60px", minHeight: "45px" }}
+          placeholder="Notas u observaciones de hoy..."
+        />
+      </div>
+
+      {/* Botón Guardar en la parte inferior del Sidebar */}
+      <div style={{ marginTop: "auto", paddingTop: "8px", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+        <button type="button" onClick={onSave} style={{ ...saveBtnStyle(saveSuccess), width: "100%", padding: "10px", fontSize: "0.78rem", fontWeight: 700 }}>
+          <Save size={14} /> {saveSuccess ? "¡Registro Guardado!" : "Guardar Registro"}
+        </button>
+      </div>
     </div>
   );
 };

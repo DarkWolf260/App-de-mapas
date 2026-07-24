@@ -1,7 +1,7 @@
 import React from "react";
 import { Save, Lock } from "lucide-react";
 import type { DrawnFeature } from "../../types";
-import { inputStyle, labelStyle, saveBtnStyle, PRESET_COLORS } from "./popupStyles";
+import { inputStyle, labelStyle, saveBtnStyle } from "./popupStyles";
 
 interface GeneralTabProps {
   activeFeat: DrawnFeature;
@@ -26,49 +26,78 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
   onColor,
   onSave,
 }) => (
-  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      <label style={labelStyle}>Nombre del elemento</label>
-      <input
-        type="text"
-        value={localTitle}
-        onChange={(e) => onRename(e.target.value)}
-        style={inputStyle}
-        placeholder="Ej. Punto de Control A"
-      />
-    </div>
-
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      <label style={labelStyle}>Descripción o notas</label>
-      <textarea
-        value={localDescription}
-        onChange={(e) => onDescription(e.target.value)}
-        rows={3}
-        style={{ ...inputStyle, resize: "none" }}
-        placeholder="Detalles sobre el punto, sector o incidente..."
-      />
-    </div>
-
-
-
+  <div style={{ display: "flex", flexDirection: "column", gap: "12px", height: "100%" }}>
+    {/* 1. AVISO DE UBICACIÓN BLOQUEADA EN LA PARTE SUPERIOR */}
     {activeFeat.locked && (
       <div
         style={{
-          fontSize: "0.62rem",
+          fontSize: "0.68rem",
           color: "var(--color-high)",
-          background: "rgba(239, 68, 68, 0.08)",
-          border: "1px solid rgba(239, 68, 68, 0.2)",
-          borderRadius: "4px",
-          padding: "4px 6px",
-          marginTop: "2px",
+          background: "rgba(239, 68, 68, 0.12)",
+          border: "1px solid rgba(239, 68, 68, 0.3)",
+          borderRadius: "6px",
+          padding: "6px 10px",
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
         }}
       >
-        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><Lock size={10} /> Ubicación bloqueada. Para mover este punto, haz clic en el candado arriba.</span>
+        <Lock size={14} style={{ flexShrink: 0 }} />
+        <span>Ubicación bloqueada. Para mover este punto en el mapa, deshaz el candado en el encabezado.</span>
       </div>
     )}
 
-    <button type="button" onClick={onSave} style={saveBtnStyle(generalSaveSuccess)}>
-      <Save size={12} /> {generalSaveSuccess ? "¡Guardado con éxito!" : "Guardar Cambios"}
-    </button>
+    {/* Fila Horizontal: Nombre + Color */}
+    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "10px", alignItems: "flex-start" }}>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <label style={labelStyle}>Nombre del elemento</label>
+        <input
+          type="text"
+          value={localTitle}
+          onChange={(e) => onRename(e.target.value)}
+          style={{ ...inputStyle, fontSize: "0.78rem", padding: "6px 8px" }}
+          placeholder="Ej. Punto de Control A"
+        />
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <label style={labelStyle}>Color Distintivo</label>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(0,0,0,0.3)", padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border-subtle)", height: "34px" }}>
+          <input
+            type="color"
+            value={localColor}
+            onChange={(e) => onColor(e.target.value)}
+            style={{ width: "24px", height: "24px", border: "none", background: "transparent", cursor: "pointer" }}
+          />
+          <span style={{ fontSize: "0.72rem", fontFamily: "var(--font-mono, monospace)", color: localColor, fontWeight: 700 }}>{localColor}</span>
+        </div>
+      </div>
+    </div>
+
+    {/* 2. DESCRIPCIÓN Y NOTAS CON MÁS ESPACIO */}
+    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+      <label style={labelStyle}>Descripción o notas del elemento</label>
+      <textarea
+        value={localDescription}
+        onChange={(e) => onDescription(e.target.value)}
+        style={{
+          ...inputStyle,
+          resize: "vertical",
+          minHeight: "140px",
+          height: "160px",
+          fontSize: "0.75rem",
+          lineHeight: 1.4,
+          padding: "8px 10px",
+        }}
+        placeholder="Detalles sobre el punto, sector u observaciones..."
+      />
+    </div>
+
+    {/* 3. BOTÓN DE GUARDAR EN LA PARTE INFERIOR DEL SIDEBAR */}
+    <div style={{ marginTop: "auto", paddingTop: "8px", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+      <button type="button" onClick={onSave} style={{ ...saveBtnStyle(generalSaveSuccess), width: "100%", padding: "10px", fontSize: "0.78rem", fontWeight: 700 }}>
+        <Save size={14} /> {generalSaveSuccess ? "¡Guardado con éxito!" : "Guardar Cambios"}
+      </button>
+    </div>
   </div>
 );

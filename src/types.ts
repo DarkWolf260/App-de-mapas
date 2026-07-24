@@ -85,6 +85,7 @@ export interface LayerVisibility {
   pointLabels: boolean;
   hideNestedAreas: boolean;
   allowLabelOverlap: boolean;
+  basemapLabels?: boolean;
 }
 
 export interface RemoveFeatureId {

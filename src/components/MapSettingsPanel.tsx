@@ -13,6 +13,7 @@ const TOGGLES: Array<{ key: keyof LayerVisibility; label: string }> = [
   { key: "sketch", label: "Herramientas de Dibujo" },
   { key: "polygonLabels", label: "Nombres de Polígonos" },
   { key: "pointLabels", label: "Nombres de Sitios de Trabajo" },
+  { key: "basemapLabels", label: "Etiquetas de Calles y Mapa Base" },
   { key: "hideNestedAreas", label: "Ocultar Áreas Anidadas" },
   { key: "allowLabelOverlap", label: "Permitir Solapamiento de Etiquetas" },
 ];

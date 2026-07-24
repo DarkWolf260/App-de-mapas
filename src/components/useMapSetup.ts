@@ -60,7 +60,27 @@ export const useMapSetup = ({
   useEffect(() => {
     layerVisibilityRef.current = layerVisibility;
     deconflictGraphicsRef.current?.();
-  }, [layerVisibility]);
+
+    // Toggling basemap reference layers / street labels
+    const view = viewRef.current;
+    if (view && view.map && view.map.basemap) {
+      const showLabels = layerVisibility.basemapLabels !== false;
+      const basemap = view.map.basemap;
+
+      if (basemap.referenceLayers) {
+        basemap.referenceLayers.forEach((layer) => {
+          layer.visible = showLabels;
+        });
+      }
+      if (basemap.baseLayers) {
+        basemap.baseLayers.forEach((layer: any) => {
+          if (layer.title && (layer.title.toLowerCase().includes("label") || layer.title.toLowerCase().includes("reference"))) {
+            layer.visible = showLabels;
+          }
+        });
+      }
+    }
+  }, [layerVisibility, activeBasemap]);
 
   const onFeatureAddedRef = useRef(onFeatureAdded);
   useEffect(() => { onFeatureAddedRef.current = onFeatureAdded; }, [onFeatureAdded]);
@@ -108,6 +128,8 @@ export const useMapSetup = ({
   useEffect(() => { activeColorRef.current = activeColor; }, [activeColor]);
 
   const [currentZoom, setCurrentZoom] = useState<number>(DEFAULT_ZOOM);
+  const [currentScale, setCurrentScale] = useState<number>(0);
+  const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: 10.6000, lng: -66.9331 });
   const [htmlLabels, setHtmlLabels] = useState<HtmlLabel[]>([]);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number; visible: boolean }>({
     text: "", x: 0, y: 0, visible: false,
@@ -192,7 +214,18 @@ export const useMapSetup = ({
 
       reactiveUtils.watch(() => view.extent, () => { runDeconflict(); setPopupTick((t) => t + 1); });
       reactiveUtils.watch(() => view.zoom, (z) => { if (typeof z === "number") setCurrentZoom(z); });
+      reactiveUtils.watch(() => view.scale, (s) => { if (typeof s === "number") setCurrentScale(Math.round(s)); });
       reactiveUtils.watch(() => view.stationary, (isStationary) => { if (isStationary) { runDeconflict(); setPopupTick((t) => t + 1); } });
+
+      view.on("pointer-move", (evt: any) => {
+        const point = view.toMap({ x: evt.x, y: evt.y });
+        if (point) {
+          setCoords({
+            lat: point.latitude ?? 0,
+            lng: point.longitude ?? 0
+          });
+        }
+      });
 
       svm.on("create", (evt: any) => {
         if (evt.state === "complete") {
@@ -498,6 +531,8 @@ export const useMapSetup = ({
     popupEditDate,
     sketchLayer: sketchLayerRef.current,
     currentZoom,
+    currentScale,
+    coords,
     htmlLabels,
     swipeActive,
     viewRef,

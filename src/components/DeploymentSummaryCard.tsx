@@ -8,6 +8,7 @@ interface DeploymentSummaryCardProps {
   widgetCollapsed: boolean;
   onToggleCollapse: (collapsed: boolean) => void;
   onZoomToFeature?: (feat: DrawnFeature) => void;
+  onOpenEditFeature?: (feat: DrawnFeature) => void;
   selectedDate?: string;
   activeDepartment?: DepartmentView;
   style?: React.CSSProperties;
@@ -107,6 +108,7 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   widgetCollapsed,
   onToggleCollapse,
   onZoomToFeature,
+  onOpenEditFeature,
   selectedDate,
   activeDepartment,
   style: customStyle,
@@ -245,10 +247,14 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
                 const featObj = drawnFeatures.find((f) => f.id === pt.id);
                 if (featObj && onZoomToFeature) onZoomToFeature(featObj);
               }}
+              onDoubleClick={() => {
+                const featObj = drawnFeatures.find((f) => f.id === pt.id);
+                if (featObj && onOpenEditFeature) onOpenEditFeature(featObj);
+              }}
               style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", padding: "3.5px 5px", background: "rgba(255,255,255,0.02)", borderRadius: "4px", borderLeft: `2px solid ${pt.color}`, cursor: "pointer", transition: "background 0.2s ease" }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
-              title={`Haga clic para enfocar ${pt.title}`}
+              title={`Clic para enfocar en mapa, Doble clic para abrir edición de ${pt.title}`}
             >
               <span style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>{pt.title}</span>
               <span style={{ flexShrink: 0, fontWeight: 700, color: "var(--color-green)", fontSize: "9px", display: "flex", alignItems: "center", gap: "3px" }}>
@@ -273,10 +279,14 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
                 const featObj = drawnFeatures.find((f) => f.id === t.pointId);
                 if (featObj && onZoomToFeature) onZoomToFeature(featObj);
               }}
+              onDoubleClick={() => {
+                const featObj = drawnFeatures.find((f) => f.id === t.pointId);
+                if (featObj && onOpenEditFeature) onOpenEditFeature(featObj);
+              }}
               style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", padding: "3.5px 5px", background: "rgba(255,255,255,0.02)", borderRadius: "4px", borderLeft: `2px solid ${t.color}`, cursor: "pointer", transition: "background 0.2s ease" }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
-              title={`${t.groupName} — ${t.pointTitle}`}
+              title={`Clic para enfocar en mapa, Doble clic para editar ${t.groupName}`}
             >
               <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
                 <span style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "10px" }}>{t.groupName}</span>

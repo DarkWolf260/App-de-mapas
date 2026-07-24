@@ -43,38 +43,44 @@ const EMPTY_LOG: Omit<DailyLog, "date"> = {
 };
 
 const CONTAINER_STYLE: React.CSSProperties = {
-  position: "absolute",
-  zIndex: 999,
-  padding: "12px 14px",
-  borderRadius: "12px",
-  width: "330px",
-  maxHeight: "82vh",
-  overflowY: "auto",
+  position: "fixed",
+  top: 0,
+  right: 0,
+  bottom: 0,
+  width: "440px",
+  maxWidth: "90vw",
+  height: "100vh",
+  zIndex: 140,
+  padding: "20px 22px",
   display: "flex",
   flexDirection: "column",
-  gap: "8px",
-  background: "rgba(15, 23, 42, 0.97)",
-  backdropFilter: "blur(8px)",
-  WebkitBackdropFilter: "blur(8px)",
-  border: "1px solid var(--border-subtle)",
-  boxShadow: "0 20px 40px rgba(0, 0, 0, 0.8)",
+  gap: "12px",
+  background: "rgba(10, 15, 29, 0.96)",
+  backdropFilter: "blur(20px)",
+  WebkitBackdropFilter: "blur(20px)",
+  borderLeft: "1px solid var(--border-color)",
+  boxShadow: "-12px 0 40px rgba(0, 0, 0, 0.7)",
   color: "var(--text-main)",
+  overflowY: "auto",
   pointerEvents: "auto",
 };
 
 const TAB_BAR_STYLE: React.CSSProperties = {
   display: "flex",
   background: "rgba(0,0,0,0.3)",
-  padding: "2px",
-  borderRadius: "6px",
-  gap: "2px",
+  padding: "3px",
+  borderRadius: "8px",
+  gap: "4px",
 };
 
 function tabBtnStyle(active: boolean): React.CSSProperties {
   return {
     ...TAB_BTN_BASE,
-    background: active ? "rgba(255,255,255,0.08)" : "transparent",
+    background: active ? "rgba(56, 189, 248, 0.15)" : "transparent",
     color: active ? "var(--color-info)" : "var(--text-muted)",
+    padding: "6px 10px",
+    fontSize: "0.72rem",
+    fontWeight: 700,
   };
 }
 
@@ -126,33 +132,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- activeFeat?.id + type cover all needed resets
   }, [activeFeat?.id, activeFeat?.type, layerVisibility.sketch]);
 
-  if (!customPopup || !popupScreenPos || !activeFeat) return null;
-
-  const POPUP_W = 330;
-  const POPUP_H = 400;
-  const MARGIN = 12;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  let x = popupScreenPos.x;
-  let y = popupScreenPos.y;
-  let flipY = false;
-
-  if (y - POPUP_H - MARGIN < 0) {
-    flipY = true;
-    y = y + MARGIN;
-  } else {
-    y = y - MARGIN;
-  }
-
-  x = Math.max(POPUP_W / 2 + MARGIN, Math.min(x, vw - POPUP_W / 2 - MARGIN));
-
-  const containerStyle: React.CSSProperties = {
-    ...CONTAINER_STYLE,
-    left: `${x}px`,
-    top: `${y}px`,
-    transform: flipY ? "translate(-50%, 0)" : "translate(-50%, -100%)",
-  };
+  if (!customPopup || !activeFeat) return null;
 
   const handleGeneralSave = async () => {
     try {
@@ -191,13 +171,13 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
   return (
     <div
-      className="custom-map-popup glass-panel"
-      style={containerStyle}
+      className="custom-map-popup right-sidebar-popup"
+      style={CONTAINER_STYLE}
     >
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: "6px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ fontWeight: 800, fontSize: "0.72rem", color: localColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontWeight: 800, fontSize: "0.9rem", color: localColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             {activeFeat.title}
           </span>
           <button
@@ -205,10 +185,10 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
             style={{ background: "transparent", border: "none", color: activeFeat.locked ? "var(--color-high)" : "var(--text-muted)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}
             title={activeFeat.locked ? "Desbloquear edición del elemento" : "Bloquear edición del elemento"}
           >
-            {activeFeat.locked ? <Lock size={12} /> : <Unlock size={12} style={{ opacity: 0.4 }} />}
+            {activeFeat.locked ? <Lock size={14} /> : <Unlock size={14} style={{ opacity: 0.4 }} />}
           </button>
         </div>
-        <button onClick={onClose} style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: "2px", lineHeight: 1, display: "flex", alignItems: "center" }} title="Cerrar">
+        <button onClick={onClose} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "var(--text-muted)", cursor: "pointer", padding: "4px 8px", lineHeight: 1, display: "flex", alignItems: "center", gap: "4px" }} title="Cerrar Panel">
           <X size={14} />
         </button>
       </div>
@@ -216,9 +196,9 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       {/* Tab Selector — when sketch is off */}
       {!showSketchTabs && (
         <div style={TAB_BAR_STYLE}>
-          <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={10} /> Información</button>
+          <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
-            <FileText size={10} /> {isPolygon ? "Estadísticas Directas" : "Editar"}
+            <FileText size={12} /> {isPolygon ? "Estadísticas Directas" : "Editar"}
           </button>
         </div>
       )}
@@ -226,25 +206,25 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       {/* Tab Selector — point (sketch on) */}
       {isPoint && showSketchTabs && (
         <div style={TAB_BAR_STYLE}>
-          <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={10} /> General</button>
-          <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={10} /> Operación</button>
-          <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}><History size={10} /> Historial</button>
+          <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={12} /> General</button>
+          <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={12} /> Operación</button>
+          <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}><History size={12} /> Historial</button>
         </div>
       )}
 
       {/* Tab Selector — polygon (sketch on) */}
       {isPolygon && showSketchTabs && (
         <div style={TAB_BAR_STYLE}>
-          <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={10} /> General</button>
-          <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={10} /> Estadísticas</button>
-          <button onClick={() => setActiveTab("contained")} style={tabBtnStyle(activeTab === "contained")}><Layers size={10} /> Elementos</button>
+          <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={12} /> General</button>
+          <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={12} /> Estadísticas</button>
+          <button onClick={() => setActiveTab("contained")} style={tabBtnStyle(activeTab === "contained")}><Layers size={12} /> Elementos</button>
         </div>
       )}
 
       {/* Tab Selector — polyline (sketch on) */}
       {!isPoint && !isPolygon && showSketchTabs && (
         <div style={TAB_BAR_STYLE}>
-          <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={10} /> General</button>
+          <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={12} /> General</button>
         </div>
       )}
 
@@ -293,33 +273,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       {activeTab === "history" && <HistoryTab logs={activeFeat.dailyLogs?.filter((l) => activeDepartment === "mixto" || l.department === activeDepartment || !l.department)} />}
 
       {activeTab === "contained" && <ContainedTab items={containedItems} />}
-
-      {/* Bubble Tail Pointer Arrow */}
-      <div
-        style={flipY ? {
-          position: "absolute",
-          top: "-6px",
-          left: "50%",
-          transform: "translateX(-50%) rotate(45deg)",
-          width: "12px",
-          height: "12px",
-          background: "rgba(15, 23, 42, 0.94)",
-          borderLeft: "1px solid var(--border-subtle)",
-          borderTop: "1px solid var(--border-subtle)",
-          zIndex: -1,
-        } : {
-          position: "absolute",
-          bottom: "-6px",
-          left: "50%",
-          transform: "translateX(-50%) rotate(45deg)",
-          width: "12px",
-          height: "12px",
-          background: "rgba(15, 23, 42, 0.94)",
-          borderRight: "1px solid var(--border-subtle)",
-          borderBottom: "1px solid var(--border-subtle)",
-          zIndex: -1,
-        }}
-      />
     </div>
   );
 };

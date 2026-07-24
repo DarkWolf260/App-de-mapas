@@ -9,6 +9,7 @@ import { HtmlPointLabels } from "./HtmlPointLabels";
 import { SwipeComparison } from "./SwipeComparison";
 import { useMapSetup } from "./useMapSetup";
 import { useDraggable } from "../hooks/useDraggable";
+import Point from "@arcgis/core/geometry/Point";
 import { Satellite } from "lucide-react";
 
 interface MapComponentProps {
@@ -68,6 +69,8 @@ interface MapComponentProps {
     popupEditDate,
     sketchLayer,
     currentZoom,
+    currentScale,
+    coords,
     htmlLabels,
     swipeActive,
     viewRef,
@@ -82,9 +85,10 @@ interface MapComponentProps {
     handleColorChange,
   } = useMapSetup(props);
 
-  const { position: toolbarPos, dragHandleProps } = useDraggable(
-    typeof window !== "undefined" ? window.innerWidth / 2 - 200 : 200,
-    typeof window !== "undefined" ? window.innerHeight - 80 : 500,
+  const defaultX = typeof window !== "undefined" ? Math.floor(window.innerWidth / 2 - 180) : 400;
+  const { position: toolbarPos, dragHandleProps, isDragging } = useDraggable(
+    defaultX,
+    typeof window !== "undefined" ? Math.max(20, window.innerHeight - 135) : 450,
   );
 
   const popoverDirection: "top" | "bottom" = (() => {
@@ -92,13 +96,21 @@ interface MapComponentProps {
     return toolbarPos.y + 60 > vh / 2 ? "top" : "bottom";
   })();
 
+  const displayX = (showSidebar && toolbarPos.x < 380) ? 396 : Math.max(16, toolbarPos.x);
+
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
       <div className="map-view-container" ref={mapDiv} style={{ width: "100%", height: "100%" }} />
       {layerVisibility?.sketch && (
         <div
           className="draw-toolbar-wrapper"
-          style={{ left: toolbarPos.x, top: toolbarPos.y }}
+          style={{
+            position: "fixed",
+            left: displayX,
+            top: toolbarPos.y,
+            zIndex: 150,
+            transition: isDragging ? "none" : "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
         >
           <DrawingToolbar
             activeTool={activeTool}
@@ -209,35 +221,27 @@ interface MapComponentProps {
               localStorage.setItem("pc_widget_collapsed", String(collapsed));
             }}
             onZoomToFeature={onZoomToFeature}
+            onOpenEditFeature={(feat) => {
+              let mapPoint: Point | null = null;
+              if (feat.geojsonGeometry && feat.type === "point" && Array.isArray(feat.geojsonGeometry.coordinates)) {
+                const [lng, lat] = feat.geojsonGeometry.coordinates as number[];
+                mapPoint = new Point({ longitude: lng, latitude: lat });
+              }
+              if (!mapPoint) mapPoint = new Point({ longitude: -66.9331, latitude: 10.6000 });
+              setCustomPopup({ mapPoint, feat });
+            }}
             selectedDate={props.selectedDate}
             activeDepartment={props.activeDepartment}
           />
         </div>
       </div>
 
-      {/* Floating Zoom level indicator in bottom-right */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "16px",
-          right: "16px",
-          background: "rgba(10, 15, 29, 0.85)",
-          border: "1px solid rgba(56, 189, 248, 0.35)",
-          color: "#f8fafc",
-          padding: "6px 12px",
-          borderRadius: "8px",
-          fontSize: "11px",
-          fontWeight: 700,
-          fontFamily: "var(--font-sans)",
-          pointerEvents: "none",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
-          zIndex: 100,
-          letterSpacing: "0.05em",
-        }}
-      >
-        ZOOM: {currentZoom.toFixed(1)}
+      {/* Barra de Estado / Coordenadas Flotante (Diseño COE) */}
+      <div className="status-bar-coordinates">
+        <div><span>LAT:</span> {coords.lat.toFixed(6)}</div>
+        <div><span>LNG:</span> {coords.lng.toFixed(6)}</div>
+        <div><span>ZOOM:</span> {Math.round(currentZoom)}</div>
+        {currentScale > 0 && <div><span>ESCALA:</span> 1:{currentScale.toLocaleString()}</div>}
       </div>
 
       {/* HTML point labels with background (personnel info) */}
@@ -248,18 +252,18 @@ interface MapComponentProps {
         <SwipeComparison view={viewRef.current} onClose={deactivateSwipe} showSidebar={showSidebar} />
       )}
 
-      {/* Floating comparison toggle button — bottom-left, shifts when sidebar is open */}
+      {/* Floating comparison toggle button — bottom-left */}
       <button
         className={`swipe-toggle-btn ${swipeActive ? "active" : ""}`}
         onClick={swipeActive ? deactivateSwipe : activateSwipe}
-        title={swipeActive ? "Cerrar comparacion" : "Comparar antes/despues"}
+        title={swipeActive ? "Cerrar comparación" : "Comparar antes/después"}
         style={{
-          left: showSidebar ? "410px" : "16px",
-          transition: "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          left: "16px",
+          bottom: "36px",
         }}
       >
-        <Satellite size={18} />
-        <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Despues"}</span>
+        <Satellite size={16} />
+        <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Después"}</span>
       </button>
     </div>
   );

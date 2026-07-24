@@ -1,19 +1,10 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import ImageryTileLayer from "@arcgis/core/layers/ImageryTileLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
 import RasterStretchRenderer from "@arcgis/core/renderers/RasterStretchRenderer";
+import Swipe from "@arcgis/core/widgets/Swipe";
 import { X, ChevronLeft, ChevronRight, AlertTriangle, Layers, Check, Loader } from "lucide-react";
 import type MapView from "@arcgis/core/views/MapView";
-
-import "@arcgis/map-components/components/arcgis-swipe";
-
-declare module "react" {
-  namespace JSX {
-    interface IntrinsicElements {
-      "arcgis-swipe": Record<string, unknown>;
-    }
-  }
-}
 
 const COG_SOURCES = [
   {
@@ -80,15 +71,15 @@ interface SwipeComparisonProps {
   showSidebar?: boolean;
 }
 
-export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose, showSidebar = false }) => {
+export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose }) => {
   const [warning, setWarning] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [layerVis, setLayerVis] = useState<Record<string, boolean>>({ cogA: false, cogB: true, cogC: false, cogD: false });
   const [layerStatus, setLayerStatus] = useState<Record<string, LayerStatus>>({ cogA: "idle", cogB: "idle", cogC: "idle", cogD: "idle" });
   const groupLayerRef = useRef<GroupLayer | null>(null);
-  const cleanupRef = useRef<() => void>(() => {});
+  const swipeWidgetRef = useRef<Swipe | null>(null);
 
-  const leftPos = showSidebar ? "410px" : "16px";
+  const leftPos = "16px";
 
   const setStatus = useCallback((id: string, status: LayerStatus) => {
     setLayerStatus((prev) => ({ ...prev, [id]: status }));
@@ -145,51 +136,48 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose,
   }, [loadCog, unloadCog]);
 
   useEffect(() => {
+    if (!view) return;
+
     const groupLayer = new GroupLayer({ title: "Post-sismo" });
     groupLayerRef.current = groupLayer;
 
-    const map = view.map!;
-    if (!map.layers.includes(groupLayer)) map.add(groupLayer, 0);
-
-    const swipeEl = document.querySelector("arcgis-swipe") as any;
-    if (swipeEl) {
-      swipeEl.view = view;
-      swipeEl.leadingLayers = [];
-      swipeEl.trailingLayers = [groupLayer];
-      swipeEl.direction = "horizontal";
-      swipeEl.position = 50;
+    const map = view.map;
+    if (map && !map.layers.includes(groupLayer)) {
+      map.add(groupLayer);
     }
+
+    const swipeWidget = new Swipe({
+      view: view,
+      leadingLayers: [],
+      trailingLayers: [groupLayer],
+      direction: "horizontal",
+      position: 50,
+    });
+
+    swipeWidgetRef.current = swipeWidget;
+    view.ui.add(swipeWidget);
 
     loadCog("cogB");
 
-    cleanupRef.current = () => {
+    return () => {
       try {
-        const swipeEl = document.querySelector("arcgis-swipe") as any;
-        if (swipeEl) {
-          swipeEl.leadingLayers = [];
-          swipeEl.trailingLayers = [];
-          swipeEl.view = null;
+        if (swipeWidgetRef.current) {
+          view.ui.remove(swipeWidgetRef.current);
+          swipeWidgetRef.current.destroy();
+          swipeWidgetRef.current = null;
         }
-        const map = view.map;
         if (map && groupLayerRef.current) {
-          try { map.remove(groupLayerRef.current); } catch {}
+          map.remove(groupLayerRef.current);
+          groupLayerRef.current = null;
         }
-        groupLayerRef.current = null;
-      } catch {}
+      } catch (err) {
+        console.error("Error cleaning up Swipe widget:", err);
+      }
     };
-
-    return () => cleanupRef.current();
   }, [view, loadCog]);
-
-  const handleClose = () => {
-    cleanupRef.current();
-    onClose();
-  };
 
   return (
     <>
-      <arcgis-swipe auto-destroy-disabled />
-
       <div className="swipe-overlay">
         <div className="swipe-label-bar">
           <span className="swipe-label swipe-label-before">
@@ -208,7 +196,7 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose,
         className="swipe-layer-toggle"
         onClick={() => setPanelOpen((p) => !p)}
         title="Seleccionar capas"
-        style={{ left: leftPos, transition: "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)" }}
+        style={{ left: leftPos }}
       >
         <Layers size={16} />
       </button>
@@ -216,7 +204,7 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose,
       {panelOpen && (
         <div
           className="swipe-layer-panel"
-          style={{ left: leftPos, transition: "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)" }}
+          style={{ left: leftPos }}
         >
           <div className="swipe-layer-panel-title">Capas post-sismo</div>
           {COG_SOURCES.map((src) => (
