@@ -12,7 +12,7 @@ export function useWorkGroups() {
         console.error("Error cargando grupos de trabajo desde Supabase:", error);
         return;
       }
-      if (data) {
+      if (data && data.length > 0) {
         const list: WorkGroup[] = data.map((row: any) => ({
           id: row.id,
           name: row.name,
@@ -22,6 +22,31 @@ export function useWorkGroups() {
           notes: row.notes || "",
         }));
         setWorkGroupsState(list);
+      } else {
+        // Si Supabase no tiene grupos guardados aún, recuperar y migrar desde localStorage
+        const localStr = localStorage.getItem("pc_work_groups");
+        if (localStr) {
+          try {
+            const localGroups: WorkGroup[] = JSON.parse(localStr);
+            if (Array.isArray(localGroups) && localGroups.length > 0) {
+              console.log(`Migrando ${localGroups.length} grupos de trabajo locales a Supabase...`);
+              setWorkGroupsState(localGroups);
+              for (const g of localGroups) {
+                await supabase.from("work_groups").upsert({
+                  id: g.id,
+                  name: g.name,
+                  leader_name: g.leaderName || "",
+                  leader_phone: g.leaderPhone || "",
+                  department: g.department || "pc",
+                  notes: g.notes || "",
+                  updated_at: new Date().toISOString(),
+                });
+              }
+            }
+          } catch (e) {
+            console.error("Error leyendo grupos locales de localStorage:", e);
+          }
+        }
       }
     } catch (err) {
       console.error("Error al consultar work_groups:", err);
@@ -47,6 +72,7 @@ export function useWorkGroups() {
 
   const saveWorkGroups = async (groups: WorkGroup[]) => {
     setWorkGroupsState(groups);
+    localStorage.setItem("pc_work_groups", JSON.stringify(groups));
     try {
       for (const g of groups) {
         await supabase.from("work_groups").upsert({
