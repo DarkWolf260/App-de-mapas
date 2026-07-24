@@ -37,6 +37,7 @@ interface MapComponentProps {
   onSelectedDateChange?: (date: string) => void;
   activeDepartment?: DepartmentView;
   showSidebar?: boolean;
+  isAdmin?: boolean;
 }
   
   const MapComponent: React.FC<MapComponentProps> = (props) => {
@@ -101,7 +102,8 @@ interface MapComponentProps {
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
       <div className="map-view-container" ref={mapDiv} style={{ width: "100%", height: "100%" }} />
-      {layerVisibility?.sketch && (
+      {/* Floating Draggable Drawing Toolbar (Solo visible para Administradores) */}
+      {props.isAdmin !== false && layerVisibility.sketch && (
         <div
           className="draw-toolbar-wrapper"
           style={{
@@ -143,6 +145,7 @@ interface MapComponentProps {
         sketchLayer={sketchLayer}
         onClose={() => setCustomPopup(null)}
         activeDepartment={props.activeDepartment}
+        isAdmin={props.isAdmin}
       />
 
       {/* Floating hover tooltip for lines and polygons */}

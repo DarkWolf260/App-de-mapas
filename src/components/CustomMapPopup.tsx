@@ -28,6 +28,7 @@ interface CustomMapPopupProps {
   sketchLayer: GraphicsLayer | null;
   onClose: () => void;
   activeDepartment?: DepartmentView;
+  isAdmin?: boolean;
 }
 
 type TabId = "info" | "general" | "operation" | "history" | "contained";
@@ -89,12 +90,13 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   popupEditDate, setPopupEditDate, onSaveDailyLog,
   onToggleFeatureLock, onRenameFeature, onUpdateFeatureDescription,
   onUpdateFeatureColor, sketchLayer, onClose, activeDepartment = "pc",
+  isAdmin = false,
 }) => {
   const activeFeat = customPopup
     ? drawnFeatures.find((f) => String(f.id) === String(customPopup.feat.id)) || customPopup.feat
     : null;
 
-  const [activeTab, setActiveTab] = useState<TabId>("general");
+  const [activeTab, setActiveTab] = useState<TabId>(isAdmin ? "general" : "info");
   const [localTitle, setLocalTitle] = useState("");
   const [localDescription, setLocalDescription] = useState("");
   const [localColor, setLocalColor] = useState("#3b82f6");
@@ -124,17 +126,18 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   }, [activeFeat?.id, popupEditDate, activeDepartment, selectedDept]);
 
   useEffect(() => {
-    if (!activeFeat || !layerVisibility.sketch) {
+    if (!isAdmin || !activeFeat || !layerVisibility.sketch) {
       setActiveTab("info");
     } else {
       setActiveTab("general");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- activeFeat?.id + type cover all needed resets
-  }, [activeFeat?.id, activeFeat?.type, layerVisibility.sketch]);
+  }, [activeFeat?.id, activeFeat?.type, layerVisibility.sketch, isAdmin]);
 
   if (!customPopup || !activeFeat) return null;
 
   const handleGeneralSave = async () => {
+    if (!isAdmin) return;
     try {
       if (onRenameFeature) await onRenameFeature(activeFeat.id, localTitle);
       if (onUpdateFeatureDescription) await onUpdateFeatureDescription(activeFeat.id, localDescription);
@@ -147,7 +150,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   };
 
   const handleLogSave = async () => {
-    if (!onSaveDailyLog) return;
+    if (!isAdmin || !onSaveDailyLog) return;
     try {
       const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
       const logToSave = { ...localLog, department: deptToUse };
@@ -160,6 +163,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   };
 
   const handleLogFieldChange = (field: string, val: unknown) => {
+    if (!isAdmin) return;
     setLocalLog((prev) => ({ ...prev, [field]: val }));
   };
 
@@ -167,7 +171,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
   const isPoint = activeFeat.type === "point";
   const isPolygon = activeFeat.type === "polygon";
-  const showSketchTabs = layerVisibility.sketch;
+  const showSketchTabs = layerVisibility.sketch && isAdmin;
 
   return (
     <div
@@ -180,21 +184,33 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           <span style={{ fontWeight: 800, fontSize: "0.9rem", color: localColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             {activeFeat.title}
           </span>
-          <button
-            onClick={() => onToggleFeatureLock?.(activeFeat.id, !activeFeat.locked)}
-            style={{ background: "transparent", border: "none", color: activeFeat.locked ? "var(--color-high)" : "var(--text-muted)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}
-            title={activeFeat.locked ? "Desbloquear edición del elemento" : "Bloquear edición del elemento"}
-          >
-            {activeFeat.locked ? <Lock size={14} /> : <Unlock size={14} style={{ opacity: 0.4 }} />}
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => onToggleFeatureLock?.(activeFeat.id, !activeFeat.locked)}
+              style={{ background: "transparent", border: "none", color: activeFeat.locked ? "var(--color-high)" : "var(--text-muted)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}
+              title={activeFeat.locked ? "Desbloquear edición del elemento" : "Bloquear edición del elemento"}
+            >
+              {activeFeat.locked ? <Lock size={14} /> : <Unlock size={14} style={{ opacity: 0.4 }} />}
+            </button>
+          )}
         </div>
         <button onClick={onClose} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "var(--text-muted)", cursor: "pointer", padding: "4px 8px", lineHeight: 1, display: "flex", alignItems: "center", gap: "4px" }} title="Cerrar Panel">
           <X size={14} />
         </button>
       </div>
 
-      {/* Tab Selector — when sketch is off */}
-      {!showSketchTabs && (
+      {/* Tab Selector — for non-admins (Viewers) */}
+      {!isAdmin && (
+        <div style={TAB_BAR_STYLE}>
+          <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
+          {isPolygon && (
+            <button onClick={() => setActiveTab("contained")} style={tabBtnStyle(activeTab === "contained")}><Layers size={12} /> Elementos</button>
+          )}
+        </div>
+      )}
+
+      {/* Tab Selector — for admin (sketch off) */}
+      {isAdmin && !layerVisibility.sketch && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
@@ -203,8 +219,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         </div>
       )}
 
-      {/* Tab Selector — point (sketch on) */}
-      {isPoint && showSketchTabs && (
+      {/* Tab Selector — point admin (sketch on) */}
+      {isAdmin && isPoint && layerVisibility.sketch && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={12} /> General</button>
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={12} /> Operación</button>
@@ -212,8 +228,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         </div>
       )}
 
-      {/* Tab Selector — polygon (sketch on) */}
-      {isPolygon && showSketchTabs && (
+      {/* Tab Selector — polygon admin (sketch on) */}
+      {isAdmin && isPolygon && layerVisibility.sketch && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={12} /> General</button>
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={12} /> Estadísticas</button>

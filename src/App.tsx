@@ -7,6 +7,8 @@ import { DateTimeline } from './components/DateTimeline';
 import { FloatingSearchBar } from './components/FloatingSearchBar';
 import { RangeReportModal } from './components/RangeReportModal';
 import { ImportPreviewModal } from './components/ImportPreviewModal';
+import { AuthModal } from './components/AuthModal';
+import { useAuth } from './hooks/useAuth';
 import { 
   Menu,
   ChevronLeft
@@ -30,6 +32,7 @@ const CATEGORY_COLORS = {
 function App() {
   const apiKey: string = import.meta.env.VITE_ARCGIS_API_KEY || '';
   const [activeCity] = useState<string>('venezuela');
+  const { isAdmin } = useAuth();
   
   const [layerVisibility, setLayerVisibility] = useLocalStorageState<LayerVisibility>('pc_layer_visibility', {
     sketch: true,
@@ -52,9 +55,8 @@ function App() {
   const [importPreview, setImportPreview] = useState<ParsedFeature[] | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-  // Conexión con RxDB
+  // Conexión con Supabase en tiempo real
   const {
-    db,
     drawnFeatures,
     handleFeatureAdded,
     handleRenameFeature,
@@ -62,13 +64,14 @@ function App() {
     handleUpdateFeatureColor,
     handleToggleFeatureLock,
     handleSaveDailyLog,
+    handleFeatureDeleted,
   } = useFeatureDB();
 
   const { hiddenFeatures } = useFeatureVisibility();
   const { sortedDrawnFeatures } = useFeatureOrder(drawnFeatures);
-  const { handleImportFeatures } = useGeoJSONIO(db, drawnFeatures, setImportedFeatures);
+  const { handleImportFeatures } = useGeoJSONIO(null, drawnFeatures, setImportedFeatures);
 
-  // Mapeo a Puntos de COE
+  // Mapeo a Puntos de COE para Sidebar
   const points: MapPoint[] = useMemo(() => {
     return sortedDrawnFeatures
       .filter((f) => f.type === 'point' || f.geojsonGeometry?.type === 'Point')
@@ -78,18 +81,18 @@ function App() {
           id: String(f.id),
           name: f.title || 'Punto Sin Nombre',
           description: f.description || '',
-          category: 'general',
-          color: f.color || CATEGORY_COLORS.salud,
+          category: 'general' as const,
+          color: f.color || CATEGORY_COLORS.general,
           coordinates: {
-            longitude: coords?.[0] ?? -66.9331,
-            latitude: coords?.[1] ?? 10.6000
+            longitude: coords ? coords[0] : -66.9331,
+            latitude: coords ? coords[1] : 10.6000,
           },
-          createdAt: Number(f.id) || Date.now()
+          createdAt: Number(f.id) || Date.now(),
         };
       });
   }, [sortedDrawnFeatures]);
 
-  // Mapeo a Áreas de COE
+  // Mapeo a Áreas de COE para Sidebar
   const areas: MapArea[] = useMemo(() => {
     return sortedDrawnFeatures
       .filter((f) => f.type === 'polygon' || f.geojsonGeometry?.type === 'Polygon')
@@ -99,54 +102,14 @@ function App() {
           id: String(f.id),
           name: f.title || 'Área Sin Nombre',
           description: f.description || '',
-          category: 'general',
+          category: 'riesgo' as const,
           color: f.color || CATEGORY_COLORS.riesgo,
           rings: rings || [],
           areaHectares: 0,
-          createdAt: Number(f.id) || Date.now()
+          createdAt: Number(f.id) || Date.now(),
         };
       });
   }, [sortedDrawnFeatures]);
-
-  const handleToggleLayer = (layerName: keyof LayerVisibility): void => {
-    setLayerVisibility((prev) => ({ ...prev, [layerName]: !prev[layerName] }));
-  };
-
-  const handleFeatureDeleted = async (id: number): Promise<void> => {
-    setRemoveFeatureId({ id, timestamp: Date.now() });
-    if (!db) return;
-    try {
-      const doc = await db.features.findOne(String(id)).exec();
-      if (doc) await doc.remove();
-    } catch (e) {
-      console.warn("RxDB: Delete handled safely", e);
-    }
-  };
-
-  const handleGoToCoords = (lat: number, lon: number) => {
-    setZoomToCoords({ lat, lon });
-  };
-
-  const handleCreatePointAtCoords = async (lat: number, lon: number) => {
-    const id = Date.now();
-    const feat: DrawnFeature = {
-      id,
-      title: `Punto ${lat.toFixed(4)}, ${lon.toFixed(4)}`,
-      type: "point",
-      color: "#3b82f6",
-      geojsonGeometry: { type: "Point", coordinates: [lon, lat] },
-    };
-    await handleFeatureAdded(feat);
-    setZoomToFeature(feat);
-  };
-
-  const handleImportConfirmed = async (features: ParsedFeature[]) => {
-    const result = await handleImportFeatures(features);
-    setImportPreview(null);
-    if (result.imported > 0) {
-      alert(`Se importaron ${result.imported} geometrías con éxito.`);
-    }
-  };
 
   const handleSelectItem = (id: string, _type: 'point' | 'area') => {
     setSelectedItemId(id);
@@ -156,17 +119,27 @@ function App() {
     }
   };
 
-  const handleDeleteItem = async (id: string, _type: 'point' | 'area') => {
+  const handleDeleteItem = (id: string, _type: 'point' | 'area') => {
+    if (!isAdmin) return;
     const numId = Number(id);
     if (!isNaN(numId)) {
-      await handleFeatureDeleted(numId);
+      handleFeatureDeleted(numId);
+      setRemoveFeatureId({ id: numId, timestamp: Date.now() });
     }
   };
 
-  const handleImportData = async (data: { points: MapPoint[]; areas: MapArea[] }) => {
+  const handleToggleLayer = (layerName: keyof LayerVisibility) => {
+    setLayerVisibility({
+      ...layerVisibility,
+      [layerName]: !layerVisibility[layerName]
+    });
+  };
+
+  const handleImportData = (data: { points: MapPoint[]; areas: MapArea[] }) => {
+    if (!isAdmin) return;
     if (data.points) {
       for (const p of data.points) {
-        await handleFeatureAdded({
+        handleFeatureAdded({
           id: Number(p.id) || Date.now() + Math.floor(Math.random() * 1000),
           title: p.name,
           type: 'point',
@@ -181,7 +154,7 @@ function App() {
     }
     if (data.areas) {
       for (const a of data.areas) {
-        await handleFeatureAdded({
+        handleFeatureAdded({
           id: Number(a.id) || Date.now() + Math.floor(Math.random() * 1000),
           title: a.name,
           type: 'polygon',
@@ -196,8 +169,47 @@ function App() {
     }
   };
 
+  const handleImportConfirmed = (featuresToImport: ParsedFeature[]) => {
+    if (!isAdmin) return;
+    featuresToImport.forEach((f) => {
+      handleFeatureAdded({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        title: f.title,
+        type: f.type,
+        color: f.color || '#3b82f6',
+        geojsonGeometry: f.geometry,
+      });
+    });
+    setImportPreview(null);
+  };
+
+  const handleGoToCoords = (lat: number, lon: number) => {
+    setZoomToCoords({ lat, lon });
+  };
+
+  const handleCreatePointAtCoords = (lat: number, lon: number) => {
+    if (!isAdmin) return;
+    const newPoint: DrawnFeature = {
+      id: Date.now(),
+      title: `Punto ${lat.toFixed(4)}, ${lon.toFixed(4)}`,
+      type: 'point',
+      color: '#3b82f6',
+      geojsonGeometry: {
+        type: 'Point',
+        coordinates: [lon, lat]
+      }
+    };
+    handleFeatureAdded(newPoint);
+    setZoomToFeature(newPoint);
+  };
+
   return (
     <div className="app-container">
+      {/* Botón Discreto de Login de Administrador (Top-Right) */}
+      <div style={{ position: "absolute", top: "14px", right: "16px", zIndex: 130, pointerEvents: "auto" }}>
+        <AuthModal />
+      </div>
+
       {/* Botón para colapsar / expandir Sidebar */}
       <button 
         className={`toggle-sidebar-btn ${sidebarCollapsed ? 'collapsed' : ''}`}
@@ -264,6 +276,7 @@ function App() {
           onSelectedDateChange={setSelectedDate}
           activeDepartment={activeDepartment}
           showSidebar={!sidebarCollapsed}
+          isAdmin={isAdmin}
         />
       </div>
 

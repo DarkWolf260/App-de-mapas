@@ -20,9 +20,9 @@ export function syncDrawnFeaturesToGraphics(
   const { parentsMap, polygonAreas } = buildParentsMap(drawnFeatures);
 
   drawnFeatures.forEach((feat) => {
-    const g = layer.graphics.find((x) => x.uid === feat.id || x.attributes?.id === feat.id);
+    const g = layer.graphics.find((x) => String((x as any).uid) === String(feat.id) || String(x.attributes?.id) === String(feat.id));
     const isHidden = !!hiddenFeatures[feat.id];
-    const isNestedArea = feat.type === "polygon" && parentsMap[feat.id] !== undefined;
+    const isNestedArea = feat.type === "polygon" && (parentsMap as any)[feat.id] !== undefined;
     const shouldHideNested = isNestedArea && layerVisibility.hideNestedAreas;
     const featColor = feat.color || "#3b82f6";
 
@@ -36,10 +36,10 @@ export function syncDrawnFeaturesToGraphics(
 
       const label = layer.graphics.find((x) => x.attributes?.isLabel && String(x.attributes?.parentId) === String(feat.id));
       if (label) {
-        syncExistingLabel(label, feat, g, parentsMap, currentZoom, layerVisibility, isHidden, shouldHideNested, dateStr, activeDepartment);
+        syncExistingLabel(label, feat, g, parentsMap as any, currentZoom, layerVisibility, isHidden, shouldHideNested, dateStr, activeDepartment);
       }
     } else {
-      addFeatureGraphic(feat, hiddenFeatures, layerVisibility, currentZoom, parentsMap, isHidden, shouldHideNested, layer, dateStr, activeDepartment);
+      addFeatureGraphic(feat, hiddenFeatures, layerVisibility, currentZoom, parentsMap as any, isHidden, shouldHideNested, layer, dateStr, activeDepartment);
     }
   });
 
@@ -47,10 +47,10 @@ export function syncDrawnFeaturesToGraphics(
 }
 
 function syncExistingLabel(
-  label: __esri.Graphic,
+  label: Graphic,
   feat: DrawnFeature,
-  g: __esri.Graphic,
-  parentsMap: Record<number, number | undefined>,
+  g: Graphic,
+  parentsMap: Record<string | number, any>,
   currentZoom: number,
   layerVisibility: LayerVisibility,
   isHidden: boolean,
@@ -86,11 +86,11 @@ function syncExistingLabel(
     if (ts.text !== targetText || currentHasBox !== showBox) {
       const clone = ts.clone();
       clone.text = targetText;
-      clone.backgroundColor = showBox ? [15, 23, 42, 0.95] : null;
-      clone.borderLineColor = showBox ? [56, 189, 248, 0.95] : null;
+      clone.backgroundColor = showBox ? [15, 23, 42, 0.95] as any : null;
+      clone.borderLineColor = showBox ? [56, 189, 248, 0.95] as any : null;
       clone.borderLineSize = showBox ? 1 : null;
-      clone.haloColor = showBox ? null : "black";
-      clone.haloSize = showBox ? null : "1.5px";
+      clone.haloColor = showBox ? null : ("black" as any);
+      clone.haloSize = showBox ? null : ("1.5px" as any);
       clone.yoffset = feat.geojsonGeometry?.type === "Point" ? (showBox ? 18 : 12) : 0;
       label.symbol = clone;
     }
@@ -102,7 +102,7 @@ function addFeatureGraphic(
   hiddenFeatures: Record<number, boolean>,
   layerVisibility: LayerVisibility,
   currentZoom: number,
-  parentsMap: Record<number, number | undefined>,
+  parentsMap: Record<string | number, any>,
   isHidden: boolean,
   shouldHideNested: boolean,
   layer: GraphicsLayer,
@@ -114,7 +114,7 @@ function addFeatureGraphic(
 
   const featColor = feat.color || "#3b82f6";
   const ng = new Graphic({
-    geometry: geomCfg,
+    geometry: geomCfg as any,
     attributes: { id: feat.id, title: feat.title, _color: featColor },
     symbol: symbolForType(feat.type, featColor),
     visible: !isHidden && !shouldHideNested,
@@ -131,11 +131,11 @@ function addFeatureGraphic(
     const labelSym = new TextSymbol({
       text: getLabelText(feat, dateStr, activeDepartment),
       color: "white",
-      backgroundColor: showBox ? [15, 23, 42, 0.95] : null,
-      borderLineColor: showBox ? [56, 189, 248, 0.95] : null,
+      backgroundColor: showBox ? [15, 23, 42, 0.95] as any : null,
+      borderLineColor: showBox ? [56, 189, 248, 0.95] as any : null,
       borderLineSize: showBox ? 1 : null,
-      haloColor: showBox ? null : "black",
-      haloSize: showBox ? null : "1.5px",
+      haloColor: showBox ? null : ("black" as any),
+      haloSize: showBox ? null : ("1.5px" as any),
       font: { size: 10, family: "sans-serif", weight: "bold" },
       yoffset: feat.geojsonGeometry.type === "Point" ? (showBox ? 18 : 12) : 0,
     });
@@ -153,7 +153,7 @@ function addFeatureGraphic(
   }
 }
 
-function convertGeoJSONGeometry(feat: DrawnFeature): Record<string, unknown> | null {
+function convertGeoJSONGeometry(feat: DrawnFeature): any {
   if (!feat.geojsonGeometry) return null;
   const coords = feat.geojsonGeometry.coordinates;
   if (feat.geojsonGeometry.type === "Point") {
@@ -182,7 +182,7 @@ function reorderGraphics(
   const drawingOrdered = [...sortedPolys, ...lines, ...pts];
 
   drawingOrdered.forEach((feat, index) => {
-    const g = layer.graphics.find((x) => x.uid === feat.id || x.attributes?.id === feat.id);
+    const g = layer.graphics.find((x) => String((x as any).uid) === String(feat.id) || String(x.attributes?.id) === String(feat.id));
     if (g) layer.graphics.reorder(g, index);
   });
   drawingOrdered.forEach((feat, index) => {
@@ -198,13 +198,13 @@ export function syncImportedFeatures(
   layer: GraphicsLayer
 ): void {
   importedFeatures.forEach((feat) => {
-    if (layer.graphics.some((g) => g.uid === feat.id || g.attributes?.id === feat.id)) return;
+    if (layer.graphics.some((g) => String((g as any).uid) === String(feat.id) || String(g.attributes?.id) === String(feat.id))) return;
 
     const geomCfg = convertGeoJSONGeometry(feat);
     if (!geomCfg) return;
 
     const ng = new Graphic({
-      geometry: geomCfg,
+      geometry: geomCfg as any,
       attributes: { id: feat.id, title: feat.title || `Importado ${feat.type}`, _color: PALETTE[0].hex },
       symbol: symbolForType(feat.geojsonGeometry?.type ?? feat.type, PALETTE[0].hex),
       popupTemplate: { title: "<b>{title}</b>", content: "<div style=\"font:13px sans-serif;color:#0f172a;padding:4px\">Importado via GeoJSON.</div>" },
