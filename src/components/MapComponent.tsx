@@ -39,6 +39,7 @@ interface MapComponentProps {
   showSidebar?: boolean;
   isAdmin?: boolean;
   onOpenWorkGroups?: () => void;
+  workGroups?: WorkGroup[];
 }
   
   const MapComponent: React.FC<MapComponentProps> = (props) => {
@@ -147,6 +148,7 @@ interface MapComponentProps {
         onClose={() => setCustomPopup(null)}
         activeDepartment={props.activeDepartment}
         isAdmin={props.isAdmin}
+        workGroups={props.workGroups}
       />
 
       {/* Floating hover tooltip for lines and polygons */}

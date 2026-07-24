@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, Department } from "../types";
+import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, Department, WorkGroup } from "../types";
 import { computeContainedItems } from "../utils/spatialUtils";
 import { Lock, Unlock, FileText, Settings, History, Layers, Info, X } from "lucide-react";
 import { TAB_BTN_BASE } from "./popup/popupStyles";
@@ -29,6 +29,7 @@ interface CustomMapPopupProps {
   onClose: () => void;
   activeDepartment?: DepartmentView;
   isAdmin?: boolean;
+  workGroups?: WorkGroup[];
 }
 
 type TabId = "info" | "general" | "operation" | "history" | "contained";
@@ -90,7 +91,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   popupEditDate, setPopupEditDate, onSaveDailyLog,
   onToggleFeatureLock, onRenameFeature, onUpdateFeatureDescription,
   onUpdateFeatureColor, sketchLayer, onClose, activeDepartment = "pc",
-  isAdmin = false,
+  isAdmin = false, workGroups = [],
 }) => {
   const activeFeat = customPopup
     ? drawnFeatures.find((f) => String(f.id) === String(customPopup.feat.id)) || customPopup.feat
@@ -283,7 +284,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           saveSuccess={logSaveSuccess}
           activeDepartment={activeDepartment}
           selectedDept={selectedDept}
-          onDepartmentSelect={(dept) => setSelectedDept(dept)}
+          onDepartmentSelect={setSelectedDept}
+          workGroups={workGroups}
         />
       )}
 

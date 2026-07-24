@@ -153,6 +153,7 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
         log={draft}
         onFieldChange={onChange as (field: string, value: string | boolean) => void}
         colorVar="var(--color-green)"
+        workGroups={workGroups}
       />
 
       {/* TOGGLE GRUPO 2 */}
@@ -181,7 +182,8 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
             groupIndex={2}
             log={draft}
             onFieldChange={onChange as (field: string, value: string | boolean) => void}
-            colorVar="var(--color-info)"
+            colorVar="var(--color-purple)"
+            workGroups={workGroups}
           />
         </div>
       )}

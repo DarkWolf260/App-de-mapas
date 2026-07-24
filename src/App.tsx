@@ -294,6 +294,7 @@ function App() {
           activeDepartment={activeDepartment}
           showSidebar={!sidebarCollapsed}
           isAdmin={isAdmin}
+          workGroups={workGroups}
         />
       </div>
 
@@ -308,6 +309,7 @@ function App() {
         <RangeReportModal
           feat={rangeReportFeature}
           allFeatures={sortedDrawnFeatures}
+          workGroups={workGroups}
           onClose={() => setRangeReportFeature(null)}
           onSaveDailyLog={handleSaveDailyLog}
           activeDepartment={activeDepartment}

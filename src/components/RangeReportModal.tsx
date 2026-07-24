@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import type { DrawnFeature, DailyLog, DepartmentView } from "../types";
+import type { DrawnFeature, DailyLog, DepartmentView, WorkGroup } from "../types";
 import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin, List, Layers } from "lucide-react";
 import { DateRow } from "./DateRow";
 import { InlineRowEditor } from "./InlineRowEditor";
@@ -27,6 +27,7 @@ interface RangeReportModalProps {
   onClose: () => void;
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
   activeDepartment?: DepartmentView;
+  workGroups?: WorkGroup[];
 }
 
 const RangeReportModal: React.FC<RangeReportModalProps> = ({
@@ -35,6 +36,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   onClose,
   onSaveDailyLog,
   activeDepartment = "pc",
+  workGroups = [],
 }) => {
   const [activeTab, setActiveTab] = useState<"registro" | "estadisticas">("registro");
   const [activeDateIndex, setActiveDateIndex] = useState(0);
@@ -637,7 +639,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
 
                               {isEditingThis && (
                                 <div className="rr-point-edit-zone">
-                                  <InlineRowEditor dateStr={activeDate} log={log} feat={pt} onSaveDailyLog={onSaveDailyLog} onCloseEditor={() => setActiveEditFeatureId(null)} />
+                                  <InlineRowEditor dateStr={activeDate} log={log} feat={pt} onSaveDailyLog={onSaveDailyLog} onCloseEditor={() => setActiveEditFeatureId(null)} workGroups={workGroups} />
                                 </div>
                               )}
                             </div>
@@ -689,7 +691,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
 
                               {isEditingThis && (
                                 <div className="rr-point-edit-zone">
-                                  <InlineRowEditor dateStr={activeDate} log={log} feat={pt} onSaveDailyLog={onSaveDailyLog} onCloseEditor={() => setActiveEditFeatureId(null)} />
+                                  <InlineRowEditor dateStr={activeDate} log={log} feat={pt} onSaveDailyLog={onSaveDailyLog} onCloseEditor={() => setActiveEditFeatureId(null)} workGroups={workGroups} />
                                 </div>
                               )}
                             </div>
@@ -742,7 +744,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                   l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
                 ) || [];
                 const log = logs[0];
-                return <DateRow key={dateStr} dateStr={dateStr} log={log} feat={feat} onSaveDailyLog={onSaveDailyLog} activeDepartment={activeDepartment} />;
+                return <DateRow key={dateStr} dateStr={dateStr} log={log} feat={feat} onSaveDailyLog={onSaveDailyLog} activeDepartment={activeDepartment} workGroups={workGroups} />;
               })
             )
           )}

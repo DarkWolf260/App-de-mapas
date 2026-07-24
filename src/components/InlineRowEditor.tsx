@@ -1,5 +1,5 @@
 import React from "react";
-import type { DrawnFeature, DailyLog } from "../types";
+import type { DrawnFeature, DailyLog, WorkGroup } from "../types";
 import { GroupLogForm } from "./GroupLogForm";
 import { useLogEditor } from "../hooks/useLogEditor";
 import { emptyLog } from "../utils/logUtils";
@@ -10,6 +10,7 @@ interface InlineRowEditorProps {
   feat: DrawnFeature;
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
   onCloseEditor: () => void;
+  workGroups?: WorkGroup[];
 }
 
 export const InlineRowEditor: React.FC<InlineRowEditorProps> = ({
@@ -18,6 +19,7 @@ export const InlineRowEditor: React.FC<InlineRowEditorProps> = ({
   feat,
   onSaveDailyLog,
   onCloseEditor,
+  workGroups = [],
 }) => {
   const { draft, saving, saved, handleChange, handleSave } = useLogEditor(
     log ?? emptyLog(dateStr),
@@ -33,6 +35,7 @@ export const InlineRowEditor: React.FC<InlineRowEditorProps> = ({
       onSave={handleSave}
       saving={saving}
       saved={saved}
+      workGroups={workGroups}
       compact
     />
   );

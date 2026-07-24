@@ -1,5 +1,6 @@
 import React from "react";
-import type { DailyLog } from "../types";
+import { BookUser } from "lucide-react";
+import type { DailyLog, WorkGroup } from "../types";
 
 type DailyLogKey = keyof DailyLog;
 
@@ -35,6 +36,7 @@ interface GroupFieldsProps {
   log: Partial<DailyLog>;
   onFieldChange: (field: string, value: string | boolean) => void;
   colorVar: string;
+  workGroups?: WorkGroup[];
   style?: React.CSSProperties;
   inputStyle?: React.CSSProperties;
   headerStyle?: React.CSSProperties;
@@ -120,6 +122,48 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...style }}>
       <div style={headerStyleProp || defaultHeaderStyle}>{headerLabel}</div>
+      {workGroups && workGroups.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(56, 189, 248, 0.08)", border: "1px dashed rgba(56, 189, 248, 0.3)", borderRadius: "6px", padding: "4px 8px" }}>
+          <BookUser size={11} style={{ color: "var(--color-info)", flexShrink: 0 }} />
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              const wg = workGroups.find((g) => g.id === e.target.value);
+              if (wg) {
+                const nameKey = isG2 ? "groupName2" : "groupName";
+                const mgrKey = isG2 ? "managerName2" : "managerName";
+                const phoneKey = isG2 ? "managerPhone2" : "managerPhone";
+                onFieldChange(nameKey, wg.name);
+                if (wg.leaderName) onFieldChange(mgrKey, wg.leaderName);
+                if (wg.leaderPhone) onFieldChange(phoneKey, wg.leaderPhone);
+              }
+              e.target.value = "";
+            }}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "var(--color-info)",
+              fontSize: "0.65rem",
+              fontWeight: 700,
+              outline: "none",
+              cursor: "pointer",
+              flex: 1,
+              fontFamily: "inherit"
+            }}
+          >
+            <option value="" disabled style={{ background: "#1e293b" }}>
+              -- Seleccionar de Grupos de Trabajo --
+            </option>
+            {[...workGroups]
+              .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }))
+              .map((wg) => (
+                <option key={wg.id} value={wg.id} style={{ background: "#1e293b", color: "#e2e8f0" }}>
+                  {wg.name} {wg.leaderName ? `— Enc: ${wg.leaderName}` : ""}
+                </option>
+              ))}
+          </select>
+        </div>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "6px" }}>
         <div>
           <span className="rr-editor-label">Nombre del Grupo</span>

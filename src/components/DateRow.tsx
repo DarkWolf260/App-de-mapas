@@ -1,5 +1,5 @@
 import React from "react";
-import type { DrawnFeature, DailyLog, DepartmentView } from "../types";
+import type { DrawnFeature, DailyLog, DepartmentView, WorkGroup } from "../types";
 import { ChevronDown, ChevronUp, Calendar, Users, FileText, CheckCircle2, ShieldAlert } from "lucide-react";
 import { GroupLogForm } from "./GroupLogForm";
 import { useLogEditor } from "../hooks/useLogEditor";
@@ -11,9 +11,10 @@ interface DateRowProps {
   feat: DrawnFeature;
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
   activeDepartment?: DepartmentView;
+  workGroups?: WorkGroup[];
 }
 
-export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDailyLog, activeDepartment }) => {
+export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDailyLog, activeDepartment, workGroups = [] }) => {
   const [expanded, setExpanded] = React.useState(false);
   const effectiveLog = log ?? emptyLog(dateStr);
 
@@ -112,6 +113,7 @@ export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDail
             saving={saving}
             saved={saved}
             activeDepartment={activeDepartment}
+            workGroups={workGroups}
           />
         </div>
       )}

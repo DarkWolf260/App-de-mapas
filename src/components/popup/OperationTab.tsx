@@ -1,6 +1,6 @@
 import React from "react";
 import { Save, Plus, Trash2, Calendar, Shield, Flame } from "lucide-react";
-import type { DailyLog, DepartmentView, Department } from "../../types";
+import type { DailyLog, DepartmentView, Department, WorkGroup } from "../../types";
 import { inputStyle, sectionBox, sectionHeader, saveBtnStyle } from "./popupStyles";
 import { GroupFields } from "../GroupFields";
 
@@ -16,6 +16,7 @@ interface OperationTabProps {
   activeDepartment?: DepartmentView;
   selectedDept?: Department;
   onDepartmentSelect?: (dept: Department) => void;
+  workGroups?: WorkGroup[];
 }
 
 export const OperationTab: React.FC<OperationTabProps> = ({
@@ -30,6 +31,7 @@ export const OperationTab: React.FC<OperationTabProps> = ({
   activeDepartment,
   selectedDept = "pc",
   onDepartmentSelect,
+  workGroups = [],
 }) => {
   const clearGroup2 = () => {
     setShowSecondGroup(false);
@@ -127,6 +129,7 @@ export const OperationTab: React.FC<OperationTabProps> = ({
             onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
             colorVar="var(--color-info)"
             headerStyle={groupHeaderStyle("var(--color-info)")}
+            workGroups={workGroups}
           />
         </div>
 
@@ -152,7 +155,8 @@ export const OperationTab: React.FC<OperationTabProps> = ({
               log={localLog}
               onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
               colorVar="var(--color-purple)"
-              headerStyle={{ display: "none" }}
+              headerStyle={groupHeaderStyle("var(--color-purple)")}
+              workGroups={workGroups}
             />
           </div>
         )}
