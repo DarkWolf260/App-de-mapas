@@ -58,6 +58,7 @@ export interface DailyLog {
   officersCount2?: string;
   rescuedCount2?: string;
   recoveredCount2?: string;
+  rescuedPetsCount2?: string;
   prehospitalCareCount2?: string;
   transfersCount2?: string;
   hasArrivedG2?: boolean;
@@ -72,6 +73,7 @@ export interface DailyLog {
   officersCount3?: string;
   rescuedCount3?: string;
   recoveredCount3?: string;
+  rescuedPetsCount3?: string;
   prehospitalCareCount3?: string;
   transfersCount3?: string;
   hasArrivedG3?: boolean;
@@ -86,6 +88,7 @@ export interface DailyLog {
   officersCount4?: string;
   rescuedCount4?: string;
   recoveredCount4?: string;
+  rescuedPetsCount4?: string;
   prehospitalCareCount4?: string;
   transfersCount4?: string;
   hasArrivedG4?: boolean;
