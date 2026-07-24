@@ -1,4 +1,5 @@
-import type { DailyLog, Department, DepartmentView } from "../types";
+import type { DailyLog, Department, DepartmentView, FeatureType, DrawnFeature } from "../types";
+import { buildParentsMap } from "./spatialUtils";
 
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
@@ -86,11 +87,21 @@ export function logHasAnyData(log: DailyLog): boolean {
     log.groupName ||
     log.unitOut ||
     log.managerName ||
-    log.officersCount ||
+    parseInt(log.officersCount || "0", 10) > 0 ||
+    parseInt(log.rescuedCount || "0", 10) > 0 ||
+    parseInt(log.recoveredCount || "0", 10) > 0 ||
+    parseInt(log.prehospitalCareCount || "0", 10) > 0 ||
+    parseInt(log.transfersCount || "0", 10) > 0 ||
+    parseInt(log.rescuedPetsCount || "0", 10) > 0 ||
     log.groupName2 ||
     log.unitOut2 ||
     log.managerName2 ||
-    log.officersCount2
+    parseInt(log.officersCount2 || "0", 10) > 0 ||
+    parseInt(log.rescuedCount2 || "0", 10) > 0 ||
+    parseInt(log.recoveredCount2 || "0", 10) > 0 ||
+    parseInt(log.prehospitalCareCount2 || "0", 10) > 0 ||
+    parseInt(log.transfersCount2 || "0", 10) > 0 ||
+    (log.observations && log.observations.trim())
   );
 }
 
@@ -172,7 +183,7 @@ export function getDayStats(
       l.date === dateStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
     ) || [];
     const log = logs[0];
-    if (!log || !logHasPersonnel(log)) continue;
+    if (!log || !logHasAnyData(log)) continue;
 
     activePoints++;
 
@@ -227,6 +238,19 @@ export function featureMatchesSearch(
   );
 }
 
+export function isSectorFeature(feat: { type?: string; featureType?: FeatureType; geojsonGeometry?: { type?: string } }): boolean {
+  if (!feat) return false;
+  const t = (feat.featureType || feat.type || "").toLowerCase();
+  if (t === "polygon" || t === "polyline" || t === "area" || t === "line" || t === "linestring" || t === "multipolygon") return true;
+  if (t === "point") return false;
+  if (feat.geojsonGeometry?.type) {
+    const gType = feat.geojsonGeometry.type.toLowerCase();
+    if (gType.includes("polygon") || gType.includes("line")) return true;
+    if (gType.includes("point")) return false;
+  }
+  return t !== "point";
+}
+
 export const REPORT_START_DATE = "2026-06-24";
 
 /* ── Aggregated stats for Statistics view ── */
@@ -246,8 +270,10 @@ export interface GroupStats {
 export interface FeatureStat {
   featureId: number;
   featureTitle: string;
+  featureType?: FeatureType;
   featureColor?: string;
   daysActive: number;
+  containedPointsCount?: number;
   totalPersonnel: number;
   totalRescued: number;
   totalRecovered: number;
@@ -282,6 +308,8 @@ export function getPeriodStats(
   let totalPrehospitalCare = 0;
   let totalTransfers = 0;
 
+  const { parentsMap } = buildParentsMap(features);
+
   function upsertGroup(name: string, dept: string | undefined, log: DailyLog, suffix: "" | "2") {
     const key = name + (dept || "");
     const existing = groupMap.get(key) || {
@@ -305,27 +333,13 @@ export function getPeriodStats(
     groupMap.set(key, existing);
   }
 
+  // 1. Process global totals and group stats (each feature log evaluated once)
   for (const feat of features) {
-    const fStat: FeatureStat = {
-      featureId: feat.id,
-      featureTitle: feat.title,
-      featureColor: feat.color,
-      daysActive: 0,
-      totalPersonnel: 0,
-      totalRescued: 0,
-      totalRecovered: 0,
-      totalPrehospitalCare: 0,
-      totalTransfers: 0,
-    };
-
     for (const log of feat.dailyLogs || []) {
       if (activeDepartment && activeDepartment !== "mixto" && log.department && log.department !== activeDepartment) continue;
-
-      const hasPersonnel = parseInt(log.officersCount || "0", 10) + parseInt(log.officersCount2 || "0", 10) > 0;
-      if (!hasPersonnel) continue;
+      if (!logHasAnyData(log)) continue;
 
       activeDates.add(log.date);
-      fStat.daysActive++;
 
       const p1 = parseInt(log.officersCount || "0", 10);
       const p2 = parseInt(log.officersCount2 || "0", 10);
@@ -346,17 +360,64 @@ export function getPeriodStats(
       totalTransfers += tr1 + tr2;
       totalPets += pets;
 
-      fStat.totalPersonnel += p1 + p2;
-      fStat.totalRescued += r1 + r2;
-      fStat.totalRecovered += rc1 + rc2;
-      fStat.totalPrehospitalCare += ph1 + ph2;
-      fStat.totalTransfers += tr1 + tr2;
-
       if (log.groupName) upsertGroup(log.groupName, log.department, log, "");
       if (log.groupName2) upsertGroup(log.groupName2, log.department, log, "2");
     }
+  }
 
-    if (fStat.daysActive > 0) featureStatsMap.set(feat.id, fStat);
+  // 2. Process per-feature statistics (Sectors accumulate manual log + contained points' logs)
+  for (const feat of features) {
+    const isSector = isSectorFeature(feat);
+    const childFeatures = isSector ? features.filter((c) => String(parentsMap[c.id]) === String(feat.id)) : [];
+
+    const fStat: FeatureStat = {
+      featureId: feat.id,
+      featureTitle: feat.title,
+      featureType: feat.type,
+      featureColor: feat.color,
+      daysActive: 0,
+      containedPointsCount: childFeatures.length,
+      totalPersonnel: 0,
+      totalRescued: 0,
+      totalRecovered: 0,
+      totalPrehospitalCare: 0,
+      totalTransfers: 0,
+    };
+
+    const allRelevantFeatures = [feat, ...childFeatures];
+    const featDates = new Set<string>();
+
+    for (const fItem of allRelevantFeatures) {
+      for (const log of fItem.dailyLogs || []) {
+        if (activeDepartment && activeDepartment !== "mixto" && log.department && log.department !== activeDepartment) continue;
+        if (!logHasAnyData(log)) continue;
+
+        featDates.add(log.date);
+
+        const p1 = parseInt(log.officersCount || "0", 10);
+        const p2 = parseInt(log.officersCount2 || "0", 10);
+        const r1 = parseInt(log.rescuedCount || "0", 10);
+        const r2 = parseInt(log.rescuedCount2 || "0", 10);
+        const rc1 = parseInt(log.recoveredCount || "0", 10);
+        const rc2 = parseInt(log.recoveredCount2 || "0", 10);
+        const ph1 = parseInt(log.prehospitalCareCount || "0", 10);
+        const ph2 = parseInt(log.prehospitalCareCount2 || "0", 10);
+        const tr1 = parseInt(log.transfersCount || "0", 10);
+        const tr2 = parseInt(log.transfersCount2 || "0", 10);
+
+        fStat.totalPersonnel += p1 + p2;
+        fStat.totalRescued += r1 + r2;
+        fStat.totalRecovered += rc1 + rc2;
+        fStat.totalPrehospitalCare += ph1 + ph2;
+        fStat.totalTransfers += tr1 + tr2;
+      }
+    }
+
+    fStat.daysActive = featDates.size;
+
+    if (fStat.daysActive > 0 || fStat.totalRescued > 0 || fStat.totalRecovered > 0 || fStat.totalPrehospitalCare > 0 || fStat.totalTransfers > 0) {
+      featureStatsMap.set(feat.id, fStat);
+    }
   }
 
   const groupStats = Array.from(groupMap.values()).sort((a, b) => b.daysActive - a.daysActive);
@@ -375,4 +436,3 @@ export function getPeriodStats(
   };
 }
 
-import type { DrawnFeature } from "../types";

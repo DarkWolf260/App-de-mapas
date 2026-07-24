@@ -1,9 +1,9 @@
 import React from "react";
 import type { DrawnFeature, DailyLog, DepartmentView } from "../types";
-import { ChevronDown, ChevronUp, Calendar, Users, FileText } from "lucide-react";
+import { ChevronDown, ChevronUp, Calendar, Users, FileText, CheckCircle2, ShieldAlert } from "lucide-react";
 import { GroupLogForm } from "./GroupLogForm";
 import { useLogEditor } from "../hooks/useLogEditor";
-import { emptyLog, logHasAnyData, getGroupData } from "../utils/logUtils";
+import { emptyLog, logHasAnyData, getGroupData, formatDateFriendly } from "../utils/logUtils";
 
 interface DateRowProps {
   dateStr: string;
@@ -33,79 +33,78 @@ export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDail
     if (next) resetDraft(effectiveLog);
   };
 
+  const friendlyDate = formatDateFriendly(dateStr);
+
   return (
     <div
-      className="rr-row"
-      style={{
-        padding: "10px 14px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "6px",
-        background: "rgba(255, 255, 255, 0.02)",
-        border: "1px solid rgba(255, 255, 255, 0.07)",
-        borderRadius: "10px",
-      }}
+      className={`rr-date-card ${hasData ? "has-data" : ""} ${expanded ? "expanded" : ""}`}
     >
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          cursor: "pointer",
-          userSelect: "none",
-        }}
+        className="rr-date-card-header"
         onClick={toggleExpand}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: "4px" }}>
-            <Calendar size={12} /> {dateStr}
+        <div className="rr-date-card-left">
+          <div className="rr-date-badge">
+            <Calendar size={13} style={{ color: hasData ? "var(--color-green)" : "var(--color-info)" }} />
+            <span>{friendlyDate}</span>
+          </div>
+
+          <span className={`rr-status-pill ${hasData ? "arrived" : "pending"}`} style={{ fontSize: "0.62rem" }}>
+            {hasData ? (
+              <><CheckCircle2 size={10} /> Con Registros</>
+            ) : (
+              <><ShieldAlert size={10} /> Sin Datos</>
+            )}
           </span>
-          <span
-            style={{
-              width: "6px",
-              height: "6px",
-              borderRadius: "50%",
-              backgroundColor: hasData ? "var(--color-green)" : "var(--text-muted)",
-              boxShadow: hasData ? "0 0 6px rgba(34, 197, 94, 0.5)" : "none",
-            }}
-          />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
-            {expanded ? "Cerrar" : "Expandir"}
-          </span>
-          {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+
+        <div className="rr-date-card-right">
+          <button className="rr-edit-btn" onClick={(e) => { e.stopPropagation(); toggleExpand(); }}>
+            {expanded ? "Cerrar Editor" : hasData ? "Editar Registro" : "+ Añadir Datos"}
+          </button>
+          {expanded ? <ChevronUp size={14} style={{ color: "var(--text-muted)" }} /> : <ChevronDown size={14} style={{ color: "var(--text-muted)" }} />}
         </div>
       </div>
 
       {!expanded && hasData && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "3px", paddingLeft: "16px", fontSize: "0.68rem" }}>
+        <div className="rr-date-card-preview">
           {g1.groupName && (
-            <div style={{ color: "var(--text-muted)" }}>
-              <strong style={{ color: "var(--color-info)" }}>G1:</strong> {g1.groupName}
-              {g1.unitOut ? ` (${g1.unitOut})` : ""}
-              {g1.managerName ? ` - ${g1.managerName}` : ""}
-              {g1.officersCount ? <span style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>[<Users size={10} /> {g1.officersCount}]</span> : ""}
+            <div className="rr-preview-group">
+              <span className="rr-group-label" style={{ color: "#38bdf8" }}>G1</span>
+              <strong style={{ color: "var(--text-main)" }}>{g1.groupName}</strong>
+              {g1.unitOut && <span className="rr-meta-chip">{g1.unitOut}</span>}
+              {g1.managerName && <span style={{ color: "var(--text-muted)" }}>· {g1.managerName}</span>}
+              {g1.officersCount && (
+                <span className="rr-meta-chip" style={{ background: "rgba(56,189,248,0.1)", color: "#38bdf8" }}>
+                  <Users size={10} /> {g1.officersCount}
+                </span>
+              )}
             </div>
           )}
           {hasG2 && g2.groupName && (
-            <div style={{ color: "var(--text-muted)" }}>
-              <strong style={{ color: "var(--color-purple)" }}>G2:</strong> {g2.groupName}
-              {g2.unitOut ? ` (${g2.unitOut})` : ""}
-              {g2.managerName ? ` - ${g2.managerName}` : ""}
-              {g2.officersCount ? <span style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>[<Users size={10} /> {g2.officersCount}]</span> : ""}
+            <div className="rr-preview-group">
+              <span className="rr-group-label" style={{ color: "#a855f7" }}>G2</span>
+              <strong style={{ color: "var(--text-main)" }}>{g2.groupName}</strong>
+              {g2.unitOut && <span className="rr-meta-chip">{g2.unitOut}</span>}
+              {g2.managerName && <span style={{ color: "var(--text-muted)" }}>· {g2.managerName}</span>}
+              {g2.officersCount && (
+                <span className="rr-meta-chip" style={{ background: "rgba(168,85,247,0.1)", color: "#a855f7" }}>
+                  <Users size={10} /> {g2.officersCount}
+                </span>
+              )}
             </div>
           )}
           {effectiveLog.observations && (
-            <div style={{ color: "var(--color-info)", fontSize: "0.62rem", marginTop: "2px", fontStyle: "italic" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><FileText size={10} /> {effectiveLog.observations}</span>
+            <div className="rr-preview-obs">
+              <FileText size={10} style={{ color: "var(--color-info)", flexShrink: 0 }} />
+              <span>{effectiveLog.observations}</span>
             </div>
           )}
         </div>
       )}
 
       {expanded && (
-        <div style={{ marginTop: "4px", borderTop: "1px dashed rgba(255, 255, 255, 0.08)", paddingTop: "8px" }}>
+        <div className="rr-date-card-body">
           <GroupLogForm
             draft={draft}
             onChange={handleChange}
@@ -119,3 +118,4 @@ export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDail
     </div>
   );
 };
+

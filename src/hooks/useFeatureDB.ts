@@ -103,16 +103,20 @@ export function useFeatureDB() {
     }
   }, []);
 
-  // Migrar automáticamente datos locales previos de RxDB a Supabase SOLO cuando el Admin está autenticado
+  // Migrar automáticamente datos locales previos de RxDB a Supabase SOLO una vez cuando el Admin está autenticado
   const syncLocalRxDBToSupabase = useCallback(async () => {
     try {
+      if (localStorage.getItem("rxdb_migrated_to_supabase") === "true") {
+        return; // Ya fue migrado exitosamente, no repetir migración
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return; // Evitar peticiones 401 si no hay usuario administrador logueado
 
       const rxDb = await initDatabase();
       const rxDocs = await rxDb.features.find().exec();
       if (rxDocs && rxDocs.length > 0) {
-        console.log(`Migrando ${rxDocs.length} elementos locales desde RxDB a Supabase...`);
+        console.log(`Migrando ${rxDocs.length} elementos locales desde RxDB a Supabase por primera vez...`);
         for (const doc of rxDocs) {
           const idStr = String(doc.id);
           await supabase.from("drawn_features").upsert({
@@ -173,7 +177,12 @@ export function useFeatureDB() {
             }
           }
         }
+        localStorage.setItem("rxdb_migrated_to_supabase", "true");
+        await rxDb.features.find().remove();
+        console.log("Migración a Supabase completada. RxDB local limpiado.");
         await fetchFromSupabase();
+      } else {
+        localStorage.setItem("rxdb_migrated_to_supabase", "true");
       }
     } catch (err) {
       console.error("Error en la migración de RxDB a Supabase:", err);

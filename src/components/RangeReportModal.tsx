@@ -1,15 +1,19 @@
 import React, { useState, useMemo } from "react";
 import type { DrawnFeature, DailyLog, DepartmentView } from "../types";
-import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin } from "lucide-react";
+import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin, List, Layers } from "lucide-react";
 import { DateRow } from "./DateRow";
 import { InlineRowEditor } from "./InlineRowEditor";
 import { GroupDisplay } from "./GroupDisplay";
+import { BitacoraCalendar } from "./BitacoraCalendar";
+import { buildParentsMap } from "../utils/spatialUtils";
 import {
   formatDateFriendly,
   getDatesRange,
   getGroupData,
   logMatchesArrivalFilter,
   logHasPersonnel,
+  logHasAnyData,
+  isSectorFeature,
   getDayStats,
   featureMatchesSearch,
   REPORT_START_DATE,
@@ -39,10 +43,12 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [statsSortKey, setStatsSortKey] = useState<"nombre" | "daysActive" | "totalRescued" | "totalRecovered" | "totalPrehospitalCare" | "totalTransfers" | "totalPets">("daysActive");
   const [statsSortDir, setStatsSortDir] = useState<"desc" | "asc">("asc");
+  const [showCalendarPopover, setShowCalendarPopover] = useState(false);
 
   const dates = getDatesRange(REPORT_START_DATE);
   const isAllMode = feat === "all";
   const activeDate = dates[activeDateIndex];
+  const { parentsMap } = useMemo(() => buildParentsMap(allFeatures || []), [allFeatures]);
 
   const dayStats = useMemo(
     () => (feat ? (isAllMode ? getDayStats(allFeatures, activeDate, activeDepartment) : getDayStats([feat], activeDate, activeDepartment)) : null),
@@ -76,7 +82,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
         l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
       ) || [];
       const log = logs[0];
-      if (!log || !logHasPersonnel(log)) return false;
+      if (!log || !logHasAnyData(log)) return false;
       return logMatchesArrivalFilter(log, arrivalFilter);
     });
   }, [isAllMode, allFeatures, feat, activeEditFeatureId, searchQuery, activeDate, arrivalFilter, activeDepartment]);
@@ -90,7 +96,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
         l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
       ) || [];
       const log = logs[0];
-      return !log || !logHasPersonnel(log);
+      return !log || !logHasAnyData(log);
     });
   }, [isAllMode, allFeatures, feat, searchQuery, activeDate, activeDepartment]);
 
@@ -111,13 +117,13 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     return dates.reduce((acc, dateStr) => {
       if (isAllMode) {
         return acc + (allFeatures.some((f) => f.dailyLogs?.some((l) =>
-          l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department) && logHasPersonnel(l)
+          l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department) && logHasAnyData(l)
         )) ? 1 : 0);
       }
       const logs = feat.dailyLogs?.filter((l) =>
         l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
       ) || [];
-      return acc + (logs.some((l) => logHasPersonnel(l)) ? 1 : 0);
+      return acc + (logs.some((l) => logHasAnyData(l)) ? 1 : 0);
     }, 0);
   }, [dates, isAllMode, allFeatures, feat, activeDepartment]);
 
@@ -292,28 +298,99 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
               </div>
             )}
 
-            {/* Top sites */}
+            {/* Per-site statistics separated by Sectors vs Sitios de Trabajo */}
             {periodStats.featureStats.length > 0 && (
-              <div>
-                <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>Por Sitio de Trabajo</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                  {periodStats.featureStats.slice(0, 15).map((fs) => (
-                    <div key={fs.featureId} className="rr-site-stat-row">
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, minWidth: 0 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: fs.featureColor || "var(--color-green)", flexShrink: 0 }} />
-                        <MapPin size={11} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-                        <span className="rr-site-name">{fs.featureTitle}</span>
-                      </div>
-                      <div className="rr-site-badges">
-                        <span className="rr-site-badge">{fs.daysActive}d</span>
-                        {fs.totalRescued > 0 && <span className="rr-site-badge" style={{ color: "var(--color-green)" }}>↑{fs.totalRescued}</span>}
-                        {fs.totalRecovered > 0 && <span className="rr-site-badge" style={{ color: "var(--color-high)" }}>✝{fs.totalRecovered}</span>}
-                        {fs.totalPrehospitalCare > 0 && <span className="rr-site-badge" style={{ color: "var(--color-info)" }}>⚕{fs.totalPrehospitalCare}</span>}
-                        {fs.totalTransfers > 0 && <span className="rr-site-badge" style={{ color: "var(--color-purple)" }}>⇒{fs.totalTransfers}</span>}
-                      </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {/* Sectors section with dedicated Puntos Contenidos column */}
+                {periodStats.featureStats.some((fs) => isSectorFeature(fs)) && (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.7rem", fontWeight: 800, color: "var(--color-info)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>
+                      <Layers size={12} /> Sectores
                     </div>
-                  ))}
-                </div>
+                    <div className="rr-stats-table-wrap">
+                      <table className="rr-stats-table">
+                        <thead>
+                          <tr>
+                            <th>Sector</th>
+                            <th style={{ color: "#38bdf8" }}>Puntos Contenidos</th>
+                            <th style={{ textAlign: "center" }}>Días</th>
+                            <th style={{ textAlign: "center", color: "var(--color-green)" }}>Rescatados</th>
+                            <th style={{ textAlign: "center", color: "var(--color-high)" }}>Recuperados</th>
+                            <th style={{ textAlign: "center", color: "var(--color-info)" }}>Atenciones</th>
+                            <th style={{ textAlign: "center", color: "var(--color-purple)" }}>Traslados</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {periodStats.featureStats.filter((fs) => isSectorFeature(fs)).map((fs, idx) => {
+                            const containedPoints = (allFeatures || []).filter((c) => String(parentsMap[c.id]) === String(fs.featureId));
+                            const pointsText = containedPoints.map((c) => c.title).join(", ");
+
+                            return (
+                              <tr key={fs.featureId} className={idx % 2 === 0 ? "rr-tr-even" : ""}>
+                                <td>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 700 }}>
+                                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: fs.featureColor || "var(--color-info)", flexShrink: 0 }} />
+                                    <Layers size={11} style={{ color: "var(--color-info)", flexShrink: 0 }} />
+                                    <span>{fs.featureTitle}</span>
+                                  </div>
+                                </td>
+                                <td style={{ textAlign: "center", fontWeight: 700, color: containedPoints.length > 0 ? "#38bdf8" : "var(--text-muted)" }}>
+                                  {containedPoints.length}
+                                </td>
+                                <td style={{ textAlign: "center", fontWeight: 700 }}>{fs.daysActive}</td>
+                                <td style={{ textAlign: "center", color: fs.totalRescued > 0 ? "var(--color-green)" : "var(--text-muted)" }}>{fs.totalRescued}</td>
+                                <td style={{ textAlign: "center", color: fs.totalRecovered > 0 ? "var(--color-high)" : "var(--text-muted)" }}>{fs.totalRecovered}</td>
+                                <td style={{ textAlign: "center", color: fs.totalPrehospitalCare > 0 ? "var(--color-info)" : "var(--text-muted)" }}>{fs.totalPrehospitalCare}</td>
+                                <td style={{ textAlign: "center", color: fs.totalTransfers > 0 ? "var(--color-purple)" : "var(--text-muted)" }}>{fs.totalTransfers}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sitios de Trabajo section */}
+                {periodStats.featureStats.some((fs) => !isSectorFeature(fs)) && (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.7rem", fontWeight: 800, color: "var(--accent-orange)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>
+                      <MapPin size={12} /> Sitios de Trabajo
+                    </div>
+                    <div className="rr-stats-table-wrap">
+                      <table className="rr-stats-table">
+                        <thead>
+                          <tr>
+                            <th>Sitio de Trabajo</th>
+                            <th style={{ textAlign: "center" }}>Días</th>
+                            <th style={{ textAlign: "center", color: "var(--color-green)" }}>Rescatados</th>
+                            <th style={{ textAlign: "center", color: "var(--color-high)" }}>Recuperados</th>
+                            <th style={{ textAlign: "center", color: "var(--color-info)" }}>Atenciones</th>
+                            <th style={{ textAlign: "center", color: "var(--color-purple)" }}>Traslados</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {periodStats.featureStats.filter((fs) => !isSectorFeature(fs)).map((fs, idx) => (
+                            <tr key={fs.featureId} className={idx % 2 === 0 ? "rr-tr-even" : ""}>
+                              <td>
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 700 }}>
+                                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: fs.featureColor || "var(--color-green)", flexShrink: 0 }} />
+                                  <MapPin size={11} style={{ color: "var(--accent-orange)", flexShrink: 0 }} />
+                                  <span>{fs.featureTitle}</span>
+                                </div>
+                              </td>
+                              <td style={{ textAlign: "center", fontWeight: 700 }}>{fs.daysActive}</td>
+                              <td style={{ textAlign: "center", color: fs.totalRescued > 0 ? "var(--color-green)" : "var(--text-muted)" }}>{fs.totalRescued}</td>
+                              <td style={{ textAlign: "center", color: fs.totalRecovered > 0 ? "var(--color-high)" : "var(--text-muted)" }}>{fs.totalRecovered}</td>
+                              <td style={{ textAlign: "center", color: fs.totalPrehospitalCare > 0 ? "var(--color-info)" : "var(--text-muted)" }}>{fs.totalPrehospitalCare}</td>
+                              <td style={{ textAlign: "center", color: fs.totalTransfers > 0 ? "var(--color-purple)" : "var(--text-muted)" }}>{fs.totalTransfers}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -340,20 +417,45 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
               >
                 <ChevronLeft size={14} />
               </button>
-              <select
-                value={activeDateIndex}
-                onChange={(e) => { setActiveDateIndex(parseInt(e.target.value, 10)); setActiveEditFeatureId(null); }}
-                className="rr-date-select"
-              >
-                {dates.map((dateStr, idx) => {
-                  const dayHasData = allFeatures.some((f) => f.dailyLogs?.some((l) => l.date === dateStr && logHasPersonnel(l)));
-                  return (
-                    <option key={dateStr} value={idx}>
-                      {formatDateFriendly(dateStr)} {dayHasData ? "•" : ""}
-                    </option>
-                  );
-                })}
-              </select>
+
+              {/* Botón Selector de Fecha que abre el Calendario */}
+              <div style={{ position: "relative" }}>
+                <button
+                  type="button"
+                  className="rr-date-trigger-btn"
+                  onClick={() => setShowCalendarPopover((v) => !v)}
+                  title="Abrir calendario para seleccionar fecha"
+                >
+                  <Calendar size={13} style={{ color: "var(--color-info)" }} />
+                  <span>{formatDateFriendly(activeDate)}</span>
+                  <ChevronDown
+                    size={12}
+                    style={{
+                      color: "var(--text-muted)",
+                      transition: "transform 0.2s ease",
+                      transform: showCalendarPopover ? "rotate(180deg)" : "none",
+                    }}
+                  />
+                </button>
+
+                {/* Popover flotante de Calendario */}
+                {showCalendarPopover && (
+                  <div className="rr-calendar-popover" onClick={(e) => e.stopPropagation()}>
+                    <BitacoraCalendar
+                      selectedDate={activeDate}
+                      onSelectDate={(dStr) => {
+                        const idx = dates.indexOf(dStr);
+                        if (idx !== -1) {
+                          setActiveDateIndex(idx);
+                          setActiveEditFeatureId(null);
+                        }
+                        setShowCalendarPopover(false);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={handleNextDay}
                 disabled={activeDateIndex === 0}
@@ -460,86 +562,170 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                   </div>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  {activePoints.map((pt) => {
-                    const logs = pt.dailyLogs?.filter((l) =>
-                      l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
-                    ) || [];
-                    const log = logs[0];
-                    const isEditingThis = activeEditFeatureId === pt.id;
-                    const hasG2 = !!(log?.groupName2 || log?.unitOut2);
-
-                    return (
-                      <div key={pt.id} className="rr-point-card">
-                        <div className="rr-card-header">
-                          <div className="rr-card-title-group">
-                            <span
-                              className="rr-card-dot"
-                              style={{
-                                backgroundColor: pt.color || "var(--color-green)",
-                                color: pt.color || "var(--color-green)",
-                              }}
-                            />
-                            <span className="rr-card-title">{pt.title}</span>
-                          </div>
-                          <button
-                            onClick={() => setActiveEditFeatureId(isEditingThis ? null : pt.id)}
-                            className="rr-edit-btn"
-                          >
-                            {isEditingThis ? "Cerrar Editor" : "Editar Sitio"}
-                          </button>
-                        </div>
-
-                        {!isEditingThis && log && (
-                          <div className="rr-card-body">
-                            <GroupDisplay
-                              group={getGroupData(log, 1)}
-                              label="G1"
-                              accentColor="#38bdf8"
-                              onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 1, newArrived)}
-                            />
-                            {hasG2 && (
-                              <GroupDisplay
-                                group={getGroupData(log, 2)}
-                                label="G2"
-                                accentColor="#a855f7"
-                                onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 2, newArrived)}
-                              />
-                            )}
-                          </div>
-                        )}
-
-                        {log?.observations && !isEditingThis && (
-                          <div className="rr-card-obs">
-                            <span className="rr-obs-label">Nota:</span> {log.observations}
-                          </div>
-                        )}
-
-                        {isEditingThis && (
-                          <div className="rr-point-edit-zone">
-                            <InlineRowEditor dateStr={activeDate} log={log} feat={pt} onSaveDailyLog={onSaveDailyLog} onCloseEditor={() => setActiveEditFeatureId(null)} />
-                          </div>
-                        )}
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  {/* Sectors group */}
+                  {activePoints.some((pt) => isSectorFeature(pt)) && (
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.68rem", fontWeight: 800, color: "var(--color-info)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
+                        <Layers size={12} /> Sectores ({activePoints.filter((pt) => isSectorFeature(pt)).length})
                       </div>
-                    );
-                  })}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {activePoints.filter((pt) => isSectorFeature(pt)).map((pt) => {
+                          const logs = pt.dailyLogs?.filter((l) =>
+                            l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+                          ) || [];
+                          const log = logs[0];
+                          const isEditingThis = activeEditFeatureId === pt.id;
+                          const hasG2 = !!(log?.groupName2 || log?.unitOut2);
+                          const containedPoints = (allFeatures || []).filter((c) => String(parentsMap[c.id]) === String(pt.id));
+
+                          return (
+                            <div key={pt.id} className="rr-point-card" style={{ borderColor: "rgba(56, 189, 248, 0.25)" }}>
+                              <div className="rr-card-header">
+                                <div className="rr-card-title-group">
+                                  <span className="rr-card-dot" style={{ backgroundColor: pt.color || "var(--color-info)", color: pt.color || "var(--color-info)" }} />
+                                  <Layers size={12} style={{ color: "var(--color-info)" }} />
+                                  <span className="rr-card-title">{pt.title}</span>
+                                  <span className="rr-meta-chip" style={{ background: "rgba(56, 189, 248, 0.12)", color: "var(--color-info)", fontSize: "0.58rem" }}>
+                                    SECTOR
+                                  </span>
+                                </div>
+                                <button onClick={() => setActiveEditFeatureId(isEditingThis ? null : pt.id)} className="rr-edit-btn">
+                                  {isEditingThis ? "Cerrar Editor" : "Editar Sitio"}
+                                </button>
+                              </div>
+
+                              {!isEditingThis && log && (
+                                <div className="rr-card-body">
+                                  <GroupDisplay group={getGroupData(log, 1)} label="G1" accentColor="#38bdf8" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 1, newArrived)} />
+                                  {hasG2 && <GroupDisplay group={getGroupData(log, 2)} label="G2" accentColor="#a855f7" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 2, newArrived)} />}
+                                </div>
+                              )}
+
+                              {containedPoints.some((cp) => cp.dailyLogs?.some((l) => l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department) && logHasAnyData(l))) && (
+                                <div style={{ marginTop: "6px", padding: "6px 10px", background: "rgba(56, 189, 248, 0.05)", borderRadius: "8px", border: "1px dashed rgba(56, 189, 248, 0.25)", display: "flex", flexDirection: "column", gap: "4px" }}>
+                                  <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", display: "flex", alignItems: "center", gap: "4px" }}>
+                                    <MapPin size={10} /> PUNTOS CONTENIDOS EN ESTE SECTOR ({activeDate}):
+                                  </div>
+                                  {containedPoints.map((cp) => {
+                                    const cpLog = cp.dailyLogs?.find((l) => l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department) && logHasAnyData(l));
+                                    if (!cpLog) return null;
+                                    const r = (parseInt(cpLog.rescuedCount || "0", 10) + parseInt(cpLog.rescuedCount2 || "0", 10));
+                                    const rc = (parseInt(cpLog.recoveredCount || "0", 10) + parseInt(cpLog.recoveredCount2 || "0", 10));
+                                    const ph = (parseInt(cpLog.prehospitalCareCount || "0", 10) + parseInt(cpLog.prehospitalCareCount2 || "0", 10));
+                                    const tr = (parseInt(cpLog.transfersCount || "0", 10) + parseInt(cpLog.transfersCount2 || "0", 10));
+                                    const off = (parseInt(cpLog.officersCount || "0", 10) + parseInt(cpLog.officersCount2 || "0", 10));
+                                    return (
+                                      <div key={cp.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.63rem", color: "var(--text-main)", padding: "2px 4px", background: "rgba(255, 255, 255, 0.02)", borderRadius: "4px" }}>
+                                        <span style={{ fontWeight: 600 }}>📍 {cp.title} {cpLog.groupName ? `(${cpLog.groupName})` : ""}</span>
+                                        <div style={{ display: "flex", gap: "6px", fontSize: "0.6rem" }}>
+                                          {off > 0 && <span style={{ color: "#94a3b8" }}>👥 {off}</span>}
+                                          {r > 0 && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>↑{r}</span>}
+                                          {rc > 0 && <span style={{ color: "var(--color-high)", fontWeight: 700 }}>✝{rc}</span>}
+                                          {ph > 0 && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>⚕{ph}</span>}
+                                          {tr > 0 && <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>⇒{tr}</span>}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {log?.observations && !isEditingThis && (
+                                <div className="rr-card-obs"><span className="rr-obs-label">Nota:</span> {log.observations}</div>
+                              )}
+
+                              {isEditingThis && (
+                                <div className="rr-point-edit-zone">
+                                  <InlineRowEditor dateStr={activeDate} log={log} feat={pt} onSaveDailyLog={onSaveDailyLog} onCloseEditor={() => setActiveEditFeatureId(null)} />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sitios de Trabajo group */}
+                  {activePoints.some((pt) => !isSectorFeature(pt)) && (
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.68rem", fontWeight: 800, color: "var(--accent-orange)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
+                        <MapPin size={12} /> Sitios de Trabajo ({activePoints.filter((pt) => !isSectorFeature(pt)).length})
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {activePoints.filter((pt) => !isSectorFeature(pt)).map((pt) => {
+                          const logs = pt.dailyLogs?.filter((l) =>
+                            l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+                          ) || [];
+                          const log = logs[0];
+                          const isEditingThis = activeEditFeatureId === pt.id;
+                          const hasG2 = !!(log?.groupName2 || log?.unitOut2);
+
+                          return (
+                            <div key={pt.id} className="rr-point-card">
+                              <div className="rr-card-header">
+                                <div className="rr-card-title-group">
+                                  <span className="rr-card-dot" style={{ backgroundColor: pt.color || "var(--color-green)", color: pt.color || "var(--color-green)" }} />
+                                  <MapPin size={12} style={{ color: "var(--accent-orange)" }} />
+                                  <span className="rr-card-title">{pt.title}</span>
+                                  <span className="rr-meta-chip" style={{ background: "rgba(249, 115, 22, 0.12)", color: "#fb923c", fontSize: "0.58rem" }}>SITIO</span>
+                                </div>
+                                <button onClick={() => setActiveEditFeatureId(isEditingThis ? null : pt.id)} className="rr-edit-btn">
+                                  {isEditingThis ? "Cerrar Editor" : "Editar Sitio"}
+                                </button>
+                              </div>
+
+                              {!isEditingThis && log && (
+                                <div className="rr-card-body">
+                                  <GroupDisplay group={getGroupData(log, 1)} label="G1" accentColor="#38bdf8" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 1, newArrived)} />
+                                  {hasG2 && <GroupDisplay group={getGroupData(log, 2)} label="G2" accentColor="#a855f7" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 2, newArrived)} />}
+                                </div>
+                              )}
+
+                              {log?.observations && !isEditingThis && (
+                                <div className="rr-card-obs"><span className="rr-obs-label">Nota:</span> {log.observations}</div>
+                              )}
+
+                              {isEditingThis && (
+                                <div className="rr-point-edit-zone">
+                                  <InlineRowEditor dateStr={activeDate} log={log} feat={pt} onSaveDailyLog={onSaveDailyLog} onCloseEditor={() => setActiveEditFeatureId(null)} />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
               {inactivePoints.length > 0 && (
                 <div style={{ marginTop: "10px", padding: "8px 10px", background: "rgba(255, 255, 255, 0.01)", border: "1px dashed rgba(255, 255, 255, 0.08)", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "6px" }}>
                   <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em" }}>
-                    + REGISTRAR EN OTRO SITIO
+                    + REGISTRAR EN OTRO SITIO O SECTOR
                   </div>
                   <select
                     defaultValue=""
                     onChange={(e) => { const val = e.target.value; if (val) { setActiveEditFeatureId(parseInt(val, 10)); e.target.value = ""; } }}
                     style={{ background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "5px", color: "var(--text-main)", fontSize: "0.68rem", padding: "4px 8px", outline: "none", width: "100%", cursor: "pointer" }}
                   >
-                    <option value="" disabled style={{ background: "#1e293b" }}>-- Seleccionar Sitio --</option>
-                    {inactivePoints.map((pt) => (
-                      <option key={pt.id} value={pt.id} style={{ background: "#1e293b" }}>{pt.title}</option>
-                    ))}
+                    <option value="" disabled style={{ background: "#1e293b" }}>-- Seleccionar Sitio o Sector --</option>
+                    {inactivePoints.some((pt) => isSectorFeature(pt)) && (
+                      <optgroup label="🗺️ Sectores" style={{ background: "#1e293b", color: "#38bdf8" }}>
+                        {inactivePoints.filter((pt) => isSectorFeature(pt)).map((pt) => (
+                          <option key={pt.id} value={pt.id} style={{ background: "#1e293b", color: "#e2e8f0" }}>{pt.title}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {inactivePoints.some((pt) => !isSectorFeature(pt)) && (
+                      <optgroup label="📍 Sitios de Trabajo" style={{ background: "#1e293b", color: "#fb923c" }}>
+                        {inactivePoints.filter((pt) => !isSectorFeature(pt)).map((pt) => (
+                          <option key={pt.id} value={pt.id} style={{ background: "#1e293b", color: "#e2e8f0" }}>{pt.title}</option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
               )}
