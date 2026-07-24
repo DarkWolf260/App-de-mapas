@@ -192,19 +192,7 @@ interface MapComponentProps {
       >
         {/* Map Settings & Layer Visibility Panel */}
         {props.onToggleLayer && (
-          <div
-            style={{
-              width: "260px",
-              background: "rgba(10, 15, 28, 0.92)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              borderRadius: "12px",
-              padding: "8px 12px",
-              boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              pointerEvents: "auto",
-            }}
-          >
+          <div style={{ pointerEvents: "auto" }}>
             <MapSettingsPanel
               layerVisibility={layerVisibility}
               onToggleLayer={props.onToggleLayer}
