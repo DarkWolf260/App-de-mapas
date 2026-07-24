@@ -1,6 +1,6 @@
 import React from "react";
 import "@arcgis/core/assets/esri/themes/dark/main.css";
-import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DailyLog, DepartmentView } from "../types";
+import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DailyLog, DepartmentView, WorkGroup } from "../types";
 import { DrawingToolbar } from "./DrawingToolbar";
 import { CustomMapPopup } from "./CustomMapPopup";
 import { DeploymentSummaryCard } from "./DeploymentSummaryCard";
