@@ -74,10 +74,6 @@ export const formatFeatureLabelText = (feat: DrawnFeature, todayStr: string, act
     }
   }
 
-  if (feat.isCollapsed) {
-    parts.push(`Colapsado: ${feat.collapsedCount || "1"}`);
-  }
-
   for (const todayLog of todayLogs) {
     const rescued = (parseInt(todayLog.rescuedCount || "0", 10) || 0) + (parseInt(todayLog.rescuedCount2 || "0", 10) || 0) + (parseInt(todayLog.rescuedCount3 || "0", 10) || 0) + (parseInt(todayLog.rescuedCount4 || "0", 10) || 0);
     const recovered = (parseInt(todayLog.recoveredCount || "0", 10) || 0) + (parseInt(todayLog.recoveredCount2 || "0", 10) || 0) + (parseInt(todayLog.recoveredCount3 || "0", 10) || 0) + (parseInt(todayLog.recoveredCount4 || "0", 10) || 0);

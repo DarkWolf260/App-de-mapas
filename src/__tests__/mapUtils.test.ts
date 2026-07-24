@@ -94,7 +94,7 @@ describe("formatFeatureLabelText", () => {
     expect(labelStr).toBe("Punto Bravo (Grupo 1 | Grupo 2 | Grupo 3)");
   });
 
-  it("includes Colapsado tag when feature isCollapsed is true", () => {
+  it("returns title without adding overlay labels when point has no personnel logs", () => {
     const feat = {
       id: 3,
       title: "Residencias Las Palmas",
@@ -105,6 +105,6 @@ describe("formatFeatureLabelText", () => {
     } as any;
 
     const labelStr = formatFeatureLabelText(feat, "2026-07-24");
-    expect(labelStr).toBe("Residencias Las Palmas (Colapsado: 2)");
+    expect(labelStr).toBe("Residencias Las Palmas");
   });
 });

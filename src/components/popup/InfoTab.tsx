@@ -186,8 +186,8 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {/* Badge de Edificio Colapsado */}
-      {activeFeat.isCollapsed && (
+      {/* Badge de Edificio Colapsado — solo para puntos */}
+      {!isPolygon && activeFeat.isCollapsed && (
         <div
           style={{
             background: "rgba(239, 68, 68, 0.14)",

@@ -82,63 +82,65 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
       </div>
     </div>
 
-    {/* Sección de Edificio Colapsado */}
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        background: localIsCollapsed ? "rgba(239, 68, 68, 0.1)" : "rgba(255, 255, 255, 0.03)",
-        border: localIsCollapsed ? "1px solid rgba(239, 68, 68, 0.35)" : "1px solid var(--border-subtle)",
-        borderRadius: "8px",
-        padding: "8px 12px",
-        transition: "all 0.2s ease",
-      }}
-    >
-      <label
+    {/* Sección de Edificio Colapsado — solo para puntos */}
+    {activeFeat.type === "point" && (
+      <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "8px",
-          cursor: "pointer",
-          fontSize: "0.76rem",
-          fontWeight: 700,
-          color: localIsCollapsed ? "#f87171" : "var(--text-secondary)",
-          margin: 0,
+          justifyContent: "space-between",
+          background: localIsCollapsed ? "rgba(239, 68, 68, 0.1)" : "rgba(255, 255, 255, 0.03)",
+          border: localIsCollapsed ? "1px solid rgba(239, 68, 68, 0.35)" : "1px solid var(--border-subtle)",
+          borderRadius: "8px",
+          padding: "8px 12px",
+          transition: "all 0.2s ease",
         }}
       >
-        <input
-          type="checkbox"
-          checked={!!localIsCollapsed}
-          onChange={(e) => onIsCollapsedChange?.(e.target.checked)}
-          style={{ width: "15px", height: "15px", accentColor: "#ef4444", cursor: "pointer" }}
-        />
-        <span>Edificio Colapsado</span>
-      </label>
-
-      {localIsCollapsed && (
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 600 }}>Cantidad:</span>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            cursor: "pointer",
+            fontSize: "0.76rem",
+            fontWeight: 700,
+            color: localIsCollapsed ? "#f87171" : "var(--text-secondary)",
+            margin: 0,
+          }}
+        >
           <input
-            type="number"
-            min={1}
-            value={localCollapsedCount || "1"}
-            onChange={(e) => onCollapsedCountChange?.(e.target.value)}
-            style={{
-              width: "55px",
-              padding: "3px 6px",
-              background: "rgba(0, 0, 0, 0.4)",
-              border: "1px solid rgba(239, 68, 68, 0.4)",
-              borderRadius: "6px",
-              color: "#f87171",
-              fontWeight: 800,
-              fontSize: "0.78rem",
-              textAlign: "center",
-            }}
+            type="checkbox"
+            checked={!!localIsCollapsed}
+            onChange={(e) => onIsCollapsedChange?.(e.target.checked)}
+            style={{ width: "15px", height: "15px", accentColor: "#ef4444", cursor: "pointer" }}
           />
-        </div>
-      )}
-    </div>
+          <span>Edificio Colapsado</span>
+        </label>
+
+        {localIsCollapsed && (
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 600 }}>Cantidad:</span>
+            <input
+              type="number"
+              min={1}
+              value={localCollapsedCount || "1"}
+              onChange={(e) => onCollapsedCountChange?.(e.target.value)}
+              style={{
+                width: "55px",
+                padding: "3px 6px",
+                background: "rgba(0, 0, 0, 0.4)",
+                border: "1px solid rgba(239, 68, 68, 0.4)",
+                borderRadius: "6px",
+                color: "#f87171",
+                fontWeight: 800,
+                fontSize: "0.78rem",
+                textAlign: "center",
+              }}
+            />
+          </div>
+        )}
+      </div>
+    )}
 
     {/* 2. DESCRIPCIÓN Y NOTAS CON MÁS ESPACIO */}
     <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>

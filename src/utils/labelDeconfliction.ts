@@ -247,9 +247,9 @@ function buildHtmlLabels(
       }
     }
 
-    const hasPersonnel = feat?.type === "point" && (!!feat.isCollapsed || (feat.dailyLogs?.some((l) =>
+    const hasPersonnel = feat?.type === "point" && (feat.dailyLogs?.some((l) =>
       l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
-    ) || false));
+    ) || false);
 
     if (hasPersonnel && !isPolygonLabel) {
       // La etiqueta gráfica nativa de ESRI siempre se oculta para puntos con personal o estadísticas
