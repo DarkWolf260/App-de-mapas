@@ -183,6 +183,7 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
             log={draft}
             onFieldChange={onChange as (field: string, value: string | boolean) => void}
             colorVar="var(--color-purple)"
+            hideHeader
             workGroups={workGroups}
           />
         </div>

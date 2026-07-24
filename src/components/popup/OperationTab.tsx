@@ -155,7 +155,7 @@ export const OperationTab: React.FC<OperationTabProps> = ({
               log={localLog}
               onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
               colorVar="var(--color-purple)"
-              headerStyle={groupHeaderStyle("var(--color-purple)")}
+              hideHeader
               workGroups={workGroups}
             />
           </div>
