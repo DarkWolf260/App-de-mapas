@@ -46,6 +46,9 @@ export interface DailyLog {
   rescuedPetsCount?: string;
   prehospitalCareCount?: string;
   transfersCount?: string;
+  hasArrivedG1?: boolean;
+
+  // Group 2
   groupName2?: string;
   managerName2?: string;
   managerPhone2?: string;
@@ -57,8 +60,36 @@ export interface DailyLog {
   recoveredCount2?: string;
   prehospitalCareCount2?: string;
   transfersCount2?: string;
-  hasArrivedG1?: boolean;
   hasArrivedG2?: boolean;
+
+  // Group 3
+  groupName3?: string;
+  managerName3?: string;
+  managerPhone3?: string;
+  unitOut3?: string;
+  departureTime3?: string;
+  arrivalTime3?: string;
+  officersCount3?: string;
+  rescuedCount3?: string;
+  recoveredCount3?: string;
+  prehospitalCareCount3?: string;
+  transfersCount3?: string;
+  hasArrivedG3?: boolean;
+
+  // Group 4
+  groupName4?: string;
+  managerName4?: string;
+  managerPhone4?: string;
+  unitOut4?: string;
+  departureTime4?: string;
+  arrivalTime4?: string;
+  officersCount4?: string;
+  rescuedCount4?: string;
+  recoveredCount4?: string;
+  prehospitalCareCount4?: string;
+  transfersCount4?: string;
+  hasArrivedG4?: boolean;
+
   observations?: string;
 }
 

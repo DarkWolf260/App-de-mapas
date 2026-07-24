@@ -46,24 +46,42 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
   activeDepartment,
   workGroups = [],
 }) => {
-  const [showGroup2, setShowGroup2] = useState(
+  const [showGroup2, setShowGroup2] = useState<boolean>(
     !!(draft.groupName2 || draft.unitOut2 || draft.managerName2 || draft.officersCount2)
+  );
+  const [showGroup3, setShowGroup3] = useState<boolean>(
+    !!(draft.groupName3 || draft.unitOut3 || draft.managerName3 || draft.officersCount3)
+  );
+  const [showGroup4, setShowGroup4] = useState<boolean>(
+    !!(draft.groupName4 || draft.unitOut4 || draft.managerName4 || draft.officersCount4)
   );
 
   const handleToggleGroup2 = useCallback(() => {
     if (showGroup2) {
-      onChange("groupName2", "");
-      onChange("managerName2", "");
-      onChange("managerPhone2", "");
-      onChange("unitOut2", "");
-      onChange("departureTime2", "");
-      onChange("arrivalTime2", "");
-      onChange("officersCount2", "");
-      onChange("rescuedCount2", "");
-      onChange("recoveredCount2", "");
+      for (const key of ["groupName2", "managerName2", "managerPhone2", "unitOut2", "departureTime2", "arrivalTime2", "officersCount2", "rescuedCount2", "recoveredCount2", "hasArrivedG2"]) {
+        onChange(key as keyof DailyLog, key === "hasArrivedG2" ? false : "");
+      }
     }
     setShowGroup2(!showGroup2);
   }, [showGroup2, onChange]);
+
+  const handleToggleGroup3 = useCallback(() => {
+    if (showGroup3) {
+      for (const key of ["groupName3", "managerName3", "managerPhone3", "unitOut3", "departureTime3", "arrivalTime3", "officersCount3", "rescuedCount3", "recoveredCount3", "hasArrivedG3"]) {
+        onChange(key as keyof DailyLog, key === "hasArrivedG3" ? false : "");
+      }
+    }
+    setShowGroup3(!showGroup3);
+  }, [showGroup3, onChange]);
+
+  const handleToggleGroup4 = useCallback(() => {
+    if (showGroup4) {
+      for (const key of ["groupName4", "managerName4", "managerPhone4", "unitOut4", "departureTime4", "arrivalTime4", "officersCount4", "rescuedCount4", "recoveredCount4", "hasArrivedG4"]) {
+        onChange(key as keyof DailyLog, key === "hasArrivedG4" ? false : "");
+      }
+    }
+    setShowGroup4(!showGroup4);
+  }, [showGroup4, onChange]);
 
   const currentDept = draft.department || "pc";
 
@@ -188,6 +206,72 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
           />
         </div>
       )}
+
+      {/* TOGGLE GRUPO 3 */}
+      {showGroup2 && (!showGroup3 ? (
+        <button
+          type="button"
+          className="sim-btn"
+          onClick={handleToggleGroup3}
+          style={{ marginTop: "4px", justifyContent: "center", padding: "6px", fontSize: "0.68rem", width: "100%", background: "rgba(168, 85, 247, 0.06)", border: "1px dashed rgba(168, 85, 247, 0.2)", color: "#c084fc" }}
+        >
+          + Registrar Tercer Grupo
+        </button>
+      ) : (
+        <div style={{ marginTop: "8px", borderTop: "1px dashed rgba(255, 255, 255, 0.08)", paddingTop: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", fontWeight: 700, color: "#c084fc", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "4px", marginBottom: "8px" }}>
+            <span>GRUPO 3 (OPCIONAL)</span>
+            <button
+              type="button"
+              onClick={handleToggleGroup3}
+              style={{ background: "transparent", border: "none", color: "var(--color-high)", fontSize: "0.62rem", cursor: "pointer", padding: 0 }}
+            >
+              Remover Grupo 3
+            </button>
+          </div>
+          <GroupFields
+            groupIndex={3}
+            log={draft}
+            onFieldChange={onChange as (field: string, value: string | boolean) => void}
+            colorVar="#c084fc"
+            hideHeader
+            workGroups={workGroups}
+          />
+        </div>
+      ))}
+
+      {/* TOGGLE GRUPO 4 */}
+      {showGroup2 && showGroup3 && (!showGroup4 ? (
+        <button
+          type="button"
+          className="sim-btn"
+          onClick={handleToggleGroup4}
+          style={{ marginTop: "4px", justifyContent: "center", padding: "6px", fontSize: "0.68rem", width: "100%", background: "rgba(251, 146, 60, 0.06)", border: "1px dashed rgba(251, 146, 60, 0.2)", color: "#fb923c" }}
+        >
+          + Registrar Cuarto Grupo
+        </button>
+      ) : (
+        <div style={{ marginTop: "8px", borderTop: "1px dashed rgba(255, 255, 255, 0.08)", paddingTop: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", fontWeight: 700, color: "#fb923c", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "4px", marginBottom: "8px" }}>
+            <span>GRUPO 4 (OPCIONAL)</span>
+            <button
+              type="button"
+              onClick={handleToggleGroup4}
+              style={{ background: "transparent", border: "none", color: "var(--color-high)", fontSize: "0.62rem", cursor: "pointer", padding: 0 }}
+            >
+              Remover Grupo 4
+            </button>
+          </div>
+          <GroupFields
+            groupIndex={4}
+            log={draft}
+            onFieldChange={onChange as (field: string, value: string | boolean) => void}
+            colorVar="#fb923c"
+            hideHeader
+            workGroups={workGroups}
+          />
+        </div>
+      ))}
 
       {/* Resultados y Métricas Operativas */}
       <div style={{ marginTop: "4px", background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "6px", padding: "6px" }}>

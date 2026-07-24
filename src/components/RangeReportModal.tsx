@@ -145,7 +145,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     }
   };
 
-  const handleToggleArrivalQuick = async (pt: DrawnFeature, groupIndex: 1 | 2, newArrived: boolean) => {
+  const handleToggleArrivalQuick = async (pt: DrawnFeature, groupIndex: 1 | 2 | 3 | 4, newArrived: boolean) => {
     if (!onSaveDailyLog) return;
     const logs = pt.dailyLogs?.filter((l) =>
       l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
@@ -161,11 +161,23 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
         hasArrivedG1: newArrived,
         arrivalTime: newArrived ? (currentLog.arrivalTime || nowTime) : "",
       };
-    } else {
+    } else if (groupIndex === 2) {
       updatedLog = {
         ...currentLog,
         hasArrivedG2: newArrived,
         arrivalTime2: newArrived ? (currentLog.arrivalTime2 || nowTime) : "",
+      };
+    } else if (groupIndex === 3) {
+      updatedLog = {
+        ...currentLog,
+        hasArrivedG3: newArrived,
+        arrivalTime3: newArrived ? (currentLog.arrivalTime3 || nowTime) : "",
+      };
+    } else {
+      updatedLog = {
+        ...currentLog,
+        hasArrivedG4: newArrived,
+        arrivalTime4: newArrived ? (currentLog.arrivalTime4 || nowTime) : "",
       };
     }
 
@@ -681,7 +693,9 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                               {!isEditingThis && log && (
                                 <div className="rr-card-body">
                                   <GroupDisplay group={getGroupData(log, 1)} label="G1" accentColor="#38bdf8" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 1, newArrived)} />
-                                  {hasG2 && <GroupDisplay group={getGroupData(log, 2)} label="G2" accentColor="#a855f7" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 2, newArrived)} />}
+                                  {!!(log.groupName2 || log.unitOut2) && <GroupDisplay group={getGroupData(log, 2)} label="G2" accentColor="#a855f7" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 2, newArrived)} />}
+                                  {!!(log.groupName3 || log.unitOut3) && <GroupDisplay group={getGroupData(log, 3)} label="G3" accentColor="#c084fc" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 3, newArrived)} />}
+                                  {!!(log.groupName4 || log.unitOut4) && <GroupDisplay group={getGroupData(log, 4)} label="G4" accentColor="#fb923c" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 4, newArrived)} />}
                                 </div>
                               )}
 

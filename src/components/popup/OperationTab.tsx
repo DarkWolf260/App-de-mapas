@@ -33,8 +33,27 @@ export const OperationTab: React.FC<OperationTabProps> = ({
   onDepartmentSelect,
   workGroups = [],
 }) => {
+  const [showThirdGroup, setShowThirdGroup] = React.useState(!!localLog.groupName3);
+  const [showFourthGroup, setShowFourthGroup] = React.useState(!!localLog.groupName4);
+
+  const clearGroup3 = () => {
+    setShowThirdGroup(false);
+    for (const key of ["groupName3", "unitOut3", "managerName3", "managerPhone3", "officersCount3", "departureTime3", "arrivalTime3", "hasArrivedG3"]) {
+      onFieldChange(key, key === "hasArrivedG3" ? false : "");
+    }
+  };
+
+  const clearGroup4 = () => {
+    setShowFourthGroup(false);
+    for (const key of ["groupName4", "unitOut4", "managerName4", "managerPhone4", "officersCount4", "departureTime4", "arrivalTime4", "hasArrivedG4"]) {
+      onFieldChange(key, key === "hasArrivedG4" ? false : "");
+    }
+  };
+
   const clearGroup2 = () => {
     setShowSecondGroup(false);
+    clearGroup3();
+    clearGroup4();
     for (const key of ["groupName2", "unitOut2", "managerName2", "managerPhone2", "officersCount2", "departureTime2", "arrivalTime2", "hasArrivedG2"]) {
       onFieldChange(key, key === "hasArrivedG2" ? false : "");
     }
@@ -160,6 +179,62 @@ export const OperationTab: React.FC<OperationTabProps> = ({
             />
           </div>
         )}
+
+        {/* Group 3 */}
+        {showSecondGroup && (!showThirdGroup ? (
+          <button
+            type="button"
+            onClick={() => setShowThirdGroup(true)}
+            style={{ background: "transparent", border: "1px dashed rgba(168,85,247,0.3)", borderRadius: "6px", color: "#c084fc", fontSize: "0.62rem", padding: "6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
+          >
+            <Plus size={10} /> Añadir Tercer Grupo
+          </button>
+        ) : (
+          <div style={{ ...sectionBox, position: "relative" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
+              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#c084fc" }}>Tercer Grupo</span>
+              <button type="button" onClick={clearGroup3} style={{ background: "transparent", border: "none", color: "var(--color-high)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }} title="Quitar tercer grupo">
+                <Trash2 size={10} />
+              </button>
+            </div>
+            <GroupFields
+              groupIndex={3}
+              log={localLog}
+              onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
+              colorVar="#c084fc"
+              hideHeader
+              workGroups={workGroups}
+            />
+          </div>
+        ))}
+
+        {/* Group 4 */}
+        {showSecondGroup && showThirdGroup && (!showFourthGroup ? (
+          <button
+            type="button"
+            onClick={() => setShowFourthGroup(true)}
+            style={{ background: "transparent", border: "1px dashed rgba(251,146,60,0.3)", borderRadius: "6px", color: "#fb923c", fontSize: "0.62rem", padding: "6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
+          >
+            <Plus size={10} /> Añadir Cuarto Grupo
+          </button>
+        ) : (
+          <div style={{ ...sectionBox, position: "relative" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
+              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#fb923c" }}>Cuarto Grupo</span>
+              <button type="button" onClick={clearGroup4} style={{ background: "transparent", border: "none", color: "var(--color-high)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }} title="Quitar cuarto grupo">
+                <Trash2 size={10} />
+              </button>
+            </div>
+            <GroupFields
+              groupIndex={4}
+              log={localLog}
+              onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
+              colorVar="#fb923c"
+              hideHeader
+              workGroups={workGroups}
+            />
+          </div>
+        ))}
       </div>
 
       {/* Counts / Métricas Operativas en fila horizontal de 5 columnas */}

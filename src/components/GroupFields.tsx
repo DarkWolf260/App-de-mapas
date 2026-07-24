@@ -31,8 +31,28 @@ const GROUP2_FIELDS_ROW2: [GroupFieldDef, GroupFieldDef] = [
   { key: "officersCount2", placeholder: "Cant. Funcs.", type: "number", min: "0" },
 ];
 
+const GROUP3_FIELDS_ROW1: [GroupFieldDef, GroupFieldDef] = [
+  { key: "groupName3", placeholder: "Nombre Grupo 3" },
+  { key: "unitOut3", placeholder: "Unidad 3 (Vehículo)" },
+];
+
+const GROUP3_FIELDS_ROW2: [GroupFieldDef, GroupFieldDef] = [
+  { key: "managerName3", placeholder: "Encargado 3" },
+  { key: "officersCount3", placeholder: "Cant. Funcs.", type: "number", min: "0" },
+];
+
+const GROUP4_FIELDS_ROW1: [GroupFieldDef, GroupFieldDef] = [
+  { key: "groupName4", placeholder: "Nombre Grupo 4" },
+  { key: "unitOut4", placeholder: "Unidad 4 (Vehículo)" },
+];
+
+const GROUP4_FIELDS_ROW2: [GroupFieldDef, GroupFieldDef] = [
+  { key: "managerName4", placeholder: "Encargado 4" },
+  { key: "officersCount4", placeholder: "Cant. Funcs.", type: "number", min: "0" },
+];
+
 interface GroupFieldsProps {
-  groupIndex: 1 | 2;
+  groupIndex: 1 | 2 | 3 | 4;
   log: Partial<DailyLog>;
   onFieldChange: (field: string, value: string | boolean) => void;
   colorVar: string;
@@ -83,15 +103,40 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
   inputStyle: inputStyleProp,
   headerStyle: headerStyleProp,
 }) => {
-  const isG2 = groupIndex === 2;
-  const suffix = isG2 ? "2" : "";
-  const fieldsRow1 = isG2 ? GROUP2_FIELDS_ROW1 : GROUP1_FIELDS_ROW1;
-  const fieldsRow2 = isG2 ? GROUP2_FIELDS_ROW2 : GROUP1_FIELDS_ROW2;
-  const arrivedKey = isG2 ? "hasArrivedG2" : "hasArrivedG1";
-  const phoneKey = isG2 ? "managerPhone2" : "managerPhone";
-  const departureKey = isG2 ? "departureTime2" : "departureTime";
-  const arrivalKey = isG2 ? "arrivalTime2" : "arrivalTime";
-  const headerLabel = isG2 ? "Grupo Secundario" : "Grupo Primario";
+  const idxStr = groupIndex > 1 ? String(groupIndex) : "";
+  const fieldsRow1 =
+    groupIndex === 4
+      ? GROUP4_FIELDS_ROW1
+      : groupIndex === 3
+      ? GROUP3_FIELDS_ROW1
+      : groupIndex === 2
+      ? GROUP2_FIELDS_ROW1
+      : GROUP1_FIELDS_ROW1;
+
+  const fieldsRow2 =
+    groupIndex === 4
+      ? GROUP4_FIELDS_ROW2
+      : groupIndex === 3
+      ? GROUP3_FIELDS_ROW2
+      : groupIndex === 2
+      ? GROUP2_FIELDS_ROW2
+      : GROUP1_FIELDS_ROW2;
+
+  const arrivedKey = (`hasArrivedG${groupIndex}`) as keyof DailyLog;
+  const phoneKey = (`managerPhone${idxStr}`) as keyof DailyLog;
+  const departureKey = (`departureTime${idxStr}`) as keyof DailyLog;
+  const arrivalKey = (`arrivalTime${idxStr}`) as keyof DailyLog;
+  const nameKey = (`groupName${idxStr}`) as keyof DailyLog;
+  const mgrKey = (`managerName${idxStr}`) as keyof DailyLog;
+
+  const headerLabel =
+    groupIndex === 1
+      ? "Grupo Primario"
+      : groupIndex === 2
+      ? "Grupo Secundario"
+      : groupIndex === 3
+      ? "Tercer Grupo"
+      : "Cuarto Grupo";
 
   const defaultInputStyle: React.CSSProperties = {
     background: "rgba(0, 0, 0, 0.3)",
@@ -117,10 +162,10 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
     letterSpacing: "0.04em",
   };
 
-  const rescuedKey = isG2 ? "rescuedCount2" : "rescuedCount";
-  const recoveredKey = isG2 ? "recoveredCount2" : "recoveredCount";
-  const prehospitalKey = isG2 ? "prehospitalCareCount2" : "prehospitalCareCount";
-  const transfersKey = isG2 ? "transfersCount2" : "transfersCount";
+  const rescuedKey = (`rescuedCount${idxStr}`) as keyof DailyLog;
+  const recoveredKey = (`recoveredCount${idxStr}`) as keyof DailyLog;
+  const prehospitalKey = (`prehospitalCareCount${idxStr}`) as keyof DailyLog;
+  const transfersKey = (`transfersCount${idxStr}`) as keyof DailyLog;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...style }}>
@@ -133,9 +178,6 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
             onChange={(e) => {
               const wg = workGroups.find((g) => g.id === e.target.value);
               if (wg) {
-                const nameKey = isG2 ? "groupName2" : "groupName";
-                const mgrKey = isG2 ? "managerName2" : "managerName";
-                const phoneKey = isG2 ? "managerPhone2" : "managerPhone";
                 onFieldChange(nameKey, wg.name);
                 if (wg.leaderName) onFieldChange(mgrKey, wg.leaderName);
                 if (wg.leaderPhone) onFieldChange(phoneKey, wg.leaderPhone);

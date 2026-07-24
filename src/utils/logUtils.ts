@@ -101,6 +101,22 @@ export function logHasAnyData(log: DailyLog): boolean {
     parseInt(log.recoveredCount2 || "0", 10) > 0 ||
     parseInt(log.prehospitalCareCount2 || "0", 10) > 0 ||
     parseInt(log.transfersCount2 || "0", 10) > 0 ||
+    log.groupName3 ||
+    log.unitOut3 ||
+    log.managerName3 ||
+    parseInt(log.officersCount3 || "0", 10) > 0 ||
+    parseInt(log.rescuedCount3 || "0", 10) > 0 ||
+    parseInt(log.recoveredCount3 || "0", 10) > 0 ||
+    parseInt(log.prehospitalCareCount3 || "0", 10) > 0 ||
+    parseInt(log.transfersCount3 || "0", 10) > 0 ||
+    log.groupName4 ||
+    log.unitOut4 ||
+    log.managerName4 ||
+    parseInt(log.officersCount4 || "0", 10) > 0 ||
+    parseInt(log.rescuedCount4 || "0", 10) > 0 ||
+    parseInt(log.recoveredCount4 || "0", 10) > 0 ||
+    parseInt(log.prehospitalCareCount4 || "0", 10) > 0 ||
+    parseInt(log.transfersCount4 || "0", 10) > 0 ||
     (log.observations && log.observations.trim())
   );
 }
@@ -120,7 +136,7 @@ export interface GroupData {
   hasArrived: boolean;
 }
 
-export function getGroupData(log: DailyLog, group: 1 | 2): GroupData {
+export function getGroupData(log: DailyLog, group: 1 | 2 | 3 | 4): GroupData {
   if (group === 2) {
     return {
       groupName: log.groupName2 || "",
@@ -135,6 +151,38 @@ export function getGroupData(log: DailyLog, group: 1 | 2): GroupData {
       departureTime: log.departureTime2 || "",
       arrivalTime: log.arrivalTime2 || "",
       hasArrived: !!log.hasArrivedG2 || !!log.arrivalTime2,
+    };
+  }
+  if (group === 3) {
+    return {
+      groupName: log.groupName3 || "",
+      managerName: log.managerName3 || "",
+      managerPhone: log.managerPhone3 || "",
+      unitOut: log.unitOut3 || "",
+      officersCount: log.officersCount3 || "",
+      rescuedCount: log.rescuedCount3 || "",
+      recoveredCount: log.recoveredCount3 || "",
+      prehospitalCareCount: log.prehospitalCareCount3 || "",
+      transfersCount: log.transfersCount3 || "",
+      departureTime: log.departureTime3 || "",
+      arrivalTime: log.arrivalTime3 || "",
+      hasArrived: !!log.hasArrivedG3 || !!log.arrivalTime3,
+    };
+  }
+  if (group === 4) {
+    return {
+      groupName: log.groupName4 || "",
+      managerName: log.managerName4 || "",
+      managerPhone: log.managerPhone4 || "",
+      unitOut: log.unitOut4 || "",
+      officersCount: log.officersCount4 || "",
+      rescuedCount: log.rescuedCount4 || "",
+      recoveredCount: log.recoveredCount4 || "",
+      prehospitalCareCount: log.prehospitalCareCount4 || "",
+      transfersCount: log.transfersCount4 || "",
+      departureTime: log.departureTime4 || "",
+      arrivalTime: log.arrivalTime4 || "",
+      hasArrived: !!log.hasArrivedG4 || !!log.arrivalTime4,
     };
   }
   return {
@@ -189,29 +237,41 @@ export function getDayStats(
 
     const p1 = parseInt(log.officersCount || "0", 10);
     const p2 = parseInt(log.officersCount2 || "0", 10);
-    totalPersonnel += p1 + p2;
+    const p3 = parseInt(log.officersCount3 || "0", 10);
+    const p4 = parseInt(log.officersCount4 || "0", 10);
+    totalPersonnel += p1 + p2 + p3 + p4;
 
     const r1 = parseInt(log.rescuedCount || "0", 10);
     const r2 = parseInt(log.rescuedCount2 || "0", 10);
-    totalRescued += r1 + r2;
+    const r3 = parseInt(log.rescuedCount3 || "0", 10);
+    const r4 = parseInt(log.rescuedCount4 || "0", 10);
+    totalRescued += r1 + r2 + r3 + r4;
 
     const rc1 = parseInt(log.recoveredCount || "0", 10);
     const rc2 = parseInt(log.recoveredCount2 || "0", 10);
-    totalRecovered += rc1 + rc2;
+    const rc3 = parseInt(log.recoveredCount3 || "0", 10);
+    const rc4 = parseInt(log.recoveredCount4 || "0", 10);
+    totalRecovered += rc1 + rc2 + rc3 + rc4;
 
     const ph1 = parseInt(log.prehospitalCareCount || "0", 10);
     const ph2 = parseInt(log.prehospitalCareCount2 || "0", 10);
-    totalPrehospitalCare += ph1 + ph2;
+    const ph3 = parseInt(log.prehospitalCareCount3 || "0", 10);
+    const ph4 = parseInt(log.prehospitalCareCount4 || "0", 10);
+    totalPrehospitalCare += ph1 + ph2 + ph3 + ph4;
 
     const tr1 = parseInt(log.transfersCount || "0", 10);
     const tr2 = parseInt(log.transfersCount2 || "0", 10);
-    totalTransfers += tr1 + tr2;
+    const tr3 = parseInt(log.transfersCount3 || "0", 10);
+    const tr4 = parseInt(log.transfersCount4 || "0", 10);
+    totalTransfers += tr1 + tr2 + tr3 + tr4;
 
     const pets = parseInt(log.rescuedPetsCount || "0", 10);
     totalPets += pets;
 
     if (log.hasArrivedG1) groupsArrived++;
     if (log.hasArrivedG2) groupsArrived++;
+    if (log.hasArrivedG3) groupsArrived++;
+    if (log.hasArrivedG4) groupsArrived++;
   }
 
   return { totalPersonnel, totalRescued, totalRecovered, totalPets, totalPrehospitalCare, totalTransfers, activePoints, groupsArrived };
