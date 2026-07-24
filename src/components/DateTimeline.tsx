@@ -2,13 +2,14 @@ import React, { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { BitacoraCalendar } from "./BitacoraCalendar";
 
-const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-function formatDate(dateStr: string): { day: string; month: string } {
-  const parts = dateStr.split("-");
-  const d = parseInt(parts[2], 10);
-  const m = parseInt(parts[1], 10) - 1;
-  return { day: String(d), month: MONTHS[m] };
+function formatDate(dateStr: string): { day: string; dayName: string } {
+  const parts = dateStr.split("-").map(Number);
+  const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+  const d = dateObj.getDate();
+  const dayOfWeek = DAYS[dateObj.getDay()];
+  return { day: String(d), dayName: dayOfWeek };
 }
 
 function buildDateRange(startDate: string): string[] {
@@ -77,7 +78,7 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
 
       <div className="dt-dates">
         {visibleDates.map((dateStr) => {
-          const { day, month } = formatDate(dateStr);
+          const { day, dayName } = formatDate(dateStr);
           const isActive = dateStr === selectedDate;
           const isTodayDate = dateStr === todayStr;
           return (
@@ -87,7 +88,7 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
               onClick={() => onDateChange(dateStr)}
             >
               <span className="dt-date-day">{day}</span>
-              <span className="dt-date-month">{month}</span>
+              <span className="dt-date-month">{dayName}</span>
             </button>
           );
         })}
