@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabaseClient";
 import type { WorkGroup } from "../types";
 
 export function useWorkGroups() {
@@ -13,7 +13,7 @@ export function useWorkGroups() {
         return;
       }
       if (data) {
-        const list: WorkGroup[] = data.map((row) => ({
+        const list: WorkGroup[] = data.map((row: any) => ({
           id: row.id,
           name: row.name,
           leaderName: row.leader_name || "",
