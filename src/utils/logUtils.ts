@@ -228,3 +228,151 @@ export function featureMatchesSearch(
 }
 
 export const REPORT_START_DATE = "2026-06-24";
+
+/* ── Aggregated stats for Statistics view ── */
+
+export interface GroupStats {
+  groupName: string;
+  department?: string;
+  daysActive: number;
+  totalPersonnel: number;
+  totalRescued: number;
+  totalRecovered: number;
+  totalPets: number;
+  totalPrehospitalCare: number;
+  totalTransfers: number;
+}
+
+export interface FeatureStat {
+  featureId: number;
+  featureTitle: string;
+  featureColor?: string;
+  daysActive: number;
+  totalPersonnel: number;
+  totalRescued: number;
+  totalRecovered: number;
+  totalPrehospitalCare: number;
+  totalTransfers: number;
+}
+
+export interface PeriodStats {
+  totalDaysWithData: number;
+  totalPersonnel: number;
+  totalRescued: number;
+  totalRecovered: number;
+  totalPets: number;
+  totalPrehospitalCare: number;
+  totalTransfers: number;
+  groupStats: GroupStats[];
+  featureStats: FeatureStat[];
+}
+
+export function getPeriodStats(
+  features: DrawnFeature[],
+  activeDepartment?: DepartmentView,
+): PeriodStats {
+  const groupMap = new Map<string, GroupStats>();
+  const featureStatsMap = new Map<number, FeatureStat>();
+  const activeDates = new Set<string>();
+
+  let totalPersonnel = 0;
+  let totalRescued = 0;
+  let totalRecovered = 0;
+  let totalPets = 0;
+  let totalPrehospitalCare = 0;
+  let totalTransfers = 0;
+
+  function upsertGroup(name: string, dept: string | undefined, log: DailyLog, suffix: "" | "2") {
+    const key = name + (dept || "");
+    const existing = groupMap.get(key) || {
+      groupName: name,
+      department: dept,
+      daysActive: 0,
+      totalPersonnel: 0,
+      totalRescued: 0,
+      totalRecovered: 0,
+      totalPets: 0,
+      totalPrehospitalCare: 0,
+      totalTransfers: 0,
+    };
+    existing.daysActive++;
+    existing.totalPersonnel += parseInt((suffix === "2" ? log.officersCount2 : log.officersCount) || "0", 10);
+    existing.totalRescued += parseInt((suffix === "2" ? log.rescuedCount2 : log.rescuedCount) || "0", 10);
+    existing.totalRecovered += parseInt((suffix === "2" ? log.recoveredCount2 : log.recoveredCount) || "0", 10);
+    existing.totalPrehospitalCare += parseInt((suffix === "2" ? log.prehospitalCareCount2 : log.prehospitalCareCount) || "0", 10);
+    existing.totalTransfers += parseInt((suffix === "2" ? log.transfersCount2 : log.transfersCount) || "0", 10);
+    existing.totalPets += parseInt(log.rescuedPetsCount || "0", 10);
+    groupMap.set(key, existing);
+  }
+
+  for (const feat of features) {
+    const fStat: FeatureStat = {
+      featureId: feat.id,
+      featureTitle: feat.title,
+      featureColor: feat.color,
+      daysActive: 0,
+      totalPersonnel: 0,
+      totalRescued: 0,
+      totalRecovered: 0,
+      totalPrehospitalCare: 0,
+      totalTransfers: 0,
+    };
+
+    for (const log of feat.dailyLogs || []) {
+      if (activeDepartment && activeDepartment !== "mixto" && log.department && log.department !== activeDepartment) continue;
+
+      const hasPersonnel = parseInt(log.officersCount || "0", 10) + parseInt(log.officersCount2 || "0", 10) > 0;
+      if (!hasPersonnel) continue;
+
+      activeDates.add(log.date);
+      fStat.daysActive++;
+
+      const p1 = parseInt(log.officersCount || "0", 10);
+      const p2 = parseInt(log.officersCount2 || "0", 10);
+      const r1 = parseInt(log.rescuedCount || "0", 10);
+      const r2 = parseInt(log.rescuedCount2 || "0", 10);
+      const rc1 = parseInt(log.recoveredCount || "0", 10);
+      const rc2 = parseInt(log.recoveredCount2 || "0", 10);
+      const ph1 = parseInt(log.prehospitalCareCount || "0", 10);
+      const ph2 = parseInt(log.prehospitalCareCount2 || "0", 10);
+      const tr1 = parseInt(log.transfersCount || "0", 10);
+      const tr2 = parseInt(log.transfersCount2 || "0", 10);
+      const pets = parseInt(log.rescuedPetsCount || "0", 10);
+
+      totalPersonnel += p1 + p2;
+      totalRescued += r1 + r2;
+      totalRecovered += rc1 + rc2;
+      totalPrehospitalCare += ph1 + ph2;
+      totalTransfers += tr1 + tr2;
+      totalPets += pets;
+
+      fStat.totalPersonnel += p1 + p2;
+      fStat.totalRescued += r1 + r2;
+      fStat.totalRecovered += rc1 + rc2;
+      fStat.totalPrehospitalCare += ph1 + ph2;
+      fStat.totalTransfers += tr1 + tr2;
+
+      if (log.groupName) upsertGroup(log.groupName, log.department, log, "");
+      if (log.groupName2) upsertGroup(log.groupName2, log.department, log, "2");
+    }
+
+    if (fStat.daysActive > 0) featureStatsMap.set(feat.id, fStat);
+  }
+
+  const groupStats = Array.from(groupMap.values()).sort((a, b) => b.daysActive - a.daysActive);
+  const featureStats = Array.from(featureStatsMap.values()).sort((a, b) => b.daysActive - a.daysActive);
+
+  return {
+    totalDaysWithData: activeDates.size,
+    totalPersonnel,
+    totalRescued,
+    totalRecovered,
+    totalPets,
+    totalPrehospitalCare,
+    totalTransfers,
+    groupStats,
+    featureStats,
+  };
+}
+
+import type { DrawnFeature } from "../types";

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
-import type { DailyLog, DepartmentView } from "../types";
-import { Save, Check, Shield, Flame } from "lucide-react";
+import type { DailyLog, DepartmentView, WorkGroup } from "../types";
+import { Save, Check, Shield, Flame, BookUser } from "lucide-react";
 import { GroupFields } from "./GroupFields";
 
 const INPUT_STYLE: React.CSSProperties = {
@@ -33,6 +33,7 @@ interface GroupLogFormProps {
   saved?: boolean;
   compact?: boolean;
   activeDepartment?: DepartmentView;
+  workGroups?: WorkGroup[];
 }
 
 export const GroupLogForm: React.FC<GroupLogFormProps> = ({
@@ -43,6 +44,7 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
   saved = false,
   compact = false,
   activeDepartment,
+  workGroups = [],
 }) => {
   const [showGroup2, setShowGroup2] = useState(
     !!(draft.groupName2 || draft.unitOut2 || draft.managerName2 || draft.officersCount2)
@@ -65,8 +67,35 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
 
   const currentDept = draft.department || "pc";
 
+  const handleAutofill = (groupId: string) => {
+    const wg = workGroups.find((g) => g.id === groupId);
+    if (!wg) return;
+    onChange("groupName", wg.name);
+    onChange("managerName", wg.leaderName);
+    onChange("managerPhone", wg.leaderPhone);
+    onChange("unitOut", wg.unitVehicle || "");
+    if (wg.department) onChange("department", wg.department);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: compact ? "6px" : "8px" }}>
+      {workGroups.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(56,189,248,0.05)", border: "1px dashed rgba(56,189,248,0.2)", borderRadius: "6px", padding: "5px 8px" }}>
+          <BookUser size={11} style={{ color: "var(--color-info)", flexShrink: 0 }} />
+          <select
+            defaultValue=""
+            onChange={(e) => { if (e.target.value) { handleAutofill(e.target.value); e.target.value = ""; } }}
+            style={{ background: "transparent", border: "none", color: "var(--color-info)", fontSize: "0.65rem", outline: "none", cursor: "pointer", flex: 1, fontFamily: "inherit" }}
+          >
+            <option value="" disabled style={{ background: "#1e293b" }}>Autocompletar desde grupo guardado…</option>
+            {workGroups.map((wg) => (
+              <option key={wg.id} value={wg.id} style={{ background: "#1e293b", color: "#e2e8f0" }}>
+                {wg.name} — {wg.leaderName} ({wg.corps})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       {activeDepartment === "mixto" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "3px", background: "rgba(0, 0, 0, 0.25)", padding: "4px 6px", borderRadius: "6px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
           <span style={{ fontSize: "0.56rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>

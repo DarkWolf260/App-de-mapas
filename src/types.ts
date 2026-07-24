@@ -92,3 +92,14 @@ export interface RemoveFeatureId {
   id: number;
   timestamp: number;
 }
+
+export interface WorkGroup {
+  id: string;           // UUID
+  name: string;         // Nombre del grupo
+  leaderName: string;   // Encargado / Jefe
+  leaderPhone: string;  // Teléfono de contacto
+  corps: string;        // Cuerpo o dependencia (ej: "PC Vargas", "Bomberos Catia")
+  department: Department; // "pc" | "bomberos"
+  unitVehicle?: string; // Unidad / Vehículo habitual
+  notes?: string;       // Observaciones adicionales
+}

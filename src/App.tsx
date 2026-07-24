@@ -9,6 +9,7 @@ import { RangeReportModal } from './components/RangeReportModal';
 import { ImportPreviewModal } from './components/ImportPreviewModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { AuthModal } from './components/AuthModal';
+import { WorkGroupsModal } from './components/WorkGroupsModal';
 import { useAuth } from './hooks/useAuth';
 import { 
   Menu,
@@ -19,7 +20,7 @@ import { useFeatureVisibility } from './hooks/useFeatureVisibility';
 import { useFeatureOrder } from './hooks/useFeatureOrder';
 import { useGeoJSONIO, ParsedFeature } from './hooks/useGeoJSONIO';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
-import type { DepartmentView, DrawnFeature, LayerVisibility, RemoveFeatureId } from './types';
+import type { DepartmentView, DrawnFeature, LayerVisibility, RemoveFeatureId, WorkGroup } from './types';
 import './App.css';
 
 const CATEGORY_COLORS = {
@@ -56,6 +57,8 @@ function App() {
   const [importPreview, setImportPreview] = useState<ParsedFeature[] | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string; type?: string } | null>(null);
+  const [showWorkGroups, setShowWorkGroups] = useState(false);
+  const [workGroups, setWorkGroups] = useLocalStorageState<WorkGroup[]>('pc_work_groups', []);
 
   // Conexión con Supabase en tiempo real
   const {
@@ -278,6 +281,7 @@ function App() {
           hiddenFeatures={hiddenFeatures}
           onSaveDailyLog={handleSaveDailyLog}
           onOpenRangeReport={(feat) => setRangeReportFeature(feat)}
+          onOpenWorkGroups={() => setShowWorkGroups(true)}
           onToggleFeatureLock={handleToggleFeatureLock}
           onRenameFeature={handleRenameFeature}
           onUpdateFeatureDescription={handleUpdateFeatureDescription}
@@ -306,6 +310,15 @@ function App() {
           onClose={() => setRangeReportFeature(null)}
           onSaveDailyLog={handleSaveDailyLog}
           activeDepartment={activeDepartment}
+        />
+      )}
+
+      {/* Modal Directorio de Grupos de Trabajo */}
+      {showWorkGroups && (
+        <WorkGroupsModal
+          groups={workGroups}
+          onSave={setWorkGroups}
+          onClose={() => setShowWorkGroups(false)}
         />
       )}
 

@@ -10,7 +10,7 @@ import { SwipeComparison } from "./SwipeComparison";
 import { useMapSetup } from "./useMapSetup";
 import { useDraggable } from "../hooks/useDraggable";
 import Point from "@arcgis/core/geometry/Point";
-import { Satellite, Calendar } from "lucide-react";
+import { Satellite, Calendar, Users2 } from "lucide-react";
 
 interface MapComponentProps {
   apiKey: string;
@@ -38,6 +38,7 @@ interface MapComponentProps {
   activeDepartment?: DepartmentView;
   showSidebar?: boolean;
   isAdmin?: boolean;
+  onOpenWorkGroups?: () => void;
 }
   
   const MapComponent: React.FC<MapComponentProps> = (props) => {
@@ -215,6 +216,34 @@ interface MapComponentProps {
             title="Abrir Bitácora General de Novedades"
           >
             <Calendar size={16} style={{ color: "#4ade80" }} />
+          </button>
+        )}
+
+        {/* Botón Flotante Grupos de Trabajo */}
+        {props.onOpenWorkGroups && (
+          <button
+            onClick={props.onOpenWorkGroups}
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              background: "rgba(10, 15, 29, 0.85)",
+              border: "1px solid rgba(56, 189, 248, 0.4)",
+              color: "#38bdf8",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              boxShadow: "0 4px 12px rgba(56, 189, 248, 0.2)",
+              transition: "all 0.2s ease",
+              padding: 0,
+              pointerEvents: "auto",
+            }}
+            title="Directorio de Grupos de Trabajo"
+          >
+            <Users2 size={15} style={{ color: "#38bdf8" }} />
           </button>
         )}
 

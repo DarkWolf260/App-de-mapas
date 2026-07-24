@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import type { DrawnFeature, DailyLog, DepartmentView } from "../types";
-import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin } from "lucide-react";
 import { DateRow } from "./DateRow";
 import { InlineRowEditor } from "./InlineRowEditor";
 import { GroupDisplay } from "./GroupDisplay";
@@ -14,6 +14,7 @@ import {
   featureMatchesSearch,
   REPORT_START_DATE,
   emptyLog,
+  getPeriodStats,
 } from "../utils/logUtils";
 
 interface RangeReportModalProps {
@@ -31,10 +32,13 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   onSaveDailyLog,
   activeDepartment = "pc",
 }) => {
+  const [activeTab, setActiveTab] = useState<"registro" | "estadisticas">("registro");
   const [activeDateIndex, setActiveDateIndex] = useState(0);
   const [activeEditFeatureId, setActiveEditFeatureId] = useState<number | null>(null);
   const [arrivalFilter, setArrivalFilter] = useState<"all" | "arrived" | "not_arrived">("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [statsSortKey, setStatsSortKey] = useState<"nombre" | "daysActive" | "totalRescued" | "totalRecovered" | "totalPrehospitalCare" | "totalTransfers" | "totalPets">("daysActive");
+  const [statsSortDir, setStatsSortDir] = useState<"desc" | "asc">("asc");
 
   const dates = getDatesRange(REPORT_START_DATE);
   const isAllMode = feat === "all";
@@ -44,6 +48,23 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     () => (feat ? (isAllMode ? getDayStats(allFeatures, activeDate, activeDepartment) : getDayStats([feat], activeDate, activeDepartment)) : null),
     [isAllMode, allFeatures, feat, activeDate, activeDepartment],
   );
+
+  const periodStats = useMemo(
+    () => (feat ? getPeriodStats(isAllMode ? allFeatures : [feat as DrawnFeature], activeDepartment) : null),
+    [feat, isAllMode, allFeatures, activeDepartment],
+  );
+
+  const sortedGroupStats = useMemo(() => {
+    if (!periodStats) return [];
+    return [...periodStats.groupStats].sort((a, b) => {
+      if (statsSortKey === "nombre") {
+        const diff = a.groupName.localeCompare(b.groupName, "es", { sensitivity: "base" });
+        return statsSortDir === "asc" ? diff : -diff;
+      }
+      const diff = (b[statsSortKey] as number) - (a[statsSortKey] as number);
+      return statsSortDir === "desc" ? diff : -diff;
+    });
+  }, [periodStats, statsSortKey, statsSortDir]);
 
   const activePoints = useMemo(() => {
     if (!feat) return [];
@@ -147,6 +168,11 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     window.print();
   };
 
+  const handleSortToggle = (key: typeof statsSortKey) => {
+    if (statsSortKey === key) setStatsSortDir((d) => d === "desc" ? "asc" : "desc");
+    else { setStatsSortKey(key); setStatsSortDir("desc"); }
+  };
+
   return (
     <div className="rr-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="rr-modal">
@@ -176,7 +202,133 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
           </button>
         </div>
 
-        {/* Integrated Sober Toolbar */}
+        {/* Tab Bar */}
+        <div className="rr-tabs">
+          <button className={`rr-tab ${activeTab === "registro" ? "active" : ""}`} onClick={() => setActiveTab("registro")}>
+            <Calendar size={13} /> Registro
+          </button>
+          <button className={`rr-tab ${activeTab === "estadisticas" ? "active" : ""}`} onClick={() => setActiveTab("estadisticas")}>
+            <BarChart2 size={13} /> Estadísticas
+          </button>
+        </div>
+
+        {/* ── STATISTICS TAB ── */}
+        {activeTab === "estadisticas" && periodStats && (
+          <div className="rr-list" style={{ gap: "14px" }}>
+            {/* Global period totals — all values are log-level totals (may include manually entered data) */}
+            <div className="rr-stats-cards-grid">
+              <div className="rr-scard" style={{ borderColor: "rgba(34,197,94,0.3)" }}>
+                <HeartHandshake size={14} style={{ color: "var(--color-green)" }} />
+                <div className="rr-scard-val" style={{ color: "var(--color-green)" }}>{periodStats.totalRescued}</div>
+                <div className="rr-scard-label">Rescatados</div>
+              </div>
+              <div className="rr-scard" style={{ borderColor: "rgba(239,68,68,0.3)" }}>
+                <ShieldAlert size={14} style={{ color: "var(--color-high)" }} />
+                <div className="rr-scard-val" style={{ color: "var(--color-high)" }}>{periodStats.totalRecovered}</div>
+                <div className="rr-scard-label">Recuperados</div>
+              </div>
+              <div className="rr-scard" style={{ borderColor: "rgba(56,189,248,0.2)" }}>
+                <HeartPulse size={14} style={{ color: "#38bdf8" }} />
+                <div className="rr-scard-val">{periodStats.totalPrehospitalCare}</div>
+                <div className="rr-scard-label">Atenciones Prehosp.</div>
+              </div>
+              <div className="rr-scard" style={{ borderColor: "rgba(168,85,247,0.3)" }}>
+                <Ambulance size={14} style={{ color: "var(--color-purple)" }} />
+                <div className="rr-scard-val" style={{ color: "var(--color-purple)" }}>{periodStats.totalTransfers}</div>
+                <div className="rr-scard-label">Traslados</div>
+              </div>
+              <div className="rr-scard" style={{ borderColor: "rgba(251,191,36,0.3)" }}>
+                <span style={{ fontSize: "14px" }}>🐾</span>
+                <div className="rr-scard-val" style={{ color: "#fbbf24" }}>{periodStats.totalPets}</div>
+                <div className="rr-scard-label">Animales Rescatados</div>
+              </div>
+              <div className="rr-scard">
+                <TrendingUp size={14} style={{ color: "var(--text-muted)" }} />
+                <div className="rr-scard-val">{periodStats.totalDaysWithData}</div>
+                <div className="rr-scard-label">Días con Actividad</div>
+              </div>
+            </div>
+
+            {/* Per-group table */}
+            {periodStats.groupStats.length > 0 && (
+              <div>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Por Grupo</div>
+                  <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontStyle: "italic" }}>* Los totales son por registro diario, no exclusivamente por grupo</div>
+                </div>
+                <div className="rr-stats-table-wrap">
+                  <table className="rr-stats-table">
+                    <thead>
+                      <tr>
+                        <th className="rr-th-sort" onClick={() => handleSortToggle("nombre")}>Grupo {statsSortKey === "nombre" ? (statsSortDir === "asc" ? "↑" : "↓") : ""}</th>
+                        <th className="rr-th-sort" onClick={() => handleSortToggle("daysActive")}>Días {statsSortKey === "daysActive" ? (statsSortDir === "desc" ? "↓" : "↑") : ""}</th>
+                        <th className="rr-th-sort" onClick={() => handleSortToggle("totalRescued")} style={{ color: "var(--color-green)" }}>Rescatados {statsSortKey === "totalRescued" ? (statsSortDir === "desc" ? "↓" : "↑") : ""}</th>
+                        <th className="rr-th-sort" onClick={() => handleSortToggle("totalRecovered")} style={{ color: "var(--color-high)" }}>Recuperados {statsSortKey === "totalRecovered" ? (statsSortDir === "desc" ? "↓" : "↑") : ""}</th>
+                        <th className="rr-th-sort" onClick={() => handleSortToggle("totalPrehospitalCare")}>Atenciones {statsSortKey === "totalPrehospitalCare" ? (statsSortDir === "desc" ? "↓" : "↑") : ""}</th>
+                        <th className="rr-th-sort" onClick={() => handleSortToggle("totalTransfers")} style={{ color: "var(--color-purple)" }}>Traslados {statsSortKey === "totalTransfers" ? (statsSortDir === "desc" ? "↓" : "↑") : ""}</th>
+                        <th className="rr-th-sort" onClick={() => handleSortToggle("totalPets")} style={{ color: "#fbbf24" }}>Animales {statsSortKey === "totalPets" ? (statsSortDir === "desc" ? "↓" : "↑") : ""}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedGroupStats.map((gs, i) => (
+                        <tr key={gs.groupName + i} className={i % 2 === 0 ? "rr-tr-even" : ""}>
+                          <td>
+                            <div className="rr-td-group">
+                              <span className="rr-td-dept" style={{ color: gs.department === "pc" ? "var(--color-info)" : "#ef4444" }}>{gs.department === "pc" ? "PC" : "B"}</span>
+                              {gs.groupName}
+                            </div>
+                          </td>
+                          <td style={{ textAlign: "center", fontWeight: 700 }}>{gs.daysActive}</td>
+                          <td style={{ textAlign: "center", color: gs.totalRescued > 0 ? "var(--color-green)" : "var(--text-muted)" }}>{gs.totalRescued}</td>
+                          <td style={{ textAlign: "center", color: gs.totalRecovered > 0 ? "var(--color-high)" : "var(--text-muted)" }}>{gs.totalRecovered}</td>
+                          <td style={{ textAlign: "center", color: gs.totalPrehospitalCare > 0 ? "var(--color-info)" : "var(--text-muted)" }}>{gs.totalPrehospitalCare}</td>
+                          <td style={{ textAlign: "center", color: gs.totalTransfers > 0 ? "var(--color-purple)" : "var(--text-muted)" }}>{gs.totalTransfers}</td>
+                          <td style={{ textAlign: "center", color: gs.totalPets > 0 ? "#fbbf24" : "var(--text-muted)" }}>{gs.totalPets || 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Top sites */}
+            {periodStats.featureStats.length > 0 && (
+              <div>
+                <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>Por Sitio de Trabajo</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                  {periodStats.featureStats.slice(0, 15).map((fs) => (
+                    <div key={fs.featureId} className="rr-site-stat-row">
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, minWidth: 0 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: fs.featureColor || "var(--color-green)", flexShrink: 0 }} />
+                        <MapPin size={11} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                        <span className="rr-site-name">{fs.featureTitle}</span>
+                      </div>
+                      <div className="rr-site-badges">
+                        <span className="rr-site-badge">{fs.daysActive}d</span>
+                        {fs.totalRescued > 0 && <span className="rr-site-badge" style={{ color: "var(--color-green)" }}>↑{fs.totalRescued}</span>}
+                        {fs.totalRecovered > 0 && <span className="rr-site-badge" style={{ color: "var(--color-high)" }}>✝{fs.totalRecovered}</span>}
+                        {fs.totalPrehospitalCare > 0 && <span className="rr-site-badge" style={{ color: "var(--color-info)" }}>⚕{fs.totalPrehospitalCare}</span>}
+                        {fs.totalTransfers > 0 && <span className="rr-site-badge" style={{ color: "var(--color-purple)" }}>⇒{fs.totalTransfers}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {periodStats.groupStats.length === 0 && (
+              <div className="rr-empty-state">
+                <BarChart2 size={28} style={{ opacity: 0.4, color: "var(--color-info)" }} />
+                <div>Aún no hay datos suficientes para mostrar estadísticas.</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── REGISTRO TAB ── */}
+        {activeTab === "registro" && (
+        <>{/* Integrated Sober Toolbar */}
         <div className="rr-toolbar">
           {isAllMode && (
             <div className="rr-toolbar-date">
@@ -409,6 +561,8 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
             )
           )}
         </div>
+        </> /* end registro tab */
+        )}
 
         {/* Footer */}
         <div className="rr-footer">
