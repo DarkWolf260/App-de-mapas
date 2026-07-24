@@ -6,7 +6,7 @@ import type { DailyLog, DrawnFeature } from "../types";
 export function useFeatureDB() {
   const [drawnFeatures, setDrawnFeatures] = useState<DrawnFeature[]>([]);
 
-  // Función para cargar features y registros diarios desde Supabase
+  // Función para cargar features y registros diarios desde Supabase (con respaldo local de RxDB)
   const fetchFromSupabase = useCallback(async () => {
     try {
       const { data: featsData, error: featsErr } = await supabase
@@ -15,7 +15,6 @@ export function useFeatureDB() {
 
       if (featsErr) {
         console.error("Error al cargar puntos/polígonos desde Supabase:", featsErr);
-        return;
       }
 
       const { data: logsData, error: logsErr } = await supabase
@@ -24,6 +23,30 @@ export function useFeatureDB() {
 
       if (logsErr) {
         console.error("Error al cargar registros diarios desde Supabase:", logsErr);
+      }
+
+      // Si Supabase retorna vacío o aún no tiene datos subidos, mostrar el respaldo local de RxDB
+      if (!featsData || featsData.length === 0) {
+        try {
+          const rxDb = await initDatabase();
+          const rxDocs = await rxDb.features.find().exec();
+          if (rxDocs && rxDocs.length > 0) {
+            const localList: DrawnFeature[] = rxDocs.map((doc: any) => ({
+              id: isNaN(Number(doc.id)) ? doc.id : Number(doc.id),
+              title: doc.title,
+              type: doc.type,
+              description: doc.description || "",
+              color: doc.color || "#3b82f6",
+              locked: !!doc.locked,
+              dailyLogs: doc.dailyLogs || [],
+              geojsonGeometry: doc.geojsonGeometry,
+            }));
+            setDrawnFeatures(localList);
+            return;
+          }
+        } catch (rxErr) {
+          console.warn("RxDB fallback error:", rxErr);
+        }
       }
 
       // Agrupar registros diarios por id de punto/polígono
@@ -80,9 +103,12 @@ export function useFeatureDB() {
     }
   }, []);
 
-  // Migrar automáticamente datos locales previos de RxDB a Supabase si es necesario
+  // Migrar automáticamente datos locales previos de RxDB a Supabase SOLO cuando el Admin está autenticado
   const syncLocalRxDBToSupabase = useCallback(async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return; // Evitar peticiones 401 si no hay usuario administrador logueado
+
       const rxDb = await initDatabase();
       const rxDocs = await rxDb.features.find().exec();
       if (rxDocs && rxDocs.length > 0) {
@@ -155,12 +181,19 @@ export function useFeatureDB() {
   }, [fetchFromSupabase]);
 
   useEffect(() => {
-    // 1. Cargar datos iniciales de Supabase y migrar locales
+    // 1. Cargar datos iniciales de Supabase y migrar si el admin está logueado
     fetchFromSupabase().then(() => {
       syncLocalRxDBToSupabase();
     });
 
-    // 2. Suscripción en tiempo real a Supabase
+    // 2. Suscribirse a cambios de autenticación para migrar cuando inicie sesión el Admin
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") {
+        syncLocalRxDBToSupabase();
+      }
+    });
+
+    // 3. Suscripción en tiempo real a Supabase
     const channel = supabase
       .channel("supabase-realtime-coe")
       .on(
@@ -176,6 +209,7 @@ export function useFeatureDB() {
       .subscribe();
 
     return () => {
+      authSub.unsubscribe();
       supabase.removeChannel(channel);
     };
   }, [fetchFromSupabase, syncLocalRxDBToSupabase]);

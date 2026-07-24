@@ -35,30 +35,30 @@ export const AuthModal: React.FC = () => {
 
   return (
     <>
-      {/* Botón Discreto en la interfaz */}
+      {/* Botón Discreto circular solo con el icono de Escudo */}
       <button
         onClick={() => setOpen(true)}
         className="admin-login-btn"
         style={{
-          background: isAdmin ? "rgba(34, 197, 94, 0.15)" : "rgba(255, 255, 255, 0.05)",
-          border: isAdmin ? "1px solid rgba(34, 197, 94, 0.4)" : "1px solid rgba(255, 255, 255, 0.12)",
-          color: isAdmin ? "#4ade80" : "var(--text-muted)",
-          borderRadius: "20px",
-          padding: "4px 10px",
-          fontSize: "0.68rem",
-          fontWeight: 700,
+          width: "32px",
+          height: "32px",
+          borderRadius: "50%",
+          background: isAdmin ? "rgba(34, 197, 94, 0.2)" : "rgba(10, 15, 29, 0.85)",
+          border: isAdmin ? "1px solid rgba(34, 197, 94, 0.6)" : "1px solid rgba(255, 255, 255, 0.18)",
+          color: isAdmin ? "#4ade80" : "#94a3b8",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
-          gap: "5px",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
+          justifyContent: "center",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          boxShadow: isAdmin ? "0 0 12px rgba(34, 197, 94, 0.35)" : "0 4px 12px rgba(0, 0, 0, 0.4)",
           transition: "all 0.2s ease",
+          padding: 0,
         }}
-        title={isAdmin ? `Sesión iniciada como ${user?.email}` : "Iniciar sesión como Administrador"}
+        title={isAdmin ? `Sesión iniciada como ${user?.email}` : "Acceso de Administrador"}
       >
-        <Shield size={12} style={{ color: isAdmin ? "#4ade80" : "var(--color-info)" }} />
-        <span>{isAdmin ? "Modo Admin" : "Acceso Admin"}</span>
+        <Shield size={16} style={{ color: isAdmin ? "#4ade80" : "#94a3b8" }} />
       </button>
 
       {/* Modal Emergente Glassmorphism */}

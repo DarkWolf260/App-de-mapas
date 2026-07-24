@@ -409,6 +409,11 @@ export const useMapSetup = ({
     const svm = sketchVMRef.current;
     if (!svm || !selectedGraphic) return;
     const featId = selectedGraphic.attributes?.id || (selectedGraphic as any).uid;
+    const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
+    const title = feat?.title || selectedGraphic.attributes?.title || "este elemento";
+    const confirmed = window.confirm(`¿Está seguro de que desea eliminar "${title}" del mapa?\nEsta acción no se puede deshacer.`);
+    if (!confirmed) return;
+
     const layer = sketchLayerRef.current;
     if (layer) {
       layer.remove(selectedGraphic);

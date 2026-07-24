@@ -121,6 +121,11 @@ function App() {
 
   const handleDeleteItem = (id: string, _type: 'point' | 'area') => {
     if (!isAdmin) return;
+    const feat = sortedDrawnFeatures.find((f) => String(f.id) === id);
+    const title = feat?.title || 'este elemento';
+    const confirmed = window.confirm(`¿Está seguro de que desea eliminar "${title}" del mapa?\nEsta acción no se puede deshacer.`);
+    if (!confirmed) return;
+
     const numId = Number(id);
     if (!isNaN(numId)) {
       handleFeatureDeleted(numId);
@@ -205,8 +210,8 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Botón Discreto de Login de Administrador (Top-Right) */}
-      <div style={{ position: "absolute", top: "14px", right: "16px", zIndex: 130, pointerEvents: "auto" }}>
+      {/* Botón Discreto de Login de Administrador (Top-Right al lado de los controles de zoom) */}
+      <div style={{ position: "absolute", top: "16px", right: "65px", zIndex: 130, pointerEvents: "auto" }}>
         <AuthModal />
       </div>
 
@@ -247,6 +252,7 @@ function App() {
         className={sidebarCollapsed ? 'collapsed' : ''}
         activeDepartment={activeDepartment}
         onDepartmentChange={setActiveDepartment}
+        isAdmin={isAdmin}
       />
 
       {/* Mapa Principal de ArcGIS con Comportamiento Completo de Puntos y Polígonos */}

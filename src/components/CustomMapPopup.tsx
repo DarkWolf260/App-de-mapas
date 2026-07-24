@@ -249,9 +249,10 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         <InfoTab
           activeFeat={activeFeat}
           dailyLog={localLog}
-          onEdit={() => setActiveTab("operation")}
+          onEdit={() => isAdmin && setActiveTab("operation")}
           drawnFeatures={drawnFeatures}
           popupEditDate={popupEditDate}
+          isAdmin={isAdmin}
         />
       )}
 

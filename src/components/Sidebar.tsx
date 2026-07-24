@@ -50,6 +50,7 @@ interface SidebarProps {
   className?: string;
   activeDepartment?: DepartmentView;
   onDepartmentChange?: (dept: DepartmentView) => void;
+  isAdmin?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -62,6 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   className = '',
   activeDepartment = 'pc',
   onDepartmentChange,
+  isAdmin = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -223,15 +225,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <div className="element-header">
                     <span className="element-name">{point.name}</span>
-                    <div className="element-actions" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="action-icon-btn" 
-                        onClick={() => onDeleteItem(point.id, 'point')}
-                        title="Eliminar punto"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                    {isAdmin && (
+                      <div className="element-actions" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className="action-icon-btn" 
+                          onClick={() => onDeleteItem(point.id, 'point')}
+                          title="Eliminar punto"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <span className="element-desc">{point.description || 'Sin descripción'}</span>
                   <div className="element-meta">
@@ -265,15 +269,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <div className="element-header">
                     <span className="element-name">{area.name}</span>
-                    <div className="element-actions" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="action-icon-btn" 
-                        onClick={() => onDeleteItem(area.id, 'area')}
-                        title="Eliminar área"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                    {isAdmin && (
+                      <div className="element-actions" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className="action-icon-btn" 
+                          onClick={() => onDeleteItem(area.id, 'area')}
+                          title="Eliminar área"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <span className="element-desc">{area.description || 'Sin descripción'}</span>
                   <div className="element-meta">
@@ -288,23 +294,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Botones de Importación/Exportación al final */}
-      <div className="transfer-buttons">
-        <button className="btn-transfer" onClick={handleExport} title="Exportar datos a JSON">
-          <Download size={16} />
-          <span>Exportar</span>
-        </button>
-        <label className="btn-transfer" style={{ cursor: 'pointer' }} title="Importar datos desde JSON">
-          <Upload size={16} />
-          <span>Importar</span>
-          <input 
-            type="file" 
-            accept=".json" 
-            onChange={handleImport} 
-            style={{ display: 'none' }} 
-          />
-        </label>
-      </div>
+      {/* Botones de Importación/Exportación al final — Solo para Administradores */}
+      {isAdmin && (
+        <div className="transfer-buttons">
+          <button className="btn-transfer" onClick={handleExport} title="Exportar datos a JSON">
+            <Download size={16} />
+            <span>Exportar</span>
+          </button>
+          <label className="btn-transfer" style={{ cursor: 'pointer' }} title="Importar datos desde JSON">
+            <Upload size={16} />
+            <span>Importar</span>
+            <input 
+              type="file" 
+              accept=".json" 
+              onChange={handleImport} 
+              style={{ display: 'none' }} 
+            />
+          </label>
+        </div>
+      )}
     </aside>
   );
 };

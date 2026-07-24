@@ -10,6 +10,7 @@ interface InfoTabProps {
   onEdit: () => void;
   drawnFeatures: DrawnFeature[];
   popupEditDate: string;
+  isAdmin?: boolean;
 }
 
 const readRowStyle: React.CSSProperties = {
@@ -86,7 +87,7 @@ function getCoordLabel(feat: DrawnFeature): string {
 }
 
 export const InfoTab: React.FC<InfoTabProps> = ({
-  activeFeat, dailyLog, onEdit, drawnFeatures, popupEditDate,
+  activeFeat, dailyLog, onEdit, drawnFeatures, popupEditDate, isAdmin = false,
 }) => {
   const [copied, setCopied] = useState(false);
   const coords = formatCoordinates(activeFeat);
@@ -412,31 +413,33 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
-      {/* Botón Editar — para puntos y polígonos */}
-      <button
-        type="button"
-        onClick={onEdit}
-        style={{
-          width: "100%",
-          background: "var(--color-info)",
-          color: "#fff",
-          border: "none",
-          borderRadius: "6px",
-          padding: "6px 12px",
-          fontSize: "0.7rem",
-          fontWeight: 700,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "6px",
-          transition: "all 0.2s ease",
-          boxShadow: "0 0 10px rgba(56, 189, 248, 0.2)",
-          marginTop: "4px",
-        }}
-      >
-        <Edit3 size={12} /> {isPolygon ? "Añadir Estadísticas Directas al Polígono" : "Editar Registro"}
-      </button>
+      {/* Botón Editar — solo para administradores */}
+      {isAdmin && (
+        <button
+          type="button"
+          onClick={onEdit}
+          style={{
+            width: "100%",
+            background: "var(--color-info)",
+            color: "#fff",
+            border: "none",
+            borderRadius: "6px",
+            padding: "6px 12px",
+            fontSize: "0.7rem",
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            transition: "all 0.2s ease",
+            boxShadow: "0 0 10px rgba(56, 189, 248, 0.2)",
+            marginTop: "4px",
+          }}
+        >
+          <Edit3 size={12} /> {isPolygon ? "Añadir Estadísticas Directas al Polígono" : "Editar Registro"}
+        </button>
+      )}
     </div>
   );
 };
