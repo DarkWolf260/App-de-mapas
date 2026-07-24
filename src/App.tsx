@@ -7,6 +7,7 @@ import { DateTimeline } from './components/DateTimeline';
 import { FloatingSearchBar } from './components/FloatingSearchBar';
 import { RangeReportModal } from './components/RangeReportModal';
 import { ImportPreviewModal } from './components/ImportPreviewModal';
+import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { AuthModal } from './components/AuthModal';
 import { useAuth } from './hooks/useAuth';
 import { 
@@ -38,7 +39,7 @@ function App() {
     sketch: true,
     polygonLabels: true,
     pointLabels: true,
-    basemapLabels: true,
+    basemapLabels: false,
     hideNestedAreas: false,
     allowLabelOverlap: false,
   });
@@ -54,6 +55,7 @@ function App() {
   const [rangeReportFeature, setRangeReportFeature] = useState<DrawnFeature | 'all' | null>(null);
   const [importPreview, setImportPreview] = useState<ParsedFeature[] | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string; type?: string } | null>(null);
 
   // Conexión con Supabase en tiempo real
   const {
@@ -119,18 +121,22 @@ function App() {
     }
   };
 
-  const handleDeleteItem = (id: string, _type: 'point' | 'area') => {
+  const handleDeleteItem = (id: string | number, _type?: 'point' | 'area') => {
     if (!isAdmin) return;
-    const feat = sortedDrawnFeatures.find((f) => String(f.id) === id);
-    const title = feat?.title || 'este elemento';
-    const confirmed = window.confirm(`¿Está seguro de que desea eliminar "${title}" del mapa?\nEsta acción no se puede deshacer.`);
-    if (!confirmed) return;
-
     const numId = Number(id);
-    if (!isNaN(numId)) {
-      handleFeatureDeleted(numId);
-      setRemoveFeatureId({ id: numId, timestamp: Date.now() });
-    }
+    const feat = sortedDrawnFeatures.find((f) => String(f.id) === String(id));
+    setDeleteTarget({
+      id: isNaN(numId) ? (id as unknown as number) : numId,
+      title: feat?.title || 'este elemento',
+      type: feat?.type || _type,
+    });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    handleFeatureDeleted(deleteTarget.id);
+    setRemoveFeatureId({ id: deleteTarget.id, timestamp: Date.now() });
+    setDeleteTarget(null);
   };
 
   const handleToggleLayer = (layerName: keyof LayerVisibility) => {
@@ -311,6 +317,15 @@ function App() {
           onClose={() => setImportPreview(null)}
         />
       )}
+
+      {/* Modal Personalizado de Confirmación de Eliminación */}
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        itemTitle={deleteTarget?.title}
+        itemType={deleteTarget?.type}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

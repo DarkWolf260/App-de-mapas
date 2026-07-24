@@ -370,13 +370,35 @@ export const useMapSetup = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Map init runs once; basemap is synced in useEffect #2
   }, []);
 
-  // ── 2. Sync basemap ─────────────────────────────────────────────────────────
+  // ── 2. Sync basemap & basemap labels ──────────────────────────────────────────
   useEffect(() => {
-    if (viewRef.current?.map) {
-      if (viewRef.current.map.basemap?.id === activeBasemap) return;
-      viewRef.current.map.basemap = getBasemapValue(activeBasemap);
+    const view = viewRef.current;
+    if (!view || !view.map) return;
+
+    const applyBasemapLabelVisibility = () => {
+      const basemap = view.map?.basemap;
+      if (!basemap) return;
+      const isVisible = !!layerVisibility.basemapLabels;
+      basemap.referenceLayers?.forEach((layer) => {
+        layer.visible = isVisible;
+      });
+      basemap.baseLayers?.forEach((layer) => {
+        if (layer.title?.toLowerCase().includes("label") || layer.id?.toLowerCase().includes("label")) {
+          layer.visible = isVisible;
+        }
+      });
+    };
+
+    if (view.map.basemap?.id !== activeBasemap) {
+      view.map.basemap = getBasemapValue(activeBasemap);
     }
-  }, [activeBasemap]);
+
+    applyBasemapLabelVisibility();
+
+    if (view.map.basemap) {
+      view.map.basemap.when(applyBasemapLabelVisibility).catch(() => {});
+    }
+  }, [activeBasemap, layerVisibility.basemapLabels, mapReady]);
 
   // ── 3. Sync layer visibility ─────────────────────────────────────────────────
   useEffect(() => {
@@ -409,22 +431,9 @@ export const useMapSetup = ({
     const svm = sketchVMRef.current;
     if (!svm || !selectedGraphic) return;
     const featId = selectedGraphic.attributes?.id || (selectedGraphic as any).uid;
-    const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-    const title = feat?.title || selectedGraphic.attributes?.title || "este elemento";
-    const confirmed = window.confirm(`¿Está seguro de que desea eliminar "${title}" del mapa?\nEsta acción no se puede deshacer.`);
-    if (!confirmed) return;
-
-    const layer = sketchLayerRef.current;
-    if (layer) {
-      layer.remove(selectedGraphic);
-      const label = layer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === (selectedGraphic as any).uid || x.attributes?.parentId === selectedGraphic.attributes?.id));
-      if (label) layer.remove(label);
+    if (onFeatureDeletedRef.current) {
+      onFeatureDeletedRef.current(featId);
     }
-    if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(featId);
-    svm.delete();
-    setSelectedGraphic(null);
-    setCustomPopup(null);
-    deconflictGraphicsRef.current?.();
   };
 
   const handleToggleEditMode = (mode: "transform" | "reshape") => {
