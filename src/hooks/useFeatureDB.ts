@@ -202,20 +202,28 @@ export function useFeatureDB() {
       }
     });
 
-    // 3. Suscripción en tiempo real a Supabase
+    // 3. Suscripción en tiempo real a Supabase (escucha cambios en vivo para todos los dispositivos)
     const channel = supabase
       .channel("supabase-realtime-coe")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "drawn_features" },
-        () => fetchFromSupabase()
+        () => {
+          console.log("[Supabase Realtime] Cambio detectado en drawn_features, actualizando...");
+          fetchFromSupabase();
+        }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "daily_logs" },
-        () => fetchFromSupabase()
+        () => {
+          console.log("[Supabase Realtime] Cambio detectado en daily_logs, actualizando...");
+          fetchFromSupabase();
+        }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("[Supabase Realtime Estado]:", status);
+      });
 
     return () => {
       authSub.unsubscribe();

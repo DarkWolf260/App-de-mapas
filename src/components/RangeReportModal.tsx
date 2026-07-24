@@ -84,7 +84,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
       const log = logs[0];
       if (!log || !logHasAnyData(log)) return false;
       return logMatchesArrivalFilter(log, arrivalFilter);
-    });
+    }).sort((a, b) => a.title.localeCompare(b.title, "es", { sensitivity: "base" }));
   }, [isAllMode, allFeatures, feat, activeEditFeatureId, searchQuery, activeDate, arrivalFilter, activeDepartment]);
 
   const inactivePoints = useMemo(() => {
@@ -97,7 +97,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
       ) || [];
       const log = logs[0];
       return !log || !logHasAnyData(log);
-    });
+    }).sort((a, b) => a.title.localeCompare(b.title, "es", { sensitivity: "base" }));
   }, [isAllMode, allFeatures, feat, searchQuery, activeDate, activeDepartment]);
 
   const filteredDates = useMemo(() => {

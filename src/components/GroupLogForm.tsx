@@ -88,9 +88,9 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
             style={{ background: "transparent", border: "none", color: "var(--color-info)", fontSize: "0.65rem", outline: "none", cursor: "pointer", flex: 1, fontFamily: "inherit" }}
           >
             <option value="" disabled style={{ background: "#1e293b" }}>Autocompletar desde grupo guardado…</option>
-            {workGroups.map((wg) => (
+            {[...workGroups].sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" })).map((wg) => (
               <option key={wg.id} value={wg.id} style={{ background: "#1e293b", color: "#e2e8f0" }}>
-                {wg.name} — {wg.leaderName} ({wg.corps})
+                {wg.name} {wg.leaderName ? `— Enc: ${wg.leaderName}` : ""}
               </option>
             ))}
           </select>

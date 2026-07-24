@@ -15,7 +15,6 @@ const EMPTY_DRAFT: Omit<WorkGroup, "id"> = {
   name: "",
   leaderName: "",
   leaderPhone: "",
-  corps: "",
   department: "pc",
   unitVehicle: "",
   notes: "",
@@ -37,16 +36,17 @@ export const WorkGroupsModal: React.FC<WorkGroupsModalProps> = ({ groups, onSave
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    return groups.filter((g) => {
-      if (deptFilter !== "all" && g.department !== deptFilter) return false;
-      if (!q) return true;
-      return (
-        g.name.toLowerCase().includes(q) ||
-        g.leaderName.toLowerCase().includes(q) ||
-        g.corps.toLowerCase().includes(q) ||
-        (g.unitVehicle || "").toLowerCase().includes(q)
-      );
-    });
+    return groups
+      .filter((g) => {
+        if (deptFilter !== "all" && g.department !== deptFilter) return false;
+        if (!q) return true;
+        return (
+          g.name.toLowerCase().includes(q) ||
+          g.leaderName.toLowerCase().includes(q) ||
+          (g.unitVehicle || "").toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
   }, [groups, search, deptFilter]);
 
   const handleNew = () => {
@@ -58,7 +58,7 @@ export const WorkGroupsModal: React.FC<WorkGroupsModalProps> = ({ groups, onSave
 
   const handleEdit = (g: WorkGroup) => {
     setEditingGroup(g);
-    setFormDraft({ name: g.name, leaderName: g.leaderName, leaderPhone: g.leaderPhone, corps: g.corps, department: g.department, unitVehicle: g.unitVehicle || "", notes: g.notes || "" });
+    setFormDraft({ name: g.name, leaderName: g.leaderName, leaderPhone: g.leaderPhone, department: g.department, unitVehicle: g.unitVehicle || "", notes: g.notes || "" });
     setSaved(false);
     setActiveTab("form");
   };
@@ -69,7 +69,7 @@ export const WorkGroupsModal: React.FC<WorkGroupsModalProps> = ({ groups, onSave
   };
 
   const handleSaveForm = () => {
-    if (!formDraft.name.trim() || !formDraft.leaderName.trim()) return;
+    if (!formDraft.name.trim()) return;
     let updated: WorkGroup[];
     if (editingGroup) {
       updated = groups.map((g) => g.id === editingGroup.id ? { ...editingGroup, ...formDraft } : g);
@@ -103,9 +103,6 @@ export const WorkGroupsModal: React.FC<WorkGroupsModalProps> = ({ groups, onSave
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <button onClick={handleNew} className="wg-add-btn">
-              <Plus size={13} /> Nuevo Grupo
-            </button>
             <button className="rr-close-btn" onClick={onClose} title="Cerrar">
               <X size={15} />
             </button>
@@ -162,7 +159,6 @@ export const WorkGroupsModal: React.FC<WorkGroupsModalProps> = ({ groups, onSave
                             <div className="wg-card-name">{g.name}</div>
                             <div className="wg-card-meta">
                               {g.leaderName && <span><strong>Enc:</strong> {g.leaderName}</span>}
-                              {g.corps && <span> · {g.corps}</span>}
                             </div>
                           </div>
                         </div>
@@ -213,31 +209,20 @@ export const WorkGroupsModal: React.FC<WorkGroupsModalProps> = ({ groups, onSave
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              <div className="wg-form-section">
-                <span className="rr-editor-label">Nombre del Grupo *</span>
-                <input className="rr-editor-input" placeholder="Ej: Grupo Alpha" value={formDraft.name} onChange={(e) => handleChange("name", e.target.value)} />
-              </div>
-              <div className="wg-form-section">
-                <span className="rr-editor-label">Cuerpo / Dependencia *</span>
-                <input className="rr-editor-input" placeholder="Ej: PC Vargas, Bomberos Catia" value={formDraft.corps} onChange={(e) => handleChange("corps", e.target.value)} />
-              </div>
+            <div className="wg-form-section">
+              <span className="rr-editor-label">Nombre del Grupo *</span>
+              <input className="rr-editor-input" placeholder="Ej: Grupo Alpha" value={formDraft.name} onChange={(e) => handleChange("name", e.target.value)} />
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "8px" }}>
               <div className="wg-form-section">
-                <span className="rr-editor-label">Encargado / Jefe de Grupo</span>
-                <input className="rr-editor-input" placeholder="Nombre del encargado" value={formDraft.leaderName} onChange={(e) => handleChange("leaderName", e.target.value)} />
+                <span className="rr-editor-label">Encargado habitual (Opcional - modificable por guardia)</span>
+                <input className="rr-editor-input" placeholder="Nombre del encargado habitual" value={formDraft.leaderName} onChange={(e) => handleChange("leaderName", e.target.value)} />
               </div>
               <div className="wg-form-section">
                 <span className="rr-editor-label">Teléfono de Contacto</span>
                 <input className="rr-editor-input" placeholder="0412-..." value={formDraft.leaderPhone} onChange={(e) => handleChange("leaderPhone", e.target.value)} />
               </div>
-            </div>
-
-            <div className="wg-form-section">
-              <span className="rr-editor-label">Unidad / Vehículo Habitual</span>
-              <input className="rr-editor-input" placeholder="Ej: Ambulancia 03, Camión 1101" value={formDraft.unitVehicle || ""} onChange={(e) => handleChange("unitVehicle", e.target.value)} />
             </div>
 
             <div className="wg-form-section">
@@ -247,7 +232,7 @@ export const WorkGroupsModal: React.FC<WorkGroupsModalProps> = ({ groups, onSave
 
             <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "8px" }}>
               {saved && <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.68rem", color: "var(--color-green)", fontWeight: 700 }}><Check size={12} /> Guardado</span>}
-              <button className="rr-save-btn" onClick={handleSaveForm} disabled={!formDraft.name.trim() || !formDraft.leaderName.trim()}>
+              <button className="rr-save-btn" onClick={handleSaveForm} disabled={!formDraft.name.trim()}>
                 <Save size={13} /> {editingGroup ? "Guardar Cambios" : "Crear Grupo"}
               </button>
             </div>

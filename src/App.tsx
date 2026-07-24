@@ -20,6 +20,7 @@ import { useFeatureVisibility } from './hooks/useFeatureVisibility';
 import { useFeatureOrder } from './hooks/useFeatureOrder';
 import { useGeoJSONIO, ParsedFeature } from './hooks/useGeoJSONIO';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
+import { useWorkGroups } from './hooks/useWorkGroups';
 import type { DepartmentView, DrawnFeature, LayerVisibility, RemoveFeatureId, WorkGroup } from './types';
 import './App.css';
 
@@ -58,7 +59,7 @@ function App() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string; type?: string } | null>(null);
   const [showWorkGroups, setShowWorkGroups] = useState(false);
-  const [workGroups, setWorkGroups] = useLocalStorageState<WorkGroup[]>('pc_work_groups', []);
+  const { workGroups, saveWorkGroups: setWorkGroups } = useWorkGroups();
 
   // Conexión con Supabase en tiempo real
   const {
