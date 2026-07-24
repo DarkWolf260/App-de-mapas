@@ -229,6 +229,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <div className="element-header">
                     <span className="element-name">{point.name}</span>
+                    {point.isCollapsed && (
+                      <span
+                        style={{
+                          fontSize: "0.62rem",
+                          fontWeight: 800,
+                          color: "#f87171",
+                          background: "rgba(239, 68, 68, 0.18)",
+                          border: "1px solid rgba(239, 68, 68, 0.4)",
+                          padding: "1px 6px",
+                          borderRadius: "4px",
+                          marginLeft: "6px",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Colapsado: {point.collapsedCount || "1"}
+                      </span>
+                    )}
                     {isAdmin && (
                       <div className="element-actions" onClick={(e) => e.stopPropagation()}>
                         <button 
