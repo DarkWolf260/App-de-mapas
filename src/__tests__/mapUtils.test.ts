@@ -1,4 +1,4 @@
-import { typeLabel, symbolForType, makeSymbols } from "../utils/mapUtils";
+import { typeLabel, symbolForType, makeSymbols, formatFeatureLabelText } from "../utils/mapUtils";
 
 describe("typeLabel", () => {
   it("returns 'Poligono' for polygon", () => {
@@ -48,5 +48,49 @@ describe("makeSymbols", () => {
     expect(syms.polygon.type).toBe("simple-fill");
     expect(syms.polygon.color).toEqual([255, 0, 0, 0.25]);
     expect(syms.polygon.outline.color).toEqual([255, 0, 0, 0.95]);
+  });
+});
+
+describe("formatFeatureLabelText", () => {
+  it("shows group name and unit when point has <= 2 groups", () => {
+    const feat = {
+      id: 1,
+      title: "Punto Alpha",
+      type: "point",
+      dailyLogs: [
+        {
+          date: "2026-07-24",
+          groupName: "Grupo 1",
+          unitOut: "Unidad A",
+          groupName2: "Grupo 2",
+          unitOut2: "Unidad B",
+        },
+      ],
+    } as any;
+
+    const labelStr = formatFeatureLabelText(feat, "2026-07-24");
+    expect(labelStr).toBe("Punto Alpha (Grupo 1, Unidad A | Grupo 2, Unidad B)");
+  });
+
+  it("shows ONLY group names when point has > 2 groups", () => {
+    const feat = {
+      id: 2,
+      title: "Punto Bravo",
+      type: "point",
+      dailyLogs: [
+        {
+          date: "2026-07-24",
+          groupName: "Grupo 1",
+          unitOut: "Unidad A",
+          groupName2: "Grupo 2",
+          unitOut2: "Unidad B",
+          groupName3: "Grupo 3",
+          unitOut3: "Unidad C",
+        },
+      ],
+    } as any;
+
+    const labelStr = formatFeatureLabelText(feat, "2026-07-24");
+    expect(labelStr).toBe("Punto Bravo (Grupo 1 | Grupo 2 | Grupo 3)");
   });
 });

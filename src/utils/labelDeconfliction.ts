@@ -25,12 +25,15 @@ interface ScreenLabel {
 
 function logHasData(l: any): boolean {
   if (!l) return false;
-  const hasGroup = !!(l.groupName?.trim() || l.groupName2?.trim() || l.unitOut?.trim() || l.unitOut2?.trim());
-  const officers = (parseInt(l.officersCount || "0", 10) || 0) + (parseInt(l.officersCount2 || "0", 10) || 0);
-  const rescued = (parseInt(l.rescuedCount || "0", 10) || 0) + (parseInt(l.rescuedCount2 || "0", 10) || 0);
-  const recovered = (parseInt(l.recoveredCount || "0", 10) || 0) + (parseInt(l.recoveredCount2 || "0", 10) || 0);
-  const prehospital = (parseInt(l.prehospitalCareCount || "0", 10) || 0) + (parseInt(l.prehospitalCareCount2 || "0", 10) || 0);
-  const transfers = (parseInt(l.transfersCount || "0", 10) || 0) + (parseInt(l.transfersCount2 || "0", 10) || 0);
+  const hasGroup = !!(
+    l.groupName?.trim() || l.groupName2?.trim() || l.groupName3?.trim() || l.groupName4?.trim() ||
+    l.unitOut?.trim() || l.unitOut2?.trim() || l.unitOut3?.trim() || l.unitOut4?.trim()
+  );
+  const officers = (parseInt(l.officersCount || "0", 10) || 0) + (parseInt(l.officersCount2 || "0", 10) || 0) + (parseInt(l.officersCount3 || "0", 10) || 0) + (parseInt(l.officersCount4 || "0", 10) || 0);
+  const rescued = (parseInt(l.rescuedCount || "0", 10) || 0) + (parseInt(l.rescuedCount2 || "0", 10) || 0) + (parseInt(l.rescuedCount3 || "0", 10) || 0) + (parseInt(l.rescuedCount4 || "0", 10) || 0);
+  const recovered = (parseInt(l.recoveredCount || "0", 10) || 0) + (parseInt(l.recoveredCount2 || "0", 10) || 0) + (parseInt(l.recoveredCount3 || "0", 10) || 0) + (parseInt(l.recoveredCount4 || "0", 10) || 0);
+  const prehospital = (parseInt(l.prehospitalCareCount || "0", 10) || 0) + (parseInt(l.prehospitalCareCount2 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount3 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount4 || "0", 10) || 0);
+  const transfers = (parseInt(l.transfersCount || "0", 10) || 0) + (parseInt(l.transfersCount2 || "0", 10) || 0) + (parseInt(l.transfersCount3 || "0", 10) || 0) + (parseInt(l.transfersCount4 || "0", 10) || 0);
   const pets = (parseInt(l.rescuedPetsCount || "0", 10) || 0);
   return hasGroup || officers > 0 || rescued > 0 || recovered > 0 || prehospital > 0 || transfers > 0 || pets > 0;
 }
@@ -213,22 +216,34 @@ function buildHtmlLabels(
         l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
       ) || [];
 
+      const groupItems: Array<{ name?: string; unit?: string }> = [];
       for (const todayLog of todayLogs) {
-        const g1 = todayLog.groupName?.trim();
-        const g2 = todayLog.groupName2?.trim();
-        if (g1 || g2) {
-          const parts: string[] = [];
-          const u1 = todayLog.unitOut?.trim();
-          if (g1 && u1) parts.push(`${g1}, ${u1}`);
-          else if (g1) parts.push(g1);
-          else if (u1) parts.push(u1);
-          const u2 = todayLog.unitOut2?.trim();
-          if (g2 && u2) parts.push(`${g2}, ${u2}`);
-          else if (g2) parts.push(g2);
-          else if (u2) parts.push(u2);
-          info = parts.join(" | ");
-          break;
+        if (todayLog.groupName?.trim() || todayLog.unitOut?.trim()) {
+          groupItems.push({ name: todayLog.groupName?.trim(), unit: todayLog.unitOut?.trim() });
         }
+        if (todayLog.groupName2?.trim() || todayLog.unitOut2?.trim()) {
+          groupItems.push({ name: todayLog.groupName2?.trim(), unit: todayLog.unitOut2?.trim() });
+        }
+        if (todayLog.groupName3?.trim() || todayLog.unitOut3?.trim()) {
+          groupItems.push({ name: todayLog.groupName3?.trim(), unit: todayLog.unitOut3?.trim() });
+        }
+        if (todayLog.groupName4?.trim() || todayLog.unitOut4?.trim()) {
+          groupItems.push({ name: todayLog.groupName4?.trim(), unit: todayLog.unitOut4?.trim() });
+        }
+      }
+
+      if (groupItems.length > 0) {
+        const onlyNames = groupItems.length > 2;
+        const parts = groupItems
+          .map((item) => {
+            if (onlyNames) {
+              return item.name || item.unit || "";
+            }
+            if (item.name && item.unit) return `${item.name}, ${item.unit}`;
+            return item.name || item.unit || "";
+          })
+          .filter(Boolean);
+        info = parts.join(" | ");
       }
     }
 
@@ -252,17 +267,19 @@ function buildHtmlLabels(
         let recoveredCount = 0;
 
         todayLogs.forEach((l) => {
-          prehospitalCount += (parseInt(l.prehospitalCareCount || "0", 10) || 0) + (parseInt(l.prehospitalCareCount2 || "0", 10) || 0);
-          transfersCount += (parseInt(l.transfersCount || "0", 10) || 0) + (parseInt(l.transfersCount2 || "0", 10) || 0);
-          rescuedCount += (parseInt(l.rescuedCount || "0", 10) || 0) + (parseInt(l.rescuedCount2 || "0", 10) || 0);
-          recoveredCount += (parseInt(l.recoveredCount || "0", 10) || 0) + (parseInt(l.recoveredCount2 || "0", 10) || 0);
+          prehospitalCount += (parseInt(l.prehospitalCareCount || "0", 10) || 0) + (parseInt(l.prehospitalCareCount2 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount3 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount4 || "0", 10) || 0);
+          transfersCount += (parseInt(l.transfersCount || "0", 10) || 0) + (parseInt(l.transfersCount2 || "0", 10) || 0) + (parseInt(l.transfersCount3 || "0", 10) || 0) + (parseInt(l.transfersCount4 || "0", 10) || 0);
+          rescuedCount += (parseInt(l.rescuedCount || "0", 10) || 0) + (parseInt(l.rescuedCount2 || "0", 10) || 0) + (parseInt(l.rescuedCount3 || "0", 10) || 0) + (parseInt(l.rescuedCount4 || "0", 10) || 0);
+          recoveredCount += (parseInt(l.recoveredCount || "0", 10) || 0) + (parseInt(l.recoveredCount2 || "0", 10) || 0) + (parseInt(l.recoveredCount3 || "0", 10) || 0) + (parseInt(l.recoveredCount4 || "0", 10) || 0);
         });
 
         const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0;
-        const hasGroups = todayLogs.some((l) => l.groupName?.trim() || l.groupName2?.trim());
+        const hasGroups = todayLogs.some((l) => l.groupName?.trim() || l.groupName2?.trim() || l.groupName3?.trim() || l.groupName4?.trim());
         const g1Arrived = todayLog ? (!!todayLog.hasArrivedG1 || (!!todayLog.arrivalTime && todayLog.arrivalTime.trim() !== "")) : false;
         const g2Arrived = todayLog ? (!!todayLog.hasArrivedG2 || (!!todayLog.arrivalTime2 && todayLog.arrivalTime2.trim() !== "")) : false;
-        const hasArrived = hasGroups ? (g1Arrived || g2Arrived) : true;
+        const g3Arrived = todayLog ? (!!todayLog.hasArrivedG3 || (!!todayLog.arrivalTime3 && todayLog.arrivalTime3.trim() !== "")) : false;
+        const g4Arrived = todayLog ? (!!todayLog.hasArrivedG4 || (!!todayLog.arrivalTime4 && todayLog.arrivalTime4.trim() !== "")) : false;
+        const hasArrived = hasGroups ? (g1Arrived || g2Arrived || g3Arrived || g4Arrived) : true;
 
         const charWidth = 6;
         const padding = 20;

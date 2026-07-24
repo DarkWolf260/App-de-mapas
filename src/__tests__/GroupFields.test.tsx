@@ -50,7 +50,7 @@ describe("GroupFields", () => {
     expect(screen.getByPlaceholderText("Nombre Grupo 2")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Unidad 2 (Vehículo)")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Encargado 2")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Teléfono Encargado2")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Teléfono Encargado 2")).toBeInTheDocument();
   });
 
   it('renders "¿Ya llegó el Grupo Primario?" for group 1', () => {

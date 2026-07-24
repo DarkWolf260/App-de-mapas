@@ -58,7 +58,9 @@ export function emptyLog(date: string, department?: Department): DailyLog {
 export function getTotalPersonnel(log: DailyLog): number {
   const count1 = parseInt(log.officersCount || "0", 10);
   const count2 = parseInt(log.officersCount2 || "0", 10);
-  return count1 + count2;
+  const count3 = parseInt(log.officersCount3 || "0", 10);
+  const count4 = parseInt(log.officersCount4 || "0", 10);
+  return count1 + count2 + count3 + count4;
 }
 
 export function logHasPersonnel(log: DailyLog): boolean {

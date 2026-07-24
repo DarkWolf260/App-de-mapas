@@ -98,12 +98,12 @@ describe("DeploymentSummaryCard", () => {
         drawnFeatures={[featureWithLog]}
       />
     );
-    const toggleBtn = screen.getByTitle("Contraer listado (sólo mostrar totales)");
+    const toggleBtn = screen.getByTitle("Ocultar a icono discreto");
     await user.click(toggleBtn);
     expect(defaultProps.onToggleCollapse).toHaveBeenCalledWith(true);
   });
 
-  it('shows Minimize2 icon when expanded and Maximize2 icon when collapsed', () => {
+  it("shows Minimize icon when expanded and collapsed icon when collapsed", () => {
     const { rerender } = render(
       <DeploymentSummaryCard
         {...defaultProps}
@@ -111,7 +111,7 @@ describe("DeploymentSummaryCard", () => {
         drawnFeatures={[featureWithLog]}
       />
     );
-    expect(screen.getByTitle("Contraer listado (sólo mostrar totales)")).toBeInTheDocument();
+    expect(screen.getByTitle("Ocultar a icono discreto")).toBeInTheDocument();
 
     rerender(
       <DeploymentSummaryCard
@@ -120,7 +120,7 @@ describe("DeploymentSummaryCard", () => {
         drawnFeatures={[featureWithLog]}
       />
     );
-    expect(screen.getByTitle("Mostrar listado completo")).toBeInTheDocument();
+    expect(screen.getByTitle(/Personal Desplegado/)).toBeInTheDocument();
   });
 
   it("clicking a feature row calls onZoomToFeature", async () => {
