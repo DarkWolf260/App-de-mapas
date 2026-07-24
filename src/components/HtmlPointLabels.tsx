@@ -60,8 +60,9 @@ function computePlacement(lbl: HtmlLabel, borderStyle: string): Placement {
 export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels }) => (
   <>
     {labels.map((lbl) => {
-      const borderStyle = `1px solid ${lbl.themeColor ? `${lbl.themeColor}80` : "rgba(56, 189, 248, 0.5)"}`;
+      const borderStyle = `1px solid ${lbl.themeColor ? `${lbl.themeColor}90` : "rgba(56, 189, 248, 0.5)"}`;
       const { top, left, transform, arrowStyle } = computePlacement(lbl, borderStyle);
+      const statusColor = lbl.hasArrived ? "#22c55e" : "#f97316";
 
       return (
         <div
@@ -71,63 +72,81 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels }) => (
             left,
             top,
             transform,
-            background: "rgba(10, 15, 29, 0.95)",
+            background: "rgba(10, 15, 29, 0.90)",
             border: borderStyle,
             color: "#f8fafc",
-            padding: "5px 10px",
-            borderRadius: "6px",
+            padding: "6px 11px",
+            borderRadius: "8px",
             fontFamily: "var(--font-sans)",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)",
             pointerEvents: "none",
             zIndex: 2,
             whiteSpace: "nowrap",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            transition: "background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease",
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-            <div style={{ fontWeight: 800, fontSize: "11px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "5px" }}>
+            <div style={{ fontWeight: 800, fontSize: "11.5px", display: "flex", alignItems: "center", gap: "6px", color: "#ffffff", textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
               <span
                 style={{
                   display: "inline-block",
-                  width: "6px",
-                  height: "6px",
+                  width: "7px",
+                  height: "7px",
                   borderRadius: "50%",
-                  background: lbl.hasArrived ? "#22c55e" : "#f97316",
-                  boxShadow: lbl.hasArrived ? "0 0 6px #22c55e" : "0 0 6px #f97316",
+                  background: statusColor,
+                  boxShadow: `0 0 8px ${statusColor}`,
+                  flexShrink: 0,
                 }}
               />
               {lbl.title}
             </div>
-            {!!lbl.info && <div style={{ fontWeight: 500, fontSize: "9px", opacity: 0.85 }}>{lbl.info}</div>}
+
+            {!!lbl.info && (
+              <div
+                style={{
+                  fontWeight: 600,
+                  fontSize: "9px",
+                  color: "#cbd5e1",
+                  background: "rgba(255, 255, 255, 0.06)",
+                  padding: "2px 7px",
+                  borderRadius: "4px",
+                  marginTop: "3px",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                }}
+              >
+                {lbl.info}
+              </div>
+            )}
 
             {/* Badges para Atenciones y Traslados / Rescates */}
             {(!!lbl.prehospitalCount || !!lbl.transfersCount || !!lbl.rescuedCount || !!lbl.recoveredCount) && (
-              <div style={{ display: "flex", gap: "4px", marginTop: "3px", fontSize: "8px", fontWeight: 700 }}>
+              <div style={{ display: "flex", gap: "4px", marginTop: "4px", fontSize: "8.5px", fontWeight: 700 }}>
                 {!!lbl.rescuedCount && (
-                  <span style={{ color: "#22c55e", background: "rgba(34,197,94,0.15)", padding: "1px 4px", borderRadius: "4px" }}>
-                    🤝 {lbl.rescuedCount}
+                  <span style={{ color: "#4ade80", background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.35)", padding: "1px 5px", borderRadius: "4px" }}>
+                    Resc. {lbl.rescuedCount}
                   </span>
                 )}
                 {!!lbl.recoveredCount && (
-                  <span style={{ color: "#38bdf8", background: "rgba(56,189,248,0.15)", padding: "1px 4px", borderRadius: "4px" }}>
-                    🛡️ {lbl.recoveredCount}
+                  <span style={{ color: "#38bdf8", background: "rgba(56,189,248,0.18)", border: "1px solid rgba(56,189,248,0.35)", padding: "1px 5px", borderRadius: "4px" }}>
+                    Recup. {lbl.recoveredCount}
                   </span>
                 )}
                 {!!lbl.prehospitalCount && (
-                  <span style={{ color: "#38bdf8", background: "rgba(56,189,248,0.15)", padding: "1px 4px", borderRadius: "4px" }}>
-                    🩺 {lbl.prehospitalCount} Atenc.
+                  <span style={{ color: "#38bdf8", background: "rgba(56,189,248,0.18)", border: "1px solid rgba(56,189,248,0.35)", padding: "1px 5px", borderRadius: "4px" }}>
+                    Atenc. {lbl.prehospitalCount}
                   </span>
                 )}
                 {!!lbl.transfersCount && (
-                  <span style={{ color: "var(--color-purple)", background: "rgba(167,139,250,0.15)", padding: "1px 4px", borderRadius: "4px" }}>
-                    🚑 {lbl.transfersCount} Trasl.
+                  <span style={{ color: "#c084fc", background: "rgba(168,85,247,0.18)", border: "1px solid rgba(168,85,247,0.35)", padding: "1px 5px", borderRadius: "4px" }}>
+                    Trasl. {lbl.transfersCount}
                   </span>
                 )}
               </div>
             )}
           </div>
-          <div style={{ position: "absolute", width: "8px", height: "8px", background: "rgba(10, 15, 29, 0.95)", ...arrowStyle }} />
+          <div style={{ position: "absolute", width: "8px", height: "8px", background: "rgba(10, 15, 29, 0.90)", ...arrowStyle }} />
         </div>
       );
     })}
