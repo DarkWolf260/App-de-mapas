@@ -337,13 +337,12 @@ export function useFeatureDB() {
       const fidStr = String(featureId);
       const deptToUse = log.department || "pc";
 
-      const { data: existing } = await supabase
+      const { data: existingRecords } = await supabase
         .from("daily_logs")
         .select("id")
         .eq("feature_id", fidStr)
         .eq("date", log.date)
-        .eq("department", deptToUse)
-        .maybeSingle();
+        .eq("department", deptToUse);
 
       const payload = {
         feature_id: fidStr,
@@ -403,8 +402,13 @@ export function useFeatureDB() {
         updated_at: new Date().toISOString(),
       };
 
-      if (existing?.id) {
-        await supabase.from("daily_logs").update(payload).eq("id", existing.id);
+      if (existingRecords && existingRecords.length > 0) {
+        const firstId = existingRecords[0].id;
+        await supabase.from("daily_logs").update(payload).eq("id", firstId);
+        if (existingRecords.length > 1) {
+          const extraIds = existingRecords.slice(1).map((r) => r.id);
+          await supabase.from("daily_logs").delete().in("id", extraIds);
+        }
       } else {
         await supabase.from("daily_logs").insert(payload);
       }
