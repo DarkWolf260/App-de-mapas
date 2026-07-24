@@ -1,10 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
-import DatePicker, { registerLocale } from "react-datepicker";
-import es from "date-fns/locale/es";
-import "react-datepicker/dist/react-datepicker.css";
-
-registerLocale("es", es);
+import { BitacoraCalendar } from "./BitacoraCalendar";
 
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
@@ -66,11 +62,6 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
     onDateChange(todayStr);
   };
 
-  const selectedDatePicker = useMemo(() => {
-    const [y, m, d] = selectedDate.split("-").map(Number);
-    return new Date(y, m - 1, d);
-  }, [selectedDate]);
-
   const isToday = selectedDate === todayStr;
 
   return (
@@ -122,23 +113,13 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
 
         {calendarOpen && (
           <div className="dt-calendar-popup">
-            <DatePicker
-              selected={selectedDatePicker}
-              onChange={(date: Date | null) => {
-                if (date) {
-                  const iso = date.toLocaleDateString("en-CA");
-                  if (allDates.includes(iso)) {
-                    onDateChange(iso);
-                  }
-                }
+            <BitacoraCalendar
+              selectedDate={selectedDate}
+              onSelectDate={(dateStr) => {
+                onDateChange(dateStr);
                 setCalendarOpen(false);
               }}
-              inline
-              locale="es"
-              minDate={new Date(startDate + "T00:00:00")}
-              maxDate={new Date()}
-              dateFormat="dd/MM/yyyy"
-              onClickOutside={() => setCalendarOpen(false)}
+              minDate={startDate}
             />
           </div>
         )}

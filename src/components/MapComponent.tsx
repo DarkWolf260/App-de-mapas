@@ -31,6 +31,7 @@ interface MapComponentProps {
   onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
   onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
   onUpdateFeatureColor?: (id: number, newColor: string) => Promise<void>;
+  onUpdateFeatureCollapsed?: (id: number, isCollapsed: boolean, collapsedCount: string | number) => Promise<void>;
   onZoomToFeature?: (feat: DrawnFeature) => void;
   zoomToCoords?: { lat: number; lon: number } | null;
   selectedDate: string;
@@ -51,6 +52,7 @@ interface MapComponentProps {
       onRenameFeature,
       onUpdateFeatureDescription,
       onUpdateFeatureColor,
+      onUpdateFeatureCollapsed,
       onZoomToFeature,
       showSidebar = false,
     } = props;
@@ -144,6 +146,7 @@ interface MapComponentProps {
         onRenameFeature={onRenameFeature}
         onUpdateFeatureDescription={onUpdateFeatureDescription}
         onUpdateFeatureColor={onUpdateFeatureColor}
+        onUpdateFeatureCollapsed={onUpdateFeatureCollapsed}
         sketchLayer={sketchLayer}
         onClose={() => setCustomPopup(null)}
         activeDepartment={props.activeDepartment}

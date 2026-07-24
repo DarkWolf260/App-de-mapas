@@ -127,9 +127,14 @@ export const BitacoraCalendar: React.FC<BitacoraCalendarProps> = ({
         {gridCells.map((cell, idx) => {
           if (!cell.isCurrentMonth) {
             return (
-              <div key={cell.dateStr + idx} className="bcal-cell empty">
-                <span>{cell.dayNumber}</span>
-              </div>
+              <button
+                key={cell.dateStr + idx}
+                type="button"
+                disabled
+                className="bcal-cell empty"
+              >
+                <span className="bcal-day-num">{cell.dayNumber}</span>
+              </button>
             );
           }
 

@@ -9,7 +9,7 @@ addRxPlugin(RxDBMigrationSchemaPlugin);
 
 export const FeatureSchema = {
   title: "feature schema",
-  version: 12,
+  version: 13,
   primaryKey: "id",
   type: "object",
   properties: {
@@ -19,6 +19,8 @@ export const FeatureSchema = {
     description: { type: "string" },
     color: { type: "string" },
     locked: { type: "boolean" },
+    isCollapsed: { type: "boolean" },
+    collapsedCount: { type: "string" },
     dailyLogs: {
       type: "array",
       items: {
@@ -73,6 +75,8 @@ export type RxDrawnFeatureDocument = {
   description?: string;
   color?: string;
   locked?: boolean;
+  isCollapsed?: boolean;
+  collapsedCount?: string;
   dailyLogs?: DailyLog[];
   geojsonGeometry: {
     type: "Point" | "LineString" | "Polygon";
@@ -203,6 +207,11 @@ export const initDatabase = (): Promise<RxDrawnDatabase> => {
                   department: "pc"
                 }));
               }
+              return oldDoc;
+            },
+            13: (oldDoc: any) => {
+              oldDoc.isCollapsed = false;
+              oldDoc.collapsedCount = "";
               return oldDoc;
             }
           }

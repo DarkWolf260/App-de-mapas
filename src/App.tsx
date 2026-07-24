@@ -42,8 +42,8 @@ function App() {
     polygonLabels: true,
     pointLabels: true,
     basemapLabels: false,
-    hideNestedAreas: false,
-    allowLabelOverlap: false,
+    hideNestedAreas: true,
+    allowLabelOverlap: true,
   });
 
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toLocaleDateString('en-CA'));
@@ -69,6 +69,7 @@ function App() {
     handleUpdateFeatureDescription,
     handleUpdateFeatureColor,
     handleToggleFeatureLock,
+    handleUpdateFeatureCollapsed,
     handleSaveDailyLog,
     handleFeatureDeleted,
   } = useFeatureDB();
@@ -89,6 +90,8 @@ function App() {
           description: f.description || '',
           category: 'general' as const,
           color: f.color || CATEGORY_COLORS.general,
+          isCollapsed: !!f.isCollapsed,
+          collapsedCount: f.collapsedCount,
           coordinates: {
             longitude: coords ? coords[0] : -66.9331,
             latitude: coords ? coords[1] : 10.6000,
@@ -287,6 +290,7 @@ function App() {
           onRenameFeature={handleRenameFeature}
           onUpdateFeatureDescription={handleUpdateFeatureDescription}
           onUpdateFeatureColor={handleUpdateFeatureColor}
+          onUpdateFeatureCollapsed={handleUpdateFeatureCollapsed}
           onZoomToFeature={setZoomToFeature}
           zoomToCoords={zoomToCoords}
           selectedDate={selectedDate}

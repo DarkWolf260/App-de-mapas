@@ -8,10 +8,14 @@ interface GeneralTabProps {
   localTitle: string;
   localDescription: string;
   localColor: string;
+  localIsCollapsed?: boolean;
+  localCollapsedCount?: string;
   generalSaveSuccess: boolean;
   onRename: (title: string) => void;
   onDescription: (desc: string) => void;
   onColor: (color: string) => void;
+  onIsCollapsedChange?: (val: boolean) => void;
+  onCollapsedCountChange?: (val: string) => void;
   onSave: () => void;
 }
 
@@ -20,10 +24,14 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
   localTitle,
   localDescription,
   localColor,
+  localIsCollapsed = false,
+  localCollapsedCount = "1",
   generalSaveSuccess,
   onRename,
   onDescription,
   onColor,
+  onIsCollapsedChange,
+  onCollapsedCountChange,
   onSave,
 }) => (
   <div style={{ display: "flex", flexDirection: "column", gap: "12px", height: "100%" }}>
@@ -74,6 +82,64 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
       </div>
     </div>
 
+    {/* Sección de Edificio Colapsado */}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        background: localIsCollapsed ? "rgba(239, 68, 68, 0.1)" : "rgba(255, 255, 255, 0.03)",
+        border: localIsCollapsed ? "1px solid rgba(239, 68, 68, 0.35)" : "1px solid var(--border-subtle)",
+        borderRadius: "8px",
+        padding: "8px 12px",
+        transition: "all 0.2s ease",
+      }}
+    >
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          cursor: "pointer",
+          fontSize: "0.76rem",
+          fontWeight: 700,
+          color: localIsCollapsed ? "#f87171" : "var(--text-secondary)",
+          margin: 0,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={!!localIsCollapsed}
+          onChange={(e) => onIsCollapsedChange?.(e.target.checked)}
+          style={{ width: "15px", height: "15px", accentColor: "#ef4444", cursor: "pointer" }}
+        />
+        <span>Edificio Colapsado</span>
+      </label>
+
+      {localIsCollapsed && (
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 600 }}>Cantidad:</span>
+          <input
+            type="number"
+            min={1}
+            value={localCollapsedCount || "1"}
+            onChange={(e) => onCollapsedCountChange?.(e.target.value)}
+            style={{
+              width: "55px",
+              padding: "3px 6px",
+              background: "rgba(0, 0, 0, 0.4)",
+              border: "1px solid rgba(239, 68, 68, 0.4)",
+              borderRadius: "6px",
+              color: "#f87171",
+              fontWeight: 800,
+              fontSize: "0.78rem",
+              textAlign: "center",
+            }}
+          />
+        </div>
+      )}
+    </div>
+
     {/* 2. DESCRIPCIÓN Y NOTAS CON MÁS ESPACIO */}
     <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <label style={labelStyle}>Descripción o notas del elemento</label>
@@ -83,8 +149,8 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
         style={{
           ...inputStyle,
           resize: "vertical",
-          minHeight: "140px",
-          height: "160px",
+          minHeight: "120px",
+          height: "140px",
           fontSize: "0.75rem",
           lineHeight: 1.4,
           padding: "8px 10px",

@@ -93,4 +93,18 @@ describe("formatFeatureLabelText", () => {
     const labelStr = formatFeatureLabelText(feat, "2026-07-24");
     expect(labelStr).toBe("Punto Bravo (Grupo 1 | Grupo 2 | Grupo 3)");
   });
+
+  it("includes Colapsado tag when feature isCollapsed is true", () => {
+    const feat = {
+      id: 3,
+      title: "Residencias Las Palmas",
+      type: "point",
+      isCollapsed: true,
+      collapsedCount: "2",
+      dailyLogs: [],
+    } as any;
+
+    const labelStr = formatFeatureLabelText(feat, "2026-07-24");
+    expect(labelStr).toBe("Residencias Las Palmas (Colapsado: 2)");
+  });
 });

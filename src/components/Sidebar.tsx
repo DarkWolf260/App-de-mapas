@@ -22,6 +22,8 @@ export interface MapPoint {
   description: string;
   category: 'riesgo' | 'refugio' | 'salud' | 'operativo' | 'general';
   color: string;
+  isCollapsed?: boolean;
+  collapsedCount?: string | number;
   coordinates: {
     longitude: number;
     latitude: number;
@@ -79,8 +81,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Filtrado de elementos
   const filteredPoints = points.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          p.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = p.name.toLowerCase().includes(term) || 
+                          p.description.toLowerCase().includes(term) ||
+                          (p.isCollapsed && ("colapsado".includes(term) || String(p.collapsedCount || "").includes(term)));
     const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
@@ -225,6 +229,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <div className="element-header">
                     <span className="element-name">{point.name}</span>
+                    {point.isCollapsed && (
+                      <span style={{ fontSize: "0.62rem", fontWeight: 800, color: "#f87171", background: "rgba(239, 68, 68, 0.2)", padding: "1px 6px", borderRadius: "4px", border: "1px solid rgba(239, 68, 68, 0.4)", marginLeft: "6px" }}>
+                        Colapsado: {point.collapsedCount || "1"}
+                      </span>
+                    )}
                     {isAdmin && (
                       <div className="element-actions" onClick={(e) => e.stopPropagation()}>
                         <button 

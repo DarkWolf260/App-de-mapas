@@ -38,6 +38,8 @@ export function useFeatureDB() {
               description: doc.description || "",
               color: doc.color || "#3b82f6",
               locked: !!doc.locked,
+              isCollapsed: !!doc.isCollapsed,
+              collapsedCount: doc.collapsedCount || "",
               dailyLogs: doc.dailyLogs || [],
               geojsonGeometry: doc.geojsonGeometry,
             }));
@@ -122,6 +124,8 @@ export function useFeatureDB() {
         description: row.description || "",
         color: row.color || "#3b82f6",
         locked: !!row.locked,
+        isCollapsed: !!row.is_collapsed,
+        collapsedCount: row.collapsed_count || "",
         dailyLogs: logsMap.get(String(row.id)) || [],
         geojsonGeometry: row.geojson_geometry,
       }));
@@ -332,6 +336,23 @@ export function useFeatureDB() {
     }
   };
 
+  const handleUpdateFeatureCollapsed = async (id: number, isCollapsed: boolean, collapsedCount: string | number): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from("drawn_features")
+        .update({
+          is_collapsed: isCollapsed,
+          collapsed_count: String(collapsedCount || ""),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", String(id));
+      if (error) console.error("Error al actualizar edificio colapsado:", error);
+      else fetchFromSupabase();
+    } catch (err) {
+      console.error("Error al actualizar edificio colapsado en Supabase:", err);
+    }
+  };
+
   const handleSaveDailyLog = async (featureId: number, log: DailyLog): Promise<void> => {
     try {
       const fidStr = String(featureId);
@@ -436,6 +457,7 @@ export function useFeatureDB() {
     handleUpdateFeatureDescription,
     handleUpdateFeatureColor,
     handleToggleFeatureLock,
+    handleUpdateFeatureCollapsed,
     handleSaveDailyLog,
     handleFeatureDeleted,
   };

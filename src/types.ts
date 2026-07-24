@@ -19,6 +19,8 @@ export interface HtmlLabel {
   transfersCount?: number;
   rescuedCount?: number;
   recoveredCount?: number;
+  isCollapsed?: boolean;
+  collapsedCount?: string | number;
 }
 
 export interface MapPoint {
@@ -108,6 +110,8 @@ export interface DrawnFeature {
   description?: string;
   color?: string;
   locked?: boolean;
+  isCollapsed?: boolean;
+  collapsedCount?: string | number;
   dailyLogs?: DailyLog[];
   geojsonGeometry: GeoJSONGeometry;
   _isUpdate?: boolean;

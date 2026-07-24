@@ -570,17 +570,17 @@
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 9;
-  background: rgba(17, 24, 39, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+  z-index: 120;
+  background: rgba(10, 15, 29, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
   padding: 6px 12px;
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 
 .dt-nav-btn, .dt-calendar-btn, .dt-today-btn {
@@ -668,14 +668,267 @@
 
 .dt-calendar-popup {
   position: absolute;
-  bottom: 45px;
+  bottom: 54px;
   right: 0;
-  z-index: 100;
-  background: #111827;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  box-shadow: var(--shadow-lg);
-  padding: 8px;
+  z-index: 2000;
+  background: rgba(10, 15, 29, 0.98);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 14px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.85), 0 0 24px rgba(56, 189, 248, 0.15);
+  padding: 14px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: dtCalendarFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  isolation: isolate;
+}
+
+@keyframes dtCalendarFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Bitacora Calendar (bcal) Styles */
+.bcal-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 252px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  user-select: none;
+}
+
+.bcal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bcal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bcal-month-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--color-info, #38bdf8);
+  letter-spacing: 0.02em;
+}
+
+.bcal-month-title strong {
+  color: #f8fafc;
+  font-weight: 800;
+}
+
+.bcal-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bcal-today-btn {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: var(--color-info, #38bdf8);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bcal-today-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.bcal-nav-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.bcal-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.bcal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 32px);
+  gap: 4px;
+  justify-content: center;
+  text-align: center;
+}
+
+.bcal-weekday {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+}
+
+.bcal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 32px);
+  gap: 4px;
+  justify-content: center;
+}
+
+.bcal-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.02);
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.bcal-day-num {
+  line-height: 1;
+  display: block;
+}
+
+.bcal-cell:hover:not(.disabled):not(.empty) {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.bcal-cell.selected {
+  background: #38bdf8 !important;
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.6) !important;
+}
+
+.bcal-cell.today:not(.selected) {
+  border: 1px solid #f97316;
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.1);
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.3);
+}
+
+.bcal-cell.disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  background: transparent;
+  border-color: transparent;
+}
+
+.bcal-cell.empty {
+  opacity: 0.15;
+  cursor: default;
+  background: transparent;
+  border-color: transparent;
+}
+
+/* React DatePicker Dark Theme Overrides */
+.react-datepicker {
+  background-color: transparent !important;
+  border: none !important;
+  font-family: var(--font-sans, system-ui, sans-serif) !important;
+  color: #e2e8f0 !important;
+}
+
+.react-datepicker__header {
+  background-color: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding-top: 4px !important;
+}
+
+.react-datepicker__current-month {
+  color: var(--color-info, #38bdf8) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+}
+
+.react-datepicker__day-name {
+  color: #64748b !important;
+  font-size: 0.65rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  width: 28px !important;
+  line-height: 24px !important;
+  margin: 1px !important;
+}
+
+.react-datepicker__day {
+  color: #cbd5e1 !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  width: 28px !important;
+  line-height: 28px !important;
+  margin: 1px !important;
+  border-radius: 6px !important;
+  border: 1px solid transparent !important;
+  transition: all 0.15s ease !important;
+}
+
+.react-datepicker__day:hover:not(.react-datepicker__day--disabled) {
+  background-color: rgba(56, 189, 248, 0.18) !important;
+  color: #38bdf8 !important;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #38bdf8 !important;
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
+}
+
+.react-datepicker__day--today {
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  color: #38bdf8 !important;
+}
+
+.react-datepicker__day--disabled {
+  opacity: 0.2 !important;
+  color: #64748b !important;
 }
 
 /* Floating Search Bar */

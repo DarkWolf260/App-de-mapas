@@ -65,9 +65,11 @@ export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
 
   const filtered = query.trim()
     ? drawnFeatures.filter((feat) => {
-        const titleMatch = feat.title?.toLowerCase().includes(query.toLowerCase());
-        const descMatch = feat.description?.toLowerCase().includes(query.toLowerCase());
-        return titleMatch || descMatch;
+        const q = query.toLowerCase();
+        const titleMatch = feat.title?.toLowerCase().includes(q);
+        const descMatch = feat.description?.toLowerCase().includes(q);
+        const collapsedMatch = !!feat.isCollapsed && ("colapsado".includes(q) || String(feat.collapsedCount || "").includes(q));
+        return titleMatch || descMatch || collapsedMatch;
       })
     : [];
 
@@ -189,6 +191,11 @@ export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
                   <div className="floating-search-item-header">
                     {getFeatureIcon(feat.type, feat.color || "")}
                     <span className="floating-search-item-title">{feat.title}</span>
+                    {feat.isCollapsed && (
+                      <span style={{ fontSize: "0.6rem", fontWeight: 800, color: "#f87171", background: "rgba(239, 68, 68, 0.2)", padding: "1px 5px", borderRadius: "4px", border: "1px solid rgba(239, 68, 68, 0.4)", marginLeft: "4px" }}>
+                        Colapsado: {feat.collapsedCount || "1"}
+                      </span>
+                    )}
                     <span className="floating-search-item-badge">
                       {getFeatureTypeText(feat.type)}
                     </span>

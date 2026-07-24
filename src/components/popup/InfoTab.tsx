@@ -186,6 +186,38 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {/* Badge de Edificio Colapsado */}
+      {activeFeat.isCollapsed && (
+        <div
+          style={{
+            background: "rgba(239, 68, 68, 0.14)",
+            border: "1px solid rgba(239, 68, 68, 0.35)",
+            borderRadius: "6px",
+            padding: "6px 10px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            color: "#f87171",
+            fontSize: "0.72rem",
+            fontWeight: 700,
+          }}
+        >
+          <span>Estructura Colapsada</span>
+          <span
+            style={{
+              background: "#ef4444",
+              color: "#ffffff",
+              padding: "2px 8px",
+              borderRadius: "10px",
+              fontSize: "0.68rem",
+              fontWeight: 800,
+            }}
+          >
+            Cantidad: {activeFeat.collapsedCount || "1"}
+          </span>
+        </div>
+      )}
+
       {/* Coordenadas — solo para puntos */}
       {!isPolygon && (
         <div style={{ display: "flex", flexDirection: "column" }}>

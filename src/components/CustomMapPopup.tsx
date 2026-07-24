@@ -25,6 +25,7 @@ interface CustomMapPopupProps {
   onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
   onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
   onUpdateFeatureColor?: (id: number, newColor: string) => Promise<void>;
+  onUpdateFeatureCollapsed?: (id: number, isCollapsed: boolean, collapsedCount: string | number) => Promise<void>;
   sketchLayer: GraphicsLayer | null;
   onClose: () => void;
   activeDepartment?: DepartmentView;
@@ -90,7 +91,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   customPopup, popupScreenPos, drawnFeatures, layerVisibility,
   popupEditDate, setPopupEditDate, onSaveDailyLog,
   onToggleFeatureLock, onRenameFeature, onUpdateFeatureDescription,
-  onUpdateFeatureColor, sketchLayer, onClose, activeDepartment = "pc",
+  onUpdateFeatureColor, onUpdateFeatureCollapsed, sketchLayer, onClose, activeDepartment = "pc",
   isAdmin = false, workGroups = [],
 }) => {
   const activeFeat = customPopup
@@ -101,6 +102,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   const [localTitle, setLocalTitle] = useState("");
   const [localDescription, setLocalDescription] = useState("");
   const [localColor, setLocalColor] = useState("#3b82f6");
+  const [localIsCollapsed, setLocalIsCollapsed] = useState(false);
+  const [localCollapsedCount, setLocalCollapsedCount] = useState("1");
   const [showSecondGroup, setShowSecondGroup] = useState(false);
   const [generalSaveSuccess, setGeneralSaveSuccess] = useState(false);
   const [logSaveSuccess, setLogSaveSuccess] = useState(false);
@@ -113,6 +116,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     setLocalTitle(activeFeat.title);
     setLocalDescription(activeFeat.description || "");
     setLocalColor(activeFeat.color || "#3b82f6");
+    setLocalIsCollapsed(!!activeFeat.isCollapsed);
+    setLocalCollapsedCount(activeFeat.collapsedCount ? String(activeFeat.collapsedCount) : "1");
     setGeneralSaveSuccess(false);
     setLogSaveSuccess(false);
 
@@ -143,6 +148,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       if (onRenameFeature) await onRenameFeature(activeFeat.id, localTitle);
       if (onUpdateFeatureDescription) await onUpdateFeatureDescription(activeFeat.id, localDescription);
       if (onUpdateFeatureColor) await onUpdateFeatureColor(activeFeat.id, localColor);
+      if (onUpdateFeatureCollapsed) await onUpdateFeatureCollapsed(activeFeat.id, localIsCollapsed, localCollapsedCount);
       setGeneralSaveSuccess(true);
       setTimeout(() => setGeneralSaveSuccess(false), 2000);
     } catch (err) {
@@ -264,10 +270,14 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           localTitle={localTitle}
           localDescription={localDescription}
           localColor={localColor}
+          localIsCollapsed={localIsCollapsed}
+          localCollapsedCount={localCollapsedCount}
           generalSaveSuccess={generalSaveSuccess}
           onRename={setLocalTitle}
           onDescription={setLocalDescription}
           onColor={setLocalColor}
+          onIsCollapsedChange={setLocalIsCollapsed}
+          onCollapsedCountChange={setLocalCollapsedCount}
           onSave={handleGeneralSave}
         />
       )}

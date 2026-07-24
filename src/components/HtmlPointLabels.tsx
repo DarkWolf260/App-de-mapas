@@ -99,6 +99,11 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels }) => (
               />
               {lbl.title}
             </div>
+            {lbl.isCollapsed && (
+              <div style={{ marginTop: "3px", fontSize: "8.5px", fontWeight: 800, color: "#f87171", background: "rgba(239,68,68,0.2)", padding: "1px 6px", borderRadius: "4px", border: "1px solid rgba(239,68,68,0.4)" }}>
+                Colapsado: {lbl.collapsedCount || "1"}
+              </div>
+            )}
             {!!lbl.info && <div style={{ fontWeight: 500, fontSize: "9px", opacity: 0.85 }}>{lbl.info}</div>}
 
             {/* Badges para Atenciones y Traslados / Rescates */}
