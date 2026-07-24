@@ -10,7 +10,7 @@ import { SwipeComparison } from "./SwipeComparison";
 import { useMapSetup } from "./useMapSetup";
 import { useDraggable } from "../hooks/useDraggable";
 import Point from "@arcgis/core/geometry/Point";
-import { Satellite } from "lucide-react";
+import { Satellite, Calendar } from "lucide-react";
 
 interface MapComponentProps {
   apiKey: string;
@@ -26,7 +26,7 @@ interface MapComponentProps {
   importedFeatures: DrawnFeature[];
   hiddenFeatures: Record<number, boolean>;
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
-  onOpenRangeReport?: (feat: DrawnFeature) => void;
+  onOpenRangeReport?: (feat: DrawnFeature | "all") => void;
   onToggleFeatureLock?: (id: number, locked: boolean) => void;
   onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
   onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
@@ -190,6 +190,34 @@ interface MapComponentProps {
           pointerEvents: "none",
         }}
       >
+        {/* Botón Flotante Discreto de Bitácora General (Verde Neón) */}
+        {props.onOpenRangeReport && (
+          <button
+            onClick={() => props.onOpenRangeReport && props.onOpenRangeReport("all")}
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              background: "rgba(10, 15, 29, 0.85)",
+              border: "1px solid rgba(34, 197, 94, 0.45)",
+              color: "#4ade80",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              boxShadow: "0 4px 12px rgba(34, 197, 94, 0.25)",
+              transition: "all 0.2s ease",
+              padding: 0,
+              pointerEvents: "auto",
+            }}
+            title="Abrir Bitácora General de Novedades"
+          >
+            <Calendar size={16} style={{ color: "#4ade80" }} />
+          </button>
+        )}
+
         {/* Map Settings & Layer Visibility Panel */}
         {props.onToggleLayer && (
           <div style={{ pointerEvents: "auto" }}>
