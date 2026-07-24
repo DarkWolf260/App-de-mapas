@@ -104,6 +104,7 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
   headerStyle: headerStyleProp,
 }) => {
   const idxStr = groupIndex > 1 ? String(groupIndex) : "";
+  const suffix = idxStr ? ` ${idxStr}` : "";
   const fieldsRow1 =
     groupIndex === 4
       ? GROUP4_FIELDS_ROW1
@@ -295,7 +296,7 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
           onChange={(e) => onFieldChange(arrivedKey, e.target.checked)}
           style={{ margin: 0, cursor: "pointer", width: "13px", height: "13px" }}
         />
-        <span>¿Ya llegó el Grupo{suffix ? " Secundario" : " Primario"}?</span>
+        <span>¿Ya llegó el {headerLabel}?</span>
       </label>
     </div>
   );
