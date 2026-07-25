@@ -97,20 +97,16 @@ function computeScreenLabels(
     let priority = 2;
     let hasPersonnel = false;
 
-    if (isPolygonLabel) {
-      priority = 3;
-    } else {
-      const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
-      if (feat) {
-        const todayLogs = feat.dailyLogs?.filter((l) =>
-          l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
-        ) || [];
-        if (todayLogs.length > 0) {
-          hasPersonnel = feat.dailyLogs?.some((l) =>
-            l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
-          ) || false;
-          if (hasPersonnel) priority = 1;
-        }
+    const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
+    if (feat) {
+      const todayLogs = feat.dailyLogs?.filter((l) =>
+        l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
+      ) || [];
+      if (todayLogs.length > 0) {
+        hasPersonnel = feat.dailyLogs?.some((l) =>
+          l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
+        ) || false;
+        if (hasPersonnel) priority = 1;
       }
     }
     return { graphic: lbl, x: screenPt?.x ?? null, y: screenPt?.y ?? null, visible: screenPt !== null, priority, hasPersonnel };
@@ -212,24 +208,18 @@ function buildHtmlLabels(
     let title = feat ? feat.title : (lbl.symbol as TextSymbol)?.text || "";
     let info = "";
 
-    if (feat && feat.type === "point") {
+    if (feat) {
       const todayLogs = feat.dailyLogs?.filter((l) =>
         l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
       ) || [];
 
       const groupItems: Array<{ name?: string; unit?: string }> = [];
       for (const todayLog of todayLogs) {
-        if (todayLog.groupName?.trim() || todayLog.unitOut?.trim()) {
-          groupItems.push({ name: todayLog.groupName?.trim(), unit: todayLog.unitOut?.trim() });
-        }
-        if (todayLog.groupName2?.trim() || todayLog.unitOut2?.trim()) {
-          groupItems.push({ name: todayLog.groupName2?.trim(), unit: todayLog.unitOut2?.trim() });
-        }
-        if (todayLog.groupName3?.trim() || todayLog.unitOut3?.trim()) {
-          groupItems.push({ name: todayLog.groupName3?.trim(), unit: todayLog.unitOut3?.trim() });
-        }
-        if (todayLog.groupName4?.trim() || todayLog.unitOut4?.trim()) {
-          groupItems.push({ name: todayLog.groupName4?.trim(), unit: todayLog.unitOut4?.trim() });
+        const activeGroups = getNormalizedGroupList(todayLog);
+        for (const g of activeGroups) {
+          if (g.groupName?.trim() || g.unitOut?.trim()) {
+            groupItems.push({ name: g.groupName?.trim(), unit: g.unitOut?.trim() });
+          }
         }
       }
 
@@ -248,11 +238,11 @@ function buildHtmlLabels(
       }
     }
 
-    const hasPersonnel = feat?.type === "point" && (feat.dailyLogs?.some((l) =>
+    const hasPersonnel = !!feat && (feat.dailyLogs?.some((l) =>
       l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
     ) || false);
 
-    if (hasPersonnel && !isPolygonLabel) {
+    if (hasPersonnel) {
       // La etiqueta gráfica nativa de ESRI siempre se oculta para puntos con personal o estadísticas
       lbl.visible = false;
 

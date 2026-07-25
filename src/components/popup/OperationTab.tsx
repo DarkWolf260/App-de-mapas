@@ -33,31 +33,38 @@ export const OperationTab: React.FC<OperationTabProps> = ({
   onDepartmentSelect,
   workGroups = [],
 }) => {
-  const [showThirdGroup, setShowThirdGroup] = React.useState(!!localLog.groupName3);
-  const [showFourthGroup, setShowFourthGroup] = React.useState(!!localLog.groupName4);
+  const getActiveGroupCount = (): number => {
+    let maxIdx = 1;
+    let idx = 2;
+    while (idx <= 50) {
+      const idxS = String(idx);
+      const hasVal = !!(
+        (localLog as any)[`groupName${idxS}`] ||
+        (localLog as any)[`unitOut${idxS}`] ||
+        (localLog as any)[`managerName${idxS}`] ||
+        (localLog as any)[`officersCount${idxS}`]
+      );
+      if (hasVal) maxIdx = idx;
+      idx++;
+    }
+    return maxIdx;
+  };
 
-  const clearGroup3 = () => {
-    setShowThirdGroup(false);
-    for (const key of ["groupName3", "unitOut3", "managerName3", "managerPhone3", "officersCount3", "departureTime3", "arrivalTime3", "hasArrivedG3"]) {
-      onFieldChange(key, key === "hasArrivedG3" ? false : "");
+  const [activeGroupCount, setActiveGroupCount] = React.useState<number>(() => Math.max(1, getActiveGroupCount()));
+
+  const clearGroupSlot = (idx: number) => {
+    const idxS = idx > 1 ? String(idx) : "";
+    for (const prefix of ["groupName", "unitOut", "managerName", "managerPhone", "officersCount", "departureTime", "arrivalTime", "rescuedCount", "recoveredCount", "rescuedPetsCount", "prehospitalCareCount", "transfersCount", "commissionId", "isVolunteer"]) {
+      onFieldChange(`${prefix}${idxS}`, "");
+    }
+    onFieldChange(`hasArrivedG${idx}`, false);
+    if (idx === activeGroupCount && activeGroupCount > 1) {
+      setActiveGroupCount((c) => c - 1);
     }
   };
 
-  const clearGroup4 = () => {
-    setShowFourthGroup(false);
-    for (const key of ["groupName4", "unitOut4", "managerName4", "managerPhone4", "officersCount4", "departureTime4", "arrivalTime4", "hasArrivedG4"]) {
-      onFieldChange(key, key === "hasArrivedG4" ? false : "");
-    }
-  };
-
-  const clearGroup2 = () => {
-    setShowSecondGroup(false);
-    clearGroup3();
-    clearGroup4();
-    for (const key of ["groupName2", "unitOut2", "managerName2", "managerPhone2", "officersCount2", "departureTime2", "arrivalTime2", "hasArrivedG2"]) {
-      onFieldChange(key, key === "hasArrivedG2" ? false : "");
-    }
-  };
+  const GROUP_COLORS = ["var(--color-info)", "var(--color-purple)", "#c084fc", "#fb923c", "#38bdf8", "#4ade80", "#f43f5e", "#a855f7"];
+  const getGroupColor = (idx: number) => GROUP_COLORS[(idx - 1) % GROUP_COLORS.length];
 
   const groupHeaderStyle = (color: string): React.CSSProperties => ({
     fontSize: "0.62rem",
@@ -138,103 +145,41 @@ export const OperationTab: React.FC<OperationTabProps> = ({
         </div>
       )}
 
-      {/* Grupos en disposición vertical (uno abajo del otro) */}
+      {/* Grupos de Trabajo en disposición vertical (soporta N grupos) */}
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        {/* Group 1 */}
-        <div style={sectionBox}>
-          <GroupFields
-            groupIndex={1}
-            log={localLog}
-            onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
-            colorVar="var(--color-info)"
-            headerStyle={groupHeaderStyle("var(--color-info)")}
-            workGroups={workGroups}
-          />
-        </div>
-
-        {/* Group 2 */}
-        {!showSecondGroup ? (
-          <button
-            type="button"
-            onClick={() => setShowSecondGroup(true)}
-            style={{ background: "transparent", border: "1px dashed rgba(255,255,255,0.15)", borderRadius: "6px", color: "var(--text-muted)", fontSize: "0.62rem", padding: "6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
-          >
-            <Plus size={10} /> Añadir Segundo Grupo (Secundario)
-          </button>
-        ) : (
-          <div style={{ ...sectionBox, position: "relative" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
-              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-purple)" }}>Grupo Secundario</span>
-              <button type="button" onClick={clearGroup2} style={{ background: "transparent", border: "none", color: "var(--color-high)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }} title="Quitar segundo grupo">
-                <Trash2 size={10} />
-              </button>
+        {Array.from({ length: activeGroupCount }).map((_, i) => {
+          const groupIdx = i + 1;
+          return (
+            <div key={groupIdx} style={{ ...sectionBox, position: "relative" }}>
+              {groupIdx > 1 && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
+                  <span style={{ fontSize: "0.62rem", fontWeight: 700, color: getGroupColor(groupIdx) }}>
+                    Grupo #{groupIdx}
+                  </span>
+                  <button type="button" onClick={() => clearGroupSlot(groupIdx)} style={{ background: "transparent", border: "none", color: "var(--color-high)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }} title={`Quitar Grupo ${groupIdx}`}>
+                    <Trash2 size={10} />
+                  </button>
+                </div>
+              )}
+              <GroupFields
+                groupIndex={groupIdx}
+                log={localLog}
+                onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
+                colorVar={getGroupColor(groupIdx)}
+                hideHeader={groupIdx > 1}
+                workGroups={workGroups}
+              />
             </div>
-            <GroupFields
-              groupIndex={2}
-              log={localLog}
-              onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
-              colorVar="var(--color-purple)"
-              hideHeader
-              workGroups={workGroups}
-            />
-          </div>
-        )}
+          );
+        })}
 
-        {/* Group 3 */}
-        {showSecondGroup && (!showThirdGroup ? (
-          <button
-            type="button"
-            onClick={() => setShowThirdGroup(true)}
-            style={{ background: "transparent", border: "1px dashed rgba(168,85,247,0.3)", borderRadius: "6px", color: "#c084fc", fontSize: "0.62rem", padding: "6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
-          >
-            <Plus size={10} /> Añadir Tercer Grupo
-          </button>
-        ) : (
-          <div style={{ ...sectionBox, position: "relative" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
-              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#c084fc" }}>Tercer Grupo</span>
-              <button type="button" onClick={clearGroup3} style={{ background: "transparent", border: "none", color: "var(--color-high)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }} title="Quitar tercer grupo">
-                <Trash2 size={10} />
-              </button>
-            </div>
-            <GroupFields
-              groupIndex={3}
-              log={localLog}
-              onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
-              colorVar="#c084fc"
-              hideHeader
-              workGroups={workGroups}
-            />
-          </div>
-        ))}
-
-        {/* Group 4 */}
-        {showSecondGroup && showThirdGroup && (!showFourthGroup ? (
-          <button
-            type="button"
-            onClick={() => setShowFourthGroup(true)}
-            style={{ background: "transparent", border: "1px dashed rgba(251,146,60,0.3)", borderRadius: "6px", color: "#fb923c", fontSize: "0.62rem", padding: "6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
-          >
-            <Plus size={10} /> Añadir Cuarto Grupo
-          </button>
-        ) : (
-          <div style={{ ...sectionBox, position: "relative" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
-              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#fb923c" }}>Cuarto Grupo</span>
-              <button type="button" onClick={clearGroup4} style={{ background: "transparent", border: "none", color: "var(--color-high)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }} title="Quitar cuarto grupo">
-                <Trash2 size={10} />
-              </button>
-            </div>
-            <GroupFields
-              groupIndex={4}
-              log={localLog}
-              onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
-              colorVar="#fb923c"
-              hideHeader
-              workGroups={workGroups}
-            />
-          </div>
-        ))}
+        <button
+          type="button"
+          onClick={() => setActiveGroupCount((c) => c + 1)}
+          style={{ background: "transparent", border: `1px dashed ${getGroupColor(activeGroupCount + 1)}80`, borderRadius: "6px", color: getGroupColor(activeGroupCount + 1), fontSize: "0.62rem", padding: "6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
+        >
+          <Plus size={10} /> Añadir Otro Grupo (Grupo #{activeGroupCount + 1})
+        </button>
       </div>
 
       {/* Counts / Métricas Operativas en fila horizontal de 5 columnas */}

@@ -120,46 +120,84 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 
   const polygonOwnLog: Partial<DailyLog> = useMemo(() => {
     if (!isPolygon) return {};
-    return (activeFeat.dailyLogs?.find((l) => l.date === popupEditDate) || {}) as Partial<DailyLog>;
-  }, [isPolygon, activeFeat, popupEditDate]);
+    return dailyLog || {};
+  }, [isPolygon, dailyLog]);
+
+  const polygonGroups = useMemo(() => {
+    if (!isPolygon) return [];
+    return getNormalizedGroupList(polygonOwnLog);
+  }, [isPolygon, polygonOwnLog]);
 
   const aggregatedLog = useMemo(() => {
     if (!isPolygon) return dailyLog || {};
-    const sum = {
-      rescuedCount: Number(polygonOwnLog.rescuedCount || 0) + Number(polygonOwnLog.rescuedCount2 || 0),
-      recoveredCount: Number(polygonOwnLog.recoveredCount || 0) + Number(polygonOwnLog.recoveredCount2 || 0),
-      rescuedPetsCount: Number(polygonOwnLog.rescuedPetsCount || 0),
-      prehospitalCareCount: Number(polygonOwnLog.prehospitalCareCount || 0) + Number(polygonOwnLog.prehospitalCareCount2 || 0),
-      transfersCount: Number(polygonOwnLog.transfersCount || 0) + Number(polygonOwnLog.transfersCount2 || 0),
+
+    let rescuedCount = 0;
+    let recoveredCount = 0;
+    let rescuedPetsCount = 0;
+    let prehospitalCareCount = 0;
+    let transfersCount = 0;
+
+    const addLogMetrics = (l: Partial<DailyLog>) => {
+      const gList = getNormalizedGroupList(l);
+      const seenComms = new Set<string>();
+
+      for (const g of gList) {
+        const cid = g.commissionId || "independiente";
+        if (cid !== "independiente") {
+          if (seenComms.has(cid)) continue;
+          seenComms.add(cid);
+        }
+        rescuedCount += parseInt(g.rescuedCount || "0", 10) || 0;
+        recoveredCount += parseInt(g.recoveredCount || "0", 10) || 0;
+        rescuedPetsCount += parseInt(g.rescuedPetsCount || "0", 10) || 0;
+        prehospitalCareCount += parseInt(g.prehospitalCareCount || "0", 10) || 0;
+        transfersCount += parseInt(g.transfersCount || "0", 10) || 0;
+      }
+
+      if (l.rescuedCount && !gList.some((g) => g.rescuedCount === l.rescuedCount)) {
+        rescuedCount += parseInt(l.rescuedCount || "0", 10) || 0;
+      }
+      if (l.recoveredCount && !gList.some((g) => g.recoveredCount === l.recoveredCount)) {
+        recoveredCount += parseInt(l.recoveredCount || "0", 10) || 0;
+      }
+      if (l.rescuedPetsCount && !gList.some((g) => g.rescuedPetsCount === l.rescuedPetsCount)) {
+        rescuedPetsCount += parseInt(l.rescuedPetsCount || "0", 10) || 0;
+      }
+      if (l.prehospitalCareCount && !gList.some((g) => g.prehospitalCareCount === l.prehospitalCareCount)) {
+        prehospitalCareCount += parseInt(l.prehospitalCareCount || "0", 10) || 0;
+      }
+      if (l.transfersCount && !gList.some((g) => g.transfersCount === l.transfersCount)) {
+        transfersCount += parseInt(l.transfersCount || "0", 10) || 0;
+      }
     };
-    let hasAnyLog = Object.values(sum).some((v) => v > 0);
+
+    // 1. Sumar métricas de todos los grupos y campos del polígono directamente
+    addLogMetrics(polygonOwnLog);
+
+    // 2. Sumar métricas de puntos contenidos dentro del polígono
     let observations = polygonOwnLog.observations ? `Polígono: ${polygonOwnLog.observations}` : "";
 
     for (const { point, log } of containedWithLogs) {
-      if (log.rescuedCount) { sum.rescuedCount += Number(log.rescuedCount); hasAnyLog = true; }
-      if (log.rescuedCount2) { sum.rescuedCount += Number(log.rescuedCount2); hasAnyLog = true; }
-      if (log.recoveredCount) { sum.recoveredCount += Number(log.recoveredCount); hasAnyLog = true; }
-      if (log.recoveredCount2) { sum.recoveredCount += Number(log.recoveredCount2); hasAnyLog = true; }
-      if (log.rescuedPetsCount) { sum.rescuedPetsCount += Number(log.rescuedPetsCount); hasAnyLog = true; }
-      if (log.prehospitalCareCount) { sum.prehospitalCareCount += Number(log.prehospitalCareCount); hasAnyLog = true; }
-      if (log.prehospitalCareCount2) { sum.prehospitalCareCount += Number(log.prehospitalCareCount2); hasAnyLog = true; }
-      if (log.transfersCount) { sum.transfersCount += Number(log.transfersCount); hasAnyLog = true; }
-      if (log.transfersCount2) { sum.transfersCount += Number(log.transfersCount2); hasAnyLog = true; }
+      addLogMetrics(log);
+
       if (log.observations) {
         observations += (observations ? "\n" : "") + `${point.title}: ${log.observations}`;
       }
     }
 
+    const hasAnyLog = rescuedCount > 0 || recoveredCount > 0 || rescuedPetsCount > 0 || prehospitalCareCount > 0 || transfersCount > 0;
+
     return {
-      rescuedCount: sum.rescuedCount > 0 ? String(sum.rescuedCount) : undefined,
-      recoveredCount: sum.recoveredCount > 0 ? String(sum.recoveredCount) : undefined,
-      rescuedPetsCount: sum.rescuedPetsCount > 0 ? String(sum.rescuedPetsCount) : undefined,
-      prehospitalCareCount: sum.prehospitalCareCount > 0 ? String(sum.prehospitalCareCount) : undefined,
-      transfersCount: sum.transfersCount > 0 ? String(sum.transfersCount) : undefined,
+      ...polygonOwnLog,
+      rescuedCount: rescuedCount > 0 ? String(rescuedCount) : undefined,
+      recoveredCount: recoveredCount > 0 ? String(recoveredCount) : undefined,
+      rescuedPetsCount: rescuedPetsCount > 0 ? String(rescuedPetsCount) : undefined,
+      prehospitalCareCount: prehospitalCareCount > 0 ? String(prehospitalCareCount) : undefined,
+      transfersCount: transfersCount > 0 ? String(transfersCount) : undefined,
       observations: observations || undefined,
-      _hasData: hasAnyLog || containedWithLogs.length > 0,
+      _hasData: hasAnyLog || containedWithLogs.length > 0 || polygonGroups.length > 0,
     } as Partial<DailyLog> & { _hasData?: boolean };
-  }, [isPolygon, dailyLog, containedWithLogs, polygonOwnLog]);
+  }, [isPolygon, dailyLog, containedWithLogs, polygonOwnLog, polygonGroups]);
 
   const log = isPolygon ? aggregatedLog : (dailyLog || {});
 
@@ -303,11 +341,36 @@ export const InfoTab: React.FC<InfoTabProps> = ({
             </div>
           )}
 
-          {/* Muestra estadística manual ingresada directamente al polígono si existe */}
+          {/* Muestra estadística por grupo en el polígono si existe */}
+          {polygonGroups.some((g) => g.rescuedCount || g.recoveredCount || g.prehospitalCareCount || g.transfersCount || g.rescuedPetsCount) && (
+            <div style={{ ...sectionStyle, background: "rgba(56, 189, 248, 0.04)", borderColor: "rgba(56, 189, 248, 0.2)" }}>
+              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px" }}>
+                Estadísticas de Grupos del Polígono:
+              </span>
+              {polygonGroups.map((g, gIdx) => {
+                const hasGMetrics = g.rescuedCount || g.recoveredCount || g.prehospitalCareCount || g.transfersCount || g.rescuedPetsCount;
+                if (!hasGMetrics) return null;
+                return (
+                  <div key={g.id || gIdx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "2px 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                    <span style={{ fontSize: "0.62rem", fontWeight: 600, color: "var(--text-main)" }}>{g.groupName || `Grupo #${gIdx + 1}`}</span>
+                    <div style={{ display: "flex", gap: "6px", fontSize: "0.6rem", flexWrap: "wrap" }}>
+                      {g.rescuedCount && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{g.rescuedCount} Rescat.</span>}
+                      {g.recoveredCount && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{g.recoveredCount} Recup.</span>}
+                      {g.prehospitalCareCount && <span style={{ color: "#38bdf8", fontWeight: 700 }}>{g.prehospitalCareCount} Atenc.</span>}
+                      {g.transfersCount && <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>{g.transfersCount} Trasl.</span>}
+                      {g.rescuedPetsCount && <span style={{ color: "#a855f7", fontWeight: 700 }}>{g.rescuedPetsCount} Masc.</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Muestra estadística manual general si existe */}
           {hasPolygonManualLog && (
             <div style={{ ...sectionStyle, background: "rgba(56, 189, 248, 0.04)", borderColor: "rgba(56, 189, 248, 0.2)" }}>
               <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "var(--color-info)" }}>
-                Estadística manual directa del polígono:
+                Estadística manual general del polígono:
               </span>
               <div style={{ display: "flex", gap: "8px", fontSize: "0.6rem", flexWrap: "wrap", marginTop: "2px" }}>
                 {polygonOwnLog.rescuedCount && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{polygonOwnLog.rescuedCount} Rescat.</span>}
@@ -322,7 +385,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
           {/* Total de la zona */}
           <div style={sectionStyle}>
             <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
-              <Activity size={10} /> Total Zona (Puntos + Manual Polígono)
+              <Activity size={10} /> Total Zona (Polígono + Puntos)
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "2px" }}>
               <div style={{ textAlign: "center" }}>
@@ -369,8 +432,8 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
-      {/* Punto: Grupos en disposición vertical (uno abajo del otro) */}
-      {!isPolygon && getNormalizedGroupList(log).length > 0 && (
+      {/* Grupos en disposición vertical (uno abajo del otro) */}
+      {getNormalizedGroupList(log).length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {getNormalizedGroupList(log).map((gItem, gIdx) => (
             <div key={gItem.id || gIdx} style={sectionStyle}>
@@ -395,6 +458,15 @@ export const InfoTab: React.FC<InfoTabProps> = ({
               <ReadRow label="Encargado" value={gItem.managerName} />
               <ReadRow label="Funcionarios" value={gItem.officersCount} />
               <ReadRow label="Teléfono" value={gItem.managerPhone} />
+              {(!!gItem.rescuedCount || !!gItem.recoveredCount || !!gItem.prehospitalCareCount || !!gItem.transfersCount || !!gItem.rescuedPetsCount) && (
+                <div style={{ display: "flex", gap: "6px", fontSize: "0.6rem", flexWrap: "wrap", marginTop: "4px", padding: "3px 6px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "4px", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
+                  {gItem.rescuedCount && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{gItem.rescuedCount} Rescat.</span>}
+                  {gItem.recoveredCount && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{gItem.recoveredCount} Recup.</span>}
+                  {gItem.prehospitalCareCount && <span style={{ color: "#38bdf8", fontWeight: 700 }}>{gItem.prehospitalCareCount} Atenc.</span>}
+                  {gItem.transfersCount && <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>{gItem.transfersCount} Trasl.</span>}
+                  {gItem.rescuedPetsCount && <span style={{ color: "#a855f7", fontWeight: 700 }}>{gItem.rescuedPetsCount} Masc.</span>}
+                </div>
+              )}
               {showArrivalCheckbox ? (
                 <label style={{ fontSize: "0.65rem", fontWeight: 700, color: gItem.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: gItem.hasArrived ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${gItem.hasArrived ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
                   <input type="checkbox" checked={!!gItem.hasArrived} onChange={(e) => onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked)} style={{ cursor: "pointer", width: "13px", height: "13px" }} />

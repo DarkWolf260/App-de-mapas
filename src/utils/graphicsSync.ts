@@ -80,7 +80,7 @@ function syncExistingLabel(
   if (label.symbol) {
     const ts = label.symbol as TextSymbol;
     const targetText = getLabelText(feat, dateStr, activeDepartment);
-    const hasPersonnel = !isPolygonLabel && targetText !== feat.title;
+    const hasPersonnel = targetText !== feat.title;
     const showBox = hasPersonnel;
     const currentHasBox = ts.backgroundColor !== null && ts.backgroundColor !== undefined;
     if (ts.text !== targetText || currentHasBox !== showBox) {
@@ -125,7 +125,7 @@ function addFeatureGraphic(
   if (feat.geojsonGeometry && (feat.geojsonGeometry.type === "Point" || feat.geojsonGeometry.type === "Polygon")) {
     const isPolyLabel = feat.geojsonGeometry.type === "Polygon";
     const labelGeom = feat.geojsonGeometry.type === "Point" ? ng.geometry!.clone() : centroidExecute(ng.geometry!);
-    const hasPersonnel = !isPolyLabel && getLabelText(feat, dateStr, activeDepartment) !== feat.title;
+    const hasPersonnel = getLabelText(feat, dateStr, activeDepartment) !== feat.title;
     const showBox = hasPersonnel;
 
     const labelSym = new TextSymbol({

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { initDatabase } from "../db/database";
 import type { DailyLog, DrawnFeature } from "../types";
+import { getNormalizedGroupList } from "../utils/logUtils";
 
 export function useFeatureDB() {
   const [drawnFeatures, setDrawnFeatures] = useState<DrawnFeature[]>([]);
@@ -56,14 +57,20 @@ export function useFeatureDB() {
       if (logsData) {
         logsData.forEach((row: any) => {
           const fid = String(row.feature_id);
+          const parsedGroups = Array.isArray(row.groups)
+            ? row.groups
+            : (typeof row.groups === "string" && row.groups.trim() ? JSON.parse(row.groups) : undefined);
+
           const log: DailyLog = {
             date: row.date,
             department: row.department,
+            groups: parsedGroups && parsedGroups.length > 0 ? parsedGroups : undefined,
             groupName: row.group_name || "",
             unitOut: row.unit_out || "",
             managerName: row.manager_name || "",
             managerPhone: row.manager_phone || "",
             officersCount: row.officers_count || "",
+            hasArrivedG1: !!row.has_arrived_g1,
             commissionId: row.commission_id || "independiente",
             isVolunteer: !!row.is_volunteer,
 
@@ -73,6 +80,11 @@ export function useFeatureDB() {
             managerPhone2: row.manager_phone2 || "",
             officersCount2: row.officers_count2 || "",
             hasArrivedG2: !!row.has_arrived_g2,
+            rescuedCount2: row.rescued_count2 || "",
+            recoveredCount2: row.recovered_count2 || "",
+            rescuedPetsCount2: row.rescued_pets_count2 || "",
+            prehospitalCareCount2: row.prehospital_care_count2 || "",
+            transfersCount2: row.transfers_count2 || "",
             commissionId2: row.commission_id2 || "independiente",
             isVolunteer2: !!row.is_volunteer2,
 
@@ -361,11 +373,14 @@ export function useFeatureDB() {
         .eq("date", log.date)
         .eq("department", deptToUse);
 
+      const groupsList = getNormalizedGroupList(log);
+
       const payload = {
         feature_id: fidStr,
         date: log.date,
-department: deptToUse,
-        group_name: log.groupName || "",
+        department: deptToUse,
+        groups: groupsList,
+        group_name: log.groupName || groupsList[0]?.groupName || "",
         unit_out: log.unitOut || "",
         manager_name: log.managerName || "",
         manager_phone: log.managerPhone || "",
@@ -379,6 +394,11 @@ department: deptToUse,
         manager_phone2: log.managerPhone2 || "",
         officers_count2: log.officersCount2 || "",
         has_arrived_g2: !!log.hasArrivedG2,
+        rescued_count2: log.rescuedCount2 || "",
+        recovered_count2: log.recoveredCount2 || "",
+        rescued_pets_count2: log.rescuedPetsCount2 || "",
+        prehospital_care_count2: log.prehospitalCareCount2 || "",
+        transfers_count2: log.transfersCount2 || "",
         commission_id2: log.commissionId2 || "independiente",
         is_volunteer2: !!log.isVolunteer2,
         group_name3: log.groupName3 || "",

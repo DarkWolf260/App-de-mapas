@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import type { DrawnFeature, DepartmentView } from "../types";
-import { getTotalPersonnel } from "../utils/logUtils";
+import { getTotalPersonnel, getNormalizedGroupList } from "../utils/logUtils";
 import { LayoutDashboard, Users, MapPin, Tag, X, BarChart2, List } from "lucide-react";
 
 interface DeploymentSummaryCardProps {
@@ -45,24 +45,9 @@ function computeActivePoints(drawnFeatures: DrawnFeature[], targetDate: string, 
       const log = logs[0];
       if (!log) return null;
       const totalOff = getTotalPersonnel(log);
-      let groups = 0;
-      let activeGroups = 0;
-      if (log.groupName) {
-        groups++;
-        if (!log.hasArrivedG1 && !log.arrivalTime) activeGroups++;
-      }
-      if (log.groupName2) {
-        groups++;
-        if (!log.hasArrivedG2 && !log.arrivalTime2) activeGroups++;
-      }
-      if (log.groupName3) {
-        groups++;
-        if (!log.hasArrivedG3 && !log.arrivalTime3) activeGroups++;
-      }
-      if (log.groupName4) {
-        groups++;
-        if (!log.hasArrivedG4 && !log.arrivalTime4) activeGroups++;
-      }
+      const groupList = getNormalizedGroupList(log);
+      const groups = groupList.length;
+      const activeGroups = groupList.filter((g) => !g.hasArrived).length;
       if (totalOff === 0 && groups === 0) return null;
       return { id: f.id, title: f.title, color: f.color || "#22c55e", totalOff, groups, activeGroups };
     })
@@ -71,71 +56,31 @@ function computeActivePoints(drawnFeatures: DrawnFeature[], targetDate: string, 
 
 function computeTeams(drawnFeatures: DrawnFeature[], targetDate: string, activeDepartment?: DepartmentView): TeamEntry[] {
   const teams: TeamEntry[] = [];
-  drawnFeatures
-    .forEach((f) => {
-      const logs = f.dailyLogs?.filter((l) =>
-        l.date === targetDate && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
-      ) || [];
-      const log = logs[0];
-      if (!log) return;
-      const color = f.color || "#22c55e";
-      if (log.groupName?.trim()) {
-        const arrived = !!log.hasArrivedG1 || (!!log.arrivalTime && log.arrivalTime.trim() !== "");
-        const off = parseInt(log.officersCount || "0", 10);
+  drawnFeatures.forEach((f) => {
+    const logs = f.dailyLogs?.filter((l) =>
+      l.date === targetDate && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+    ) || [];
+    const log = logs[0];
+    if (!log) return;
+    const color = f.color || "#22c55e";
+    const groupList = getNormalizedGroupList(log);
+    groupList.forEach((g, idx) => {
+      if (g.groupName?.trim()) {
+        const arrived = !!g.hasArrived;
+        const off = parseInt(g.officersCount || "0", 10);
         teams.push({
-          id: `${f.id}-g1`,
-          groupName: log.groupName.trim(),
+          id: `${f.id}-g${idx + 1}`,
+          groupName: g.groupName.trim(),
           pointTitle: f.title,
           pointId: f.id,
           color,
-          officersCount: log.officersCount || "0",
-          hasArrived: arrived,
-          isActive: off > 0 && !arrived,
-        });
-      }
-      if (log.groupName2?.trim()) {
-        const arrived = !!log.hasArrivedG2 || (!!log.arrivalTime2 && log.arrivalTime2.trim() !== "");
-        const off = parseInt(log.officersCount2 || "0", 10);
-        teams.push({
-          id: `${f.id}-g2`,
-          groupName: log.groupName2.trim(),
-          pointTitle: f.title,
-          pointId: f.id,
-          color,
-          officersCount: log.officersCount2 || "0",
-          hasArrived: arrived,
-          isActive: off > 0 && !arrived,
-        });
-      }
-      if (log.groupName3?.trim()) {
-        const arrived = !!log.hasArrivedG3 || (!!log.arrivalTime3 && log.arrivalTime3.trim() !== "");
-        const off = parseInt(log.officersCount3 || "0", 10);
-        teams.push({
-          id: `${f.id}-g3`,
-          groupName: log.groupName3.trim(),
-          pointTitle: f.title,
-          pointId: f.id,
-          color,
-          officersCount: log.officersCount3 || "0",
-          hasArrived: arrived,
-          isActive: off > 0 && !arrived,
-        });
-      }
-      if (log.groupName4?.trim()) {
-        const arrived = !!log.hasArrivedG4 || (!!log.arrivalTime4 && log.arrivalTime4.trim() !== "");
-        const off = parseInt(log.officersCount4 || "0", 10);
-        teams.push({
-          id: `${f.id}-g4`,
-          groupName: log.groupName4.trim(),
-          pointTitle: f.title,
-          pointId: f.id,
-          color,
-          officersCount: log.officersCount4 || "0",
+          officersCount: g.officersCount || "0",
           hasArrived: arrived,
           isActive: off > 0 && !arrived,
         });
       }
     });
+  });
   return teams.sort((a, b) => a.groupName.localeCompare(b.groupName, "es"));
 }
 

@@ -52,7 +52,7 @@ const GROUP4_FIELDS_ROW2: [GroupFieldDef, GroupFieldDef] = [
 ];
 
 interface GroupFieldsProps {
-  groupIndex: 1 | 2 | 3 | 4;
+  groupIndex: number;
   log: Partial<DailyLog>;
   onFieldChange: (field: string, value: string | boolean) => void;
   colorVar: string;
@@ -104,24 +104,16 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
   headerStyle: headerStyleProp,
 }) => {
   const idxStr = groupIndex > 1 ? String(groupIndex) : "";
-  const suffix = idxStr ? ` ${idxStr}` : "";
-  const fieldsRow1 =
-    groupIndex === 4
-      ? GROUP4_FIELDS_ROW1
-      : groupIndex === 3
-      ? GROUP3_FIELDS_ROW1
-      : groupIndex === 2
-      ? GROUP2_FIELDS_ROW1
-      : GROUP1_FIELDS_ROW1;
 
-  const fieldsRow2 =
-    groupIndex === 4
-      ? GROUP4_FIELDS_ROW2
-      : groupIndex === 3
-      ? GROUP3_FIELDS_ROW2
-      : groupIndex === 2
-      ? GROUP2_FIELDS_ROW2
-      : GROUP1_FIELDS_ROW2;
+  const fieldsRow1: [GroupFieldDef, GroupFieldDef] = [
+    { key: (`groupName${idxStr}`) as keyof DailyLog, placeholder: groupIndex === 1 ? "Nombre Grupo" : `Nombre Grupo ${groupIndex}` },
+    { key: (`unitOut${idxStr}`) as keyof DailyLog, placeholder: groupIndex === 1 ? "Unidad (Vehículo)" : `Unidad ${groupIndex} (Vehículo)` },
+  ];
+
+  const fieldsRow2: [GroupFieldDef, GroupFieldDef] = [
+    { key: (`managerName${idxStr}`) as keyof DailyLog, placeholder: groupIndex === 1 ? "Encargado" : `Encargado ${groupIndex}` },
+    { key: (`officersCount${idxStr}`) as keyof DailyLog, placeholder: "Cant. Funcs.", type: "number", min: "0" },
+  ];
 
   const arrivedKey = (`hasArrivedG${groupIndex}`) as keyof DailyLog;
   const phoneKey = (`managerPhone${idxStr}`) as keyof DailyLog;
@@ -135,9 +127,7 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
       ? "Grupo Primario"
       : groupIndex === 2
       ? "Grupo Secundario"
-      : groupIndex === 3
-      ? "Tercer Grupo"
-      : "Cuarto Grupo";
+      : `Grupo ${groupIndex}`;
 
   const defaultInputStyle: React.CSSProperties = {
     background: "rgba(0, 0, 0, 0.3)",
@@ -163,10 +153,11 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
     letterSpacing: "0.04em",
   };
 
-  const rescuedKey = (`rescuedCount${idxStr}`) as keyof DailyLog;
-  const recoveredKey = (`recoveredCount${idxStr}`) as keyof DailyLog;
-  const prehospitalKey = (`prehospitalCareCount${idxStr}`) as keyof DailyLog;
-  const transfersKey = (`transfersCount${idxStr}`) as keyof DailyLog;
+  const gIdxStr = groupIndex === 1 ? "1" : idxStr;
+  const rescuedKey = (`rescuedCount${gIdxStr}`) as keyof DailyLog;
+  const recoveredKey = (`recoveredCount${gIdxStr}`) as keyof DailyLog;
+  const prehospitalKey = (`prehospitalCareCount${gIdxStr}`) as keyof DailyLog;
+  const transfersKey = (`transfersCount${gIdxStr}`) as keyof DailyLog;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...style }}>
@@ -262,7 +253,7 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
         <input
           type="text"
           className="rr-editor-input"
-          placeholder={`Teléfono Encargado${suffix}`}
+          placeholder={groupIndex === 1 ? "Teléfono Encargado" : `Teléfono Encargado ${groupIndex}`}
           value={(log[phoneKey] as string) || ""}
           onChange={(e) => onFieldChange(phoneKey, e.target.value)}
         />
@@ -287,9 +278,14 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
             }}
           >
             <option value="independiente" style={{ background: "#0f172a" }}>Trabajo Independiente</option>
-            <option value="comision_1" style={{ background: "#0f172a" }}>Comisión Conjunta 1 (Trabajo Conjunto)</option>
-            <option value="comision_2" style={{ background: "#0f172a" }}>Comisión Conjunta 2</option>
-            <option value="comision_3" style={{ background: "#0f172a" }}>Comisión Conjunta 3</option>
+            {Array.from({ length: 10 }).map((_, cIdx) => {
+              const num = cIdx + 1;
+              return (
+                <option key={num} value={`comision_${num}`} style={{ background: "#0f172a" }}>
+                  Comisión Conjunta {num}
+                </option>
+              );
+            })}
           </select>
         </div>
         <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: "2px" }}>
@@ -320,14 +316,9 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
           }
         }
 
-        const commLabel =
-          currentComm === "comision_1"
-            ? "Comisión Conjunta 1"
-            : currentComm === "comision_2"
-            ? "Comisión Conjunta 2"
-            : currentComm === "comision_3"
-            ? "Comisión Conjunta 3"
-            : "Trabajo Independiente";
+        const commLabel = currentComm.startsWith("comision_")
+          ? `Comisión Conjunta ${currentComm.replace("comision_", "")}`
+          : "Trabajo Independiente";
 
         if (primaryGroupIndex > 0) {
           return (
@@ -372,8 +363,8 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
                   min="0"
                   placeholder="0"
                   className="rr-editor-input"
-                  value={((log[(`rescuedPetsCount${idxStr}`) as keyof DailyLog] as string) || "")}
-                  onChange={(e) => onFieldChange((`rescuedPetsCount${idxStr}`), e.target.value)}
+                  value={((log[(`rescuedPetsCount${gIdxStr}`) as keyof DailyLog] as string) || "")}
+                  onChange={(e) => onFieldChange((`rescuedPetsCount${gIdxStr}`), e.target.value)}
                 />
               </div>
             </div>

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import type { DrawnFeature, DepartmentView } from "../types";
+import { getNormalizedGroupList } from "../utils/logUtils";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
 interface GlobalStatsWidgetProps {
@@ -27,14 +28,41 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
 
     drawnFeatures.forEach((feat) => {
       const todayLogs = feat.dailyLogs?.filter((l) =>
-        l.date === todayStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+        l.date === todayStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
       ) || [];
+
       for (const todayLog of todayLogs) {
-        rescuedPeople += (todayLog.rescuedCount ? Number(todayLog.rescuedCount) : 0) + (todayLog.rescuedCount2 ? Number(todayLog.rescuedCount2) : 0);
-        recoveredBodies += (todayLog.recoveredCount ? Number(todayLog.recoveredCount) : 0) + (todayLog.recoveredCount2 ? Number(todayLog.recoveredCount2) : 0);
-        rescuedPets += todayLog.rescuedPetsCount ? Number(todayLog.rescuedPetsCount) : 0;
-        prehospitalCare += (todayLog.prehospitalCareCount ? Number(todayLog.prehospitalCareCount) : 0) + (todayLog.prehospitalCareCount2 ? Number(todayLog.prehospitalCareCount2) : 0);
-        transfers += (todayLog.transfersCount ? Number(todayLog.transfersCount) : 0) + (todayLog.transfersCount2 ? Number(todayLog.transfersCount2) : 0);
+        const gList = getNormalizedGroupList(todayLog);
+        const seenComms = new Set<string>();
+
+        for (const g of gList) {
+          const cid = g.commissionId || "independiente";
+          if (cid !== "independiente") {
+            if (seenComms.has(cid)) continue;
+            seenComms.add(cid);
+          }
+          rescuedPeople += parseInt(g.rescuedCount || "0", 10) || 0;
+          recoveredBodies += parseInt(g.recoveredCount || "0", 10) || 0;
+          rescuedPets += parseInt(g.rescuedPetsCount || "0", 10) || 0;
+          prehospitalCare += parseInt(g.prehospitalCareCount || "0", 10) || 0;
+          transfers += parseInt(g.transfersCount || "0", 10) || 0;
+        }
+
+        if (todayLog.rescuedCount && !gList.some((g) => g.rescuedCount === todayLog.rescuedCount)) {
+          rescuedPeople += parseInt(todayLog.rescuedCount || "0", 10) || 0;
+        }
+        if (todayLog.recoveredCount && !gList.some((g) => g.recoveredCount === todayLog.recoveredCount)) {
+          recoveredBodies += parseInt(todayLog.recoveredCount || "0", 10) || 0;
+        }
+        if (todayLog.rescuedPetsCount && !gList.some((g) => g.rescuedPetsCount === todayLog.rescuedPetsCount)) {
+          rescuedPets += parseInt(todayLog.rescuedPetsCount || "0", 10) || 0;
+        }
+        if (todayLog.prehospitalCareCount && !gList.some((g) => g.prehospitalCareCount === todayLog.prehospitalCareCount)) {
+          prehospitalCare += parseInt(todayLog.prehospitalCareCount || "0", 10) || 0;
+        }
+        if (todayLog.transfersCount && !gList.some((g) => g.transfersCount === todayLog.transfersCount)) {
+          transfers += parseInt(todayLog.transfersCount || "0", 10) || 0;
+        }
       }
     });
 

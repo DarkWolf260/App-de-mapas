@@ -65,7 +65,7 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
 
   if (log.groups && Array.isArray(log.groups) && log.groups.length > 0) {
     for (const g of log.groups) {
-      if (g && (g.groupName?.trim() || g.officersCount || g.unitOut || g.managerName)) {
+      if (g && (g.groupName?.trim() || g.officersCount || g.unitOut || g.managerName || g.rescuedCount || g.recoveredCount || g.prehospitalCareCount || g.transfersCount || g.rescuedPetsCount)) {
         rawEntries.push({ ...g, commissionId: g.commissionId || "independiente" });
       }
     }
@@ -92,10 +92,31 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
       }
     };
 
-    addLegacy(1, log.groupName, log.managerName, log.managerPhone, log.unitOut, log.officersCount, log.rescuedCount, log.recoveredCount, log.rescuedPetsCount, log.prehospitalCareCount, log.transfersCount, log.hasArrivedG1, log.commissionId, log.isVolunteer);
-    addLegacy(2, log.groupName2, log.managerName2, log.managerPhone2, log.unitOut2, log.officersCount2, log.rescuedCount2, log.recoveredCount2, log.rescuedPetsCount2, log.prehospitalCareCount2, log.transfersCount2, log.hasArrivedG2, log.commissionId2, log.isVolunteer2);
-    addLegacy(3, log.groupName3, log.managerName3, log.managerPhone3, log.unitOut3, log.officersCount3, log.rescuedCount3, log.recoveredCount3, log.rescuedPetsCount3, log.prehospitalCareCount3, log.transfersCount3, log.hasArrivedG3, log.commissionId3, log.isVolunteer3);
-    addLegacy(4, log.groupName4, log.managerName4, log.managerPhone4, log.unitOut4, log.officersCount4, log.rescuedCount4, log.recoveredCount4, log.rescuedPetsCount4, log.prehospitalCareCount4, log.transfersCount4, log.hasArrivedG4, log.commissionId4, log.isVolunteer4);
+    let slot = 1;
+    while (slot <= 50) {
+      const idxS = slot > 1 ? String(slot) : "";
+      const name = (log as any)[`groupName${idxS}`];
+      const mgr = (log as any)[`managerName${idxS}`];
+      const phone = (log as any)[`managerPhone${idxS}`];
+      const unit = (log as any)[`unitOut${idxS}`];
+      const officers = (log as any)[`officersCount${idxS}`];
+      const rescued = (log as any)[`rescuedCount${slot}`] || (log as any)[`rescuedCount${idxS}`];
+      const recovered = (log as any)[`recoveredCount${slot}`] || (log as any)[`recoveredCount${idxS}`];
+      const pets = (log as any)[`rescuedPetsCount${slot}`] || (log as any)[`rescuedPetsCount${idxS}`];
+      const prehospital = (log as any)[`prehospitalCareCount${slot}`] || (log as any)[`prehospitalCareCount${idxS}`];
+      const transfers = (log as any)[`transfersCount${slot}`] || (log as any)[`transfersCount${idxS}`];
+      const arrived = (log as any)[`hasArrivedG${slot}`];
+      const commissionId = (log as any)[`commissionId${idxS}`];
+      const isVolunteer = (log as any)[`isVolunteer${idxS}`];
+
+      const hasData = !!(name?.trim() || officers || unit?.trim() || mgr?.trim() || rescued || recovered || prehospital || transfers);
+      if (hasData) {
+        addLegacy(slot, name, mgr, phone, unit, officers, rescued, recovered, pets, prehospital, transfers, arrived, commissionId, isVolunteer);
+      } else if (slot > 4) {
+        break;
+      }
+      slot++;
+    }
   }
 
   // Inherit shared commission metrics for groups in the same joint commission if not explicitly set
@@ -717,8 +738,8 @@ export function getPeriodStats(
         const name = g.groupName.trim();
         if (!name) continue;
 
-        // If explicitly set to 'independiente' or single group with no commission set
-        const isIndep = g.commissionId === "independiente" || (!hasMultipleGroups && (!g.commissionId || g.commissionId === "independiente"));
+        // If set to 'independiente' or no commission specified, treat as independent
+        const isIndep = !g.commissionId || g.commissionId === "independiente";
 
         if (isIndep) {
           const key = name.toLowerCase() + "_" + (log.department || "");
@@ -760,14 +781,9 @@ export function getPeriodStats(
         if (!jointPairsMap.has(pairKey)) {
           jointPairsMap.set(pairKey, {
             commissionId: cid,
-            commissionLabel:
-              cid === "comision_1"
-                ? "Comisión Conjunta 1"
-                : cid === "comision_2"
-                ? "Comisión Conjunta 2"
-                : cid === "comision_3"
-                ? "Comisión Conjunta 3"
-                : "Comisión Conjunta",
+            commissionLabel: cid.startsWith("comision_")
+              ? `Comisión Conjunta ${cid.replace("comision_", "")}`
+              : "Comisión Conjunta",
             groupsMap: new Map(),
             datesSet: new Set(),
             rescued: 0,

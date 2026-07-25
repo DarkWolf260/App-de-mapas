@@ -2,6 +2,7 @@ import Basemap from "@arcgis/core/Basemap";
 import TileLayer from "@arcgis/core/layers/TileLayer";
 import type { DrawnFeature, DepartmentView } from "../types";
 import { hexToRgb } from "./colorUtils";
+import { getNormalizedGroupList } from "./logUtils";
 
 export const DEFAULT_CENTER: [number, number] = [-66.9303, 10.6011];
 export const DEFAULT_ZOOM = 14;
@@ -52,13 +53,15 @@ export const formatFeatureLabelText = (feat: DrawnFeature, todayStr: string, act
 
   const parts: string[] = [];
 
-  if (feat.type === "point") {
+  if (feat.type === "point" || feat.type === "polygon") {
     const groupItems: Array<{ name?: string; unit?: string }> = [];
     for (const todayLog of todayLogs) {
-      if (todayLog.groupName?.trim() || todayLog.unitOut?.trim()) groupItems.push({ name: todayLog.groupName?.trim(), unit: todayLog.unitOut?.trim() });
-      if (todayLog.groupName2?.trim() || todayLog.unitOut2?.trim()) groupItems.push({ name: todayLog.groupName2?.trim(), unit: todayLog.unitOut2?.trim() });
-      if (todayLog.groupName3?.trim() || todayLog.unitOut3?.trim()) groupItems.push({ name: todayLog.groupName3?.trim(), unit: todayLog.unitOut3?.trim() });
-      if (todayLog.groupName4?.trim() || todayLog.unitOut4?.trim()) groupItems.push({ name: todayLog.groupName4?.trim(), unit: todayLog.unitOut4?.trim() });
+      const activeGroups = getNormalizedGroupList(todayLog);
+      for (const g of activeGroups) {
+        if (g.groupName?.trim() || g.unitOut?.trim()) {
+          groupItems.push({ name: g.groupName?.trim(), unit: g.unitOut?.trim() });
+        }
+      }
     }
 
     if (groupItems.length > 0) {
