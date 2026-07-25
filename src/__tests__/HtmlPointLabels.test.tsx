@@ -96,4 +96,14 @@ describe("HtmlPointLabels", () => {
     expect(labelEl.style.left).toBe("112px");
     expect(labelEl.style.transform).toBe("translate(0, -50%)");
   });
+
+  it("calls onSelectLabel when label is clicked", () => {
+    const onSelect = vi.fn();
+    const { container } = render(
+      <HtmlPointLabels labels={[baseLabel]} onSelectLabel={onSelect} />
+    );
+    const labelEl = container.firstElementChild as HTMLElement;
+    labelEl.click();
+    expect(onSelect).toHaveBeenCalledWith(baseLabel.id);
+  });
 });

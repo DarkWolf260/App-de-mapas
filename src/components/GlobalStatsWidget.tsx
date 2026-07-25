@@ -24,13 +24,8 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
     let rescuedPets = 0;
     let prehospitalCare = 0;
     let transfers = 0;
-    let collapsedBuildings = 0;
 
     drawnFeatures.forEach((feat) => {
-      if (feat.type === "point" && feat.isCollapsed) {
-        collapsedBuildings += Number(feat.collapsedCount || 1);
-      }
-
       const todayLogs = feat.dailyLogs?.filter((l) =>
         l.date === todayStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
       ) || [];
@@ -43,7 +38,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
       }
     });
 
-    return { rescuedPeople, recoveredBodies, rescuedPets, prehospitalCare, transfers, collapsedBuildings };
+    return { rescuedPeople, recoveredBodies, rescuedPets, prehospitalCare, transfers };
   }, [drawnFeatures, todayStr, activeDepartment]);
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
@@ -98,15 +93,6 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
           <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "var(--color-purple)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>Traslados</span>
           <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.transfers}</span>
         </div>
-        {stats.collapsedBuildings > 0 && (
-          <>
-            <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.08)" }} />
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#f87171", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>E. Colapsados</span>
-              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f87171" }}>{stats.collapsedBuildings}</span>
-            </div>
-          </>
-        )}
       </div>
 
       {/* Slide Toggle Tab */}

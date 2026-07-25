@@ -143,7 +143,7 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose 
 
     const map = view.map;
     if (map && !map.layers.includes(groupLayer)) {
-      map.add(groupLayer);
+      map.add(groupLayer, 0);
     }
 
     const swipeWidget = new Swipe({

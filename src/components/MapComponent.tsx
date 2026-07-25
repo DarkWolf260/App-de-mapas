@@ -298,7 +298,21 @@ interface MapComponentProps {
       </div>
 
       {/* HTML point labels with background (personnel info) */}
-      <HtmlPointLabels labels={htmlLabels} />
+      <HtmlPointLabels
+        labels={htmlLabels}
+        onSelectLabel={(lblId) => {
+          const feat = drawnFeatures.find((f) => String(f.id) === String(lblId));
+          if (feat) {
+            let mapPoint: Point | null = null;
+            if (feat.geojsonGeometry && feat.type === "point" && Array.isArray(feat.geojsonGeometry.coordinates)) {
+              const [lng, lat] = feat.geojsonGeometry.coordinates as number[];
+              mapPoint = new Point({ longitude: lng, latitude: lat });
+            }
+            if (!mapPoint) mapPoint = new Point({ longitude: -66.9331, latitude: 10.6000 });
+            setCustomPopup({ mapPoint, feat });
+          }
+        }}
+      />
 
       {/* Satellite Swipe Comparison */}
       {swipeActive && viewRef.current && (

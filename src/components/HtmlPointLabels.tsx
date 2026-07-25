@@ -3,6 +3,7 @@ import type { HtmlLabel } from "../types";
 
 interface HtmlPointLabelsProps {
   labels: HtmlLabel[];
+  onSelectLabel?: (id: number | string) => void;
 }
 
 interface ArrowStyle {
@@ -57,7 +58,7 @@ function computePlacement(lbl: HtmlLabel, borderStyle: string): Placement {
   };
 }
 
-export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels }) => (
+export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, onSelectLabel }) => (
   <>
     {labels.map((lbl) => {
       const borderStyle = `1px solid ${lbl.themeColor ? `${lbl.themeColor}90` : "rgba(56, 189, 248, 0.5)"}`;
@@ -67,6 +68,10 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels }) => (
       return (
         <div
           key={lbl.id}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectLabel?.(lbl.id);
+          }}
           style={{
             position: "absolute",
             left,
@@ -79,7 +84,10 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels }) => (
             borderRadius: "8px",
             fontFamily: "var(--font-sans)",
             boxShadow: "0 8px 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)",
-            pointerEvents: "none",
+            pointerEvents: "auto",
+            cursor: "pointer",
+            userSelect: "none",
+            WebkitUserSelect: "none",
             zIndex: 2,
             whiteSpace: "nowrap",
             backdropFilter: "blur(12px)",
