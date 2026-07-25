@@ -3,7 +3,7 @@ import { Shield, LogOut, KeyRound, X, Check, Lock } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
 export const AuthModal: React.FC = () => {
-  const { user, isAdmin, login, logout } = useAuth();
+  const { user, isAdmin, isOperador, role, login, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,6 +33,8 @@ export const AuthModal: React.FC = () => {
     setOpen(false);
   };
 
+  const isAuth = isAdmin || isOperador;
+
   return (
     <>
       {/* Botón Discreto circular solo con el icono de Escudo */}
@@ -43,22 +45,22 @@ export const AuthModal: React.FC = () => {
           width: "32px",
           height: "32px",
           borderRadius: "50%",
-          background: isAdmin ? "rgba(34, 197, 94, 0.2)" : "rgba(10, 15, 29, 0.85)",
-          border: isAdmin ? "1px solid rgba(34, 197, 94, 0.6)" : "1px solid rgba(255, 255, 255, 0.18)",
-          color: isAdmin ? "#4ade80" : "#94a3b8",
+          background: isAdmin ? "rgba(34, 197, 94, 0.2)" : isOperador ? "rgba(56, 189, 248, 0.2)" : "rgba(10, 15, 29, 0.85)",
+          border: isAdmin ? "1px solid rgba(34, 197, 94, 0.6)" : isOperador ? "1px solid rgba(56, 189, 248, 0.6)" : "1px solid rgba(255, 255, 255, 0.18)",
+          color: isAdmin ? "#4ade80" : isOperador ? "#38bdf8" : "#94a3b8",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           backdropFilter: "blur(10px)",
           WebkitBackdropFilter: "blur(10px)",
-          boxShadow: isAdmin ? "0 0 12px rgba(34, 197, 94, 0.35)" : "0 4px 12px rgba(0, 0, 0, 0.4)",
+          boxShadow: isAdmin ? "0 0 12px rgba(34, 197, 94, 0.35)" : isOperador ? "0 0 12px rgba(56, 189, 248, 0.35)" : "0 4px 12px rgba(0, 0, 0, 0.4)",
           transition: "all 0.2s ease",
           padding: 0,
         }}
-        title={isAdmin ? `Sesión iniciada como ${user?.email}` : "Acceso de Administrador"}
+        title={isAuth ? `Sesión iniciada como ${user?.email} (${role})` : "Iniciar Sesión"}
       >
-        <Shield size={16} style={{ color: isAdmin ? "#4ade80" : "#94a3b8" }} />
+        <Shield size={16} style={{ color: isAdmin ? "#4ade80" : isOperador ? "#38bdf8" : "#94a3b8" }} />
       </button>
 
       {/* Modal Emergente Glassmorphism */}
@@ -102,7 +104,7 @@ export const AuthModal: React.FC = () => {
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <KeyRound size={15} style={{ color: "var(--color-info)" }} />
                 <span style={{ fontSize: "0.82rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "0.04em" }}>
-                  {isAdmin ? "Administrador Activo" : "Acceso de Administrador"}
+                  {isAdmin ? "Administrador Activo" : isOperador ? "Operador Activo" : "Iniciar Sesión"}
                 </span>
               </div>
               <button
@@ -113,15 +115,19 @@ export const AuthModal: React.FC = () => {
               </button>
             </div>
 
-            {isAdmin ? (
-              /* Vista cuando el admin ya inició sesión */
+            {isAuth ? (
+              /* Vista cuando ya inició sesión */
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <div style={{ background: "rgba(34, 197, 94, 0.1)", border: "1px solid rgba(34, 197, 94, 0.3)", padding: "10px", borderRadius: "8px", fontSize: "0.72rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#4ade80", fontWeight: 700, marginBottom: "4px" }}>
-                    <Check size={14} /> Permisos de Edición Activos
+                <div style={{ background: isAdmin ? "rgba(34, 197, 94, 0.1)" : "rgba(56, 189, 248, 0.1)", border: `1px solid ${isAdmin ? "rgba(34, 197, 94, 0.3)" : "rgba(56, 189, 248, 0.3)"}`, padding: "10px", borderRadius: "8px", fontSize: "0.72rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", color: isAdmin ? "#4ade80" : "#38bdf8", fontWeight: 700, marginBottom: "4px" }}>
+                    <Check size={14} /> Rol: {isAdmin ? "Administrador Global" : "Operador"}
                   </div>
                   <span style={{ color: "var(--text-muted)", display: "block" }}>Usuario: <strong>{user?.email}</strong></span>
-                  <span style={{ color: "var(--text-muted)", fontSize: "0.68rem" }}>Puedes crear, mover, editar y guardar cualquier punto o polígono en el mapa.</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: "0.68rem", display: "block", marginTop: "4px" }}>
+                    {isAdmin
+                      ? "Permisos totales: Puedes modificar cualquier registro, fecha o elemento en el mapa."
+                      : "Permisos de Operador: Puedes modificar registros y llegada de grupos únicamente para el día de hoy."}
+                  </span>
                 </div>
 
                 <button
@@ -142,7 +148,7 @@ export const AuthModal: React.FC = () => {
                     gap: "6px",
                   }}
                 >
-                  <LogOut size={14} /> Cerrar Sesión de Administrador
+                  <LogOut size={14} /> Cerrar Sesión
                 </button>
               </div>
             ) : (

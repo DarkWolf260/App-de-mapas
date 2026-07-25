@@ -30,6 +30,7 @@ interface CustomMapPopupProps {
   onClose: () => void;
   activeDepartment?: DepartmentView;
   isAdmin?: boolean;
+  isOperador?: boolean;
   workGroups?: WorkGroup[];
 }
 
@@ -90,12 +91,19 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   customPopup, popupScreenPos, drawnFeatures, layerVisibility,
   popupEditDate, setPopupEditDate, onSaveDailyLog,
   onToggleFeatureLock, onRenameFeature, onUpdateFeatureDescription,
-  onUpdateFeatureColor, onUpdateFeatureCollapsed, sketchLayer, onClose, activeDepartment = "pc",
-  isAdmin = false, workGroups = [],
+  onUpdateFeatureColor, onUpdateFeatureCollapsed, sketchLayer, onClose,  activeDepartment = "pc",
+  isAdmin = false,
+  isOperador = false,
+  workGroups = [],
 }) => {
   const activeFeat = customPopup
     ? drawnFeatures.find((f) => String(f.id) === String(customPopup.feat.id)) || customPopup.feat
     : null;
+
+  const todayStr = new Date().toLocaleDateString("en-CA");
+  const isEditingToday = popupEditDate === todayStr;
+  const canEditLog = isAdmin || (isOperador && isEditingToday);
+  const canToggleArrival = isAdmin || (isOperador && isEditingToday);
 
   const [activeTab, setActiveTab] = useState<TabId>(isAdmin ? "general" : "info");
   const [localTitle, setLocalTitle] = useState("");
@@ -131,10 +139,12 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   }, [activeFeat?.id, popupEditDate, activeDepartment, selectedDept]);
 
   useEffect(() => {
-    if (!isAdmin || !activeFeat || !layerVisibility.sketch) {
+    if (isAdmin && layerVisibility.sketch) {
+      setActiveTab("general");
+    } else if (canEditLog && !layerVisibility.sketch) {
       setActiveTab("info");
     } else {
-      setActiveTab("general");
+      setActiveTab("info");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- activeFeat?.id + type cover all needed resets
   }, [activeFeat?.id, activeFeat?.type, layerVisibility.sketch, isAdmin]);
@@ -156,7 +166,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   };
 
   const handleLogSave = async () => {
-    if (!isAdmin || !onSaveDailyLog) return;
+    if (!canEditLog || !onSaveDailyLog) return;
     try {
       const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
       const logToSave = { ...localLog, department: deptToUse };
@@ -169,12 +179,12 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   };
 
   const handleLogFieldChange = (field: string, val: unknown) => {
-    if (!isAdmin) return;
+    if (!canEditLog) return;
     setLocalLog((prev) => ({ ...prev, [field]: val }));
   };
 
   const handleToggleArrivalGroup = async (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => {
-    if (!isAdmin || !onSaveDailyLog) return;
+    if (!canToggleArrival || !onSaveDailyLog) return;
     const fieldKey = groupIndex === 1 ? "hasArrivedG1" : groupIndex === 2 ? "hasArrivedG2" : groupIndex === 3 ? "hasArrivedG3" : "hasArrivedG4";
     const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
     const updatedLog = {
@@ -222,10 +232,15 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         </button>
       </div>
 
-      {/* Tab Selector — for non-admins (Viewers) */}
+      {/* Tab Selector — for non-admins and operators */}
       {!isAdmin && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
+          {canEditLog && (
+            <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
+              <FileText size={12} /> {isPolygon ? "Estadísticas Directas" : "Editar"}
+            </button>
+          )}
           {isPolygon && (
             <button onClick={() => setActiveTab("contained")} style={tabBtnStyle(activeTab === "contained")}><Layers size={12} /> Elementos</button>
           )}
@@ -272,10 +287,11 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         <InfoTab
           activeFeat={activeFeat}
           dailyLog={localLog}
-          onEdit={() => isAdmin && setActiveTab("operation")}
+          onEdit={() => canEditLog && setActiveTab("operation")}
           drawnFeatures={drawnFeatures}
           popupEditDate={popupEditDate}
           isAdmin={isAdmin}
+          canToggleArrival={canToggleArrival}
           onToggleArrivalGroup={handleToggleArrivalGroup}
         />
       )}

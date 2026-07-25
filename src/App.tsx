@@ -35,7 +35,7 @@ const CATEGORY_COLORS = {
 function App() {
   const apiKey: string = import.meta.env.VITE_ARCGIS_API_KEY || '';
   const [activeCity] = useState<string>('venezuela');
-  const { isAdmin } = useAuth();
+  const { isAdmin, isOperador } = useAuth();
   
   const [layerVisibility, setLayerVisibility] = useLocalStorageState<LayerVisibility>('pc_layer_visibility', {
     sketch: true,
@@ -298,6 +298,7 @@ function App() {
           activeDepartment={activeDepartment}
           showSidebar={!sidebarCollapsed}
           isAdmin={isAdmin}
+          isOperador={isOperador}
           workGroups={workGroups}
         />
       </div>

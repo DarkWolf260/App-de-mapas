@@ -11,6 +11,7 @@ interface InfoTabProps {
   drawnFeatures: DrawnFeature[];
   popupEditDate: string;
   isAdmin?: boolean;
+  canToggleArrival?: boolean;
   onToggleArrivalGroup?: (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => Promise<void>;
 }
 
@@ -88,8 +89,9 @@ function getCoordLabel(feat: DrawnFeature): string {
 }
 
 export const InfoTab: React.FC<InfoTabProps> = ({
-  activeFeat, dailyLog, onEdit, drawnFeatures, popupEditDate, isAdmin = false, onToggleArrivalGroup,
+  activeFeat, dailyLog, onEdit, drawnFeatures, popupEditDate, isAdmin = false, canToggleArrival = false, onToggleArrivalGroup,
 }) => {
+  const showArrivalCheckbox = isAdmin || canToggleArrival;
   const [copied, setCopied] = useState(false);
   const coords = formatCoordinates(activeFeat);
   const isPolygon = activeFeat.type === "polygon";
@@ -380,7 +382,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
               <ReadRow label="Encargado" value={log.managerName} />
               <ReadRow label="Funcionarios" value={log.officersCount} />
               <ReadRow label="Teléfono" value={log.managerPhone} />
-              {isAdmin ? (
+              {showArrivalCheckbox ? (
                 <label style={{ fontSize: "0.65rem", fontWeight: 700, color: log.hasArrivedG1 ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: log.hasArrivedG1 ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${log.hasArrivedG1 ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
                   <input type="checkbox" checked={!!log.hasArrivedG1} onChange={(e) => onToggleArrivalGroup?.(1, e.target.checked)} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
                   <span>{log.hasArrivedG1 ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
@@ -404,7 +406,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
               <ReadRow label="Encargado" value={log.managerName2} />
               <ReadRow label="Funcionarios" value={log.officersCount2} />
               <ReadRow label="Teléfono" value={log.managerPhone2} />
-              {isAdmin ? (
+              {showArrivalCheckbox ? (
                 <label style={{ fontSize: "0.65rem", fontWeight: 700, color: log.hasArrivedG2 ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: log.hasArrivedG2 ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${log.hasArrivedG2 ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
                   <input type="checkbox" checked={!!log.hasArrivedG2} onChange={(e) => onToggleArrivalGroup?.(2, e.target.checked)} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
                   <span>{log.hasArrivedG2 ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
@@ -428,7 +430,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
               <ReadRow label="Encargado" value={log.managerName3} />
               <ReadRow label="Funcionarios" value={log.officersCount3} />
               <ReadRow label="Teléfono" value={log.managerPhone3} />
-              {isAdmin ? (
+              {showArrivalCheckbox ? (
                 <label style={{ fontSize: "0.65rem", fontWeight: 700, color: log.hasArrivedG3 ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: log.hasArrivedG3 ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${log.hasArrivedG3 ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
                   <input type="checkbox" checked={!!log.hasArrivedG3} onChange={(e) => onToggleArrivalGroup?.(3, e.target.checked)} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
                   <span>{log.hasArrivedG3 ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
@@ -452,7 +454,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
               <ReadRow label="Encargado" value={log.managerName4} />
               <ReadRow label="Funcionarios" value={log.officersCount4} />
               <ReadRow label="Teléfono" value={log.managerPhone4} />
-              {isAdmin ? (
+              {showArrivalCheckbox ? (
                 <label style={{ fontSize: "0.65rem", fontWeight: 700, color: log.hasArrivedG4 ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: log.hasArrivedG4 ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${log.hasArrivedG4 ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
                   <input type="checkbox" checked={!!log.hasArrivedG4} onChange={(e) => onToggleArrivalGroup?.(4, e.target.checked)} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
                   <span>{log.hasArrivedG4 ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>

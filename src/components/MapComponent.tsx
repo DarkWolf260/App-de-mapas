@@ -39,6 +39,7 @@ interface MapComponentProps {
   activeDepartment?: DepartmentView;
   showSidebar?: boolean;
   isAdmin?: boolean;
+  isOperador?: boolean;
   onOpenWorkGroups?: () => void;
   workGroups?: WorkGroup[];
 }
@@ -151,6 +152,7 @@ interface MapComponentProps {
         onClose={() => setCustomPopup(null)}
         activeDepartment={props.activeDepartment}
         isAdmin={props.isAdmin}
+        isOperador={props.isOperador}
         workGroups={props.workGroups}
       />
 
