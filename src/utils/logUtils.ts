@@ -64,10 +64,84 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
   const rawEntries: GroupLogEntry[] = [];
 
   if (log.groups && Array.isArray(log.groups) && log.groups.length > 0) {
-    for (const g of log.groups) {
-      if (g && (g.groupName?.trim() || g.officersCount || g.unitOut || g.managerName || g.rescuedCount || g.recoveredCount || g.prehospitalCareCount || g.transfersCount || g.rescuedPetsCount)) {
-        rawEntries.push({ ...g, commissionId: g.commissionId || "independiente" });
+    log.groups.forEach((g, idx) => {
+      const slot = idx + 1;
+      const idxS = slot > 1 ? String(slot) : "";
+
+      const name = (log as any)[`groupName${idxS}`] !== undefined ? (log as any)[`groupName${idxS}`] : g.groupName;
+      const mgr = (log as any)[`managerName${idxS}`] !== undefined ? (log as any)[`managerName${idxS}`] : g.managerName;
+      const phone = (log as any)[`managerPhone${idxS}`] !== undefined ? (log as any)[`managerPhone${idxS}`] : g.managerPhone;
+      const unit = (log as any)[`unitOut${idxS}`] !== undefined ? (log as any)[`unitOut${idxS}`] : g.unitOut;
+      const officers = (log as any)[`officersCount${idxS}`] !== undefined ? (log as any)[`officersCount${idxS}`] : g.officersCount;
+      const rescued = (log as any)[`rescuedCount${idxS}`] !== undefined ? (log as any)[`rescuedCount${idxS}`] : g.rescuedCount;
+      const recovered = (log as any)[`recoveredCount${idxS}`] !== undefined ? (log as any)[`recoveredCount${idxS}`] : g.recoveredCount;
+      const pets = (log as any)[`rescuedPetsCount${idxS}`] !== undefined ? (log as any)[`rescuedPetsCount${idxS}`] : g.rescuedPetsCount;
+      const prehospital = (log as any)[`prehospitalCareCount${idxS}`] !== undefined ? (log as any)[`prehospitalCareCount${idxS}`] : g.prehospitalCareCount;
+      const transfers = (log as any)[`transfersCount${idxS}`] !== undefined ? (log as any)[`transfersCount${idxS}`] : g.transfersCount;
+      const arrived = (log as any)[`hasArrivedG${slot}`] !== undefined ? !!(log as any)[`hasArrivedG${slot}`] : g.hasArrived;
+      const commissionId = (log as any)[`commissionId${idxS}`] !== undefined ? (log as any)[`commissionId${idxS}`] : g.commissionId;
+      const isVolunteer = (log as any)[`isVolunteer${idxS}`] !== undefined ? !!(log as any)[`isVolunteer${idxS}`] : g.isVolunteer;
+
+      const hasData = !!(name?.trim() || officers || unit?.trim() || mgr?.trim() || rescued || recovered || prehospital || transfers);
+      if (hasData) {
+        rawEntries.push({
+          id: g.id || `g${slot}`,
+          groupName: (name || "").trim(),
+          managerName: mgr || "",
+          managerPhone: phone || "",
+          unitOut: unit || "",
+          officersCount: officers || "",
+          rescuedCount: rescued || "",
+          recoveredCount: recovered || "",
+          rescuedPetsCount: pets || "",
+          prehospitalCareCount: prehospital || "",
+          transfersCount: transfers || "",
+          hasArrived: !!arrived,
+          commissionId: commissionId || "independiente",
+          isVolunteer: !!isVolunteer,
+        });
       }
+    });
+
+    let slot = log.groups.length + 1;
+    while (slot <= 50) {
+      const idxS = String(slot);
+      const name = (log as any)[`groupName${idxS}`];
+      const mgr = (log as any)[`managerName${idxS}`];
+      const phone = (log as any)[`managerPhone${idxS}`];
+      const unit = (log as any)[`unitOut${idxS}`];
+      const officers = (log as any)[`officersCount${idxS}`];
+      const rescued = (log as any)[`rescuedCount${idxS}`];
+      const recovered = (log as any)[`recoveredCount${idxS}`];
+      const pets = (log as any)[`rescuedPetsCount${idxS}`];
+      const prehospital = (log as any)[`prehospitalCareCount${idxS}`];
+      const transfers = (log as any)[`transfersCount${idxS}`];
+      const arrived = (log as any)[`hasArrivedG${slot}`];
+      const commissionId = (log as any)[`commissionId${idxS}`];
+      const isVolunteer = (log as any)[`isVolunteer${idxS}`];
+
+      const hasData = !!(name?.trim() || officers || unit?.trim() || mgr?.trim() || rescued || recovered || prehospital || transfers);
+      if (hasData) {
+        rawEntries.push({
+          id: `g${slot}`,
+          groupName: (name || "").trim(),
+          managerName: mgr || "",
+          managerPhone: phone || "",
+          unitOut: unit || "",
+          officersCount: officers || "",
+          rescuedCount: rescued || "",
+          recoveredCount: recovered || "",
+          rescuedPetsCount: pets || "",
+          prehospitalCareCount: prehospital || "",
+          transfersCount: transfers || "",
+          hasArrived: !!arrived,
+          commissionId: commissionId || "independiente",
+          isVolunteer: !!isVolunteer,
+        });
+      } else if (slot > 4) {
+        break;
+      }
+      slot++;
     }
   } else {
     const addLegacy = (slotIndex: number, name?: string, mgr?: string, phone?: string, unit?: string, officers?: string, rescued?: string, recovered?: string, pets?: string, prehospital?: string, transfers?: string, arrived?: boolean, commissionId?: string, isVolunteer?: boolean) => {
@@ -100,11 +174,11 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
       const phone = (log as any)[`managerPhone${idxS}`];
       const unit = (log as any)[`unitOut${idxS}`];
       const officers = (log as any)[`officersCount${idxS}`];
-      const rescued = (log as any)[`rescuedCount${slot}`] || (log as any)[`rescuedCount${idxS}`];
-      const recovered = (log as any)[`recoveredCount${slot}`] || (log as any)[`recoveredCount${idxS}`];
-      const pets = (log as any)[`rescuedPetsCount${slot}`] || (log as any)[`rescuedPetsCount${idxS}`];
-      const prehospital = (log as any)[`prehospitalCareCount${slot}`] || (log as any)[`prehospitalCareCount${idxS}`];
-      const transfers = (log as any)[`transfersCount${slot}`] || (log as any)[`transfersCount${idxS}`];
+      const rescued = (log as any)[`rescuedCount${idxS}`] || (log as any)[`rescuedCount${slot}`];
+      const recovered = (log as any)[`recoveredCount${idxS}`] || (log as any)[`recoveredCount${slot}`];
+      const pets = (log as any)[`rescuedPetsCount${idxS}`] || (log as any)[`rescuedPetsCount${slot}`];
+      const prehospital = (log as any)[`prehospitalCareCount${idxS}`] || (log as any)[`prehospitalCareCount${slot}`];
+      const transfers = (log as any)[`transfersCount${idxS}`] || (log as any)[`transfersCount${slot}`];
       const arrived = (log as any)[`hasArrivedG${slot}`];
       const commissionId = (log as any)[`commissionId${idxS}`];
       const isVolunteer = (log as any)[`isVolunteer${idxS}`];

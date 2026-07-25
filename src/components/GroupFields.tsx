@@ -153,11 +153,10 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
     letterSpacing: "0.04em",
   };
 
-  const gIdxStr = groupIndex === 1 ? "1" : idxStr;
-  const rescuedKey = (`rescuedCount${gIdxStr}`) as keyof DailyLog;
-  const recoveredKey = (`recoveredCount${gIdxStr}`) as keyof DailyLog;
-  const prehospitalKey = (`prehospitalCareCount${gIdxStr}`) as keyof DailyLog;
-  const transfersKey = (`transfersCount${gIdxStr}`) as keyof DailyLog;
+  const rescuedKey = (idxStr ? `rescuedCount${idxStr}` : "rescuedCount") as keyof DailyLog;
+  const recoveredKey = (idxStr ? `recoveredCount${idxStr}` : "recoveredCount") as keyof DailyLog;
+  const prehospitalKey = (idxStr ? `prehospitalCareCount${idxStr}` : "prehospitalCareCount") as keyof DailyLog;
+  const transfersKey = (idxStr ? `transfersCount${idxStr}` : "transfersCount") as keyof DailyLog;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...style }}>
@@ -363,8 +362,8 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
                   min="0"
                   placeholder="0"
                   className="rr-editor-input"
-                  value={((log[(`rescuedPetsCount${gIdxStr}`) as keyof DailyLog] as string) || "")}
-                  onChange={(e) => onFieldChange((`rescuedPetsCount${gIdxStr}`), e.target.value)}
+                  value={((log[(idxStr ? `rescuedPetsCount${idxStr}` : "rescuedPetsCount") as keyof DailyLog] as string) || "")}
+                  onChange={(e) => onFieldChange((idxStr ? `rescuedPetsCount${idxStr}` : "rescuedPetsCount"), e.target.value)}
                 />
               </div>
             </div>

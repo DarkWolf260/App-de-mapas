@@ -48,19 +48,11 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
           transfers += parseInt(g.transfersCount || "0", 10) || 0;
         }
 
-        if (todayLog.rescuedCount && !gList.some((g) => g.rescuedCount === todayLog.rescuedCount)) {
+        if (gList.length === 0) {
           rescuedPeople += parseInt(todayLog.rescuedCount || "0", 10) || 0;
-        }
-        if (todayLog.recoveredCount && !gList.some((g) => g.recoveredCount === todayLog.recoveredCount)) {
           recoveredBodies += parseInt(todayLog.recoveredCount || "0", 10) || 0;
-        }
-        if (todayLog.rescuedPetsCount && !gList.some((g) => g.rescuedPetsCount === todayLog.rescuedPetsCount)) {
           rescuedPets += parseInt(todayLog.rescuedPetsCount || "0", 10) || 0;
-        }
-        if (todayLog.prehospitalCareCount && !gList.some((g) => g.prehospitalCareCount === todayLog.prehospitalCareCount)) {
           prehospitalCare += parseInt(todayLog.prehospitalCareCount || "0", 10) || 0;
-        }
-        if (todayLog.transfersCount && !gList.some((g) => g.transfersCount === todayLog.transfersCount)) {
           transfers += parseInt(todayLog.transfersCount || "0", 10) || 0;
         }
       }

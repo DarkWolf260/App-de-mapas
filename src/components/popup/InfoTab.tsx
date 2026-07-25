@@ -154,19 +154,11 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         transfersCount += parseInt(g.transfersCount || "0", 10) || 0;
       }
 
-      if (l.rescuedCount && !gList.some((g) => g.rescuedCount === l.rescuedCount)) {
+      if (gList.length === 0) {
         rescuedCount += parseInt(l.rescuedCount || "0", 10) || 0;
-      }
-      if (l.recoveredCount && !gList.some((g) => g.recoveredCount === l.recoveredCount)) {
         recoveredCount += parseInt(l.recoveredCount || "0", 10) || 0;
-      }
-      if (l.rescuedPetsCount && !gList.some((g) => g.rescuedPetsCount === l.rescuedPetsCount)) {
         rescuedPetsCount += parseInt(l.rescuedPetsCount || "0", 10) || 0;
-      }
-      if (l.prehospitalCareCount && !gList.some((g) => g.prehospitalCareCount === l.prehospitalCareCount)) {
         prehospitalCareCount += parseInt(l.prehospitalCareCount || "0", 10) || 0;
-      }
-      if (l.transfersCount && !gList.some((g) => g.transfersCount === l.transfersCount)) {
         transfersCount += parseInt(l.transfersCount || "0", 10) || 0;
       }
     };
