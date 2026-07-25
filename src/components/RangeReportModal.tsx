@@ -64,7 +64,12 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
 
   const sortedGroupStats = useMemo(() => {
     if (!periodStats) return [];
-    return [...periodStats.groupStats].sort((a, b) => {
+    let list = periodStats.groupStats;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((g) => g.groupName.toLowerCase().includes(q));
+    }
+    return [...list].sort((a, b) => {
       if (statsSortKey === "nombre") {
         const diff = a.groupName.localeCompare(b.groupName, "es", { sensitivity: "base" });
         return statsSortDir === "asc" ? diff : -diff;
@@ -72,7 +77,77 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
       const diff = (b[statsSortKey] as number) - (a[statsSortKey] as number);
       return statsSortDir === "desc" ? diff : -diff;
     });
-  }, [periodStats, statsSortKey, statsSortDir]);
+  }, [periodStats, searchQuery, statsSortKey, statsSortDir]);
+
+  const sortedJointCommissions = useMemo(() => {
+    if (!periodStats?.jointCommissionStats) return [];
+    let list = periodStats.jointCommissionStats;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (jc) =>
+          jc.commissionLabel.toLowerCase().includes(q) ||
+          jc.participatingGroups.some((p) => p.groupName.toLowerCase().includes(q))
+      );
+    }
+    return [...list].sort((a, b) => {
+      if (statsSortKey === "nombre") {
+        const nameA = a.participatingGroups.map((p) => p.groupName).join(" ");
+        const nameB = b.participatingGroups.map((p) => p.groupName).join(" ");
+        const diff = nameA.localeCompare(nameB, "es", { sensitivity: "base" });
+        return statsSortDir === "asc" ? diff : -diff;
+      }
+      const valA =
+        statsSortKey === "daysActive"
+          ? a.daysActive
+          : statsSortKey === "totalRescued"
+          ? a.totalRescued
+          : statsSortKey === "totalRecovered"
+          ? a.totalRecovered
+          : statsSortKey === "totalPrehospitalCare"
+          ? a.totalPrehospitalCare
+          : statsSortKey === "totalTransfers"
+          ? a.totalTransfers
+          : statsSortKey === "totalPets"
+          ? a.totalPets
+          : 0;
+      const valB =
+        statsSortKey === "daysActive"
+          ? b.daysActive
+          : statsSortKey === "totalRescued"
+          ? b.totalRescued
+          : statsSortKey === "totalRecovered"
+          ? b.totalRecovered
+          : statsSortKey === "totalPrehospitalCare"
+          ? b.totalPrehospitalCare
+          : statsSortKey === "totalTransfers"
+          ? b.totalTransfers
+          : statsSortKey === "totalPets"
+          ? b.totalPets
+          : 0;
+      const diff = valB - valA;
+      return statsSortDir === "desc" ? diff : -diff;
+    });
+  }, [periodStats, searchQuery, statsSortKey, statsSortDir]);
+
+  const sortedIndependentGroups = useMemo(() => {
+    if (!periodStats?.independentGroupStats) return [];
+    let list = periodStats.independentGroupStats;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((g) => g.groupName.toLowerCase().includes(q));
+    }
+    return [...list].sort((a, b) => {
+      if (statsSortKey === "nombre") {
+        const diff = a.groupName.localeCompare(b.groupName, "es", { sensitivity: "base" });
+        return statsSortDir === "asc" ? diff : -diff;
+      }
+      const valA = (a[statsSortKey] as number) || 0;
+      const valB = (b[statsSortKey] as number) || 0;
+      const diff = valB - valA;
+      return statsSortDir === "desc" ? diff : -diff;
+    });
+  }, [periodStats, searchQuery, statsSortKey, statsSortDir]);
 
   const activePoints = useMemo(() => {
     if (!feat) return [];
@@ -263,19 +338,53 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                 <div className="rr-scard-label">Días con Actividad</div>
               </div>
             </div>
-
-            {/* Per-group table */}
-            {periodStats.groupStats.length > 0 && (
+             {/* Sección: Desglose por Grupos y Comisiones */}
+            {((periodStats.jointCommissionStats && periodStats.jointCommissionStats.length > 0) || (periodStats.independentGroupStats && periodStats.independentGroupStats.length > 0) || sortedGroupStats.length > 0) && (
               <div>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Por Grupo</div>
-                  <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontStyle: "italic" }}>* Los totales son por registro diario, no exclusivamente por grupo</div>
+                {/* Buscador de Grupos y Comisiones */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                  <div style={{ position: "relative", flex: 1 }}>
+                    <Search size={13} style={{ position: "absolute", left: "8px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+                    <input
+                      type="text"
+                      placeholder="Filtrar por nombre de grupo, comisión o sitio..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "5px 8px 5px 26px",
+                        fontSize: "0.66rem",
+                        background: "rgba(15, 23, 42, 0.6)",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        borderRadius: "6px",
+                        color: "var(--text-main)",
+                        outline: "none",
+                      }}
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        style={{ position: "absolute", right: "6px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: 0 }}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
                 </div>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    Desglose por Grupos y Comisiones
+                  </div>
+                  <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontStyle: "italic" }}>
+                    * Los equipos en Comisión Conjunta se agrupan con borde punteado; la última fila refleja la Suma General
+                  </div>
+                </div>
+
                 <div className="rr-stats-table-wrap">
                   <table className="rr-stats-table">
                     <thead>
                       <tr>
-                        <th className="rr-th-sort" onClick={() => handleSortToggle("nombre")}>Grupo {statsSortKey === "nombre" ? (statsSortDir === "asc" ? "↑" : "↓") : ""}</th>
+                        <th className="rr-th-sort" onClick={() => handleSortToggle("nombre")}>Grupo / Agrupación {statsSortKey === "nombre" ? (statsSortDir === "asc" ? "↑" : "↓") : ""}</th>
                         <th className="rr-th-sort" onClick={() => handleSortToggle("daysActive")}>Días {statsSortKey === "daysActive" ? (statsSortDir === "desc" ? "↓" : "↑") : ""}</th>
                         <th className="rr-th-sort" onClick={() => handleSortToggle("totalRescued")} style={{ color: "var(--color-green)" }}>Rescatados {statsSortKey === "totalRescued" ? (statsSortDir === "desc" ? "↓" : "↑") : ""}</th>
                         <th className="rr-th-sort" onClick={() => handleSortToggle("totalRecovered")} style={{ color: "var(--color-high)" }}>Recuperados {statsSortKey === "totalRecovered" ? (statsSortDir === "desc" ? "↓" : "↑") : ""}</th>
@@ -285,27 +394,175 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedGroupStats.map((gs, i) => (
-                        <tr key={gs.groupName + i} className={i % 2 === 0 ? "rr-tr-even" : ""}>
-                          <td>
+                      {/* 1. GRUPOS EN TRABAJO INDEPENDIENTE */}
+                      {sortedIndependentGroups.map((gs, i) => (
+                        <tr key={"indiv_" + gs.groupName + i} className={i % 2 === 0 ? "rr-tr-even" : ""}>
+                          <td style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
                             <div className="rr-td-group" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <span className="rr-td-dept" style={{ color: gs.department === "pc" ? "var(--color-info)" : "#ef4444" }}>{gs.department === "pc" ? "PC" : "B"}</span>
-                              <span>{gs.groupName}</span>
+                              <span className="rr-td-dept" style={{ color: gs.department === "pc" ? "var(--color-info)" : "#ef4444" }}>
+                                {gs.department === "pc" ? "PC" : "B"}
+                              </span>
+                              <span style={{ fontWeight: 700 }}>{gs.groupName}</span>
                               {gs.isVolunteer && (
-                                <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.52rem", fontWeight: 800, textTransform: "uppercase" }}>
+                                <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.52rem", fontWeight: 800 }}>
                                   VOLUNTARIO
                                 </span>
                               )}
                             </div>
                           </td>
-                          <td style={{ textAlign: "center", fontWeight: 700 }}>{gs.daysActive}</td>
-                          <td style={{ textAlign: "center", color: gs.totalRescued > 0 ? "var(--color-green)" : "var(--text-muted)" }}>{gs.totalRescued}</td>
-                          <td style={{ textAlign: "center", color: gs.totalRecovered > 0 ? "var(--color-high)" : "var(--text-muted)" }}>{gs.totalRecovered}</td>
-                          <td style={{ textAlign: "center", color: gs.totalPrehospitalCare > 0 ? "var(--color-info)" : "var(--text-muted)" }}>{gs.totalPrehospitalCare}</td>
-                          <td style={{ textAlign: "center", color: gs.totalTransfers > 0 ? "var(--color-purple)" : "var(--text-muted)" }}>{gs.totalTransfers}</td>
-                          <td style={{ textAlign: "center", color: gs.totalPets > 0 ? "#fbbf24" : "var(--text-muted)" }}>{gs.totalPets || 0}</td>
+                          <td style={{ textAlign: "center", fontWeight: 700, borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>{gs.daysActive}</td>
+                          <td style={{ textAlign: "center", color: gs.totalRescued > 0 ? "var(--color-green)" : "var(--text-muted)", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>{gs.totalRescued}</td>
+                          <td style={{ textAlign: "center", color: gs.totalRecovered > 0 ? "var(--color-high)" : "var(--text-muted)", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>{gs.totalRecovered}</td>
+                          <td style={{ textAlign: "center", color: gs.totalPrehospitalCare > 0 ? "var(--color-info)" : "var(--text-muted)", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>{gs.totalPrehospitalCare}</td>
+                          <td style={{ textAlign: "center", color: gs.totalTransfers > 0 ? "var(--color-purple)" : "var(--text-muted)", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>{gs.totalTransfers}</td>
+                          <td style={{ textAlign: "center", color: gs.totalPets > 0 ? "#fbbf24" : "var(--text-muted)", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>{gs.totalPets || 0}</td>
                         </tr>
                       ))}
+
+                      {/* 2. GRUPOS COMBINADOS EN OPERACIÓN CONJUNTA */}
+                      {sortedJointCommissions.map((jc) => {
+                        const rowCount = jc.participatingGroups.length;
+                        return jc.participatingGroups.map((gItem, gIdx) => {
+                          const isFirst = gIdx === 0;
+                          const isLast = gIdx === rowCount - 1;
+
+                          return (
+                            <tr key={`jc_${jc.commissionId}_${gItem.groupName}_${gIdx}`}>
+                              {/* Celda del Nombre del Grupo */}
+                              <td
+                                style={{
+                                  padding: "6px 8px",
+                                  borderTop: isFirst ? "1.5px solid rgba(56, 189, 248, 0.5)" : "none",
+                                  borderBottom: isLast ? "1.5px solid rgba(56, 189, 248, 0.5)" : "1px solid rgba(255, 255, 255, 0.08)",
+                                  borderLeft: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                  background: "rgba(56, 189, 248, 0.02)",
+                                }}
+                              >
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <span className="rr-td-dept" style={{ color: gItem.department === "pc" ? "var(--color-info)" : "#ef4444" }}>
+                                    {gItem.department === "pc" ? "PC" : "B"}
+                                  </span>
+                                  <span style={{ fontWeight: 700 }}>{gItem.groupName}</span>
+                                  {gItem.isVolunteer && (
+                                    <span style={{ background: "rgba(168, 85, 247, 0.25)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "3px", padding: "0 3px", fontSize: "0.5rem", fontWeight: 800 }}>
+                                      VOLUNTARIO
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Casillas numéricas unificadas / combinadas mediante rowSpan */}
+                              {isFirst && (
+                                <>
+                                  <td
+                                    rowSpan={rowCount}
+                                    style={{
+                                      textAlign: "center",
+                                      fontWeight: 800,
+                                      verticalAlign: "middle",
+                                      background: "rgba(56, 189, 248, 0.04)",
+                                      borderTop: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      borderBottom: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
+                                    }}
+                                  >
+                                    {jc.daysActive}
+                                  </td>
+                                  <td
+                                    rowSpan={rowCount}
+                                    style={{
+                                      textAlign: "center",
+                                      fontWeight: 800,
+                                      verticalAlign: "middle",
+                                      background: "rgba(56, 189, 248, 0.04)",
+                                      borderTop: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      borderBottom: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
+                                      color: jc.totalRescued > 0 ? "var(--color-green)" : "var(--text-muted)",
+                                    }}
+                                  >
+                                    {jc.totalRescued}
+                                  </td>
+                                  <td
+                                    rowSpan={rowCount}
+                                    style={{
+                                      textAlign: "center",
+                                      fontWeight: 800,
+                                      verticalAlign: "middle",
+                                      background: "rgba(56, 189, 248, 0.04)",
+                                      borderTop: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      borderBottom: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
+                                      color: jc.totalRecovered > 0 ? "var(--color-high)" : "var(--text-muted)",
+                                    }}
+                                  >
+                                    {jc.totalRecovered}
+                                  </td>
+                                  <td
+                                    rowSpan={rowCount}
+                                    style={{
+                                      textAlign: "center",
+                                      fontWeight: 800,
+                                      verticalAlign: "middle",
+                                      background: "rgba(56, 189, 248, 0.04)",
+                                      borderTop: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      borderBottom: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
+                                      color: jc.totalPrehospitalCare > 0 ? "#38bdf8" : "var(--text-muted)",
+                                    }}
+                                  >
+                                    {jc.totalPrehospitalCare}
+                                  </td>
+                                  <td
+                                    rowSpan={rowCount}
+                                    style={{
+                                      textAlign: "center",
+                                      fontWeight: 800,
+                                      verticalAlign: "middle",
+                                      background: "rgba(56, 189, 248, 0.04)",
+                                      borderTop: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      borderBottom: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
+                                      color: jc.totalTransfers > 0 ? "var(--color-purple)" : "var(--text-muted)",
+                                    }}
+                                  >
+                                    {jc.totalTransfers}
+                                  </td>
+                                  <td
+                                    rowSpan={rowCount}
+                                    style={{
+                                      textAlign: "center",
+                                      fontWeight: 800,
+                                      verticalAlign: "middle",
+                                      background: "rgba(56, 189, 248, 0.04)",
+                                      borderTop: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      borderBottom: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
+                                      borderRight: "1.5px solid rgba(56, 189, 248, 0.5)",
+                                      color: jc.totalPets > 0 ? "#fbbf24" : "var(--text-muted)",
+                                    }}
+                                  >
+                                    {jc.totalPets}
+                                  </td>
+                                </>
+                              )}
+                            </tr>
+                          );
+                        });
+                      })}
+
+                      {/* 3. SUMA GENERAL DE LA BITÁCORA */}
+                      <tr style={{ background: "rgba(15, 23, 42, 0.95)", borderTop: "2px solid #38bdf8", fontWeight: 800 }}>
+                        <td style={{ color: "var(--text-main)", fontSize: "0.68rem" }}>
+                          SUMA GENERAL DE LA BITÁCORA
+                        </td>
+                        <td style={{ textAlign: "center", color: "#38bdf8" }}>{periodStats.totalDaysWithData}d</td>
+                        <td style={{ textAlign: "center", color: "var(--color-green)", fontSize: "0.72rem" }}>{periodStats.totalRescued}</td>
+                        <td style={{ textAlign: "center", color: "var(--color-high)", fontSize: "0.72rem" }}>{periodStats.totalRecovered}</td>
+                        <td style={{ textAlign: "center", color: "#38bdf8", fontSize: "0.72rem" }}>{periodStats.totalPrehospitalCare}</td>
+                        <td style={{ textAlign: "center", color: "var(--color-purple)", fontSize: "0.72rem" }}>{periodStats.totalTransfers}</td>
+                        <td style={{ textAlign: "center", color: "#fbbf24", fontSize: "0.72rem" }}>{periodStats.totalPets}</td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>

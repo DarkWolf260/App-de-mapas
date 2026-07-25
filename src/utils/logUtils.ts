@@ -51,48 +51,57 @@ export function emptyLog(date: string, department?: Department): DailyLog {
   };
 }
 
+export function splitGroupNames(name: string): string[] {
+  if (!name || !name.trim()) return [];
+  const trimmed = name.trim();
+  const parts = trimmed.split(/\s+(?:y|Y|e|E|\/|\+)\s+|\s*[/,+]\s*/).map((p) => p.trim()).filter(Boolean);
+  return parts.length > 0 ? parts : [trimmed];
+}
+
 export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[] {
   if (!log) return [];
 
+  const rawEntries: GroupLogEntry[] = [];
+
   if (log.groups && Array.isArray(log.groups) && log.groups.length > 0) {
-    return log.groups
-      .filter((g) => g && (g.groupName?.trim() || g.officersCount || g.unitOut || g.managerName))
-      .map((g) => ({ ...g, commissionId: g.commissionId || "comision_1" }));
-  }
-
-  const legacyList: GroupLogEntry[] = [];
-
-  const addLegacy = (slotIndex: number, name?: string, mgr?: string, phone?: string, unit?: string, officers?: string, rescued?: string, recovered?: string, pets?: string, prehospital?: string, transfers?: string, arrived?: boolean, commissionId?: string, isVolunteer?: boolean) => {
-    const hasData = !!(name?.trim() || officers || unit?.trim() || mgr?.trim() || rescued || recovered || prehospital || transfers);
-    if (hasData) {
-      legacyList.push({
-        id: `g${slotIndex}`,
-        groupName: (name || "").trim(),
-        managerName: mgr || "",
-        managerPhone: phone || "",
-        unitOut: unit || "",
-        officersCount: officers || "",
-        rescuedCount: rescued || "",
-        recoveredCount: recovered || "",
-        rescuedPetsCount: pets || "",
-        prehospitalCareCount: prehospital || "",
-        transfersCount: transfers || "",
-        hasArrived: !!arrived,
-        commissionId: commissionId || "comision_1",
-        isVolunteer: !!isVolunteer,
-      });
+    for (const g of log.groups) {
+      if (g && (g.groupName?.trim() || g.officersCount || g.unitOut || g.managerName)) {
+        rawEntries.push({ ...g, commissionId: g.commissionId || "independiente" });
+      }
     }
-  };
+  } else {
+    const addLegacy = (slotIndex: number, name?: string, mgr?: string, phone?: string, unit?: string, officers?: string, rescued?: string, recovered?: string, pets?: string, prehospital?: string, transfers?: string, arrived?: boolean, commissionId?: string, isVolunteer?: boolean) => {
+      const hasData = !!(name?.trim() || officers || unit?.trim() || mgr?.trim() || rescued || recovered || prehospital || transfers);
+      if (hasData) {
+        rawEntries.push({
+          id: `g${slotIndex}`,
+          groupName: (name || "").trim(),
+          managerName: mgr || "",
+          managerPhone: phone || "",
+          unitOut: unit || "",
+          officersCount: officers || "",
+          rescuedCount: rescued || "",
+          recoveredCount: recovered || "",
+          rescuedPetsCount: pets || "",
+          prehospitalCareCount: prehospital || "",
+          transfersCount: transfers || "",
+          hasArrived: !!arrived,
+          commissionId: commissionId || "independiente",
+          isVolunteer: !!isVolunteer,
+        });
+      }
+    };
 
-  addLegacy(1, log.groupName, log.managerName, log.managerPhone, log.unitOut, log.officersCount, log.rescuedCount, log.recoveredCount, log.rescuedPetsCount, log.prehospitalCareCount, log.transfersCount, log.hasArrivedG1, log.commissionId, log.isVolunteer);
-  addLegacy(2, log.groupName2, log.managerName2, log.managerPhone2, log.unitOut2, log.officersCount2, log.rescuedCount2, log.recoveredCount2, log.rescuedPetsCount2, log.prehospitalCareCount2, log.transfersCount2, log.hasArrivedG2, log.commissionId2, log.isVolunteer2);
-  addLegacy(3, log.groupName3, log.managerName3, log.managerPhone3, log.unitOut3, log.officersCount3, log.rescuedCount3, log.recoveredCount3, log.rescuedPetsCount3, log.prehospitalCareCount3, log.transfersCount3, log.hasArrivedG3, log.commissionId3, log.isVolunteer3);
-  addLegacy(4, log.groupName4, log.managerName4, log.managerPhone4, log.unitOut4, log.officersCount4, log.rescuedCount4, log.recoveredCount4, log.rescuedPetsCount4, log.prehospitalCareCount4, log.transfersCount4, log.hasArrivedG4, log.commissionId4, log.isVolunteer4);
+    addLegacy(1, log.groupName, log.managerName, log.managerPhone, log.unitOut, log.officersCount, log.rescuedCount, log.recoveredCount, log.rescuedPetsCount, log.prehospitalCareCount, log.transfersCount, log.hasArrivedG1, log.commissionId, log.isVolunteer);
+    addLegacy(2, log.groupName2, log.managerName2, log.managerPhone2, log.unitOut2, log.officersCount2, log.rescuedCount2, log.recoveredCount2, log.rescuedPetsCount2, log.prehospitalCareCount2, log.transfersCount2, log.hasArrivedG2, log.commissionId2, log.isVolunteer2);
+    addLegacy(3, log.groupName3, log.managerName3, log.managerPhone3, log.unitOut3, log.officersCount3, log.rescuedCount3, log.recoveredCount3, log.rescuedPetsCount3, log.prehospitalCareCount3, log.transfersCount3, log.hasArrivedG3, log.commissionId3, log.isVolunteer3);
+    addLegacy(4, log.groupName4, log.managerName4, log.managerPhone4, log.unitOut4, log.officersCount4, log.rescuedCount4, log.recoveredCount4, log.rescuedPetsCount4, log.prehospitalCareCount4, log.transfersCount4, log.hasArrivedG4, log.commissionId4, log.isVolunteer4);
+  }
 
   // Inherit shared commission metrics for groups in the same joint commission if not explicitly set
   const commMetricsMap = new Map<string, { rescued?: string; recovered?: string; pets?: string; prehospital?: string; transfers?: string }>();
-  for (const g of legacyList) {
-    const cid = g.commissionId || "comision_1";
+  for (const g of rawEntries) {
+    const cid = g.commissionId || "independiente";
     if (cid !== "independiente" && !commMetricsMap.has(cid)) {
       if (g.rescuedCount || g.recoveredCount || g.prehospitalCareCount || g.transfersCount || g.rescuedPetsCount) {
         commMetricsMap.set(cid, {
@@ -106,8 +115,8 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
     }
   }
 
-  for (const g of legacyList) {
-    const cid = g.commissionId || "comision_1";
+  for (const g of rawEntries) {
+    const cid = g.commissionId || "independiente";
     if (cid !== "independiente" && commMetricsMap.has(cid)) {
       const m = commMetricsMap.get(cid)!;
       if (!g.rescuedCount) g.rescuedCount = m.rescued;
@@ -118,7 +127,25 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
     }
   }
 
-  return legacyList;
+  // Expand compound names (e.g. "REDAN Los Llanos y PC Miranda" -> "REDAN Los Llanos", "PC Miranda")
+  const expandedList: GroupLogEntry[] = [];
+  for (const entry of rawEntries) {
+    const subNames = splitGroupNames(entry.groupName);
+    if (subNames.length > 1) {
+      subNames.forEach((sName, sIdx) => {
+        expandedList.push({
+          ...entry,
+          id: `${entry.id || "g"}_${sIdx}`,
+          groupName: sName,
+          commissionId: entry.commissionId && entry.commissionId !== "independiente" ? entry.commissionId : "comision_1",
+        });
+      });
+    } else {
+      expandedList.push(entry);
+    }
+  }
+
+  return expandedList;
 }
 
 export function getTotalPersonnel(log?: Partial<DailyLog>): number {
@@ -188,7 +215,7 @@ export function getGroupData(log: DailyLog, groupIndex: number): GroupData {
         prehospitalCareCount: log.prehospitalCareCount2 || "",
         transfersCount: log.transfersCount2 || "",
         hasArrived: !!log.hasArrivedG2,
-        commissionId: log.commissionId2 || "comision_1",
+        commissionId: log.commissionId2 || "independiente",
         isVolunteer: !!log.isVolunteer2,
       };
     }
@@ -206,7 +233,7 @@ export function getGroupData(log: DailyLog, groupIndex: number): GroupData {
         prehospitalCareCount: log.prehospitalCareCount3 || "",
         transfersCount: log.transfersCount3 || "",
         hasArrived: !!log.hasArrivedG3,
-        commissionId: log.commissionId3 || "comision_1",
+        commissionId: log.commissionId3 || "independiente",
         isVolunteer: !!log.isVolunteer3,
       };
     }
@@ -224,7 +251,7 @@ export function getGroupData(log: DailyLog, groupIndex: number): GroupData {
         prehospitalCareCount: log.prehospitalCareCount4 || "",
         transfersCount: log.transfersCount4 || "",
         hasArrived: !!log.hasArrivedG4,
-        commissionId: log.commissionId4 || "comision_1",
+        commissionId: log.commissionId4 || "independiente",
         isVolunteer: !!log.isVolunteer4,
       };
     }
@@ -241,7 +268,7 @@ export function getGroupData(log: DailyLog, groupIndex: number): GroupData {
       prehospitalCareCount: log.prehospitalCareCount || "",
       transfersCount: log.transfersCount || "",
       hasArrived: !!log.hasArrivedG1,
-      commissionId: log.commissionId || "comision_1",
+      commissionId: log.commissionId || "independiente",
       isVolunteer: !!log.isVolunteer,
     };
   }
@@ -262,7 +289,7 @@ export function getGroupData(log: DailyLog, groupIndex: number): GroupData {
       prehospitalCareCount: item.prehospitalCareCount || "",
       transfersCount: item.transfersCount || "",
       hasArrived: !!item.hasArrived,
-      commissionId: item.commissionId || "comision_1",
+      commissionId: item.commissionId || "independiente",
       isVolunteer: !!item.isVolunteer,
     };
   }
@@ -278,7 +305,7 @@ export function getGroupData(log: DailyLog, groupIndex: number): GroupData {
     prehospitalCareCount: "",
     transfersCount: "",
     hasArrived: false,
-    commissionId: "comision_1",
+    commissionId: "independiente",
     isVolunteer: false,
   };
 }
@@ -401,6 +428,8 @@ export interface GroupStats {
   totalPrehospitalCare: number;
   totalTransfers: number;
   isVolunteer?: boolean;
+  jointPartners?: string[];
+  commissionId?: string;
 }
 
 export interface FeatureStat {
@@ -417,6 +446,31 @@ export interface FeatureStat {
   totalTransfers: number;
 }
 
+export interface JointCommissionGroupStat {
+  groupName: string;
+  department?: string;
+  isVolunteer?: boolean;
+  daysActive: number;
+  rescued: number;
+  recovered: number;
+  prehospital: number;
+  transfers: number;
+  pets: number;
+}
+
+export interface JointCommissionStat {
+  commissionId: string;
+  commissionLabel: string;
+  participatingGroups: JointCommissionGroupStat[];
+  daysActive: number;
+  totalPersonnel: number;
+  totalRescued: number;
+  totalRecovered: number;
+  totalPrehospitalCare: number;
+  totalTransfers: number;
+  totalPets: number;
+}
+
 export interface PeriodStats {
   totalDaysWithData: number;
   totalPersonnel: number;
@@ -426,6 +480,8 @@ export interface PeriodStats {
   totalPrehospitalCare: number;
   totalTransfers: number;
   groupStats: GroupStats[];
+  independentGroupStats: GroupStats[];
+  jointCommissionStats?: JointCommissionStat[];
   featureStats: FeatureStat[];
 }
 
@@ -520,6 +576,35 @@ export function getPeriodStats(
       commTransfers.forEach((val) => { totalTransfers += val; });
 
       totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
+
+      // Track joint commission partners per group in this log
+      const logCommGroups = new Map<string, GroupLogEntry[]>();
+      for (const g of groupList) {
+        const commKey = g.commissionId || "comision_1";
+        if (commKey !== "independiente" && g.groupName.trim()) {
+          if (!logCommGroups.has(commKey)) logCommGroups.set(commKey, []);
+          logCommGroups.get(commKey)!.push(g);
+        }
+      }
+
+      logCommGroups.forEach((gList) => {
+        if (gList.length > 1) {
+          const groupNames = gList.map((g) => g.groupName.trim());
+          for (const gItem of gList) {
+            const trimmedName = gItem.groupName.trim();
+            const key = trimmedName.toLowerCase() + "_" + (log.department || "");
+            const existing = groupMap.get(key);
+            if (existing) {
+              if (!existing.jointPartners) existing.jointPartners = [];
+              groupNames.forEach((other) => {
+                if (other !== trimmedName && !existing.jointPartners!.includes(other)) {
+                  existing.jointPartners!.push(other);
+                }
+              });
+            }
+          }
+        }
+      });
     }
   }
 
@@ -578,7 +663,212 @@ export function getPeriodStats(
     }
   }
 
+  // 3. Compile Joint Commission Stats & Independent Group Stats
+  const indepMap = new Map<string, {
+    groupName: string;
+    department?: string;
+    isVolunteer?: boolean;
+    datesSet: Set<string>;
+    totalPersonnel: number;
+    totalRescued: number;
+    totalRecovered: number;
+    totalPrehospitalCare: number;
+    totalTransfers: number;
+    totalPets: number;
+  }>();
+
+  const jointPairsMap = new Map<string, {
+    commissionId: string;
+    commissionLabel: string;
+    groupsMap: Map<string, {
+      groupName: string;
+      department?: string;
+      isVolunteer?: boolean;
+      daysActive: number;
+      rescued: number;
+      recovered: number;
+      prehospital: number;
+      transfers: number;
+      pets: number;
+    }>;
+    datesSet: Set<string>;
+    rescued: number;
+    recovered: number;
+    prehospital: number;
+    transfers: number;
+    pets: number;
+    personnel: number;
+  }>();
+
+  for (const feat of features) {
+    for (const log of feat.dailyLogs || []) {
+      if (activeDepartment && activeDepartment !== "mixto" && log.department && log.department !== activeDepartment) continue;
+      if (!logHasAnyData(log)) continue;
+
+      const groupList = getNormalizedGroupList(log).filter((g) => g.groupName.trim());
+      if (groupList.length === 0) continue;
+
+      const hasMultipleGroups = groupList.length > 1;
+
+      // Log-level group classification strictly following point configuration commissionId
+      const logCommBuckets = new Map<string, GroupLogEntry[]>();
+
+      for (const g of groupList) {
+        const name = g.groupName.trim();
+        if (!name) continue;
+
+        // If explicitly set to 'independiente' or single group with no commission set
+        const isIndep = g.commissionId === "independiente" || (!hasMultipleGroups && (!g.commissionId || g.commissionId === "independiente"));
+
+        if (isIndep) {
+          const key = name.toLowerCase() + "_" + (log.department || "");
+          if (!indepMap.has(key)) {
+            indepMap.set(key, {
+              groupName: name,
+              department: log.department,
+              isVolunteer: !!g.isVolunteer,
+              datesSet: new Set(),
+              totalPersonnel: 0,
+              totalRescued: 0,
+              totalRecovered: 0,
+              totalPrehospitalCare: 0,
+              totalTransfers: 0,
+              totalPets: 0,
+            });
+          }
+          const item = indepMap.get(key)!;
+          item.datesSet.add(log.date);
+          if (g.isVolunteer) item.isVolunteer = true;
+          item.totalPersonnel += parseInt(g.officersCount || "0", 10) || 0;
+          item.totalRescued += parseInt(g.rescuedCount || "0", 10) || 0;
+          item.totalRecovered += parseInt(g.recoveredCount || "0", 10) || 0;
+          item.totalPrehospitalCare += parseInt(g.prehospitalCareCount || "0", 10) || 0;
+          item.totalTransfers += parseInt(g.transfersCount || "0", 10) || 0;
+          item.totalPets += parseInt(g.rescuedPetsCount || "0", 10) || 0;
+        } else {
+          const cid = g.commissionId && g.commissionId !== "independiente" ? g.commissionId : "comision_1";
+          if (!logCommBuckets.has(cid)) logCommBuckets.set(cid, []);
+          logCommBuckets.get(cid)!.push(g);
+        }
+      }
+
+      logCommBuckets.forEach((gList, cid) => {
+        // Build pair key for joint commission
+        const sortedNames = gList.map((g) => g.groupName.trim()).sort();
+        const pairKey = cid + "_" + sortedNames.join("__");
+
+        if (!jointPairsMap.has(pairKey)) {
+          jointPairsMap.set(pairKey, {
+            commissionId: cid,
+            commissionLabel:
+              cid === "comision_1"
+                ? "Comisión Conjunta 1"
+                : cid === "comision_2"
+                ? "Comisión Conjunta 2"
+                : cid === "comision_3"
+                ? "Comisión Conjunta 3"
+                : "Comisión Conjunta",
+            groupsMap: new Map(),
+            datesSet: new Set(),
+            rescued: 0,
+            recovered: 0,
+            prehospital: 0,
+            transfers: 0,
+            pets: 0,
+            personnel: 0,
+          });
+        }
+
+        const jData = jointPairsMap.get(pairKey)!;
+        jData.datesSet.add(log.date);
+
+        gList.forEach((g) => {
+          const name = g.groupName.trim();
+          const gKey = name.toLowerCase();
+          if (!jData.groupsMap.has(gKey)) {
+            jData.groupsMap.set(gKey, {
+              groupName: name,
+              department: log.department,
+              isVolunteer: !!g.isVolunteer,
+              daysActive: 0,
+              rescued: 0,
+              recovered: 0,
+              prehospital: 0,
+              transfers: 0,
+              pets: 0,
+            });
+          }
+          const gData = jData.groupsMap.get(gKey)!;
+          gData.daysActive++;
+          if (g.isVolunteer) gData.isVolunteer = true;
+
+          gData.rescued += parseInt(g.rescuedCount || "0", 10) || 0;
+          gData.recovered += parseInt(g.recoveredCount || "0", 10) || 0;
+          gData.prehospital += parseInt(g.prehospitalCareCount || "0", 10) || 0;
+          gData.transfers += parseInt(g.transfersCount || "0", 10) || 0;
+          gData.pets += parseInt(g.rescuedPetsCount || "0", 10) || 0;
+
+          jData.personnel += parseInt(g.officersCount || "0", 10) || 0;
+        });
+
+        const maxR = Math.max(...gList.map((g) => parseInt(g.rescuedCount || "0", 10) || 0));
+        const maxRc = Math.max(...gList.map((g) => parseInt(g.recoveredCount || "0", 10) || 0));
+        const maxPh = Math.max(...gList.map((g) => parseInt(g.prehospitalCareCount || "0", 10) || 0));
+        const maxTr = Math.max(...gList.map((g) => parseInt(g.transfersCount || "0", 10) || 0));
+        const maxPets = parseInt(log.rescuedPetsCount || "0", 10) || 0;
+
+        jData.rescued += maxR;
+        jData.recovered += maxRc;
+        jData.prehospital += maxPh;
+        jData.transfers += maxTr;
+        jData.pets += maxPets;
+      });
+    }
+  }
+
+  const jointCommissionStats: JointCommissionStat[] = [];
+  jointPairsMap.forEach((jData) => {
+    const participatingGroups: JointCommissionGroupStat[] = Array.from(jData.groupsMap.values()).map((item) => ({
+      groupName: item.groupName,
+      department: item.department,
+      isVolunteer: item.isVolunteer,
+      daysActive: item.daysActive,
+      rescued: item.rescued,
+      recovered: item.recovered,
+      prehospital: item.prehospital,
+      transfers: item.transfers,
+      pets: item.pets,
+    }));
+
+    jointCommissionStats.push({
+      commissionId: jData.commissionId,
+      commissionLabel: jData.commissionLabel,
+      participatingGroups,
+      daysActive: jData.datesSet.size,
+      totalPersonnel: jData.personnel,
+      totalRescued: jData.rescued,
+      totalRecovered: jData.recovered,
+      totalPrehospitalCare: jData.prehospital,
+      totalTransfers: jData.transfers,
+      totalPets: jData.pets,
+    });
+  });
+
   const groupStats = Array.from(groupMap.values()).sort((a, b) => b.daysActive - a.daysActive);
+  const independentGroupStats: GroupStats[] = Array.from(indepMap.values())
+    .map((item) => ({
+      groupName: item.groupName,
+      department: item.department,
+      isVolunteer: item.isVolunteer,
+      daysActive: item.datesSet.size,
+      totalPersonnel: item.totalPersonnel,
+      totalRescued: item.totalRescued,
+      totalRecovered: item.totalRecovered,
+      totalPrehospitalCare: item.totalPrehospitalCare,
+      totalTransfers: item.totalTransfers,
+      totalPets: item.totalPets,
+    }))
+    .sort((a, b) => b.daysActive - a.daysActive);
   const featureStats = Array.from(featureStatsMap.values()).sort((a, b) => b.daysActive - a.daysActive);
 
   return {
@@ -590,6 +880,8 @@ export function getPeriodStats(
     totalPrehospitalCare,
     totalTransfers,
     groupStats,
+    independentGroupStats,
+    jointCommissionStats,
     featureStats,
   };
 }

@@ -272,7 +272,7 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
         <div>
           <span className="rr-editor-label">Modalidad / Agrupación</span>
           <select
-            value={((log[(`commissionId${idxStr}`) as keyof DailyLog] as string) || (log.groups?.[groupIndex - 1]?.commissionId) || "comision_1")}
+            value={((log[(`commissionId${idxStr}`) as keyof DailyLog] as string) || (log.groups?.[groupIndex - 1]?.commissionId) || "independiente")}
             onChange={(e) => onFieldChange((`commissionId${idxStr}`), e.target.value)}
             style={{
               width: "100%",
@@ -286,8 +286,8 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
               cursor: "pointer",
             }}
           >
-            <option value="comision_1" style={{ background: "#0f172a" }}>Comisión Conjunta 1 (Trabajo Conjunto)</option>
             <option value="independiente" style={{ background: "#0f172a" }}>Trabajo Independiente</option>
+            <option value="comision_1" style={{ background: "#0f172a" }}>Comisión Conjunta 1 (Trabajo Conjunto)</option>
             <option value="comision_2" style={{ background: "#0f172a" }}>Comisión Conjunta 2</option>
             <option value="comision_3" style={{ background: "#0f172a" }}>Comisión Conjunta 3</option>
           </select>
@@ -307,7 +307,7 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
 
       {/* Métricas Operativas */}
       {(() => {
-        const currentComm = (log[(`commissionId${idxStr}`) as keyof DailyLog] as string) || (log.groups?.[groupIndex - 1]?.commissionId) || "comision_1";
+        const currentComm = (log[(`commissionId${idxStr}`) as keyof DailyLog] as string) || (log.groups?.[groupIndex - 1]?.commissionId) || "independiente";
         let primaryGroupIndex = 0;
         if (currentComm !== "independiente") {
           for (let i = 1; i < groupIndex; i++) {

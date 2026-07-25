@@ -7,6 +7,7 @@ import {
   logMatchesArrivalFilter,
   logHasAnyData,
   getGroupData,
+  splitGroupNames,
   REPORT_START_DATE,
 } from "../utils/logUtils";
 import type { DailyLog } from "../types";
@@ -133,6 +134,15 @@ describe("getGroupData", () => {
     expect(data.groupName).toBe("Beta");
     expect(data.managerName).toBe("Maria");
     expect(data.officersCount).toBe("3");
+  });
+});
+
+describe("splitGroupNames", () => {
+  it("splits compound names joined by 'y' or '/'", () => {
+    expect(splitGroupNames("REDAN Los Llanos y PC Miranda")).toEqual(["REDAN Los Llanos", "PC Miranda"]);
+    expect(splitGroupNames("PC Nva. Esparta y La Guaira")).toEqual(["PC Nva. Esparta", "La Guaira"]);
+    expect(splitGroupNames("PC Lara / PC Zulia")).toEqual(["PC Lara", "PC Zulia"]);
+    expect(splitGroupNames("Unidad de Avanzada")).toEqual(["Unidad de Avanzada"]);
   });
 });
 
