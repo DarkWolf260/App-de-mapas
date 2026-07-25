@@ -156,29 +156,24 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
 
     let updatedLog: DailyLog;
     if (groupIndex === 1) {
-      updatedLog = {
-        ...currentLog,
-        hasArrivedG1: newArrived,
-        arrivalTime: newArrived ? (currentLog.arrivalTime || nowTime) : "",
-      };
+      updatedLog = { ...currentLog, hasArrivedG1: newArrived };
     } else if (groupIndex === 2) {
-      updatedLog = {
-        ...currentLog,
-        hasArrivedG2: newArrived,
-        arrivalTime2: newArrived ? (currentLog.arrivalTime2 || nowTime) : "",
-      };
+      updatedLog = { ...currentLog, hasArrivedG2: newArrived };
     } else if (groupIndex === 3) {
-      updatedLog = {
-        ...currentLog,
-        hasArrivedG3: newArrived,
-        arrivalTime3: newArrived ? (currentLog.arrivalTime3 || nowTime) : "",
-      };
+      updatedLog = { ...currentLog, hasArrivedG3: newArrived };
     } else {
-      updatedLog = {
-        ...currentLog,
-        hasArrivedG4: newArrived,
-        arrivalTime4: newArrived ? (currentLog.arrivalTime4 || nowTime) : "",
-      };
+      updatedLog = { ...currentLog, hasArrivedG4: newArrived };
+    }
+
+    if (currentLog.groups && currentLog.groups.length >= groupIndex) {
+      const updatedGroups = [...currentLog.groups];
+      if (updatedGroups[groupIndex - 1]) {
+        updatedGroups[groupIndex - 1] = {
+          ...updatedGroups[groupIndex - 1],
+          hasArrived: newArrived,
+        };
+      }
+      updatedLog.groups = updatedGroups;
     }
 
     await onSaveDailyLog(pt.id, updatedLog);
@@ -293,9 +288,14 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                       {sortedGroupStats.map((gs, i) => (
                         <tr key={gs.groupName + i} className={i % 2 === 0 ? "rr-tr-even" : ""}>
                           <td>
-                            <div className="rr-td-group">
+                            <div className="rr-td-group" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                               <span className="rr-td-dept" style={{ color: gs.department === "pc" ? "var(--color-info)" : "#ef4444" }}>{gs.department === "pc" ? "PC" : "B"}</span>
-                              {gs.groupName}
+                              <span>{gs.groupName}</span>
+                              {gs.isVolunteer && (
+                                <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.52rem", fontWeight: 800, textTransform: "uppercase" }}>
+                                  VOLUNTARIO
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td style={{ textAlign: "center", fontWeight: 700 }}>{gs.daysActive}</td>

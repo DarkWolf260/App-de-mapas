@@ -173,7 +173,7 @@ interface MapComponentProps {
             textTransform: "none",
             letterSpacing: "0.03em",
             pointerEvents: "none",
-            zIndex: 1000,
+            zIndex: 40,
             boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
             fontFamily: "var(--font-sans)",
             backdropFilter: "blur(12px)",

@@ -3,6 +3,7 @@ import MapView from "@arcgis/core/views/MapView";
 import Graphic from "@arcgis/core/Graphic";
 import TextSymbol from "@arcgis/core/symbols/TextSymbol";
 import { buildParentsMap } from "./spatialUtils";
+import { getNormalizedGroupList } from "./logUtils";
 import type { DrawnFeature, LayerVisibility, DepartmentView } from "../types";
 import type { HtmlLabel } from "../types";
 
@@ -274,18 +275,9 @@ function buildHtmlLabels(
         });
 
         const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0;
-        const g1Present = todayLog ? (!!todayLog.groupName?.trim() || parseInt(todayLog.officersCount || "0", 10) > 0 || !!todayLog.unitOut?.trim()) : false;
-        const g2Present = todayLog ? (!!todayLog.groupName2?.trim() || parseInt(todayLog.officersCount2 || "0", 10) > 0 || !!todayLog.unitOut2?.trim()) : false;
-        const g3Present = todayLog ? (!!todayLog.groupName3?.trim() || parseInt(todayLog.officersCount3 || "0", 10) > 0 || !!todayLog.unitOut3?.trim()) : false;
-        const g4Present = todayLog ? (!!todayLog.groupName4?.trim() || parseInt(todayLog.officersCount4 || "0", 10) > 0 || !!todayLog.unitOut4?.trim()) : false;
-
-        const g1Arrived = !g1Present || !!todayLog?.hasArrivedG1;
-        const g2Arrived = !g2Present || !!todayLog?.hasArrivedG2;
-        const g3Arrived = !g3Present || !!todayLog?.hasArrivedG3;
-        const g4Arrived = !g4Present || !!todayLog?.hasArrivedG4;
-
-        const hasActiveGroups = g1Present || g2Present || g3Present || g4Present;
-        const hasArrived = hasActiveGroups ? (g1Arrived && g2Arrived && g3Arrived && g4Arrived) : true;
+        const activeGroupsList = todayLog ? getNormalizedGroupList(todayLog) : [];
+        const hasActiveGroups = activeGroupsList.length > 0;
+        const hasArrived = hasActiveGroups ? activeGroupsList.every((g) => !!g.hasArrived) : true;
 
         const charWidth = 6;
         const padding = 20;

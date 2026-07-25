@@ -241,6 +241,9 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
               <FileText size={12} /> {isPolygon ? "Estadísticas Directas" : "Editar"}
             </button>
           )}
+          {isPoint && (
+            <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}><History size={12} /> Historial</button>
+          )}
           {isPolygon && (
             <button onClick={() => setActiveTab("contained")} style={tabBtnStyle(activeTab === "contained")}><Layers size={12} /> Elementos</button>
           )}
@@ -254,6 +257,9 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
             <FileText size={12} /> {isPolygon ? "Estadísticas Directas" : "Editar"}
           </button>
+          {isPoint && (
+            <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}><History size={12} /> Historial</button>
+          )}
         </div>
       )}
 

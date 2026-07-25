@@ -268,6 +268,143 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
         />
       </div>
 
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", background: "rgba(0, 0, 0, 0.2)", padding: "4px 6px", borderRadius: "5px", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
+        <div>
+          <span className="rr-editor-label">Modalidad / Agrupación</span>
+          <select
+            value={((log[(`commissionId${idxStr}`) as keyof DailyLog] as string) || (log.groups?.[groupIndex - 1]?.commissionId) || "comision_1")}
+            onChange={(e) => onFieldChange((`commissionId${idxStr}`), e.target.value)}
+            style={{
+              width: "100%",
+              background: "rgba(15, 23, 42, 0.7)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "4px",
+              color: "var(--text-main)",
+              fontSize: "0.6rem",
+              padding: "3px 4px",
+              outline: "none",
+              cursor: "pointer",
+            }}
+          >
+            <option value="comision_1" style={{ background: "#0f172a" }}>Comisión Conjunta 1 (Trabajo Conjunto)</option>
+            <option value="independiente" style={{ background: "#0f172a" }}>Trabajo Independiente</option>
+            <option value="comision_2" style={{ background: "#0f172a" }}>Comisión Conjunta 2</option>
+            <option value="comision_3" style={{ background: "#0f172a" }}>Comisión Conjunta 3</option>
+          </select>
+        </div>
+        <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: "2px" }}>
+          <label style={{ fontSize: "0.62rem", color: "#c084fc", fontWeight: 700, display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", userSelect: "none" }}>
+            <input
+              type="checkbox"
+              checked={!!((log[(`isVolunteer${idxStr}`) as keyof DailyLog] as boolean) || (log.groups?.[groupIndex - 1]?.isVolunteer))}
+              onChange={(e) => onFieldChange((`isVolunteer${idxStr}`), e.target.checked)}
+              style={{ cursor: "pointer", width: "12px", height: "12px" }}
+            />
+            <span>Grupo Voluntario</span>
+          </label>
+        </div>
+      </div>
+
+      {/* Métricas Operativas */}
+      {(() => {
+        const currentComm = (log[(`commissionId${idxStr}`) as keyof DailyLog] as string) || (log.groups?.[groupIndex - 1]?.commissionId) || "comision_1";
+        let primaryGroupIndex = 0;
+        if (currentComm !== "independiente") {
+          for (let i = 1; i < groupIndex; i++) {
+            const idxS = i > 1 ? String(i) : "";
+            const commI = (log[(`commissionId${idxS}`) as keyof DailyLog] as string) || (log.groups?.[i - 1]?.commissionId) || "comision_1";
+            if (commI === currentComm) {
+              primaryGroupIndex = i;
+              break;
+            }
+          }
+        }
+
+        const commLabel =
+          currentComm === "comision_1"
+            ? "Comisión Conjunta 1"
+            : currentComm === "comision_2"
+            ? "Comisión Conjunta 2"
+            : currentComm === "comision_3"
+            ? "Comisión Conjunta 3"
+            : "Trabajo Independiente";
+
+        if (primaryGroupIndex > 0) {
+          return (
+            <div style={{ background: "rgba(56, 189, 248, 0.08)", border: "1px dashed rgba(56, 189, 248, 0.3)", borderRadius: "5px", padding: "6px 8px", fontSize: "0.62rem", color: "#38bdf8" }}>
+              Métricas compartidas para <strong>{commLabel}</strong> (registradas en Grupo #{primaryGroupIndex})
+            </div>
+          );
+        }
+
+        return (
+          <div style={{ background: "rgba(0, 0, 0, 0.25)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "5px", padding: "6px" }}>
+            <span className="rr-editor-label" style={{ fontWeight: 700, color: "var(--color-info)", marginBottom: "4px", display: "block" }}>
+              Métricas Operativas — {currentComm === "independiente" ? `Grupo #${groupIndex} (Trabajo Independiente)` : commLabel}
+            </span>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px", marginBottom: "4px" }}>
+              <div>
+                <span className="rr-editor-label">Rescatados</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  className="rr-editor-input"
+                  value={(log[rescuedKey] as string) || ""}
+                  onChange={(e) => onFieldChange(rescuedKey, e.target.value)}
+                />
+              </div>
+              <div>
+                <span className="rr-editor-label">Recuperados</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  className="rr-editor-input"
+                  value={(log[recoveredKey] as string) || ""}
+                  onChange={(e) => onFieldChange(recoveredKey, e.target.value)}
+                />
+              </div>
+              <div>
+                <span className="rr-editor-label">Mascotas</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  className="rr-editor-input"
+                  value={((log[(`rescuedPetsCount${idxStr}`) as keyof DailyLog] as string) || "")}
+                  onChange={(e) => onFieldChange((`rescuedPetsCount${idxStr}`), e.target.value)}
+                />
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
+              <div>
+                <span className="rr-editor-label">Atenciones Prehosp.</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  className="rr-editor-input"
+                  value={(log[prehospitalKey] as string) || ""}
+                  onChange={(e) => onFieldChange(prehospitalKey, e.target.value)}
+                />
+              </div>
+              <div>
+                <span className="rr-editor-label">Traslados Realizados</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  className="rr-editor-input"
+                  value={(log[transfersKey] as string) || ""}
+                  onChange={(e) => onFieldChange(transfersKey, e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       <label className="rr-editor-checkbox-label">
         <input
           type="checkbox"

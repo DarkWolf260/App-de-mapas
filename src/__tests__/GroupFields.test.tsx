@@ -71,9 +71,9 @@ describe("GroupFields", () => {
 
   it("renders checkbox for hasArrived", () => {
     render(<GroupFields {...defaultProps} groupIndex={1} />);
-    const checkbox = screen.getByRole("checkbox");
-    expect(checkbox).toBeInTheDocument();
-    expect(checkbox).not.toBeChecked();
+    const checkboxes = screen.getAllByRole("checkbox");
+    expect(checkboxes.length).toBeGreaterThanOrEqual(2);
+    expect(checkboxes[1]).not.toBeChecked();
   });
 });
 

@@ -42,6 +42,16 @@ export const GroupDisplay: React.FC<GroupDisplayProps> = ({
           </span>
           <span className="rr-group-name">{group.groupName || "Sin Nombre"}</span>
           {group.unitOut && <span className="rr-unit-tag">{group.unitOut}</span>}
+          {group.isVolunteer && (
+            <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 5px", fontSize: "0.55rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              VOLUNTARIO
+            </span>
+          )}
+          {group.commissionId && group.commissionId !== "independiente" && (
+            <span style={{ background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8", border: "1px solid rgba(56, 189, 248, 0.3)", borderRadius: "4px", padding: "1px 5px", fontSize: "0.55rem", fontWeight: 700 }}>
+              Comisión Conjunta
+            </span>
+          )}
         </div>
 
         <button

@@ -33,13 +33,32 @@ export interface ContainedItem {
   type: FeatureType;
 }
 
+export interface GroupLogEntry {
+  id: string;
+  groupName: string;
+  managerName?: string;
+  managerPhone?: string;
+  unitOut?: string;
+  officersCount?: string;
+  rescuedCount?: string;
+  recoveredCount?: string;
+  rescuedPetsCount?: string;
+  prehospitalCareCount?: string;
+  transfersCount?: string;
+  hasArrived?: boolean;
+  commissionId?: string; // e.g. "comision_1", "comision_2", "independiente"
+  isVolunteer?: boolean;
+}
+
 export interface DailyLog {
   date: string;
   department?: Department;
-  groupName: string;
-  managerName: string;
-  managerPhone: string;
-  unitOut: string;
+  groups?: GroupLogEntry[];
+
+  groupName?: string;
+  managerName?: string;
+  managerPhone?: string;
+  unitOut?: string;
   officersCount?: string;
   rescuedCount?: string;
   recoveredCount?: string;
@@ -47,6 +66,8 @@ export interface DailyLog {
   prehospitalCareCount?: string;
   transfersCount?: string;
   hasArrivedG1?: boolean;
+  commissionId?: string;
+  isVolunteer?: boolean;
 
   // Group 2
   groupName2?: string;
@@ -60,6 +81,8 @@ export interface DailyLog {
   prehospitalCareCount2?: string;
   transfersCount2?: string;
   hasArrivedG2?: boolean;
+  commissionId2?: string;
+  isVolunteer2?: boolean;
 
   // Group 3
   groupName3?: string;
@@ -73,6 +96,8 @@ export interface DailyLog {
   prehospitalCareCount3?: string;
   transfersCount3?: string;
   hasArrivedG3?: boolean;
+  commissionId3?: string;
+  isVolunteer3?: boolean;
 
   // Group 4
   groupName4?: string;
@@ -86,6 +111,8 @@ export interface DailyLog {
   prehospitalCareCount4?: string;
   transfersCount4?: string;
   hasArrivedG4?: boolean;
+  commissionId4?: string;
+  isVolunteer4?: boolean;
 
   observations?: string;
 }

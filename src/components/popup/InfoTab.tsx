@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Copy, Check, Edit3, Users, Activity, Dog, AlertTriangle } from "lucide-react";
 import type { DrawnFeature, DailyLog } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
+import { getNormalizedGroupList } from "../../utils/logUtils";
 import { labelStyle } from "./popupStyles";
 
 interface InfoTabProps {
@@ -369,103 +370,43 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       )}
 
       {/* Punto: Grupos en disposición vertical (uno abajo del otro) */}
-      {!isPolygon && ((log.groupName || log.unitOut || log.managerName || log.officersCount) || log.groupName2 || log.groupName3 || log.groupName4) && (
+      {!isPolygon && getNormalizedGroupList(log).length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {/* Grupo Primario */}
-          {(log.groupName || log.unitOut || log.managerName || log.officersCount) && (
-            <div style={sectionStyle}>
-              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
-                <Users size={10} /> Grupo Primario
+          {getNormalizedGroupList(log).map((gItem, gIdx) => (
+            <div key={gItem.id || gIdx} style={sectionStyle}>
+              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: gIdx === 0 ? "var(--color-info)" : gIdx === 1 ? "var(--color-purple)" : gIdx === 2 ? "#c084fc" : "#fb923c", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Users size={10} /> {gItem.groupName || `Grupo ${gIdx + 1}`}
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  {gItem.isVolunteer && (
+                    <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.52rem", fontWeight: 800, textTransform: "uppercase" }}>
+                      VOLUNTARIO
+                    </span>
+                  )}
+                  {gItem.commissionId && gItem.commissionId !== "independiente" && (
+                    <span style={{ background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8", border: "1px solid rgba(56, 189, 248, 0.3)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.52rem", fontWeight: 700 }}>
+                      Comisión Conjunta
+                    </span>
+                  )}
+                </div>
               </div>
-              <ReadRow label="Grupo" value={log.groupName} />
-              <ReadRow label="Unidad" value={log.unitOut} />
-              <ReadRow label="Encargado" value={log.managerName} />
-              <ReadRow label="Funcionarios" value={log.officersCount} />
-              <ReadRow label="Teléfono" value={log.managerPhone} />
+              <ReadRow label="Unidad" value={gItem.unitOut} />
+              <ReadRow label="Encargado" value={gItem.managerName} />
+              <ReadRow label="Funcionarios" value={gItem.officersCount} />
+              <ReadRow label="Teléfono" value={gItem.managerPhone} />
               {showArrivalCheckbox ? (
-                <label style={{ fontSize: "0.65rem", fontWeight: 700, color: log.hasArrivedG1 ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: log.hasArrivedG1 ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${log.hasArrivedG1 ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
-                  <input type="checkbox" checked={!!log.hasArrivedG1} onChange={(e) => onToggleArrivalGroup?.(1, e.target.checked)} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
-                  <span>{log.hasArrivedG1 ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
+                <label style={{ fontSize: "0.65rem", fontWeight: 700, color: gItem.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: gItem.hasArrived ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${gItem.hasArrived ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
+                  <input type="checkbox" checked={!!gItem.hasArrived} onChange={(e) => onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked)} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
+                  <span>{gItem.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
                 </label>
               ) : (
-                log.hasArrivedG1 && (
+                gItem.hasArrived && (
                   <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Llegó del sitio</span>
                 )
               )}
             </div>
-          )}
-
-          {/* Grupo Secundario */}
-          {log.groupName2 && (
-            <div style={sectionStyle}>
-              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-purple)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
-                Grupo Secundario
-              </div>
-              <ReadRow label="Grupo" value={log.groupName2} />
-              <ReadRow label="Unidad" value={log.unitOut2} />
-              <ReadRow label="Encargado" value={log.managerName2} />
-              <ReadRow label="Funcionarios" value={log.officersCount2} />
-              <ReadRow label="Teléfono" value={log.managerPhone2} />
-              {showArrivalCheckbox ? (
-                <label style={{ fontSize: "0.65rem", fontWeight: 700, color: log.hasArrivedG2 ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: log.hasArrivedG2 ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${log.hasArrivedG2 ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
-                  <input type="checkbox" checked={!!log.hasArrivedG2} onChange={(e) => onToggleArrivalGroup?.(2, e.target.checked)} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
-                  <span>{log.hasArrivedG2 ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
-                </label>
-              ) : (
-                log.hasArrivedG2 && (
-                  <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Llegó del sitio</span>
-                )
-              )}
-            </div>
-          )}
-
-          {/* Grupo 3 */}
-          {log.groupName3 && (
-            <div style={sectionStyle}>
-              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#c084fc", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
-                Tercer Grupo
-              </div>
-              <ReadRow label="Grupo" value={log.groupName3} />
-              <ReadRow label="Unidad" value={log.unitOut3} />
-              <ReadRow label="Encargado" value={log.managerName3} />
-              <ReadRow label="Funcionarios" value={log.officersCount3} />
-              <ReadRow label="Teléfono" value={log.managerPhone3} />
-              {showArrivalCheckbox ? (
-                <label style={{ fontSize: "0.65rem", fontWeight: 700, color: log.hasArrivedG3 ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: log.hasArrivedG3 ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${log.hasArrivedG3 ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
-                  <input type="checkbox" checked={!!log.hasArrivedG3} onChange={(e) => onToggleArrivalGroup?.(3, e.target.checked)} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
-                  <span>{log.hasArrivedG3 ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
-                </label>
-              ) : (
-                log.hasArrivedG3 && (
-                  <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Llegó del sitio</span>
-                )
-              )}
-            </div>
-          )}
-
-          {/* Grupo 4 */}
-          {log.groupName4 && (
-            <div style={sectionStyle}>
-              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#fb923c", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
-                Cuarto Grupo
-              </div>
-              <ReadRow label="Grupo" value={log.groupName4} />
-              <ReadRow label="Unidad" value={log.unitOut4} />
-              <ReadRow label="Encargado" value={log.managerName4} />
-              <ReadRow label="Funcionarios" value={log.officersCount4} />
-              <ReadRow label="Teléfono" value={log.managerPhone4} />
-              {showArrivalCheckbox ? (
-                <label style={{ fontSize: "0.65rem", fontWeight: 700, color: log.hasArrivedG4 ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: log.hasArrivedG4 ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${log.hasArrivedG4 ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
-                  <input type="checkbox" checked={!!log.hasArrivedG4} onChange={(e) => onToggleArrivalGroup?.(4, e.target.checked)} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
-                  <span>{log.hasArrivedG4 ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
-                </label>
-              ) : (
-                log.hasArrivedG4 && (
-                  <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Llegó del sitio</span>
-                )
-              )}
-            </div>
-          )}
+          ))}
         </div>
       )}
 

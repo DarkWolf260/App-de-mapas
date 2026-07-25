@@ -339,11 +339,25 @@ export const useMapSetup = ({
         }
       });
 
+      const hideTooltip = () => {
+        setTooltip((t) => (t.visible ? { ...t, visible: false } : t));
+      };
+
       view.on("pointer-move", (evt: any) => {
         if (sketchVMRef.current?.activeTool || sketchVMRef.current?.state === "active") {
-          setTooltip((t) => (t.visible ? { ...t, visible: false } : t));
+          hideTooltip();
           return;
         }
+
+        if (evt.native && evt.native.target) {
+          const targetEl = evt.native.target as HTMLElement;
+          const isOverUI = !!targetEl.closest?.(".sidebar, .panel, .modal, .popup, .toolbar, .rr-drawer, .esri-ui-corner, button, select, input, textarea");
+          if (isOverUI) {
+            hideTooltip();
+            return;
+          }
+        }
+
         view.hitTest(evt).then((response: any) => {
           const result = response.results.find(
             (r: any) => "graphic" in r && r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel
@@ -355,17 +369,41 @@ export const useMapSetup = ({
             setTooltip({ text: feat ? getLabelText(feat, selectedDateRef.current) : (g.attributes?.title || "Elemento"), x: evt.x, y: evt.y, visible: true });
             return;
           }
-          setTooltip((t) => (t.visible ? { ...t, visible: false } : t));
+          hideTooltip();
         });
       });
+
+      const container = mapDiv.current;
+      const handleGlobalPointerMove = (e: MouseEvent | PointerEvent) => {
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+        const isOverUI = !!target.closest(".sidebar, .panel, .modal, .popup, .toolbar, .rr-drawer, .esri-ui-corner, button, select, input, textarea");
+        const isOutsideMap = container ? !container.contains(target) : true;
+        if (isOverUI || isOutsideMap) {
+          hideTooltip();
+        }
+      };
+
+      container?.addEventListener("mouseleave", hideTooltip);
+      container?.addEventListener("pointerleave", hideTooltip);
+      window.addEventListener("mousemove", handleGlobalPointerMove, true);
+      window.addEventListener("pointermove", handleGlobalPointerMove, true);
+      window.addEventListener("mouseleave", hideTooltip);
+      window.addEventListener("blur", hideTooltip);
 
       setMapReady(true);
     });
 
     return () => {
       if (sketchVMRef.current) { sketchVMRef.current.destroy(); sketchVMRef.current = null; }
-      if (view) view.destroy();
-      viewRef.current = null;
+      if (viewRef.current) { viewRef.current.destroy(); viewRef.current = null; }
+      const container = mapDiv.current;
+      container?.removeEventListener("mouseleave", () => setTooltip((t) => ({ ...t, visible: false })));
+      container?.removeEventListener("pointerleave", () => setTooltip((t) => ({ ...t, visible: false })));
+      window.removeEventListener("mousemove", () => setTooltip((t) => ({ ...t, visible: false })), true);
+      window.removeEventListener("pointermove", () => setTooltip((t) => ({ ...t, visible: false })), true);
+      window.removeEventListener("mouseleave", () => setTooltip((t) => ({ ...t, visible: false })));
+      window.removeEventListener("blur", () => setTooltip((t) => ({ ...t, visible: false })));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Map init runs once; basemap is synced in useEffect #2
   }, []);

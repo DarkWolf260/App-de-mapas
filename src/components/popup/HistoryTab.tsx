@@ -1,6 +1,7 @@
 import React from "react";
 import type { DailyLog } from "../../types";
-import { Calendar, HeartHandshake, ShieldAlert, HeartPulse, Ambulance, Dog, Users, Clock, FileText } from "lucide-react";
+import { getNormalizedGroupList } from "../../utils/logUtils";
+import { Calendar, HeartHandshake, ShieldAlert, HeartPulse, Ambulance, Dog, Users, FileText } from "lucide-react";
 
 interface HistoryTabProps {
   logs: DailyLog[] | undefined;
@@ -14,12 +15,12 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ logs }) => (
 
     {logs && logs.length > 0 ? (
       <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "260px", overflowY: "auto", paddingRight: "2px" }}>
-        {logs.map((log, idx) => {
-          const hasG2 = !!log.groupName2 || !!log.unitOut2;
-          const rescued = (parseInt(log.rescuedCount || "0", 10) || 0) + (parseInt(log.rescuedCount2 || "0", 10) || 0);
-          const recovered = (parseInt(log.recoveredCount || "0", 10) || 0) + (parseInt(log.recoveredCount2 || "0", 10) || 0);
-          const prehospital = (parseInt(log.prehospitalCareCount || "0", 10) || 0) + (parseInt(log.prehospitalCareCount2 || "0", 10) || 0);
-          const transfers = (parseInt(log.transfersCount || "0", 10) || 0) + (parseInt(log.transfersCount2 || "0", 10) || 0);
+        {[...logs].reverse().map((log, idx) => {
+          const groupList = getNormalizedGroupList(log);
+          const rescued = groupList.reduce((acc, g) => acc + (parseInt(g.rescuedCount || "0", 10) || 0), 0);
+          const recovered = groupList.reduce((acc, g) => acc + (parseInt(g.recoveredCount || "0", 10) || 0), 0);
+          const prehospital = groupList.reduce((acc, g) => acc + (parseInt(g.prehospitalCareCount || "0", 10) || 0), 0);
+          const transfers = groupList.reduce((acc, g) => acc + (parseInt(g.transfersCount || "0", 10) || 0), 0);
           const pets = parseInt(log.rescuedPetsCount || "0", 10) || 0;
 
           return (
@@ -32,7 +33,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ logs }) => (
                 marginBottom: "2px",
                 display: "flex",
                 flexDirection: "column",
-                gap: "2px",
+                gap: "3px",
               }}
             >
               <div style={{ fontWeight: 800, color: "var(--text-main)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -42,31 +43,31 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ logs }) => (
                   {recovered > 0 && <span title="Recuperados" style={{ display: "inline-flex", alignItems: "center", gap: "2px", color: "var(--color-info)" }}><ShieldAlert size={11} /> {recovered}</span>}
                   {prehospital > 0 && <span title="Atenciones" style={{ display: "inline-flex", alignItems: "center", gap: "2px", color: "#38bdf8" }}><HeartPulse size={11} /> {prehospital}</span>}
                   {transfers > 0 && <span title="Traslados" style={{ display: "inline-flex", alignItems: "center", gap: "2px", color: "var(--color-purple)" }}><Ambulance size={11} /> {transfers}</span>}
-                  {pets > 0 && <span title="Mascotas" style={{ display: "inline-flex", alignItems: "center", gap: "2px", color: "var(--color-purple)" }}><Dog size={11} /> {pets}</span>}
+                  {pets > 0 && <span title="Mascotas" style={{ display: "inline-flex", alignItems: "center", gap: "2px", color: "#fbbf24" }}><Dog size={11} /> {pets}</span>}
                 </span>
               </div>
 
-              <div style={{ color: "var(--text-muted)" }}>
-                <strong style={{ color: "var(--color-info)" }}>G1: </strong> {log.groupName || "-"}
-                {log.unitOut ? ` (${log.unitOut})` : ""}
-                {log.managerName ? ` - Enc: ${log.managerName}` : ""}
-                {log.officersCount ? <span style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>[<Users size={10} /> {log.officersCount}]</span> : ""}
-              </div>
-
-              {hasG2 && (
-                <div style={{ color: "var(--text-muted)" }}>
-                  <strong style={{ color: "var(--color-purple)" }}>G2: </strong> {log.groupName2 || "-"}
-                  {log.unitOut2 ? ` (${log.unitOut2})` : ""}
-                  {log.managerName2 ? ` - Enc: ${log.managerName2}` : ""}
-                  {log.officersCount2 ? <span style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>[<Users size={10} /> {log.officersCount2}]</span> : ""}
+              {groupList.map((g, gIdx) => (
+                <div key={g.id || gIdx} style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
+                  <strong style={{ color: gIdx === 0 ? "var(--color-info)" : gIdx === 1 ? "var(--color-purple)" : gIdx === 2 ? "#c084fc" : "#fb923c" }}>
+                    G{gIdx + 1}:
+                  </strong>{" "}
+                  <span>{g.groupName || "Sin nombre"}</span>
+                  {g.unitOut && <span style={{ opacity: 0.8 }}>({g.unitOut})</span>}
+                  {g.managerName && <span style={{ opacity: 0.8 }}>- Enc: {g.managerName}</span>}
+                  {g.officersCount && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", color: "var(--text-main)" }}>
+                      [<Users size={10} /> {g.officersCount}]
+                    </span>
+                  )}
+                  {g.isVolunteer && (
+                    <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "3px", padding: "0 3px", fontSize: "0.5rem", fontWeight: 800 }}>
+                      VOLUNTARIO
+                    </span>
+                  )}
                 </div>
-              )}
+              ))}
 
-              {(log.departureTime || log.arrivalTime) && (
-                <div style={{ fontSize: "0.58rem", color: "var(--color-info)", display: "flex", gap: "6px", marginTop: "1px", alignItems: "center" }}>
-                  <Clock size={10} /> Horario: {log.departureTime || "--:--"} - {log.arrivalTime || "--:--"}
-                </div>
-              )}
               {log.observations && (
                 <div style={{ fontSize: "0.58rem", color: "var(--color-info)", marginTop: "1px", background: "rgba(56, 189, 248, 0.04)", borderLeft: "2px solid var(--color-info)", padding: "2px 4px", borderRadius: "0 3px 3px 0" }}>
                   <strong style={{ display: "flex", alignItems: "center", gap: "3px" }}><FileText size={10} /> Obs:</strong> {log.observations}

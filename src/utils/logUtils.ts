@@ -1,4 +1,4 @@
-import type { DailyLog, Department, DepartmentView, FeatureType, DrawnFeature } from "../types";
+import type { DailyLog, Department, DepartmentView, FeatureType, DrawnFeature, GroupLogEntry } from "../types";
 import { buildParentsMap } from "./spatialUtils";
 
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -51,20 +51,91 @@ export function emptyLog(date: string, department?: Department): DailyLog {
   };
 }
 
-export function getTotalPersonnel(log: DailyLog): number {
-  const count1 = parseInt(log.officersCount || "0", 10);
-  const count2 = parseInt(log.officersCount2 || "0", 10);
-  const count3 = parseInt(log.officersCount3 || "0", 10);
-  const count4 = parseInt(log.officersCount4 || "0", 10);
-  return count1 + count2 + count3 + count4;
+export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[] {
+  if (!log) return [];
+
+  if (log.groups && Array.isArray(log.groups) && log.groups.length > 0) {
+    return log.groups
+      .filter((g) => g && (g.groupName?.trim() || g.officersCount || g.unitOut || g.managerName))
+      .map((g) => ({ ...g, commissionId: g.commissionId || "comision_1" }));
+  }
+
+  const legacyList: GroupLogEntry[] = [];
+
+  const addLegacy = (slotIndex: number, name?: string, mgr?: string, phone?: string, unit?: string, officers?: string, rescued?: string, recovered?: string, pets?: string, prehospital?: string, transfers?: string, arrived?: boolean, commissionId?: string, isVolunteer?: boolean) => {
+    const hasData = !!(name?.trim() || officers || unit?.trim() || mgr?.trim() || rescued || recovered || prehospital || transfers);
+    if (hasData) {
+      legacyList.push({
+        id: `g${slotIndex}`,
+        groupName: (name || "").trim(),
+        managerName: mgr || "",
+        managerPhone: phone || "",
+        unitOut: unit || "",
+        officersCount: officers || "",
+        rescuedCount: rescued || "",
+        recoveredCount: recovered || "",
+        rescuedPetsCount: pets || "",
+        prehospitalCareCount: prehospital || "",
+        transfersCount: transfers || "",
+        hasArrived: !!arrived,
+        commissionId: commissionId || "comision_1",
+        isVolunteer: !!isVolunteer,
+      });
+    }
+  };
+
+  addLegacy(1, log.groupName, log.managerName, log.managerPhone, log.unitOut, log.officersCount, log.rescuedCount, log.recoveredCount, log.rescuedPetsCount, log.prehospitalCareCount, log.transfersCount, log.hasArrivedG1, log.commissionId, log.isVolunteer);
+  addLegacy(2, log.groupName2, log.managerName2, log.managerPhone2, log.unitOut2, log.officersCount2, log.rescuedCount2, log.recoveredCount2, log.rescuedPetsCount2, log.prehospitalCareCount2, log.transfersCount2, log.hasArrivedG2, log.commissionId2, log.isVolunteer2);
+  addLegacy(3, log.groupName3, log.managerName3, log.managerPhone3, log.unitOut3, log.officersCount3, log.rescuedCount3, log.recoveredCount3, log.rescuedPetsCount3, log.prehospitalCareCount3, log.transfersCount3, log.hasArrivedG3, log.commissionId3, log.isVolunteer3);
+  addLegacy(4, log.groupName4, log.managerName4, log.managerPhone4, log.unitOut4, log.officersCount4, log.rescuedCount4, log.recoveredCount4, log.rescuedPetsCount4, log.prehospitalCareCount4, log.transfersCount4, log.hasArrivedG4, log.commissionId4, log.isVolunteer4);
+
+  // Inherit shared commission metrics for groups in the same joint commission if not explicitly set
+  const commMetricsMap = new Map<string, { rescued?: string; recovered?: string; pets?: string; prehospital?: string; transfers?: string }>();
+  for (const g of legacyList) {
+    const cid = g.commissionId || "comision_1";
+    if (cid !== "independiente" && !commMetricsMap.has(cid)) {
+      if (g.rescuedCount || g.recoveredCount || g.prehospitalCareCount || g.transfersCount || g.rescuedPetsCount) {
+        commMetricsMap.set(cid, {
+          rescued: g.rescuedCount,
+          recovered: g.recoveredCount,
+          pets: g.rescuedPetsCount,
+          prehospital: g.prehospitalCareCount,
+          transfers: g.transfersCount,
+        });
+      }
+    }
+  }
+
+  for (const g of legacyList) {
+    const cid = g.commissionId || "comision_1";
+    if (cid !== "independiente" && commMetricsMap.has(cid)) {
+      const m = commMetricsMap.get(cid)!;
+      if (!g.rescuedCount) g.rescuedCount = m.rescued;
+      if (!g.recoveredCount) g.recoveredCount = m.recovered;
+      if (!g.rescuedPetsCount) g.rescuedPetsCount = m.pets;
+      if (!g.prehospitalCareCount) g.prehospitalCareCount = m.prehospital;
+      if (!g.transfersCount) g.transfersCount = m.transfers;
+    }
+  }
+
+  return legacyList;
 }
 
-export function logHasPersonnel(log: DailyLog): boolean {
+export function getTotalPersonnel(log?: Partial<DailyLog>): number {
+  if (!log) return 0;
+  const groups = getNormalizedGroupList(log);
+  return groups.reduce((acc, g) => acc + (parseInt(g.officersCount || "0", 10) || 0), 0);
+}
+
+export function logHasPersonnel(log?: Partial<DailyLog>): boolean {
   return getTotalPersonnel(log) > 0;
 }
 
-export function logIsArrived(log: DailyLog): boolean {
-  return !!log.hasArrivedG1 || !!log.hasArrivedG2 || !!log.hasArrivedG3 || !!log.hasArrivedG4;
+export function logIsArrived(log?: Partial<DailyLog>): boolean {
+  if (!log) return false;
+  const groups = getNormalizedGroupList(log);
+  if (groups.length === 0) return false;
+  return groups.every((g) => !!g.hasArrived);
 }
 
 export function logMatchesArrivalFilter(
@@ -77,46 +148,15 @@ export function logMatchesArrivalFilter(
   return true;
 }
 
-export function logHasAnyData(log: DailyLog): boolean {
-  return !!(
-    log.groupName ||
-    log.unitOut ||
-    log.managerName ||
-    parseInt(log.officersCount || "0", 10) > 0 ||
-    parseInt(log.rescuedCount || "0", 10) > 0 ||
-    parseInt(log.recoveredCount || "0", 10) > 0 ||
-    parseInt(log.prehospitalCareCount || "0", 10) > 0 ||
-    parseInt(log.transfersCount || "0", 10) > 0 ||
-    parseInt(log.rescuedPetsCount || "0", 10) > 0 ||
-    log.groupName2 ||
-    log.unitOut2 ||
-    log.managerName2 ||
-    parseInt(log.officersCount2 || "0", 10) > 0 ||
-    parseInt(log.rescuedCount2 || "0", 10) > 0 ||
-    parseInt(log.recoveredCount2 || "0", 10) > 0 ||
-    parseInt(log.prehospitalCareCount2 || "0", 10) > 0 ||
-    parseInt(log.transfersCount2 || "0", 10) > 0 ||
-    log.groupName3 ||
-    log.unitOut3 ||
-    log.managerName3 ||
-    parseInt(log.officersCount3 || "0", 10) > 0 ||
-    parseInt(log.rescuedCount3 || "0", 10) > 0 ||
-    parseInt(log.recoveredCount3 || "0", 10) > 0 ||
-    parseInt(log.prehospitalCareCount3 || "0", 10) > 0 ||
-    parseInt(log.transfersCount3 || "0", 10) > 0 ||
-    log.groupName4 ||
-    log.unitOut4 ||
-    log.managerName4 ||
-    parseInt(log.officersCount4 || "0", 10) > 0 ||
-    parseInt(log.rescuedCount4 || "0", 10) > 0 ||
-    parseInt(log.recoveredCount4 || "0", 10) > 0 ||
-    parseInt(log.prehospitalCareCount4 || "0", 10) > 0 ||
-    parseInt(log.transfersCount4 || "0", 10) > 0 ||
-    (log.observations && log.observations.trim())
-  );
+export function logHasAnyData(log?: Partial<DailyLog>): boolean {
+  if (!log) return false;
+  const groups = getNormalizedGroupList(log);
+  if (groups.length > 0) return true;
+  return !!(log.observations && log.observations.trim());
 }
 
 export interface GroupData {
+  id?: string;
   groupName: string;
   managerName: string;
   managerPhone: string;
@@ -124,65 +164,122 @@ export interface GroupData {
   officersCount: string;
   rescuedCount: string;
   recoveredCount: string;
+  rescuedPetsCount?: string;
   prehospitalCareCount: string;
   transfersCount: string;
   hasArrived: boolean;
+  commissionId?: string;
+  isVolunteer?: boolean;
 }
 
-export function getGroupData(log: DailyLog, group: 1 | 2 | 3 | 4): GroupData {
-  if (group === 2) {
+export function getGroupData(log: DailyLog, groupIndex: number): GroupData {
+  if (!log.groups || log.groups.length === 0) {
+    if (groupIndex === 2) {
+      return {
+        id: "g2",
+        groupName: log.groupName2 || "",
+        managerName: log.managerName2 || "",
+        managerPhone: log.managerPhone2 || "",
+        unitOut: log.unitOut2 || "",
+        officersCount: log.officersCount2 || "",
+        rescuedCount: log.rescuedCount2 || "",
+        recoveredCount: log.recoveredCount2 || "",
+        rescuedPetsCount: log.rescuedPetsCount2 || "",
+        prehospitalCareCount: log.prehospitalCareCount2 || "",
+        transfersCount: log.transfersCount2 || "",
+        hasArrived: !!log.hasArrivedG2,
+        commissionId: log.commissionId2 || "comision_1",
+        isVolunteer: !!log.isVolunteer2,
+      };
+    }
+    if (groupIndex === 3) {
+      return {
+        id: "g3",
+        groupName: log.groupName3 || "",
+        managerName: log.managerName3 || "",
+        managerPhone: log.managerPhone3 || "",
+        unitOut: log.unitOut3 || "",
+        officersCount: log.officersCount3 || "",
+        rescuedCount: log.rescuedCount3 || "",
+        recoveredCount: log.recoveredCount3 || "",
+        rescuedPetsCount: log.rescuedPetsCount3 || "",
+        prehospitalCareCount: log.prehospitalCareCount3 || "",
+        transfersCount: log.transfersCount3 || "",
+        hasArrived: !!log.hasArrivedG3,
+        commissionId: log.commissionId3 || "comision_1",
+        isVolunteer: !!log.isVolunteer3,
+      };
+    }
+    if (groupIndex === 4) {
+      return {
+        id: "g4",
+        groupName: log.groupName4 || "",
+        managerName: log.managerName4 || "",
+        managerPhone: log.managerPhone4 || "",
+        unitOut: log.unitOut4 || "",
+        officersCount: log.officersCount4 || "",
+        rescuedCount: log.rescuedCount4 || "",
+        recoveredCount: log.recoveredCount4 || "",
+        rescuedPetsCount: log.rescuedPetsCount4 || "",
+        prehospitalCareCount: log.prehospitalCareCount4 || "",
+        transfersCount: log.transfersCount4 || "",
+        hasArrived: !!log.hasArrivedG4,
+        commissionId: log.commissionId4 || "comision_1",
+        isVolunteer: !!log.isVolunteer4,
+      };
+    }
     return {
-      groupName: log.groupName2 || "",
-      managerName: log.managerName2 || "",
-      managerPhone: log.managerPhone2 || "",
-      unitOut: log.unitOut2 || "",
-      officersCount: log.officersCount2 || "",
-      rescuedCount: log.rescuedCount2 || "",
-      recoveredCount: log.recoveredCount2 || "",
-      prehospitalCareCount: log.prehospitalCareCount2 || "",
-      transfersCount: log.transfersCount2 || "",
-      hasArrived: !!log.hasArrivedG2,
+      id: "g1",
+      groupName: log.groupName || "",
+      managerName: log.managerName || "",
+      managerPhone: log.managerPhone || "",
+      unitOut: log.unitOut || "",
+      officersCount: log.officersCount || "",
+      rescuedCount: log.rescuedCount || "",
+      recoveredCount: log.recoveredCount || "",
+      rescuedPetsCount: log.rescuedPetsCount || "",
+      prehospitalCareCount: log.prehospitalCareCount || "",
+      transfersCount: log.transfersCount || "",
+      hasArrived: !!log.hasArrivedG1,
+      commissionId: log.commissionId || "comision_1",
+      isVolunteer: !!log.isVolunteer,
     };
   }
-  if (group === 3) {
+
+  const list = getNormalizedGroupList(log);
+  const item = list[groupIndex - 1];
+  if (item) {
     return {
-      groupName: log.groupName3 || "",
-      managerName: log.managerName3 || "",
-      managerPhone: log.managerPhone3 || "",
-      unitOut: log.unitOut3 || "",
-      officersCount: log.officersCount3 || "",
-      rescuedCount: log.rescuedCount3 || "",
-      recoveredCount: log.recoveredCount3 || "",
-      prehospitalCareCount: log.prehospitalCareCount3 || "",
-      transfersCount: log.transfersCount3 || "",
-      hasArrived: !!log.hasArrivedG3,
-    };
-  }
-  if (group === 4) {
-    return {
-      groupName: log.groupName4 || "",
-      managerName: log.managerName4 || "",
-      managerPhone: log.managerPhone4 || "",
-      unitOut: log.unitOut4 || "",
-      officersCount: log.officersCount4 || "",
-      rescuedCount: log.rescuedCount4 || "",
-      recoveredCount: log.recoveredCount4 || "",
-      prehospitalCareCount: log.prehospitalCareCount4 || "",
-      transfersCount: log.transfersCount4 || "",
-      hasArrived: !!log.hasArrivedG4,
+      id: item.id,
+      groupName: item.groupName,
+      managerName: item.managerName || "",
+      managerPhone: item.managerPhone || "",
+      unitOut: item.unitOut || "",
+      officersCount: item.officersCount || "",
+      rescuedCount: item.rescuedCount || "",
+      recoveredCount: item.recoveredCount || "",
+      rescuedPetsCount: item.rescuedPetsCount || "",
+      prehospitalCareCount: item.prehospitalCareCount || "",
+      transfersCount: item.transfersCount || "",
+      hasArrived: !!item.hasArrived,
+      commissionId: item.commissionId || "comision_1",
+      isVolunteer: !!item.isVolunteer,
     };
   }
   return {
-    groupName: log.groupName || "",
-    managerName: log.managerName || "",
-    managerPhone: log.managerPhone || "",
-    unitOut: log.unitOut || "",
-    officersCount: log.officersCount || "",
-    rescuedCount: log.rescuedCount || "",
-    recoveredCount: log.recoveredCount || "",
-    prehospitalCareCount: log.prehospitalCareCount || "",
-    transfersCount: log.transfersCount || "",
-    hasArrived: !!log.hasArrivedG1,
+    groupName: "",
+    managerName: "",
+    managerPhone: "",
+    unitOut: "",
+    officersCount: "",
+    rescuedCount: "",
+    recoveredCount: "",
+    rescuedPetsCount: "",
+    prehospitalCareCount: "",
+    transfersCount: "",
+    hasArrived: false,
+    commissionId: "comision_1",
+    isVolunteer: false,
   };
 }
 
@@ -220,43 +317,36 @@ export function getDayStats(
 
     activePoints++;
 
-    const p1 = parseInt(log.officersCount || "0", 10);
-    const p2 = parseInt(log.officersCount2 || "0", 10);
-    const p3 = parseInt(log.officersCount3 || "0", 10);
-    const p4 = parseInt(log.officersCount4 || "0", 10);
-    totalPersonnel += p1 + p2 + p3 + p4;
+    const groups = getNormalizedGroupList(log);
+    const commRescued = new Map<string, number>();
+    const commRecovered = new Map<string, number>();
+    const commPrehospital = new Map<string, number>();
+    const commTransfers = new Map<string, number>();
 
-    const r1 = parseInt(log.rescuedCount || "0", 10);
-    const r2 = parseInt(log.rescuedCount2 || "0", 10);
-    const r3 = parseInt(log.rescuedCount3 || "0", 10);
-    const r4 = parseInt(log.rescuedCount4 || "0", 10);
-    totalRescued += r1 + r2 + r3 + r4;
+    for (const g of groups) {
+      const p = parseInt(g.officersCount || "0", 10) || 0;
+      totalPersonnel += p;
 
-    const rc1 = parseInt(log.recoveredCount || "0", 10);
-    const rc2 = parseInt(log.recoveredCount2 || "0", 10);
-    const rc3 = parseInt(log.recoveredCount3 || "0", 10);
-    const rc4 = parseInt(log.recoveredCount4 || "0", 10);
-    totalRecovered += rc1 + rc2 + rc3 + rc4;
+      const r = parseInt(g.rescuedCount || "0", 10) || 0;
+      const rc = parseInt(g.recoveredCount || "0", 10) || 0;
+      const ph = parseInt(g.prehospitalCareCount || "0", 10) || 0;
+      const tr = parseInt(g.transfersCount || "0", 10) || 0;
 
-    const ph1 = parseInt(log.prehospitalCareCount || "0", 10);
-    const ph2 = parseInt(log.prehospitalCareCount2 || "0", 10);
-    const ph3 = parseInt(log.prehospitalCareCount3 || "0", 10);
-    const ph4 = parseInt(log.prehospitalCareCount4 || "0", 10);
-    totalPrehospitalCare += ph1 + ph2 + ph3 + ph4;
+      const commKey = g.commissionId && g.commissionId !== "independiente" ? g.commissionId : `ind_${Math.random()}`;
+      commRescued.set(commKey, Math.max(commRescued.get(commKey) || 0, r));
+      commRecovered.set(commKey, Math.max(commRecovered.get(commKey) || 0, rc));
+      commPrehospital.set(commKey, Math.max(commPrehospital.get(commKey) || 0, ph));
+      commTransfers.set(commKey, Math.max(commTransfers.get(commKey) || 0, tr));
 
-    const tr1 = parseInt(log.transfersCount || "0", 10);
-    const tr2 = parseInt(log.transfersCount2 || "0", 10);
-    const tr3 = parseInt(log.transfersCount3 || "0", 10);
-    const tr4 = parseInt(log.transfersCount4 || "0", 10);
-    totalTransfers += tr1 + tr2 + tr3 + tr4;
+      if (g.hasArrived) groupsArrived++;
+    }
 
-    const pets = parseInt(log.rescuedPetsCount || "0", 10);
-    totalPets += pets;
+    commRescued.forEach((val) => { totalRescued += val; });
+    commRecovered.forEach((val) => { totalRecovered += val; });
+    commPrehospital.forEach((val) => { totalPrehospitalCare += val; });
+    commTransfers.forEach((val) => { totalTransfers += val; });
 
-    if (log.hasArrivedG1) groupsArrived++;
-    if (log.hasArrivedG2) groupsArrived++;
-    if (log.hasArrivedG3) groupsArrived++;
-    if (log.hasArrivedG4) groupsArrived++;
+    totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
   }
 
   return { totalPersonnel, totalRescued, totalRecovered, totalPets, totalPrehospitalCare, totalTransfers, activePoints, groupsArrived };
@@ -310,6 +400,7 @@ export interface GroupStats {
   totalPets: number;
   totalPrehospitalCare: number;
   totalTransfers: number;
+  isVolunteer?: boolean;
 }
 
 export interface FeatureStat {
@@ -354,12 +445,15 @@ export function getPeriodStats(
   let totalTransfers = 0;
 
   const { parentsMap } = buildParentsMap(features);
+  const groupDatesMap = new Map<string, Set<string>>();
 
-  function upsertGroup(name: string, dept: string | undefined, log: DailyLog, suffix: "" | "2") {
-    const key = name + (dept || "");
+  function upsertGroupItem(g: GroupLogEntry, log: DailyLog) {
+    const trimmed = g.groupName.trim();
+    if (!trimmed) return;
+    const key = trimmed.toLowerCase() + "_" + (log.department || "");
     const existing = groupMap.get(key) || {
-      groupName: name,
-      department: dept,
+      groupName: trimmed,
+      department: log.department,
       daysActive: 0,
       totalPersonnel: 0,
       totalRescued: 0,
@@ -367,14 +461,24 @@ export function getPeriodStats(
       totalPets: 0,
       totalPrehospitalCare: 0,
       totalTransfers: 0,
+      isVolunteer: !!g.isVolunteer,
     };
-    existing.daysActive++;
-    existing.totalPersonnel += parseInt((suffix === "2" ? log.officersCount2 : log.officersCount) || "0", 10);
-    existing.totalRescued += parseInt((suffix === "2" ? log.rescuedCount2 : log.rescuedCount) || "0", 10);
-    existing.totalRecovered += parseInt((suffix === "2" ? log.recoveredCount2 : log.recoveredCount) || "0", 10);
-    existing.totalPrehospitalCare += parseInt((suffix === "2" ? log.prehospitalCareCount2 : log.prehospitalCareCount) || "0", 10);
-    existing.totalTransfers += parseInt((suffix === "2" ? log.transfersCount2 : log.transfersCount) || "0", 10);
-    existing.totalPets += parseInt(log.rescuedPetsCount || "0", 10);
+
+    if (g.isVolunteer) existing.isVolunteer = true;
+
+    if (!groupDatesMap.has(key)) {
+      groupDatesMap.set(key, new Set<string>());
+    }
+    const datesSet = groupDatesMap.get(key)!;
+    datesSet.add(log.date);
+    existing.daysActive = datesSet.size;
+
+    existing.totalPersonnel += parseInt(g.officersCount || "0", 10) || 0;
+    existing.totalRescued += parseInt(g.rescuedCount || "0", 10) || 0;
+    existing.totalRecovered += parseInt(g.recoveredCount || "0", 10) || 0;
+    existing.totalPrehospitalCare += parseInt(g.prehospitalCareCount || "0", 10) || 0;
+    existing.totalTransfers += parseInt(g.transfersCount || "0", 10) || 0;
+    existing.totalPets += parseInt(g.rescuedPetsCount || "0", 10) || 0;
     groupMap.set(key, existing);
   }
 
@@ -386,27 +490,36 @@ export function getPeriodStats(
 
       activeDates.add(log.date);
 
-      const p1 = parseInt(log.officersCount || "0", 10);
-      const p2 = parseInt(log.officersCount2 || "0", 10);
-      const r1 = parseInt(log.rescuedCount || "0", 10);
-      const r2 = parseInt(log.rescuedCount2 || "0", 10);
-      const rc1 = parseInt(log.recoveredCount || "0", 10);
-      const rc2 = parseInt(log.recoveredCount2 || "0", 10);
-      const ph1 = parseInt(log.prehospitalCareCount || "0", 10);
-      const ph2 = parseInt(log.prehospitalCareCount2 || "0", 10);
-      const tr1 = parseInt(log.transfersCount || "0", 10);
-      const tr2 = parseInt(log.transfersCount2 || "0", 10);
-      const pets = parseInt(log.rescuedPetsCount || "0", 10);
+      const groupList = getNormalizedGroupList(log);
+      const commRescued = new Map<string, number>();
+      const commRecovered = new Map<string, number>();
+      const commPrehospital = new Map<string, number>();
+      const commTransfers = new Map<string, number>();
 
-      totalPersonnel += p1 + p2;
-      totalRescued += r1 + r2;
-      totalRecovered += rc1 + rc2;
-      totalPrehospitalCare += ph1 + ph2;
-      totalTransfers += tr1 + tr2;
-      totalPets += pets;
+      for (const g of groupList) {
+        upsertGroupItem(g, log);
 
-      if (log.groupName) upsertGroup(log.groupName, log.department, log, "");
-      if (log.groupName2) upsertGroup(log.groupName2, log.department, log, "2");
+        const p = parseInt(g.officersCount || "0", 10) || 0;
+        totalPersonnel += p;
+
+        const r = parseInt(g.rescuedCount || "0", 10) || 0;
+        const rc = parseInt(g.recoveredCount || "0", 10) || 0;
+        const ph = parseInt(g.prehospitalCareCount || "0", 10) || 0;
+        const tr = parseInt(g.transfersCount || "0", 10) || 0;
+
+        const commKey = g.commissionId && g.commissionId !== "independiente" ? g.commissionId : `ind_${Math.random()}`;
+        commRescued.set(commKey, Math.max(commRescued.get(commKey) || 0, r));
+        commRecovered.set(commKey, Math.max(commRecovered.get(commKey) || 0, rc));
+        commPrehospital.set(commKey, Math.max(commPrehospital.get(commKey) || 0, ph));
+        commTransfers.set(commKey, Math.max(commTransfers.get(commKey) || 0, tr));
+      }
+
+      commRescued.forEach((val) => { totalRescued += val; });
+      commRecovered.forEach((val) => { totalRecovered += val; });
+      commPrehospital.forEach((val) => { totalPrehospitalCare += val; });
+      commTransfers.forEach((val) => { totalTransfers += val; });
+
+      totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
     }
   }
 
