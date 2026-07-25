@@ -40,8 +40,6 @@ export interface DailyLog {
   managerName: string;
   managerPhone: string;
   unitOut: string;
-  departureTime?: string;
-  arrivalTime?: string;
   officersCount?: string;
   rescuedCount?: string;
   recoveredCount?: string;
@@ -55,8 +53,6 @@ export interface DailyLog {
   managerName2?: string;
   managerPhone2?: string;
   unitOut2?: string;
-  departureTime2?: string;
-  arrivalTime2?: string;
   officersCount2?: string;
   rescuedCount2?: string;
   recoveredCount2?: string;
@@ -70,8 +66,6 @@ export interface DailyLog {
   managerName3?: string;
   managerPhone3?: string;
   unitOut3?: string;
-  departureTime3?: string;
-  arrivalTime3?: string;
   officersCount3?: string;
   rescuedCount3?: string;
   recoveredCount3?: string;
@@ -85,8 +79,6 @@ export interface DailyLog {
   managerName4?: string;
   managerPhone4?: string;
   unitOut4?: string;
-  departureTime4?: string;
-  arrivalTime4?: string;
   officersCount4?: string;
   rescuedCount4?: string;
   recoveredCount4?: string;

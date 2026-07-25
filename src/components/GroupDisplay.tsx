@@ -1,6 +1,6 @@
 import React from "react";
 import type { GroupData } from "../utils/logUtils";
-import { Users, User, Clock, CheckCircle2, AlertCircle, HeartHandshake, ShieldAlert, HeartPulse, Ambulance } from "lucide-react";
+import { Users, User, CheckCircle2, AlertCircle, HeartHandshake, ShieldAlert, HeartPulse, Ambulance } from "lucide-react";
 
 interface GroupDisplayProps {
   group: GroupData;
@@ -18,7 +18,7 @@ export const GroupDisplay: React.FC<GroupDisplayProps> = ({
   const hasData = !!(group.groupName || group.managerName || group.unitOut || group.officersCount);
   if (!hasData) return null;
 
-  const isArrived = group.hasArrived || !!group.arrivalTime;
+  const isArrived = !!group.hasArrived;
   const personnel = group.officersCount || "0";
   const rescued = group.rescuedCount && group.rescuedCount !== "0" ? group.rescuedCount : null;
   const recovered = group.recoveredCount && group.recoveredCount !== "0" ? group.recoveredCount : null;
@@ -51,18 +51,18 @@ export const GroupDisplay: React.FC<GroupDisplayProps> = ({
             onToggleArrival?.(!isArrived);
           }}
           className={`rr-status-pill ${isArrived ? "arrived" : "pending"}`}
-          title={isArrived ? "Clic para cambiar a En Sitio de Trabajo" : "Clic para marcar que Retornó del Sitio de Trabajo"}
+          title={isArrived ? "Clic para cambiar a En Camino" : "Clic para cambiar a En Sitio de Trabajo"}
           style={{ cursor: onToggleArrival ? "pointer" : "default" }}
         >
           {isArrived ? (
             <>
               <CheckCircle2 size={11} />
-              <span>{group.arrivalTime ? `Retornó ${group.arrivalTime}` : "Retornó"}</span>
+              <span>En Sitio</span>
             </>
           ) : (
             <>
               <AlertCircle size={11} />
-              <span>{group.departureTime ? `Salida ${group.departureTime}` : "En Sitio"}</span>
+              <span>En Camino</span>
             </>
           )}
         </button>
@@ -79,17 +79,6 @@ export const GroupDisplay: React.FC<GroupDisplayProps> = ({
           <div className="rr-detail-item">
             <User size={12} className="rr-detail-icon" />
             <span>Enc: <strong>{group.managerName}</strong> {group.managerPhone ? `(${group.managerPhone})` : ""}</span>
-          </div>
-        )}
-
-        {(group.departureTime || group.arrivalTime) && (
-          <div className="rr-detail-item">
-            <Clock size={12} className="rr-detail-icon" />
-            <span>
-              {group.departureTime && `Salida: ${group.departureTime}`}
-              {group.departureTime && group.arrivalTime && ` · `}
-              {group.arrivalTime && `Llegada: ${group.arrivalTime}`}
-            </span>
           </div>
         )}
       </div>

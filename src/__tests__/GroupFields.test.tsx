@@ -9,8 +9,6 @@ const emptyLog: Partial<DailyLog> = {
   managerName: "",
   officersCount: "",
   managerPhone: "",
-  departureTime: "",
-  arrivalTime: "",
   hasArrivedG1: false,
   hasArrivedG2: false,
 };
@@ -53,14 +51,14 @@ describe("GroupFields", () => {
     expect(screen.getByPlaceholderText("Teléfono Encargado 2")).toBeInTheDocument();
   });
 
-  it('renders "¿Ya llegó el Grupo Primario?" for group 1', () => {
+  it('renders "¿Ya llegó del sitio el Grupo Primario?" for group 1', () => {
     render(<GroupFields {...defaultProps} groupIndex={1} />);
-    expect(screen.getByText("¿Ya llegó el Grupo Primario?")).toBeInTheDocument();
+    expect(screen.getByText(/¿Ya llegó del sitio el Grupo Primario\?/i)).toBeInTheDocument();
   });
 
-  it('renders "¿Ya llegó el Grupo Secundario?" for group 2', () => {
+  it('renders "¿Ya llegó del sitio el Grupo Secundario?" for group 2', () => {
     render(<GroupFields {...defaultProps} groupIndex={2} />);
-    expect(screen.getByText("¿Ya llegó el Grupo Secundario?")).toBeInTheDocument();
+    expect(screen.getByText(/¿Ya llegó del sitio el Grupo Secundario\?/i)).toBeInTheDocument();
   });
 
   it("calls onFieldChange when input changes", async () => {

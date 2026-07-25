@@ -37,11 +37,10 @@ type TabId = "info" | "general" | "operation" | "history" | "contained";
 
 const EMPTY_LOG: Omit<DailyLog, "date"> = {
   groupName: "", managerName: "", managerPhone: "", unitOut: "",
-  departureTime: "", arrivalTime: "", officersCount: "", hasArrivedG1: false,
+  officersCount: "", hasArrivedG1: false,
   rescuedCount: "", recoveredCount: "", rescuedPetsCount: "",
   groupName2: "", managerName2: "", managerPhone2: "", unitOut2: "",
-  departureTime2: "", arrivalTime2: "", officersCount2: "",
-  rescuedCount2: "", recoveredCount2: "", hasArrivedG2: false,
+  officersCount2: "", rescuedCount2: "", recoveredCount2: "", hasArrivedG2: false,
   observations: "",
 };
 
@@ -174,6 +173,23 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     setLocalLog((prev) => ({ ...prev, [field]: val }));
   };
 
+  const handleToggleArrivalGroup = async (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => {
+    if (!isAdmin || !onSaveDailyLog) return;
+    const fieldKey = groupIndex === 1 ? "hasArrivedG1" : groupIndex === 2 ? "hasArrivedG2" : groupIndex === 3 ? "hasArrivedG3" : "hasArrivedG4";
+    const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
+    const updatedLog = {
+      ...localLog,
+      department: deptToUse,
+      [fieldKey]: hasArrived,
+    };
+    setLocalLog(updatedLog);
+    try {
+      await onSaveDailyLog(activeFeat.id, updatedLog);
+    } catch (err) {
+      console.error("Error saving arrival status:", err);
+    }
+  };
+
   const containedItems = computeContainedItems(activeFeat, sketchLayer, drawnFeatures);
 
   const isPoint = activeFeat.type === "point";
@@ -260,6 +276,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           drawnFeatures={drawnFeatures}
           popupEditDate={popupEditDate}
           isAdmin={isAdmin}
+          onToggleArrivalGroup={handleToggleArrivalGroup}
         />
       )}
 

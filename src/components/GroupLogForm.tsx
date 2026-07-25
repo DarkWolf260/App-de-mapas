@@ -58,7 +58,7 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
 
   const handleToggleGroup2 = useCallback(() => {
     if (showGroup2) {
-      for (const key of ["groupName2", "managerName2", "managerPhone2", "unitOut2", "departureTime2", "arrivalTime2", "officersCount2", "rescuedCount2", "recoveredCount2", "hasArrivedG2"]) {
+      for (const key of ["groupName2", "managerName2", "managerPhone2", "unitOut2", "officersCount2", "rescuedCount2", "recoveredCount2", "hasArrivedG2"]) {
         onChange(key as keyof DailyLog, key === "hasArrivedG2" ? false : "");
       }
     }
@@ -67,7 +67,7 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
 
   const handleToggleGroup3 = useCallback(() => {
     if (showGroup3) {
-      for (const key of ["groupName3", "managerName3", "managerPhone3", "unitOut3", "departureTime3", "arrivalTime3", "officersCount3", "rescuedCount3", "recoveredCount3", "hasArrivedG3"]) {
+      for (const key of ["groupName3", "managerName3", "managerPhone3", "unitOut3", "officersCount3", "rescuedCount3", "recoveredCount3", "hasArrivedG3"]) {
         onChange(key as keyof DailyLog, key === "hasArrivedG3" ? false : "");
       }
     }
@@ -76,7 +76,7 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
 
   const handleToggleGroup4 = useCallback(() => {
     if (showGroup4) {
-      for (const key of ["groupName4", "managerName4", "managerPhone4", "unitOut4", "departureTime4", "arrivalTime4", "officersCount4", "rescuedCount4", "recoveredCount4", "hasArrivedG4"]) {
+      for (const key of ["groupName4", "managerName4", "managerPhone4", "unitOut4", "officersCount4", "rescuedCount4", "recoveredCount4", "hasArrivedG4"]) {
         onChange(key as keyof DailyLog, key === "hasArrivedG4" ? false : "");
       }
     }

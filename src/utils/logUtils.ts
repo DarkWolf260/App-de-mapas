@@ -31,8 +31,6 @@ export function emptyLog(date: string, department?: Department): DailyLog {
     managerName: "",
     managerPhone: "",
     unitOut: "",
-    departureTime: "",
-    arrivalTime: "",
     officersCount: "",
     rescuedCount: "",
     recoveredCount: "",
@@ -42,8 +40,6 @@ export function emptyLog(date: string, department?: Department): DailyLog {
     managerName2: "",
     managerPhone2: "",
     unitOut2: "",
-    departureTime2: "",
-    arrivalTime2: "",
     officersCount2: "",
     rescuedCount2: "",
     recoveredCount2: "",
@@ -68,10 +64,7 @@ export function logHasPersonnel(log: DailyLog): boolean {
 }
 
 export function logIsArrived(log: DailyLog): boolean {
-  return (
-    (!!log.groupName && !!log.arrivalTime) ||
-    (!!log.groupName2 && !!log.arrivalTime2)
-  );
+  return !!log.hasArrivedG1 || !!log.hasArrivedG2 || !!log.hasArrivedG3 || !!log.hasArrivedG4;
 }
 
 export function logMatchesArrivalFilter(
@@ -133,8 +126,6 @@ export interface GroupData {
   recoveredCount: string;
   prehospitalCareCount: string;
   transfersCount: string;
-  departureTime: string;
-  arrivalTime: string;
   hasArrived: boolean;
 }
 
@@ -150,9 +141,7 @@ export function getGroupData(log: DailyLog, group: 1 | 2 | 3 | 4): GroupData {
       recoveredCount: log.recoveredCount2 || "",
       prehospitalCareCount: log.prehospitalCareCount2 || "",
       transfersCount: log.transfersCount2 || "",
-      departureTime: log.departureTime2 || "",
-      arrivalTime: log.arrivalTime2 || "",
-      hasArrived: !!log.hasArrivedG2 || !!log.arrivalTime2,
+      hasArrived: !!log.hasArrivedG2,
     };
   }
   if (group === 3) {
@@ -166,9 +155,7 @@ export function getGroupData(log: DailyLog, group: 1 | 2 | 3 | 4): GroupData {
       recoveredCount: log.recoveredCount3 || "",
       prehospitalCareCount: log.prehospitalCareCount3 || "",
       transfersCount: log.transfersCount3 || "",
-      departureTime: log.departureTime3 || "",
-      arrivalTime: log.arrivalTime3 || "",
-      hasArrived: !!log.hasArrivedG3 || !!log.arrivalTime3,
+      hasArrived: !!log.hasArrivedG3,
     };
   }
   if (group === 4) {
@@ -182,9 +169,7 @@ export function getGroupData(log: DailyLog, group: 1 | 2 | 3 | 4): GroupData {
       recoveredCount: log.recoveredCount4 || "",
       prehospitalCareCount: log.prehospitalCareCount4 || "",
       transfersCount: log.transfersCount4 || "",
-      departureTime: log.departureTime4 || "",
-      arrivalTime: log.arrivalTime4 || "",
-      hasArrived: !!log.hasArrivedG4 || !!log.arrivalTime4,
+      hasArrived: !!log.hasArrivedG4,
     };
   }
   return {
@@ -197,9 +182,7 @@ export function getGroupData(log: DailyLog, group: 1 | 2 | 3 | 4): GroupData {
     recoveredCount: log.recoveredCount || "",
     prehospitalCareCount: log.prehospitalCareCount || "",
     transfersCount: log.transfersCount || "",
-    departureTime: log.departureTime || "",
-    arrivalTime: log.arrivalTime || "",
-    hasArrived: !!log.hasArrivedG1 || !!log.arrivalTime,
+    hasArrived: !!log.hasArrivedG1,
   };
 }
 

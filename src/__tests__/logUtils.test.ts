@@ -64,21 +64,21 @@ describe("logHasPersonnel", () => {
 });
 
 describe("logIsArrived", () => {
-  it("returns true when groupName and arrivalTime are both set", () => {
+  it("returns true when hasArrivedG1 is true", () => {
     const log = emptyLog("2026-07-15");
     log.groupName = "Alpha";
-    log.arrivalTime = "10:00";
+    log.hasArrivedG1 = true;
     expect(logIsArrived(log)).toBe(true);
   });
 
-  it("returns true when groupName2 and arrivalTime2 are both set", () => {
+  it("returns true when hasArrivedG2 is true", () => {
     const log = emptyLog("2026-07-15");
     log.groupName2 = "Beta";
-    log.arrivalTime2 = "11:00";
+    log.hasArrivedG2 = true;
     expect(logIsArrived(log)).toBe(true);
   });
 
-  it("returns false when neither group has arrival", () => {
+  it("returns false when neither group has arrived", () => {
     expect(logIsArrived(emptyLog("2026-07-15"))).toBe(false);
   });
 });
@@ -95,7 +95,7 @@ describe("logMatchesArrivalFilter", () => {
   it("returns true for arrived log with 'arrived' filter", () => {
     const log = emptyLog("2026-07-15");
     log.groupName = "Alpha";
-    log.arrivalTime = "10:00";
+    log.hasArrivedG1 = true;
     expect(logMatchesArrivalFilter(log, "arrived")).toBe(true);
   });
 });

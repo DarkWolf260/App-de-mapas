@@ -274,12 +274,18 @@ function buildHtmlLabels(
         });
 
         const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0;
-        const hasGroups = todayLogs.some((l) => l.groupName?.trim() || l.groupName2?.trim() || l.groupName3?.trim() || l.groupName4?.trim());
-        const g1Arrived = todayLog ? (!!todayLog.hasArrivedG1 || (!!todayLog.arrivalTime && todayLog.arrivalTime.trim() !== "")) : false;
-        const g2Arrived = todayLog ? (!!todayLog.hasArrivedG2 || (!!todayLog.arrivalTime2 && todayLog.arrivalTime2.trim() !== "")) : false;
-        const g3Arrived = todayLog ? (!!todayLog.hasArrivedG3 || (!!todayLog.arrivalTime3 && todayLog.arrivalTime3.trim() !== "")) : false;
-        const g4Arrived = todayLog ? (!!todayLog.hasArrivedG4 || (!!todayLog.arrivalTime4 && todayLog.arrivalTime4.trim() !== "")) : false;
-        const hasArrived = hasGroups ? (g1Arrived || g2Arrived || g3Arrived || g4Arrived) : true;
+        const g1Present = todayLog ? (!!todayLog.groupName?.trim() || parseInt(todayLog.officersCount || "0", 10) > 0 || !!todayLog.unitOut?.trim()) : false;
+        const g2Present = todayLog ? (!!todayLog.groupName2?.trim() || parseInt(todayLog.officersCount2 || "0", 10) > 0 || !!todayLog.unitOut2?.trim()) : false;
+        const g3Present = todayLog ? (!!todayLog.groupName3?.trim() || parseInt(todayLog.officersCount3 || "0", 10) > 0 || !!todayLog.unitOut3?.trim()) : false;
+        const g4Present = todayLog ? (!!todayLog.groupName4?.trim() || parseInt(todayLog.officersCount4 || "0", 10) > 0 || !!todayLog.unitOut4?.trim()) : false;
+
+        const g1Arrived = !g1Present || !!todayLog?.hasArrivedG1;
+        const g2Arrived = !g2Present || !!todayLog?.hasArrivedG2;
+        const g3Arrived = !g3Present || !!todayLog?.hasArrivedG3;
+        const g4Arrived = !g4Present || !!todayLog?.hasArrivedG4;
+
+        const hasActiveGroups = g1Present || g2Present || g3Present || g4Present;
+        const hasArrived = hasActiveGroups ? (g1Arrived && g2Arrived && g3Arrived && g4Arrived) : true;
 
         const charWidth = 6;
         const padding = 20;

@@ -268,27 +268,6 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginTop: "2px" }}>
-        <div>
-          <span className="rr-editor-label">Hora Salida</span>
-          <input
-            type="time"
-            className="rr-editor-input"
-            value={(log[departureKey] as string) || ""}
-            onChange={(e) => onFieldChange(departureKey, e.target.value)}
-          />
-        </div>
-        <div>
-          <span className="rr-editor-label">Hora Llegada</span>
-          <input
-            type="time"
-            className="rr-editor-input"
-            value={(log[arrivalKey] as string) || ""}
-            onChange={(e) => onFieldChange(arrivalKey, e.target.value)}
-          />
-        </div>
-      </div>
-
       <label className="rr-editor-checkbox-label">
         <input
           type="checkbox"
@@ -296,7 +275,7 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
           onChange={(e) => onFieldChange(arrivedKey, e.target.checked)}
           style={{ margin: 0, cursor: "pointer", width: "13px", height: "13px" }}
         />
-        <span>¿Ya llegó el {headerLabel}?</span>
+        <span>¿Ya llegó del sitio el {headerLabel}?</span>
       </label>
     </div>
   );
