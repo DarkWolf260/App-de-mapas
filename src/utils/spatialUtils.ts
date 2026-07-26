@@ -132,8 +132,8 @@ export function computeContainedItems(
   activeFeat: DrawnFeature,
   sketchLayer: __esri.GraphicsLayer,
   drawnFeatures: DrawnFeature[]
-): Array<{ title: string; type: string }> {
-  const items: Array<{ title: string; type: string }> = [];
+): DrawnFeature[] {
+  const items: DrawnFeature[] = [];
   if (activeFeat.type !== "polygon" || !sketchLayer) return items;
 
   const polyGraphic = sketchLayer.graphics.find((x) => {
@@ -167,10 +167,7 @@ export function computeContainedItems(
       const gId = g.attributes?.id || g.uid;
       const feat = drawnFeatures.find((f) => String(f.id) === String(gId));
       if (feat) {
-        items.push({
-          title: feat.title || `${feat.type === "polygon" ? "Área" : feat.type === "polyline" ? "Línea" : "Punto"} ${gId}`,
-          type: feat.type,
-        });
+        items.push(feat);
       }
     }
   }

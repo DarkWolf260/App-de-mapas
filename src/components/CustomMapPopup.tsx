@@ -29,6 +29,7 @@ interface CustomMapPopupProps {
   onUpdateFeatureCollapsed?: (id: number, isCollapsed: boolean, collapsedCount: string | number) => Promise<void>;
   sketchLayer: GraphicsLayer | null;
   onClose: () => void;
+  onNavigateToFeature?: (feat: DrawnFeature) => void;
   activeDepartment?: DepartmentView;
   isAdmin?: boolean;
   isOperador?: boolean;
@@ -92,7 +93,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   customPopup, popupScreenPos, drawnFeatures, layerVisibility,
   popupEditDate, setPopupEditDate, onSaveDailyLog,
   onToggleFeatureLock, onRenameFeature, onUpdateFeatureDescription,
-  onUpdateFeatureColor, onUpdateFeatureCollapsed, sketchLayer, onClose,  activeDepartment = "pc",
+  onUpdateFeatureColor, onUpdateFeatureCollapsed, sketchLayer, onClose, onNavigateToFeature,
+  activeDepartment = "pc",
   isAdmin = false,
   isOperador = false,
   workGroups = [],
@@ -216,6 +218,29 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     setLocalLog((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleAddNovedad = async (time: string, text: string) => {
+    if (!canEditLog || !onSaveDailyLog) return;
+    const entry = {
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      time,
+      text,
+      type: "novedad" as const,
+    };
+    const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
+    const updatedLog = { ...localLog, department: deptToUse, novedades: [...(localLog.novedades || []), entry] };
+    setLocalLog(updatedLog);
+    await onSaveDailyLog(activeFeat.id, updatedLog);
+  };
+
+  const handleDeleteNovedad = async (entryId: string) => {
+    if (!canEditLog || !onSaveDailyLog) return;
+    const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
+    const updatedLog = { ...localLog, department: deptToUse, novedades: (localLog.novedades || []).filter((n) => n.id !== entryId) };
+    setLocalLog(updatedLog);
+    await onSaveDailyLog(activeFeat.id, updatedLog);
+  };
+
   const handleToggleArrivalGroup = async (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => {
     if (!canToggleArrival || !onSaveDailyLog) {
       console.log(`[Popup:arrival] BLOCKED canToggleArrival=${canToggleArrival} onSaveDailyLog=${!!onSaveDailyLog}`);
@@ -240,9 +265,24 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   };
 
   const containedItems = computeContainedItems(activeFeat, sketchLayer, drawnFeatures);
-
   const isPoint = activeFeat.type === "point";
   const isPolygon = activeFeat.type === "polygon";
+
+  // Novedades from contained points (for polygon InfoTab)
+  const containedNovedades = (!isPolygon || containedItems.length === 0)
+    ? []
+    : containedItems
+        .map((feat) => {
+          const log = feat.dailyLogs?.find((l) =>
+            l.date === popupEditDate && (activeDepartment === "mixto" ? true : (l.department === (activeDepartment === "bomberos" ? "bomberos" : "pc") || !l.department))
+          );
+          const novedades = log?.novedades || [];
+          const observations = log?.observations?.trim() || "";
+          if (novedades.length === 0 && !observations) return null;
+          return { origin: feat.title || `Punto ${feat.id}`, novedades };
+        })
+        .filter(Boolean) as Array<{ origin: string; novedades: Array<{ id: string; timestamp: string; time: string; text: string; type: string }> }>;
+
   const showSketchTabs = layerVisibility.sketch && isAdmin;
 
   return (
@@ -344,6 +384,10 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           onGeneralFieldChange={handleGeneralFieldChange}
           onSaveStats={handleLogSave}
           saveSuccess={logSaveSuccess}
+          novedades={localLog.novedades || []}
+          onAddNovedad={handleAddNovedad}
+          onDeleteNovedad={handleDeleteNovedad}
+          containedNovedades={containedNovedades}
         />
       )}
 
@@ -385,7 +429,14 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
       {activeTab === "history" && <HistoryTab logs={activeFeat.dailyLogs?.filter((l) => activeDepartment === "mixto" || l.department === activeDepartment || !l.department)} />}
 
-      {activeTab === "contained" && <ContainedTab items={containedItems} />}
+      {activeTab === "contained" && (
+        <ContainedTab
+          features={containedItems}
+          popupEditDate={popupEditDate}
+          activeDepartment={activeDepartment}
+          onNavigateToFeature={onNavigateToFeature}
+        />
+      )}
     </div>
   );
 };

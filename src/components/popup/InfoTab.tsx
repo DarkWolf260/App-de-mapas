@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { Copy, Check, Edit3, Users, Activity, AlertTriangle, Link2, Unlink, Save } from "lucide-react";
-import type { DrawnFeature, DailyLog, GroupLogEntry } from "../../types";
+import { Copy, Check, Edit3, Users, Activity, AlertTriangle, Link2, Unlink, Save, FileText, Plus, X, MapPin } from "lucide-react";
+import type { DrawnFeature, DailyLog, GroupLogEntry, NovedadEntry } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
 import { getNormalizedGroupList } from "../../utils/logUtils";
 import { labelStyle, sectionBox, readRowStyle, readLabelStyle, readValueStyle } from "./popupStyles";
@@ -8,6 +8,7 @@ import { COMMISSION_INDEPENDENT, getGroupColor, formatCoordinates, getCoordLabel
 import { MetricInputs, MetricBadges, MetricDisplayGrid } from "./MetricGrid";
 import { useGrouping } from "./useGrouping";
 import { aggregatePolygonLog } from "./aggregatePolygonLog";
+import { ConfirmModal } from "../ConfirmModal";
 
 interface InfoTabProps {
   activeFeat: DrawnFeature;
@@ -24,6 +25,10 @@ interface InfoTabProps {
   onGeneralFieldChange?: (field: string, value: string) => void;
   onSaveStats?: () => void;
   saveSuccess?: boolean;
+  novedades?: NovedadEntry[];
+  onAddNovedad?: (time: string, text: string) => Promise<void>;
+  onDeleteNovedad?: (id: string) => Promise<void>;
+  containedNovedades?: Array<{ origin: string; novedades: NovedadEntry[] }>;
 }
 
 function ReadRow({ label, value }: { label: string; value?: string }) {
@@ -66,9 +71,13 @@ export const InfoTab: React.FC<InfoTabProps> = ({
   activeFeat, dailyLog, localLog, onEdit, drawnFeatures, popupEditDate,
   isAdmin = false, canEdit = false, canToggleArrival = false, onToggleArrivalGroup,
   onGroupFieldChange, onGeneralFieldChange, onSaveStats, saveSuccess,
+  novedades = [], onAddNovedad, onDeleteNovedad, containedNovedades = [],
 }) => {
   const showArrivalCheckbox = isAdmin || canToggleArrival;
   const [copied, setCopied] = useState(false);
+  const [novTime, setNovTime] = useState(() => new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false }));
+  const [novText, setNovText] = useState("");
+  const [confirmDeleteNovedadId, setConfirmDeleteNovedadId] = useState<string | null>(null);
   const isPolygon = activeFeat.type === "polygon";
   const coords = formatCoordinates(activeFeat);
 
@@ -474,6 +483,84 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
+      {/* Novedades */}
+      {canEdit && onAddNovedad && (
+        <div style={sectionBox}>
+          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "6px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <FileText size={10} /> Novedades
+            <span style={{ marginLeft: "auto", fontSize: "0.52rem", fontWeight: 400, color: "var(--text-muted)" }}>{novedades.length} {novedades.length === 1 ? "entrada" : "entradas"}</span>
+          </div>
+
+          {/* Existing novedades */}
+          {novedades.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "8px" }}>
+              {[...novedades].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((n) => (
+                <div key={n.id} style={{ display: "flex", alignItems: "flex-start", gap: "6px", padding: "5px 8px", borderRadius: "6px", border: "1px solid rgba(56,189,248,0.12)", background: "rgba(56,189,248,0.04)" }}>
+                  <span style={{ fontSize: "0.6rem", fontWeight: 700, color: "var(--color-info)", fontVariantNumeric: "tabular-nums", flexShrink: 0, minWidth: "36px" }}>{n.time}</span>
+                  <span style={{ flex: 1, fontSize: "0.6rem", color: "var(--text-main)", lineHeight: 1.3 }}>{n.text}</span>
+                  {onDeleteNovedad && (
+                    <button onClick={() => setConfirmDeleteNovedadId(n.id)} style={{ flexShrink: 0, padding: "1px", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                      <X size={10} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {novedades.length === 0 && (
+            <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", padding: "4px 0 8px", fontStyle: "italic" }}>Sin novedades registradas.</div>
+          )}
+
+          {/* Add form */}
+          <div style={{ display: "flex", gap: "6px", alignItems: "flex-end" }}>
+            <input
+              type="time"
+              value={novTime}
+              onChange={(e) => setNovTime(e.target.value)}
+              style={{ width: "72px", fontSize: "0.6rem", padding: "4px 5px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(17, 24, 39, 0.6)", color: "var(--text-main)", fontVariantNumeric: "tabular-nums", outline: "none" }}
+            />
+            <input
+              type="text"
+              value={novText}
+              onChange={(e) => setNovText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && novText.trim()) { e.preventDefault(); onAddNovedad(novTime, novText.trim()).then(() => setNovText("")); } }}
+              placeholder="Novedad..."
+              style={{ flex: 1, fontSize: "0.6rem", padding: "4px 7px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(17, 24, 39, 0.5)", color: "var(--text-main)", outline: "none" }}
+            />
+            <button
+              onClick={() => { if (novText.trim()) { onAddNovedad(novTime, novText.trim()).then(() => setNovText("")); } }}
+              disabled={!novText.trim()}
+              style={{ padding: "4px 8px", borderRadius: "5px", border: "1px solid rgba(34,197,94,0.3)", background: novText.trim() ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.02)", color: novText.trim() ? "var(--color-green)" : "var(--text-muted)", cursor: novText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", fontSize: "0.6rem", fontWeight: 700, flexShrink: 0 }}
+            >
+              <Plus size={11} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Novedades de puntos contenidos (solo polígonos) */}
+      {isPolygon && containedNovedades.length > 0 && (
+        <div style={sectionBox}>
+          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#a78bfa", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "6px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <MapPin size={10} /> Novedades de Puntos Contenidos
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {containedNovedades.map((group) => (
+              <div key={group.origin} style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                <span style={{ fontSize: "0.56rem", fontWeight: 700, color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.04em", paddingLeft: "2px" }}>{group.origin}</span>
+                {group.novedades.map((n) => (
+                  <div key={n.id} style={{ display: "flex", alignItems: "flex-start", gap: "5px", padding: "4px 7px", borderRadius: "5px", border: "1px solid rgba(167,139,250,0.12)", background: "rgba(167,139,250,0.04)", marginLeft: "6px" }}>
+                    <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "#a78bfa", fontVariantNumeric: "tabular-nums", flexShrink: 0, minWidth: "34px" }}>{n.time}</span>
+                    <span style={{ flex: 1, fontSize: "0.58rem", color: "var(--text-main)", lineHeight: 1.3 }}>{n.text}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Botón Guardar Estadísticas — puntos */}
       {canEdit && !isPolygon && onSaveStats && (
         <button type="button" onClick={onSaveStats} style={{ width: "100%", background: saveSuccess ? "rgba(34, 197, 94, 0.18)" : "rgba(56, 189, 248, 0.12)", border: `1px solid ${saveSuccess ? "rgba(34, 197, 94, 0.5)" : "rgba(56, 189, 248, 0.35)"}`, borderRadius: "7px", color: saveSuccess ? "#22c55e" : "#38bdf8", fontSize: "0.72rem", fontWeight: 700, padding: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "all 0.2s ease" }}>
@@ -488,6 +575,15 @@ export const InfoTab: React.FC<InfoTabProps> = ({
           <Edit3 size={12} /> Editar Registro
         </button>
       )}
+
+      {/* Confirm modal for novedad delete */}
+      <ConfirmModal
+        isOpen={confirmDeleteNovedadId !== null}
+        title="Eliminar Novedad"
+        message="¿Está seguro de que desea eliminar esta novedad?"
+        onConfirm={() => { if (confirmDeleteNovedadId && onDeleteNovedad) { onDeleteNovedad(confirmDeleteNovedadId); setConfirmDeleteNovedadId(null); } }}
+        onCancel={() => setConfirmDeleteNovedadId(null)}
+      />
     </div>
   );
 };

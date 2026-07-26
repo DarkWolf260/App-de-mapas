@@ -48,6 +48,7 @@ export function emptyLog(date: string, department?: Department): DailyLog {
     hasArrivedG1: false,
     hasArrivedG2: false,
     observations: "",
+    novedades: [],
   };
 }
 

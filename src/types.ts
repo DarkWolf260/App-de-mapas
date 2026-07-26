@@ -50,6 +50,16 @@ export interface GroupLogEntry {
   isVolunteer?: boolean;
 }
 
+export type NovedadType = "novedad" | "incidencia" | "actualización";
+
+export interface NovedadEntry {
+  id: string;
+  timestamp: string;
+  time: string;
+  text: string;
+  type: NovedadType;
+}
+
 export interface DailyLog {
   date: string;
   department?: Department;
@@ -115,6 +125,7 @@ export interface DailyLog {
   isVolunteer4?: boolean;
 
   observations?: string;
+  novedades?: NovedadEntry[];
 }
 
 export interface GeoJSONGeometry {

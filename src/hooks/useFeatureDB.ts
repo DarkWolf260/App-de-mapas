@@ -124,6 +124,9 @@ export function useFeatureDB() {
             prehospitalCareCount: row.prehospital_care_count || "",
             transfersCount: row.transfers_count || "",
             observations: row.observations || "",
+            novedades: Array.isArray(row.novedades)
+              ? row.novedades
+              : (typeof row.novedades === "string" && row.novedades.trim() ? JSON.parse(row.novedades) : []),
           };
 
           if (!logsMap.has(fid)) logsMap.set(fid, []);
@@ -472,6 +475,7 @@ export function useFeatureDB() {
         prehospital_care_count: log.prehospitalCareCount || "",
         transfers_count: log.transfersCount || "",
         observations: log.observations || "",
+        novedades: log.novedades || [],
         updated_at: new Date().toISOString(),
       };
 

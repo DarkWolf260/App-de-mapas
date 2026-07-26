@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
-import type { DrawnFeature, DailyLog, DepartmentView, WorkGroup } from "../types";
-import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin, List, Layers } from "lucide-react";
+import type { DrawnFeature, DailyLog, DepartmentView, WorkGroup, NovedadEntry, NovedadType } from "../types";
+import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin, List, Layers, FileText, Plus } from "lucide-react";
 import { sectionBox } from "./popup/popupStyles";
+import { ConfirmModal } from "./ConfirmModal";
 import { DateRow } from "./DateRow";
 import { InlineRowEditor } from "./InlineRowEditor";
 import { GroupDisplay } from "./GroupDisplay";
@@ -39,7 +40,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   activeDepartment = "pc",
   workGroups = [],
 }) => {
-  const [activeTab, setActiveTab] = useState<"registro" | "estadisticas">("registro");
+  const [activeTab, setActiveTab] = useState<"registro" | "estadisticas" | "novedades">("registro");
   const [activeDateIndex, setActiveDateIndex] = useState(0);
   const [activeEditFeatureId, setActiveEditFeatureId] = useState<number | null>(null);
   const [arrivalFilter, setArrivalFilter] = useState<"all" | "arrived" | "not_arrived">("all");
@@ -47,6 +48,10 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const [statsSortKey, setStatsSortKey] = useState<"nombre" | "daysActive" | "totalRescued" | "totalRecovered" | "totalPrehospitalCare" | "totalTransfers" | "totalPets">("daysActive");
   const [statsSortDir, setStatsSortDir] = useState<"desc" | "asc">("asc");
   const [showCalendarPopover, setShowCalendarPopover] = useState(false);
+  const [novText, setNovText] = useState("");
+  const [novTime, setNovTime] = useState(() => new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false }));
+  const [novType, setNovType] = useState<NovedadType>("novedad");
+  const [confirmDeleteNovedad, setConfirmDeleteNovedad] = useState<{ featureId: number; entryId: string } | null>(null);
 
   const dates = getDatesRange(REPORT_START_DATE);
   const isAllMode = feat === "all";
@@ -272,6 +277,75 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     else { setStatsSortKey(key); setStatsSortDir("desc"); }
   };
 
+  const getLogForDate = (pt: DrawnFeature, dateStr: string): DailyLog => {
+    const logs = pt.dailyLogs?.filter(
+      (l) => l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department),
+    ) || [];
+    return logs[0] || emptyLog(dateStr, activeDepartment === "mixto" ? undefined : activeDepartment);
+  };
+
+  const defaultSaveFeature = useMemo(() => {
+    const features = isAllMode ? allFeatures : feat ? [feat] : [];
+    return features[0] || null;
+  }, [isAllMode, allFeatures, feat]);
+
+  interface TableEntry {
+    id: string;
+    time: string;
+    text: string;
+    origin: string;
+    isObservation: boolean;
+    type?: NovedadType;
+    featureId?: number;
+    rawTimestamp?: string;
+  }
+
+  const tableEntries = useMemo<TableEntry[]>(() => {
+    const features = isAllMode ? allFeatures : feat ? [feat] : [];
+    const entries: TableEntry[] = [];
+    for (const pt of features) {
+      const log = getLogForDate(pt, activeDate);
+      (log.novedades || []).forEach((n) => {
+        entries.push({ id: n.id, time: n.time, text: n.text, origin: pt.title, isObservation: false, type: n.type, featureId: pt.id, rawTimestamp: n.timestamp });
+      });
+      if (log.observations && log.observations.trim()) {
+        entries.push({ id: `obs-${pt.id}`, time: "—", text: log.observations, origin: pt.title, isObservation: true, featureId: pt.id });
+      }
+    }
+    return entries.sort((a, b) => {
+      if (a.isObservation && !b.isObservation) return 1;
+      if (!a.isObservation && b.isObservation) return -1;
+      if (a.rawTimestamp && b.rawTimestamp) return new Date(b.rawTimestamp).getTime() - new Date(a.rawTimestamp).getTime();
+      return 0;
+    });
+  }, [isAllMode, allFeatures, feat, activeDate, activeDepartment]);
+
+  const handleAddNovedad = async () => {
+    if (!novText.trim() || !onSaveDailyLog || !defaultSaveFeature) return;
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false });
+    const entry: NovedadEntry = {
+      id: crypto.randomUUID(),
+      timestamp: now.toISOString(),
+      time: timeStr,
+      text: novText.trim(),
+      type: novType,
+    };
+    const log = getLogForDate(defaultSaveFeature, activeDate);
+    const updatedLog = { ...log, novedades: [...(log.novedades || []), entry] };
+    await onSaveDailyLog(defaultSaveFeature.id, updatedLog);
+    setNovText("");
+  };
+
+  const handleDeleteNovedad = async (featureId: number, entryId: string) => {
+    if (!onSaveDailyLog) return;
+    const pt = (isAllMode ? allFeatures : feat ? [feat] : []).find((f) => f.id === featureId);
+    if (!pt) return;
+    const log = getLogForDate(pt, activeDate);
+    const updatedLog = { ...log, novedades: (log.novedades || []).filter((n) => n.id !== entryId) };
+    await onSaveDailyLog(pt.id, updatedLog);
+  };
+
   return (
     <div className="rr-backdrop">
       <div className="rr-modal">
@@ -308,6 +382,9 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
           </button>
           <button className={`rr-tab ${activeTab === "estadisticas" ? "active" : ""}`} onClick={() => setActiveTab("estadisticas")}>
             <BarChart2 size={13} /> Estadísticas
+          </button>
+          <button className={`rr-tab ${activeTab === "novedades" ? "active" : ""}`} onClick={() => setActiveTab("novedades")}>
+            <FileText size={13} /> Novedades
           </button>
         </div>
 
@@ -1029,6 +1106,134 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
         </> /* end registro tab */
         )}
 
+        {/* ── NOVEDADES TAB ── */}
+        {activeTab === "novedades" && (
+          <div className="rr-list" style={{ gap: "12px", padding: "12px 16px" }}>
+            {/* Date toolbar */}
+            {isAllMode && (
+              <div className="rr-toolbar" style={{ borderRadius: "10px" }}>
+                <div className="rr-toolbar-date">
+                  <button onClick={handlePrevDay} disabled={activeDateIndex === dates.length - 1} className="rr-icon-btn" title="Día anterior">
+                    <ChevronLeft size={14} />
+                  </button>
+                  <div style={{ position: "relative" }}>
+                    <button type="button" className="rr-date-trigger-btn" onClick={() => setShowCalendarPopover((v) => !v)}>
+                      <Calendar size={13} style={{ color: "var(--color-info)" }} />
+                      <span>{formatDateFriendly(activeDate)}</span>
+                      <ChevronDown size={12} style={{ color: "var(--text-muted)", transition: "transform 0.2s ease", transform: showCalendarPopover ? "rotate(180deg)" : "none" }} />
+                    </button>
+                    {showCalendarPopover && (
+                      <div className="rr-calendar-popover" onClick={(e) => e.stopPropagation()}>
+                        <BitacoraCalendar selectedDate={activeDate} onSelectDate={(dStr) => { const idx = dates.indexOf(dStr); if (idx !== -1) { setActiveDateIndex(idx); setActiveEditFeatureId(null); } setShowCalendarPopover(false); }} />
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={handleNextDay} disabled={activeDateIndex === 0} className="rr-icon-btn" title="Día siguiente">
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Add form */}
+            {onSaveDailyLog && defaultSaveFeature && (
+              <div style={{ ...sectionBox, background: "rgba(34, 197, 94, 0.03)", borderColor: "rgba(34, 197, 94, 0.15)" }}>
+                <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "6px", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Plus size={10} /> Nueva Entrada
+                </div>
+                <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                    <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600 }}>Hora</span>
+                    <input
+                      type="time"
+                      value={novTime}
+                      onChange={(e) => setNovTime(e.target.value)}
+                      style={{ width: "80px", fontSize: "0.65rem", padding: "5px 6px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(17, 24, 39, 0.6)", color: "var(--text-main)", fontVariantNumeric: "tabular-nums", outline: "none" }}
+                    />
+                  </div>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "3px" }}>
+                    <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600 }}>Novedad</span>
+                    <textarea
+                      value={novText}
+                      onChange={(e) => setNovText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAddNovedad(); } }}
+                      placeholder="Escribir novedad..."
+                      rows={2}
+                      style={{ flex: 1, resize: "none", fontSize: "0.65rem", padding: "5px 8px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(17, 24, 39, 0.5)", color: "var(--text-main)", fontFamily: "inherit", outline: "none" }}
+                    />
+                  </div>
+                  <button
+                    onClick={handleAddNovedad}
+                    disabled={!novText.trim()}
+                    title="Agregar"
+                    style={{ padding: "5px 12px", borderRadius: "6px", border: "1px solid rgba(34,197,94,0.3)", background: novText.trim() ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.02)", color: novText.trim() ? "var(--color-green)" : "var(--text-muted)", cursor: novText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", gap: "4px", fontSize: "0.62rem", fontWeight: 700, transition: "all 0.15s ease", whiteSpace: "nowrap" }}
+                  >
+                    <Plus size={12} /> Agregar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Table */}
+            <div style={{ ...sectionBox, background: "rgba(56, 189, 248, 0.03)", borderColor: "rgba(56, 189, 248, 0.15)", padding: 0, overflow: "hidden" }}>
+              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", padding: "8px 12px 6px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "6px" }}>
+                <FileText size={10} /> Libro de Novedades
+                <span style={{ marginLeft: "auto", fontSize: "0.55rem", fontWeight: 400, color: "var(--text-muted)" }}>{tableEntries.length} {tableEntries.length === 1 ? "entrada" : "entradas"}</span>
+              </div>
+
+              {tableEntries.length === 0 ? (
+                <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", padding: "20px 12px", textAlign: "center" }}>
+                  Sin novedades ni observaciones registradas para este día.
+                </div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.62rem" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                        <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700, color: "var(--text-muted)", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.06em", width: "60px" }}>Hora</th>
+                        <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700, color: "var(--text-muted)", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>Novedad</th>
+                        <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700, color: "var(--text-muted)", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.06em", width: "120px" }}>Origen</th>
+                        {onSaveDailyLog && <th style={{ width: "30px" }} />}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableEntries.map((entry, idx) => (
+                        <tr key={entry.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)", background: idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)" }}>
+                          <td style={{ padding: "6px 10px", fontVariantNumeric: "tabular-nums", fontWeight: 600, color: entry.isObservation ? "var(--text-muted)" : "var(--text-main)", whiteSpace: "nowrap" }}>
+                            {entry.isObservation ? (
+                              <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontStyle: "italic" }}>obs.</span>
+                            ) : (
+                              <>{entry.time} <span style={{ fontSize: "0.5rem", color: "var(--text-muted)" }}>HLV</span></>
+                            )}
+                          </td>
+                          <td style={{ padding: "6px 10px", color: entry.isObservation ? "var(--text-muted)" : "var(--text-main)", fontStyle: entry.isObservation ? "italic" : "normal", lineHeight: 1.4 }}>
+                            {entry.isObservation && <span style={{ color: "var(--accent-orange)", fontWeight: 700, fontSize: "0.55rem", marginRight: "4px" }}>OBS:</span>}
+                            {entry.text}
+                          </td>
+                          <td style={{ padding: "6px 10px" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", padding: "1px 6px", borderRadius: "4px", fontSize: "0.55rem", fontWeight: 600, background: entry.isObservation ? "rgba(251, 146, 60, 0.1)" : "rgba(56, 189, 248, 0.1)", color: entry.isObservation ? "var(--accent-orange)" : "var(--color-info)" }}>
+                              {entry.origin}
+                            </span>
+                          </td>
+                          {onSaveDailyLog && (
+                            <td style={{ padding: "6px 4px", textAlign: "center" }}>
+                              {!entry.isObservation && (
+                                <button onClick={() => setConfirmDeleteNovedad({ featureId: entry.featureId!, entryId: entry.id })} title="Eliminar" style={{ padding: "2px", borderRadius: "3px", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", transition: "color 0.15s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                                  <X size={11} />
+                                </button>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="rr-footer">
           <div className="rr-footer-left">
@@ -1042,6 +1247,15 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Confirm modal for novedad delete */}
+      <ConfirmModal
+        isOpen={confirmDeleteNovedad !== null}
+        title="Eliminar Novedad"
+        message="¿Está seguro de que desea eliminar esta novedad?"
+        onConfirm={() => { if (confirmDeleteNovedad) { handleDeleteNovedad(confirmDeleteNovedad.featureId, confirmDeleteNovedad.entryId); setConfirmDeleteNovedad(null); } }}
+        onCancel={() => setConfirmDeleteNovedad(null)}
+      />
     </div>
   );
 };

@@ -91,6 +91,16 @@ interface MapComponentProps {
     handleColorChange,
   } = useMapSetup(props);
 
+  const handleNavigateToFeature = React.useCallback((feat: DrawnFeature) => {
+    let mapPoint: Point | null = null;
+    if (feat.geojsonGeometry && feat.type === "point" && Array.isArray(feat.geojsonGeometry.coordinates)) {
+      const [lng, lat] = feat.geojsonGeometry.coordinates as number[];
+      mapPoint = new Point({ longitude: lng, latitude: lat });
+    }
+    if (!mapPoint) mapPoint = new Point({ longitude: -66.9331, latitude: 10.6000 });
+    setCustomPopup({ mapPoint, feat });
+  }, [setCustomPopup]);
+
   const defaultX = typeof window !== "undefined" ? Math.floor(window.innerWidth / 2 - 180) : 400;
   const { position: toolbarPos, dragHandleProps, isDragging } = useDraggable(
     defaultX,
@@ -150,6 +160,7 @@ interface MapComponentProps {
         onUpdateFeatureCollapsed={onUpdateFeatureCollapsed}
         sketchLayer={sketchLayer}
         onClose={() => setCustomPopup(null)}
+        onNavigateToFeature={handleNavigateToFeature}
         activeDepartment={props.activeDepartment}
         isAdmin={props.isAdmin}
         isOperador={props.isOperador}

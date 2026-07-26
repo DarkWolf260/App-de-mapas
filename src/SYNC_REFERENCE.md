@@ -37,6 +37,7 @@ Registro operativo diario por feature. **Tiene representacion dual**: columnas p
 | `date` | text | `date` | `handleSaveDailyLog` | `fetchFromSupabase` |
 | `department` | text | `department` ("pc"/"bomberos") | `handleSaveDailyLog` | `fetchFromSupabase` |
 | `observations` | text | `observations` | `handleSaveDailyLog` | `fetchFromSupabase` |
+| `novedades` | jsonb | `novedades` (NovedadEntry[]) | `handleSaveDailyLog` | `fetchFromSupabase` |
 | `groups` | jsonb | `groups` (GroupLogEntry[]) | `handleSaveDailyLog` | `fetchFromSupabase` |
 | `created_at` | timestamptz | *(no mapeado)* | automatico | - |
 | `updated_at` | timestamptz | *(no mapeado)* | todas las escrituras | - |
