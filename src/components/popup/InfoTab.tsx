@@ -538,11 +538,6 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                     >
                       <span style={{ fontSize: "0.6rem", fontWeight: 700, color: timeColor, fontVariantNumeric: "tabular-nums", flexShrink: 0, minWidth: "36px" }}>{entry.time}</span>
                       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "1px" }}>
-                        {isForeign && entry.originLabel && (
-                          <span style={{ fontSize: "0.48rem", fontWeight: 700, color: "#a78bfa", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                            {entry.originLabel}
-                          </span>
-                        )}
                         <span style={{ fontSize: "0.6rem", color: "var(--text-main)", lineHeight: 1.3 }}>{entry.text}</span>
                       </div>
                       {!isForeign && onDeleteNovedad && (
