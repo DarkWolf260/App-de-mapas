@@ -331,6 +331,10 @@ function App() {
           onSaveGlobalNovedad={saveGlobalNovedad}
           onDeleteGlobalNovedad={deleteGlobalNovedad}
           onRefreshFeatures={refreshFeatures}
+          onNavigateToFeature={(feat) => {
+            setRangeReportFeature(null);
+            setZoomToFeature(feat);
+          }}
         />
       )}
 

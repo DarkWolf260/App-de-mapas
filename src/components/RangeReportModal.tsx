@@ -37,6 +37,7 @@ interface RangeReportModalProps {
   onSaveGlobalNovedad?: (entry: NovedadEntry, date: string, department: string) => Promise<void>;
   onDeleteGlobalNovedad?: (entryId: string) => Promise<void>;
   onRefreshFeatures?: () => Promise<void>;
+  onNavigateToFeature?: (feat: DrawnFeature) => void;
 }
 
 const RangeReportModal: React.FC<RangeReportModalProps> = ({
@@ -53,6 +54,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   onSaveGlobalNovedad,
   onDeleteGlobalNovedad,
   onRefreshFeatures,
+  onNavigateToFeature,
 }) => {
   const [activeTab, setActiveTab] = useState<"registro" | "estadisticas" | "novedades">("registro");
   const [activeEditFeatureId, setActiveEditFeatureId] = useState<number | null>(null);
@@ -402,6 +404,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     };
     await onSaveGlobalNovedad(entry, activeDate, activeDepartment === "mixto" ? "pc" : activeDepartment);
     setNovText("");
+    await onFetchGlobalNovedades?.(activeDate, activeDepartment);
     await onRefreshFeatures?.();
   };
 
@@ -425,6 +428,12 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     if (!feat || isAllMode || !isSectorFeature(feat)) return [];
     return allFeatures.filter((c) => String(parentsMap[c.id]) === String(feat.id));
   }, [feat, isAllMode, allFeatures, parentsMap]);
+
+  const handleNavigateToEntry = (entry: TableEntry) => {
+    if (!entry.featureId || !onNavigateToFeature) return;
+    const target = allFeatures.find((f) => f.id === entry.featureId);
+    if (target) onNavigateToFeature(target);
+  };
 
   return (
     <div className="rr-backdrop">
@@ -1312,6 +1321,8 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                       {tableEntries.map((entry, idx) => {
                         const isPunto = entry.level === "punto";
                         const isLibro = entry.level === "libro";
+                        const isZona = entry.level === "zona";
+                        const canNavigate = !entry.isObservation && entry.featureId && onNavigateToFeature;
                         const rowBg = entry.isObservation
                           ? "rgba(251,146,60,0.04)"
                           : isLibro
@@ -1320,7 +1331,18 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                               ? (idx % 2 === 0 ? "rgba(167,139,250,0.04)" : "rgba(167,139,250,0.02)")
                               : (idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)");
                         return (
-                        <tr key={entry.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)", background: rowBg }}>
+                        <tr
+                          key={entry.id}
+                          onClick={canNavigate ? () => handleNavigateToEntry(entry) : undefined}
+                          style={{
+                            borderBottom: "1px solid rgba(255,255,255,0.03)",
+                            background: rowBg,
+                            cursor: canNavigate ? "pointer" : "default",
+                            transition: "background 0.12s ease",
+                          }}
+                          onMouseEnter={canNavigate ? (e) => { e.currentTarget.style.background = isPunto ? "rgba(167,139,250,0.12)" : "rgba(56,189,248,0.08)"; } : undefined}
+                          onMouseLeave={canNavigate ? (e) => { e.currentTarget.style.background = rowBg; } : undefined}
+                        >
                           <td style={{ padding: "6px 10px", fontVariantNumeric: "tabular-nums", fontWeight: 600, color: entry.isObservation ? "var(--text-muted)" : isLibro ? "var(--color-green)" : isPunto ? "#c4b5fd" : "var(--text-main)", whiteSpace: "nowrap" }}>
                             {entry.isObservation ? (
                               <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontStyle: "italic" }}>obs.</span>
@@ -1333,14 +1355,16 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                             {entry.text}
                           </td>
                           <td style={{ padding: "6px 10px" }}>
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", padding: "1px 6px", borderRadius: "4px", fontSize: "0.55rem", fontWeight: 600, background: entry.isObservation ? "rgba(251, 146, 60, 0.1)" : isLibro ? "rgba(34, 197, 94, 0.1)" : isPunto ? "rgba(167, 139, 250, 0.12)" : "rgba(56, 189, 248, 0.1)", color: entry.isObservation ? "var(--accent-orange)" : isLibro ? "var(--color-green)" : isPunto ? "#a78bfa" : "var(--color-info)" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", padding: "1px 6px", borderRadius: "4px", fontSize: "0.55rem", fontWeight: 600, background: entry.isObservation ? "rgba(251, 146, 60, 0.1)" : isLibro ? "rgba(34, 197, 94, 0.1)" : isPunto ? "rgba(167, 139, 250, 0.12)" : "rgba(56, 189, 248, 0.1)", color: entry.isObservation ? "var(--accent-orange)" : isLibro ? "var(--color-green)" : isPunto ? "#a78bfa" : "var(--color-info)", ...(canNavigate ? { cursor: "pointer" } : {}) }}>
+                              {isZona && <Layers size={10} />}
+                              {isPunto && <MapPin size={10} />}
                               {entry.origin}
                             </span>
                           </td>
                           {(onSaveDailyLog || onDeleteGlobalNovedad) && (
                             <td style={{ padding: "6px 4px", textAlign: "center" }}>
                               {!entry.isObservation && (
-                                <button onClick={() => setConfirmDeleteNovedad(entry)} title="Eliminar" style={{ padding: "2px", borderRadius: "3px", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", transition: "color 0.15s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                                <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteNovedad(entry); }} title="Eliminar" style={{ padding: "2px", borderRadius: "3px", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", transition: "color 0.15s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
                                   <X size={11} />
                                 </button>
                               )}
