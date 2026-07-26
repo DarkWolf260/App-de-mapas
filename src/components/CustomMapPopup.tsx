@@ -22,6 +22,7 @@ interface CustomMapPopupProps {
   popupEditDate: string;
   setPopupEditDate: (date: string) => void;
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
+  onRefreshFeatures?: () => Promise<void>;
   onToggleFeatureLock?: (id: number, locked: boolean) => void;
   onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
   onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
@@ -91,7 +92,7 @@ function tabBtnStyle(active: boolean): React.CSSProperties {
 
 export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   customPopup, popupScreenPos, drawnFeatures, layerVisibility,
-  popupEditDate, setPopupEditDate, onSaveDailyLog,
+  popupEditDate, setPopupEditDate, onSaveDailyLog, onRefreshFeatures,
   onToggleFeatureLock, onRenameFeature, onUpdateFeatureDescription,
   onUpdateFeatureColor, onUpdateFeatureCollapsed, sketchLayer, onClose, onNavigateToFeature,
   activeDepartment = "pc",
@@ -231,6 +232,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     const updatedLog = { ...localLog, department: deptToUse, novedades: [...(localLog.novedades || []), entry] };
     setLocalLog(updatedLog);
     await onSaveDailyLog(activeFeat.id, updatedLog);
+    await onRefreshFeatures?.();
   };
 
   const handleDeleteNovedad = async (entryId: string) => {
@@ -239,13 +241,11 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     const updatedLog = { ...localLog, department: deptToUse, novedades: (localLog.novedades || []).filter((n) => n.id !== entryId) };
     setLocalLog(updatedLog);
     await onSaveDailyLog(activeFeat.id, updatedLog);
+    await onRefreshFeatures?.();
   };
 
   const handleToggleArrivalGroup = async (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => {
-    if (!canToggleArrival || !onSaveDailyLog) {
-      console.log(`[Popup:arrival] BLOCKED canToggleArrival=${canToggleArrival} onSaveDailyLog=${!!onSaveDailyLog}`);
-      return;
-    }
+    if (!canToggleArrival || !onSaveDailyLog) return;
     const fieldKey = groupIndex === 1 ? "hasArrivedG1" : groupIndex === 2 ? "hasArrivedG2" : groupIndex === 3 ? "hasArrivedG3" : "hasArrivedG4";
     const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
     const updatedLog = {
@@ -253,14 +253,11 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       department: deptToUse,
       [fieldKey]: hasArrived,
     };
-    console.log(`[Popup:arrival] groupIndex=${groupIndex} hasArrived=${hasArrived} fieldKey=${fieldKey} activeFeatId=${activeFeat.id} localLog_hasArrivedG1=${localLog.hasArrivedG1} localLog_hasArrivedG2=${localLog.hasArrivedG2} groupsPresent=${!!localLog.groups}`);
     setLocalLog(updatedLog);
     try {
-      console.log(`[Popup:arrival:saving] calling onSaveDailyLog...`);
       await onSaveDailyLog(activeFeat.id, updatedLog);
-      console.log(`[Popup:arrival:saved] onSaveDailyLog completed`);
     } catch (err) {
-      console.error("[Popup:arrival:error] Error saving arrival status:", err);
+      console.error("[Popup] Error saving arrival status:", err);
     }
   };
 

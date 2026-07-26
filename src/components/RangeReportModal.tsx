@@ -32,6 +32,11 @@ interface RangeReportModalProps {
   workGroups?: WorkGroup[];
   selectedDate?: string;
   onSelectedDateChange?: (date: string) => void;
+  globalNovedades?: NovedadEntry[];
+  onFetchGlobalNovedades?: (date: string, department?: string) => void;
+  onSaveGlobalNovedad?: (entry: NovedadEntry, date: string, department: string) => Promise<void>;
+  onDeleteGlobalNovedad?: (entryId: string) => Promise<void>;
+  onRefreshFeatures?: () => Promise<void>;
 }
 
 const RangeReportModal: React.FC<RangeReportModalProps> = ({
@@ -43,6 +48,11 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   workGroups = [],
   selectedDate: externalDate,
   onSelectedDateChange,
+  globalNovedades = [],
+  onFetchGlobalNovedades,
+  onSaveGlobalNovedad,
+  onDeleteGlobalNovedad,
+  onRefreshFeatures,
 }) => {
   const [activeTab, setActiveTab] = useState<"registro" | "estadisticas" | "novedades">("registro");
   const [activeEditFeatureId, setActiveEditFeatureId] = useState<number | null>(null);
@@ -54,7 +64,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const [novText, setNovText] = useState("");
   const [novTime, setNovTime] = useState(() => new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false }));
   const [novType, setNovType] = useState<NovedadType>("novedad");
-  const [confirmDeleteNovedad, setConfirmDeleteNovedad] = useState<{ featureId: number; entryId: string } | null>(null);
+    const [confirmDeleteNovedad, setConfirmDeleteNovedad] = useState<TableEntry | null>(null);
 
   const dates = useMemo(() => getDatesRange(REPORT_START_DATE), []);
   const [activeDateIndex, setActiveDateIndex] = useState(() => {
@@ -80,6 +90,12 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
       }
     }
   }, [externalDate, dates, activeDateIndex]);
+
+  useEffect(() => {
+    if (onFetchGlobalNovedades && activeDate) {
+      onFetchGlobalNovedades(activeDate, activeDepartment);
+    }
+  }, [activeDate, activeDepartment, onFetchGlobalNovedades]);
 
   const syncDateChange = (newIndex: number) => {
     setActiveDateIndex(newIndex);
@@ -256,16 +272,11 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   };
 
   const handleToggleArrivalQuick = async (pt: DrawnFeature, groupIndex: 1 | 2 | 3 | 4, newArrived: boolean) => {
-    if (!onSaveDailyLog) {
-      console.log("[RangeReport:arrival] BLOCKED onSaveDailyLog is null");
-      return;
-    }
+    if (!onSaveDailyLog) return;
     const logs = pt.dailyLogs?.filter((l) =>
       l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
     ) || [];
     const currentLog = logs[0] || emptyLog(activeDate);
-
-    console.log(`[RangeReport:arrival] ptId=${pt.id} ptTitle=${pt.title} groupIndex=${groupIndex} newArrived=${newArrived} currentLog_hasArrivedG1=${currentLog.hasArrivedG1} groupsPresent=${!!currentLog.groups} groupsCount=${currentLog.groups?.length ?? 0}`);
 
     const nowTime = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
 
@@ -291,10 +302,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
       updatedLog.groups = updatedGroups;
     }
 
-    console.log(`[RangeReport:arrival:payload] hasArrivedG1=${updatedLog.hasArrivedG1} hasArrivedG2=${updatedLog.hasArrivedG2} groups[0].hasArrived=${updatedLog.groups?.[0]?.hasArrived}`);
-
     await onSaveDailyLog(pt.id, updatedLog);
-    console.log("[RangeReport:arrival:saved] onSaveDailyLog completed");
   };
 
   const handlePrint = () => {
@@ -334,6 +342,12 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     const features = isAllMode ? allFeatures : feat ? [feat] : [];
     const entries: TableEntry[] = [];
     const handledChildIds = new Set<string>();
+
+    // Novedades globales independientes de la bitácora
+    globalNovedades.forEach((n) => {
+      entries.push({ id: n.id, time: n.time, text: n.text, origin: "Bitácora", isObservation: false, type: n.type, rawTimestamp: n.timestamp, level: "libro" });
+    });
+
     if (isAllMode) {
       for (const pt of features) {
         if (!isSectorFeature(pt)) continue;
@@ -352,7 +366,6 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
       if (log.observations && log.observations.trim()) {
         entries.push({ id: `obs-${pt.id}`, time: "—", text: log.observations, origin: pt.title, isObservation: true, featureId: pt.id, level: isSector ? "zona" : "punto" });
       }
-      // For sectors (polygons), also include novedades from contained points
       if (isSector) {
         const containedPts = allFeatures.filter((c) => String(parentsMap[c.id]) === String(pt.id));
         for (const cPt of containedPts) {
@@ -374,10 +387,10 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
         if (a.rawTimestamp && b.rawTimestamp) return new Date(b.rawTimestamp).getTime() - new Date(a.rawTimestamp).getTime();
         return 0;
       });
-  }, [isAllMode, allFeatures, feat, activeDate, activeDepartment, parentsMap]);
+  }, [isAllMode, allFeatures, feat, activeDate, activeDepartment, parentsMap, globalNovedades]);
 
   const handleAddNovedad = async () => {
-    if (!novText.trim() || !onSaveDailyLog || !defaultSaveFeature) return;
+    if (!novText.trim() || !onSaveGlobalNovedad) return;
     const now = new Date();
     const timeStr = now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false });
     const entry: NovedadEntry = {
@@ -387,19 +400,25 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
       text: novText.trim(),
       type: novType,
     };
-    const log = getLogForDate(defaultSaveFeature, activeDate);
-    const updatedLog = { ...log, novedades: [...(log.novedades || []), entry] };
-    await onSaveDailyLog(defaultSaveFeature.id, updatedLog);
+    await onSaveGlobalNovedad(entry, activeDate, activeDepartment === "mixto" ? "pc" : activeDepartment);
     setNovText("");
+    await onRefreshFeatures?.();
   };
 
-  const handleDeleteNovedad = async (featureId: number, entryId: string) => {
-    if (!onSaveDailyLog) return;
-    const pt = (isAllMode ? allFeatures : feat ? [feat] : []).find((f) => f.id === featureId);
+  const handleDeleteNovedad = async (entry: TableEntry) => {
+    if (entry.level === "libro") {
+      if (onDeleteGlobalNovedad) await onDeleteGlobalNovedad(entry.id);
+      if (onFetchGlobalNovedades) onFetchGlobalNovedades(activeDate, activeDepartment);
+      await onRefreshFeatures?.();
+      return;
+    }
+    if (!onSaveDailyLog || !entry.featureId) return;
+    const pt = (isAllMode ? allFeatures : feat ? [feat] : []).find((f) => f.id === entry.featureId);
     if (!pt) return;
     const log = getLogForDate(pt, activeDate);
-    const updatedLog = { ...log, novedades: (log.novedades || []).filter((n) => n.id !== entryId) };
+    const updatedLog = { ...log, novedades: (log.novedades || []).filter((n) => n.id !== entry.id) };
     await onSaveDailyLog(pt.id, updatedLog);
+    await onRefreshFeatures?.();
   };
 
   const singleFeatContainedPts = useMemo(() => {
@@ -1229,7 +1248,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
             )}
 
             {/* Add form */}
-            {onSaveDailyLog && defaultSaveFeature && (
+            {onSaveGlobalNovedad && (
               <div style={{ ...sectionBox, background: "rgba(34, 197, 94, 0.03)", borderColor: "rgba(34, 197, 94, 0.15)" }}>
                 <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "6px", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
                   <Plus size={10} /> Nueva Entrada
@@ -1286,39 +1305,42 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                         <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700, color: "var(--text-muted)", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.06em", width: "60px" }}>Hora</th>
                         <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700, color: "var(--text-muted)", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>Novedad</th>
                         <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700, color: "var(--text-muted)", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.06em", width: "120px" }}>Origen</th>
-                        {onSaveDailyLog && <th style={{ width: "30px" }} />}
+                        {(onSaveDailyLog || onDeleteGlobalNovedad) && <th style={{ width: "30px" }} />}
                       </tr>
                     </thead>
                     <tbody>
                       {tableEntries.map((entry, idx) => {
                         const isPunto = entry.level === "punto";
+                        const isLibro = entry.level === "libro";
                         const rowBg = entry.isObservation
                           ? "rgba(251,146,60,0.04)"
-                          : isPunto
-                            ? (idx % 2 === 0 ? "rgba(167,139,250,0.04)" : "rgba(167,139,250,0.02)")
-                            : (idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)");
+                          : isLibro
+                            ? (idx % 2 === 0 ? "rgba(34,197,94,0.04)" : "rgba(34,197,94,0.02)")
+                            : isPunto
+                              ? (idx % 2 === 0 ? "rgba(167,139,250,0.04)" : "rgba(167,139,250,0.02)")
+                              : (idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)");
                         return (
                         <tr key={entry.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)", background: rowBg }}>
-                          <td style={{ padding: "6px 10px", fontVariantNumeric: "tabular-nums", fontWeight: 600, color: entry.isObservation ? "var(--text-muted)" : isPunto ? "#c4b5fd" : "var(--text-main)", whiteSpace: "nowrap" }}>
+                          <td style={{ padding: "6px 10px", fontVariantNumeric: "tabular-nums", fontWeight: 600, color: entry.isObservation ? "var(--text-muted)" : isLibro ? "var(--color-green)" : isPunto ? "#c4b5fd" : "var(--text-main)", whiteSpace: "nowrap" }}>
                             {entry.isObservation ? (
                               <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontStyle: "italic" }}>obs.</span>
                             ) : (
                               <>{entry.time} <span style={{ fontSize: "0.5rem", color: "var(--text-muted)" }}>HLV</span></>
                             )}
                           </td>
-                          <td style={{ padding: "6px 10px", color: entry.isObservation ? "var(--text-muted)" : isPunto ? "#c4b5fd" : "var(--text-main)", fontStyle: entry.isObservation ? "italic" : "normal", lineHeight: 1.4 }}>
+                          <td style={{ padding: "6px 10px", color: entry.isObservation ? "var(--text-muted)" : isLibro ? "var(--color-green)" : isPunto ? "#c4b5fd" : "var(--text-main)", fontStyle: entry.isObservation ? "italic" : "normal", lineHeight: 1.4 }}>
                             {entry.isObservation && <span style={{ color: "var(--accent-orange)", fontWeight: 700, fontSize: "0.55rem", marginRight: "4px" }}>OBS:</span>}
                             {entry.text}
                           </td>
                           <td style={{ padding: "6px 10px" }}>
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", padding: "1px 6px", borderRadius: "4px", fontSize: "0.55rem", fontWeight: 600, background: entry.isObservation ? "rgba(251, 146, 60, 0.1)" : isPunto ? "rgba(167, 139, 250, 0.12)" : "rgba(56, 189, 248, 0.1)", color: entry.isObservation ? "var(--accent-orange)" : isPunto ? "#a78bfa" : "var(--color-info)" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", padding: "1px 6px", borderRadius: "4px", fontSize: "0.55rem", fontWeight: 600, background: entry.isObservation ? "rgba(251, 146, 60, 0.1)" : isLibro ? "rgba(34, 197, 94, 0.1)" : isPunto ? "rgba(167, 139, 250, 0.12)" : "rgba(56, 189, 248, 0.1)", color: entry.isObservation ? "var(--accent-orange)" : isLibro ? "var(--color-green)" : isPunto ? "#a78bfa" : "var(--color-info)" }}>
                               {entry.origin}
                             </span>
                           </td>
-                          {onSaveDailyLog && (
+                          {(onSaveDailyLog || onDeleteGlobalNovedad) && (
                             <td style={{ padding: "6px 4px", textAlign: "center" }}>
                               {!entry.isObservation && (
-                                <button onClick={() => setConfirmDeleteNovedad({ featureId: entry.featureId!, entryId: entry.id })} title="Eliminar" style={{ padding: "2px", borderRadius: "3px", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", transition: "color 0.15s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                                <button onClick={() => setConfirmDeleteNovedad(entry)} title="Eliminar" style={{ padding: "2px", borderRadius: "3px", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", transition: "color 0.15s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
                                   <X size={11} />
                                 </button>
                               )}
@@ -1354,7 +1376,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
         isOpen={confirmDeleteNovedad !== null}
         title="Eliminar Novedad"
         message="¿Está seguro de que desea eliminar esta novedad?"
-        onConfirm={() => { if (confirmDeleteNovedad) { handleDeleteNovedad(confirmDeleteNovedad.featureId, confirmDeleteNovedad.entryId); setConfirmDeleteNovedad(null); } }}
+        onConfirm={() => { if (confirmDeleteNovedad) { handleDeleteNovedad(confirmDeleteNovedad); setConfirmDeleteNovedad(null); } }}
         onCancel={() => setConfirmDeleteNovedad(null)}
       />
     </div>

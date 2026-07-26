@@ -26,6 +26,7 @@ interface MapComponentProps {
   importedFeatures: DrawnFeature[];
   hiddenFeatures: Record<number, boolean>;
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
+  onRefreshFeatures?: () => Promise<void>;
   onOpenRangeReport?: (feat: DrawnFeature | "all") => void;
   onToggleFeatureLock?: (id: number, locked: boolean) => void;
   onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
@@ -162,6 +163,7 @@ interface MapComponentProps {
         popupEditDate={popupEditDate}
         setPopupEditDate={handlePopupDateChange}
         onSaveDailyLog={onSaveDailyLog}
+        onRefreshFeatures={props.onRefreshFeatures}
         onToggleFeatureLock={onToggleFeatureLock}
         onRenameFeature={onRenameFeature}
         onUpdateFeatureDescription={onUpdateFeatureDescription}

@@ -72,6 +72,11 @@ function App() {
     handleUpdateFeatureCollapsed,
     handleSaveDailyLog,
     handleFeatureDeleted,
+    globalNovedades,
+    fetchGlobalNovedades,
+    saveGlobalNovedad,
+    deleteGlobalNovedad,
+    refreshFeatures,
   } = useFeatureDB();
 
   const { hiddenFeatures } = useFeatureVisibility();
@@ -284,6 +289,7 @@ function App() {
           drawnFeatures={sortedDrawnFeatures}
           hiddenFeatures={hiddenFeatures}
           onSaveDailyLog={handleSaveDailyLog}
+          onRefreshFeatures={refreshFeatures}
           onOpenRangeReport={(feat) => setRangeReportFeature(feat)}
           onOpenWorkGroups={() => setShowWorkGroups(true)}
           onToggleFeatureLock={handleToggleFeatureLock}
@@ -320,6 +326,11 @@ function App() {
           activeDepartment={activeDepartment}
           selectedDate={selectedDate}
           onSelectedDateChange={setSelectedDate}
+          globalNovedades={globalNovedades}
+          onFetchGlobalNovedades={fetchGlobalNovedades}
+          onSaveGlobalNovedad={saveGlobalNovedad}
+          onDeleteGlobalNovedad={deleteGlobalNovedad}
+          onRefreshFeatures={refreshFeatures}
         />
       )}
 

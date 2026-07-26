@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { initDatabase } from "../db/database";
-import type { DailyLog, DrawnFeature } from "../types";
+import type { DailyLog, DrawnFeature, NovedadEntry } from "../types";
 import { getNormalizedGroupList } from "../utils/logUtils";
 
 export function useFeatureDB() {
@@ -26,7 +26,7 @@ export function useFeatureDB() {
         console.error("[Supabase:fetch] Error al cargar registros diarios:", logsErr);
       }
 
-      console.log(`[Supabase:fetch] feats=${featsData?.length ?? 0} logs=${logsData?.length ?? 0}`);
+      // console.log(`[Supabase:fetch] feats=${featsData?.length ?? 0} logs=${logsData?.length ?? 0}`);
 
       // Si Supabase retorna vacío o aún no tiene datos subidos, mostrar el respaldo local de RxDB
       if (!featsData || featsData.length === 0) {
@@ -134,20 +134,7 @@ export function useFeatureDB() {
         });
       }
 
-      // Log arrival status sample for debugging
-      if (logsData && logsData.length > 0) {
-        const sample = logsData.slice(0, 3).map((row: any) => {
-          const parsedGroups = Array.isArray(row.groups) ? row.groups : [];
-          return {
-            feature_id: row.feature_id,
-            date: row.date,
-            flat_g1: row.has_arrived_g1,
-            flat_g2: row.has_arrived_g2,
-            groups_arrival: parsedGroups.map((g: any) => ({ name: g.groupName, arrived: g.hasArrived })),
-          };
-        });
-        console.log("[Supabase:fetch:arrival_sample]", JSON.stringify(sample));
-      }
+      // console.log(`[Supabase:fetch:arrival_sample]`, logsData?.slice(0, 3));
 
       const list: DrawnFeature[] = (featsData || []).map((row: any) => ({
         id: isNaN(Number(row.id)) ? (row.id as unknown as number) : Number(row.id),
@@ -181,7 +168,7 @@ export function useFeatureDB() {
       const rxDb = await initDatabase();
       const rxDocs = await rxDb.features.find().exec();
       if (rxDocs && rxDocs.length > 0) {
-        console.log(`Migrando ${rxDocs.length} elementos locales desde RxDB a Supabase por primera vez...`);
+        console.log(`Migrando ${rxDocs.length} elementos locales desde RxDB a Supabase...`);
         for (const doc of rxDocs) {
           const idStr = String(doc.id);
           await supabase.from("drawn_features").upsert({
@@ -270,7 +257,6 @@ export function useFeatureDB() {
         "postgres_changes",
         { event: "*", schema: "public", table: "drawn_features" },
         () => {
-          console.log("[Supabase Realtime] Cambio detectado en drawn_features, actualizando...");
           fetchFromSupabase();
         }
       )
@@ -278,12 +264,18 @@ export function useFeatureDB() {
         "postgres_changes",
         { event: "*", schema: "public", table: "daily_logs" },
         () => {
-          console.log("[Supabase Realtime] Cambio detectado en daily_logs, actualizando...");
           fetchFromSupabase();
         }
       )
-      .subscribe((status) => {
-        console.log("[Supabase Realtime Estado]:", status);
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "novedades" },
+        () => {
+          fetchFromSupabase();
+        }
+      )
+      .subscribe((_status) => {
+        // Realtime connected
       });
 
     return () => {
@@ -386,8 +378,6 @@ export function useFeatureDB() {
       const fidStr = String(featureId);
       const deptToUse = log.department || "pc";
 
-      console.log(`[Supabase:save:input] featureId=${fidStr} date=${log.date} dept=${deptToUse} hasArrivedG1=${log.hasArrivedG1} hasArrivedG2=${log.hasArrivedG2} hasArrivedG3=${log.hasArrivedG3} hasArrivedG4=${log.hasArrivedG4} groupsPresent=${!!log.groups}`);
-
       const { data: existingRecords, error: lookupErr } = await supabase
         .from("daily_logs")
         .select("id")
@@ -396,13 +386,10 @@ export function useFeatureDB() {
         .eq("department", deptToUse);
 
       if (lookupErr) {
-        console.error("[Supabase:save:lookup] ERROR:", lookupErr);
-      } else {
-        console.log(`[Supabase:save:lookup] existingRecords=${existingRecords?.length ?? 0} ids=${existingRecords?.map((r: any) => r.id).join(",") || "none"}`);
+        console.error("[Supabase:save] lookup error:", lookupErr);
       }
 
       const rawGroupsList = getNormalizedGroupList(log);
-      console.log(`[Supabase:save:normalize] rawGroupsList.length=${rawGroupsList.length}`, rawGroupsList.map((g) => ({ name: g.groupName, hasArrived: g.hasArrived, officers: g.officersCount, id: g.id })));
 
       // Filter out truly empty groups (no name, no metrics, no officers, no unit, no manager)
       const groupsList = rawGroupsList.filter((g) =>
@@ -410,7 +397,6 @@ export function useFeatureDB() {
            g.rescuedCount?.trim() || g.recoveredCount?.trim() || g.rescuedPetsCount?.trim() ||
            g.prehospitalCareCount?.trim() || g.transfersCount?.trim())
       );
-      console.log(`[Supabase:save:filter] filteredGroupsList.length=${groupsList.length}`);
 
       const g0 = groupsList[0];
       const g1 = groupsList[1];
@@ -479,40 +465,85 @@ export function useFeatureDB() {
         updated_at: new Date().toISOString(),
       };
 
-      console.log(`[Supabase:save:payload] has_arrived_g1=${payload.has_arrived_g1} has_arrived_g2=${payload.has_arrived_g2} has_arrived_g3=${payload.has_arrived_g3} has_arrived_g4=${payload.has_arrived_g4} groups_json_count=${payload.groups.length}`);
-
       if (existingRecords && existingRecords.length > 0) {
         const firstId = existingRecords[0].id;
         const { data: updateData, error: updateErr } = await supabase.from("daily_logs").update(payload).eq("id", firstId).select("id");
         if (updateErr) {
-          console.error(`[Supabase:save:exec] UPDATE FAILED for id=${firstId}:`, updateErr);
+          console.error(`[Supabase:save] UPDATE FAILED for id=${firstId}:`, updateErr);
         } else if (!updateData || updateData.length === 0) {
-          console.error(`[Supabase:save:exec] UPDATE silently blocked (RLS?) id=${firstId} — 0 rows affected. Check your RLS policies or auth role.`);
-        } else {
-          console.log(`[Supabase:save:exec] UPDATE OK id=${firstId} rows=${updateData.length}`);
+          console.warn(`[Supabase:save] UPDATE silently blocked (RLS?) id=${firstId}`);
         }
         if (existingRecords.length > 1) {
           const extraIds = existingRecords.slice(1).map((r) => r.id);
-          console.log(`[Supabase:save:exec] cleaning ${extraIds.length} duplicate rows`);
-          const { error: delErr } = await supabase.from("daily_logs").delete().in("id", extraIds);
-          if (delErr) console.error("[Supabase:save:exec] DELETE duplicates FAILED:", delErr);
+          await supabase.from("daily_logs").delete().in("id", extraIds);
         }
       } else {
         const { data: insertData, error: insertErr } = await supabase.from("daily_logs").insert(payload).select("id");
         if (insertErr) {
-          console.error("[Supabase:save:exec] INSERT FAILED:", insertErr);
+          console.error("[Supabase:save] INSERT FAILED:", insertErr);
         } else if (!insertData || insertData.length === 0) {
-          console.error("[Supabase:save:exec] INSERT silently blocked (RLS?) — 0 rows affected. Check your RLS policies or auth role.");
-        } else {
-          console.log(`[Supabase:save:exec] INSERT OK id=${insertData[0].id}`);
+          console.warn("[Supabase:save] INSERT silently blocked (RLS?)");
         }
       }
 
-      fetchFromSupabase();
+      // Realtime subscription handles refetching automatically
     } catch (err) {
-      console.error("[Supabase:save:exception] Error al guardar registro diario en Supabase:", err);
+      console.error("[Supabase:save] Error al guardar registro diario:", err);
     }
   };
+
+  // ── Novedades independientes de la bitácora (tabla `novedades`) ──
+  const [globalNovedades, setGlobalNovedades] = useState<NovedadEntry[]>([]);
+
+  const fetchGlobalNovedades = useCallback(async (date: string, department?: string) => {
+    try {
+      let query = supabase.from("novedades").select("*").eq("date", date);
+      if (department && department !== "mixto") {
+        query = query.eq("department", department);
+      }
+      const { data, error } = await query;
+      if (error) {
+        console.error("[Supabase:fetch] Error al cargar novedades globales:", error);
+        return;
+      }
+      const entries: NovedadEntry[] = (data || []).map((row: any) => ({
+        id: row.id,
+        timestamp: row.timestamp || row.created_at || "",
+        time: row.time || "",
+        text: row.text || "",
+        type: row.type || "novedad",
+      }));
+      setGlobalNovedades(entries);
+    } catch (err) {
+      console.error("[Supabase:fetch:exception] Error cargando novedades globales:", err);
+    }
+  }, []);
+
+  const saveGlobalNovedad = useCallback(async (entry: NovedadEntry, date: string, department: string = "pc"): Promise<void> => {
+    try {
+      const { error } = await supabase.from("novedades").insert({
+        id: entry.id,
+        date,
+        time: entry.time,
+        text: entry.text,
+        type: entry.type,
+        timestamp: entry.timestamp,
+        department,
+      });
+      if (error) console.error("[Supabase:save] Error guardando novedad global:", error);
+    } catch (err) {
+      console.error("[Supabase:save:exception] Error guardando novedad global:", err);
+    }
+  }, []);
+
+  const deleteGlobalNovedad = useCallback(async (entryId: string): Promise<void> => {
+    try {
+      const { error } = await supabase.from("novedades").delete().eq("id", entryId);
+      if (error) console.error("[Supabase:delete] Error eliminando novedad global:", error);
+    } catch (err) {
+      console.error("[Supabase:delete:exception] Error eliminando novedad global:", err);
+    }
+  }, []);
 
   const handleFeatureDeleted = async (id: number): Promise<void> => {
     try {
@@ -534,5 +565,10 @@ export function useFeatureDB() {
     handleUpdateFeatureCollapsed,
     handleSaveDailyLog,
     handleFeatureDeleted,
+    globalNovedades,
+    fetchGlobalNovedades,
+    saveGlobalNovedad,
+    deleteGlobalNovedad,
+    refreshFeatures: fetchFromSupabase,
   };
 }
