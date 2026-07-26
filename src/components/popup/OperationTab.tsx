@@ -182,31 +182,9 @@ export const OperationTab: React.FC<OperationTabProps> = ({
         </button>
       </div>
 
-      {/* Counts / Métricas Operativas en fila horizontal de 5 columnas */}
-      <div style={sectionBox}>
-        <div style={sectionHeader("var(--color-green)")}>Resultados Operativos de Hoy</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px" }}>
-          <div>
-            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Rescatados</span>
-            <input type="number" min="0" placeholder="0" value={localLog.rescuedCount || ""} onChange={(e) => onFieldChange("rescuedCount", e.target.value)} style={inputStyle} />
-          </div>
-          <div>
-            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Recuperados</span>
-            <input type="number" min="0" placeholder="0" value={localLog.recoveredCount || ""} onChange={(e) => onFieldChange("recoveredCount", e.target.value)} style={inputStyle} />
-          </div>
-          <div>
-            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Mascotas</span>
-            <input type="number" min="0" placeholder="0" value={localLog.rescuedPetsCount || ""} onChange={(e) => onFieldChange("rescuedPetsCount", e.target.value)} style={inputStyle} />
-          </div>
-          <div>
-            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Atenc. Prehosp.</span>
-            <input type="number" min="0" placeholder="0" value={localLog.prehospitalCareCount || ""} onChange={(e) => onFieldChange("prehospitalCareCount", e.target.value)} style={inputStyle} />
-          </div>
-          <div>
-            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "1px" }}>Traslados</span>
-            <input type="number" min="0" placeholder="0" value={localLog.transfersCount || ""} onChange={(e) => onFieldChange("transfersCount", e.target.value)} style={inputStyle} />
-          </div>
-        </div>
+      {/* Nota: Las estadísticas por grupo se editan en el Panel de Información */}
+      <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", textAlign: "center", padding: "4px 0", fontStyle: "italic", borderTop: "1px solid rgba(255,255,255,0.04)", marginTop: "4px" }}>
+        Edita las estadísticas de cada equipo en la pestaña "Información"
       </div>
 
       {/* Observaciones */}

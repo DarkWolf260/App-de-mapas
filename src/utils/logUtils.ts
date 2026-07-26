@@ -68,18 +68,27 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
       const slot = idx + 1;
       const idxS = slot > 1 ? String(slot) : "";
 
+      // Identity fields: read from flat keys if present (OperationTab edits),
+      // otherwise fall back to the group object value.
       const name = (log as any)[`groupName${idxS}`] !== undefined ? (log as any)[`groupName${idxS}`] : g.groupName;
       const mgr = (log as any)[`managerName${idxS}`] !== undefined ? (log as any)[`managerName${idxS}`] : g.managerName;
       const phone = (log as any)[`managerPhone${idxS}`] !== undefined ? (log as any)[`managerPhone${idxS}`] : g.managerPhone;
       const unit = (log as any)[`unitOut${idxS}`] !== undefined ? (log as any)[`unitOut${idxS}`] : g.unitOut;
       const officers = (log as any)[`officersCount${idxS}`] !== undefined ? (log as any)[`officersCount${idxS}`] : g.officersCount;
-      const rescued = (log as any)[`rescuedCount${idxS}`] !== undefined ? (log as any)[`rescuedCount${idxS}`] : g.rescuedCount;
-      const recovered = (log as any)[`recoveredCount${idxS}`] !== undefined ? (log as any)[`recoveredCount${idxS}`] : g.recoveredCount;
-      const pets = (log as any)[`rescuedPetsCount${idxS}`] !== undefined ? (log as any)[`rescuedPetsCount${idxS}`] : g.rescuedPetsCount;
-      const prehospital = (log as any)[`prehospitalCareCount${idxS}`] !== undefined ? (log as any)[`prehospitalCareCount${idxS}`] : g.prehospitalCareCount;
-      const transfers = (log as any)[`transfersCount${idxS}`] !== undefined ? (log as any)[`transfersCount${idxS}`] : g.transfersCount;
+
+      // Metric fields: ALWAYS come from the group object.
+      // The flat rescuedCount/recoveredCount/etc. are GENERAL polygon stats, not Group 1 metrics.
+      const rescued = g.rescuedCount;
+      const recovered = g.recoveredCount;
+      const pets = g.rescuedPetsCount;
+      const prehospital = g.prehospitalCareCount;
+      const transfers = g.transfersCount;
       const arrived = (log as any)[`hasArrivedG${slot}`] !== undefined ? !!(log as any)[`hasArrivedG${slot}`] : g.hasArrived;
-      const commissionId = (log as any)[`commissionId${idxS}`] !== undefined ? (log as any)[`commissionId${idxS}`] : g.commissionId;
+      const flatCommId = (log as any)[`commissionId${idxS}`];
+      const arrayCommId = g.commissionId;
+      const commissionId = (arrayCommId && arrayCommId !== "independiente")
+        ? arrayCommId
+        : (flatCommId || arrayCommId || "independiente");
       const isVolunteer = (log as any)[`isVolunteer${idxS}`] !== undefined ? !!(log as any)[`isVolunteer${idxS}`] : g.isVolunteer;
 
       const hasData = !!(name?.trim() || officers || unit?.trim() || mgr?.trim() || rescued || recovered || prehospital || transfers);

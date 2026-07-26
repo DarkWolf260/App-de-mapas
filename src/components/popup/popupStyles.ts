@@ -86,3 +86,34 @@ export const TAB_BTN_BASE: React.CSSProperties = {
   justifyContent: "center",
   gap: "4px",
 };
+
+export const metricInputStyle: React.CSSProperties = {
+  background: "rgba(0,0,0,0.35)",
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: "4px",
+  color: "var(--text-main)",
+  fontSize: "0.62rem",
+  padding: "3px 6px",
+  width: "100%",
+  outline: "none",
+  fontFamily: "inherit",
+};
+
+export const readRowStyle: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "2px 0",
+};
+
+export const readLabelStyle: React.CSSProperties = {
+  fontSize: "0.6rem",
+  color: "var(--text-muted)",
+};
+
+export const readValueStyle: React.CSSProperties = {
+  fontSize: "0.65rem",
+  color: "var(--text-main)",
+  fontWeight: 600,
+  textAlign: "right",
+};

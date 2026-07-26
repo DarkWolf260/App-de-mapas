@@ -1,108 +1,83 @@
 import React, { useState, useMemo } from "react";
-import { Copy, Check, Edit3, Users, Activity, Dog, AlertTriangle } from "lucide-react";
-import type { DrawnFeature, DailyLog } from "../../types";
+import { Copy, Check, Edit3, Users, Activity, AlertTriangle, Link2, Unlink, Save } from "lucide-react";
+import type { DrawnFeature, DailyLog, GroupLogEntry } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
 import { getNormalizedGroupList } from "../../utils/logUtils";
-import { labelStyle } from "./popupStyles";
+import { labelStyle, sectionBox, readRowStyle, readLabelStyle, readValueStyle } from "./popupStyles";
+import { COMMISSION_INDEPENDENT, getGroupColor, formatCoordinates, getCoordLabel, METRIC_FIELDS, getMetricValue } from "./metricFields";
+import { MetricInputs, MetricBadges, MetricDisplayGrid } from "./MetricGrid";
+import { useGrouping } from "./useGrouping";
+import { aggregatePolygonLog } from "./aggregatePolygonLog";
 
 interface InfoTabProps {
   activeFeat: DrawnFeature;
   dailyLog: Partial<DailyLog> | undefined;
+  localLog?: Partial<DailyLog>;
   onEdit: () => void;
   drawnFeatures: DrawnFeature[];
   popupEditDate: string;
   isAdmin?: boolean;
+  canEdit?: boolean;
   canToggleArrival?: boolean;
   onToggleArrivalGroup?: (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => Promise<void>;
+  onGroupFieldChange?: (groupIdx: number, field: string, value: string | boolean) => void;
+  onGeneralFieldChange?: (field: string, value: string) => void;
+  onSaveStats?: () => void;
+  saveSuccess?: boolean;
 }
-
-const readRowStyle: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: "2px 0",
-};
-
-const readLabelStyle: React.CSSProperties = {
-  fontSize: "0.6rem",
-  color: "var(--text-muted)",
-};
-
-const readValueStyle: React.CSSProperties = {
-  fontSize: "0.65rem",
-  color: "var(--text-main)",
-  fontWeight: 600,
-  textAlign: "right",
-};
-
-const sectionStyle: React.CSSProperties = {
-  background: "rgba(255, 255, 255, 0.02)",
-  border: "1px solid rgba(255, 255, 255, 0.04)",
-  borderRadius: "8px",
-  padding: "6px 8px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "2px",
-};
 
 function ReadRow({ label, value }: { label: string; value?: string }) {
   return (
     <div style={readRowStyle}>
       <span style={readLabelStyle}>{label}</span>
-      <span style={readValueStyle}>{value || "—"}</span>
+      <span style={readValueStyle}>{value || "\u2014"}</span>
     </div>
   );
 }
 
-function formatCoordinates(feat: DrawnFeature): string {
-  const geom = feat.geojsonGeometry;
-  if (!geom) return "Sin coordenadas";
+type DisplayItem =
+  | { type: "independent"; groupIdx: number; group: GroupLogEntry }
+  | { type: "joint"; commissionId: string; groupIndices: number[]; groups: GroupLogEntry[] };
 
-  if (feat.type === "point" && Array.isArray(geom.coordinates)) {
-    const [lon, lat] = geom.coordinates as number[];
-    return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-  }
-
-  if (feat.type === "polyline" && Array.isArray(geom.coordinates)) {
-    const coords = geom.coordinates as number[][];
-    if (coords.length > 0) {
-      const [lon, lat] = coords[0];
-      return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+function buildDisplayItems(polygonGroups: GroupLogEntry[]): DisplayItem[] {
+  const result: DisplayItem[] = [];
+  const processedComms = new Set<string>();
+  polygonGroups.forEach((g, idx) => {
+    const cid = g.commissionId || COMMISSION_INDEPENDENT;
+    if (cid === COMMISSION_INDEPENDENT) {
+      result.push({ type: "independent", groupIdx: idx, group: g });
+    } else if (!processedComms.has(cid)) {
+      processedComms.add(cid);
+      const allInComm = polygonGroups
+        .map((gg, ii) => ({ gg, ii }))
+        .filter(({ gg }) => (gg.commissionId || COMMISSION_INDEPENDENT) === cid);
+      result.push({
+        type: "joint",
+        commissionId: cid,
+        groupIndices: allInComm.map(({ ii }) => ii),
+        groups: allInComm.map(({ gg }) => gg),
+      });
     }
-  }
-
-  if (feat.type === "polygon" && Array.isArray(geom.coordinates)) {
-    const rings = geom.coordinates as number[][][];
-    if (rings.length > 0 && rings[0].length > 0) {
-      const [lon, lat] = rings[0][0];
-      return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-    }
-  }
-
-  return "Sin coordenadas";
-}
-
-function getCoordLabel(feat: DrawnFeature): string {
-  if (feat.type === "point") return "Ubicación";
-  if (feat.type === "polyline") return "Punto inicial";
-  if (feat.type === "polygon") return "Primer vértice";
-  return "Coordenadas";
+  });
+  return result;
 }
 
 export const InfoTab: React.FC<InfoTabProps> = ({
-  activeFeat, dailyLog, onEdit, drawnFeatures, popupEditDate, isAdmin = false, canToggleArrival = false, onToggleArrivalGroup,
+  activeFeat, dailyLog, localLog, onEdit, drawnFeatures, popupEditDate,
+  isAdmin = false, canEdit = false, canToggleArrival = false, onToggleArrivalGroup,
+  onGroupFieldChange, onGeneralFieldChange, onSaveStats, saveSuccess,
 }) => {
   const showArrivalCheckbox = isAdmin || canToggleArrival;
   const [copied, setCopied] = useState(false);
-  const coords = formatCoordinates(activeFeat);
   const isPolygon = activeFeat.type === "polygon";
+  const coords = formatCoordinates(activeFeat);
 
+  // --- Contained points ---
   const containedPoints = useMemo(() => {
     if (!isPolygon) return [];
     const polyCoords = activeFeat.geojsonGeometry?.coordinates as number[][][];
     if (!polyCoords || !polyCoords[0]) return [];
     const vs = polyCoords[0];
-
     return drawnFeatures.filter((f) => {
       if (f.type !== "point") return false;
       const ptCoords = f.geojsonGeometry?.coordinates as number[];
@@ -118,80 +93,36 @@ export const InfoTab: React.FC<InfoTabProps> = ({
     });
   }, [containedPoints, popupEditDate]);
 
-  const polygonOwnLog: Partial<DailyLog> = useMemo(() => {
-    if (!isPolygon) return {};
-    return dailyLog || {};
-  }, [isPolygon, dailyLog]);
+  // --- Source of truth for polygon groups ---
+  const sourceLog: Partial<DailyLog> = (isPolygon && localLog) ? localLog : (dailyLog || {});
+  const polygonOwnLog = isPolygon ? sourceLog : {};
 
   const polygonGroups = useMemo(() => {
     if (!isPolygon) return [];
     return getNormalizedGroupList(polygonOwnLog);
   }, [isPolygon, polygonOwnLog]);
 
+  // --- Aggregated totals ---
   const aggregatedLog = useMemo(() => {
     if (!isPolygon) return dailyLog || {};
-
-    let rescuedCount = 0;
-    let recoveredCount = 0;
-    let rescuedPetsCount = 0;
-    let prehospitalCareCount = 0;
-    let transfersCount = 0;
-
-    const addLogMetrics = (l: Partial<DailyLog>) => {
-      const gList = getNormalizedGroupList(l);
-      const seenComms = new Set<string>();
-
-      for (const g of gList) {
-        const cid = g.commissionId || "independiente";
-        if (cid !== "independiente") {
-          if (seenComms.has(cid)) continue;
-          seenComms.add(cid);
-        }
-        rescuedCount += parseInt(g.rescuedCount || "0", 10) || 0;
-        recoveredCount += parseInt(g.recoveredCount || "0", 10) || 0;
-        rescuedPetsCount += parseInt(g.rescuedPetsCount || "0", 10) || 0;
-        prehospitalCareCount += parseInt(g.prehospitalCareCount || "0", 10) || 0;
-        transfersCount += parseInt(g.transfersCount || "0", 10) || 0;
-      }
-
-      if (gList.length === 0) {
-        rescuedCount += parseInt(l.rescuedCount || "0", 10) || 0;
-        recoveredCount += parseInt(l.recoveredCount || "0", 10) || 0;
-        rescuedPetsCount += parseInt(l.rescuedPetsCount || "0", 10) || 0;
-        prehospitalCareCount += parseInt(l.prehospitalCareCount || "0", 10) || 0;
-        transfersCount += parseInt(l.transfersCount || "0", 10) || 0;
-      }
-    };
-
-    // 1. Sumar métricas de todos los grupos y campos del polígono directamente
-    addLogMetrics(polygonOwnLog);
-
-    // 2. Sumar métricas de puntos contenidos dentro del polígono
-    let observations = polygonOwnLog.observations ? `Polígono: ${polygonOwnLog.observations}` : "";
-
-    for (const { point, log } of containedWithLogs) {
-      addLogMetrics(log);
-
-      if (log.observations) {
-        observations += (observations ? "\n" : "") + `${point.title}: ${log.observations}`;
-      }
-    }
-
-    const hasAnyLog = rescuedCount > 0 || recoveredCount > 0 || rescuedPetsCount > 0 || prehospitalCareCount > 0 || transfersCount > 0;
-
-    return {
-      ...polygonOwnLog,
-      rescuedCount: rescuedCount > 0 ? String(rescuedCount) : undefined,
-      recoveredCount: recoveredCount > 0 ? String(recoveredCount) : undefined,
-      rescuedPetsCount: rescuedPetsCount > 0 ? String(rescuedPetsCount) : undefined,
-      prehospitalCareCount: prehospitalCareCount > 0 ? String(prehospitalCareCount) : undefined,
-      transfersCount: transfersCount > 0 ? String(transfersCount) : undefined,
-      observations: observations || undefined,
-      _hasData: hasAnyLog || containedWithLogs.length > 0 || polygonGroups.length > 0,
-    } as Partial<DailyLog> & { _hasData?: boolean };
+    return aggregatePolygonLog(polygonOwnLog, polygonGroups, containedWithLogs);
   }, [isPolygon, dailyLog, containedWithLogs, polygonOwnLog, polygonGroups]);
 
   const log = isPolygon ? aggregatedLog : (dailyLog || {});
+
+  // --- Grouping logic ---
+  const { groupingMode, setGroupingMode, selectedIndices, handleGroupSelected, handleUngroup, toggleSelect, exitGroupingMode } = useGrouping({
+    polygonGroups,
+    onGroupFieldChange: onGroupFieldChange as ((idx: number, field: string, value: string) => void) | undefined,
+    onSaveStats,
+  });
+
+  const hasGeneralStats = !!METRIC_FIELDS.some((m) => {
+    const v = getMetricValue(polygonOwnLog, m.field);
+    return v && v !== "0" && v !== "";
+  });
+
+  const displayItems = useMemo(() => buildDisplayItems(polygonGroups), [polygonGroups]);
 
   const handleCopy = async () => {
     try {
@@ -199,133 +130,181 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = coords;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const hasPolygonManualLog = isPolygon && (
-    Number(polygonOwnLog.rescuedCount || 0) > 0 ||
-    Number(polygonOwnLog.recoveredCount || 0) > 0 ||
-    Number(polygonOwnLog.prehospitalCareCount || 0) > 0 ||
-    Number(polygonOwnLog.transfersCount || 0) > 0 ||
-    Number(polygonOwnLog.rescuedPetsCount || 0) > 0
-  );
+  // --- Points: check if any metric has data ---
+  const pointHasMetrics = METRIC_FIELDS.some((m) => {
+    const v = getMetricValue(log, m.field);
+    return v && v !== "0";
+  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {/* Badge de Edificio Colapsado — solo para puntos */}
+      {/* Badge de Edificio Colapsado */}
       {!isPolygon && activeFeat.isCollapsed && (
-        <div
-          style={{
-            background: "rgba(239, 68, 68, 0.14)",
-            border: "1px solid rgba(239, 68, 68, 0.35)",
-            borderRadius: "6px",
-            padding: "6px 10px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            color: "#f87171",
-            fontSize: "0.72rem",
-            fontWeight: 700,
-          }}
-        >
+        <div style={{ background: "rgba(239, 68, 68, 0.14)", border: "1px solid rgba(239, 68, 68, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#f87171", fontSize: "0.72rem", fontWeight: 700 }}>
           <span>Estructura Colapsada</span>
-          <span
-            style={{
-              background: "#ef4444",
-              color: "#ffffff",
-              padding: "2px 8px",
-              borderRadius: "10px",
-              fontSize: "0.68rem",
-              fontWeight: 800,
-            }}
-          >
+          <span style={{ background: "#ef4444", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontSize: "0.68rem", fontWeight: 800 }}>
             Cantidad: {activeFeat.collapsedCount || "1"}
           </span>
         </div>
       )}
 
-      {/* Coordenadas — solo para puntos */}
+      {/* Coordenadas */}
       {!isPolygon && (
         <div style={{ display: "flex", flexDirection: "column" }}>
           <label style={labelStyle}>{getCoordLabel(activeFeat)}</label>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{
-              fontSize: "0.72rem",
-              color: "var(--color-info)",
-              fontFamily: "var(--font-mono, monospace)",
-              background: "rgba(0, 0, 0, 0.3)",
-              padding: "4px 8px",
-              borderRadius: "4px",
-              border: "1px solid var(--border-subtle)",
-              flex: 1,
-            }}>
+            <span style={{ fontSize: "0.72rem", color: "var(--color-info)", fontFamily: "var(--font-mono, monospace)", background: "rgba(0, 0, 0, 0.3)", padding: "4px 8px", borderRadius: "4px", border: "1px solid var(--border-subtle)", flex: 1 }}>
               {coords}
             </span>
-            <button
-              onClick={handleCopy}
-              style={{
-                background: copied ? "#22c55e" : "rgba(255, 255, 255, 0.08)",
-                border: "1px solid " + (copied ? "#22c55e" : "var(--border-subtle)"),
-                borderRadius: "4px",
-                padding: "4px 6px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                transition: "all 0.2s ease",
-              }}
-              title={copied ? "¡Copiado!" : "Copiar coordenadas"}
-            >
+            <button onClick={handleCopy} style={{ background: copied ? "#22c55e" : "rgba(255, 255, 255, 0.08)", border: "1px solid " + (copied ? "#22c55e" : "var(--border-subtle)"), borderRadius: "4px", padding: "4px 6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", transition: "all 0.2s ease" }} title={copied ? "\u00a1Copiado!" : "Copiar coordenadas"}>
               {copied ? <Check size={12} /> : <Copy size={12} />}
             </button>
           </div>
         </div>
       )}
 
-      {/* Polígono: puntos contenidos con estadísticas */}
+      {/* ===== SECCION DE POLIGONO ===== */}
       {isPolygon && (
         <>
+          {/* 1. Estadisticas generales */}
+          <div style={{ ...sectionBox, background: "rgba(16, 185, 129, 0.04)", borderColor: "rgba(16, 185, 129, 0.2)" }}>
+            <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#10b981", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+              <Activity size={10} /> Estadisticas Generales del Poligono
+              <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontWeight: 400, marginLeft: "auto" }}>Independiente de grupos</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
+              {METRIC_FIELDS.map(({ label, field, color }) => (
+                <div key={field} style={{ textAlign: "center" }}>
+                  <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block", marginBottom: "2px" }}>{label}</span>
+                  {canEdit && onGeneralFieldChange ? (
+                    <input type="number" min="0" placeholder="0" value={getMetricValue(polygonOwnLog, field) || ""} onChange={(e) => onGeneralFieldChange(field, e.target.value)} style={{ textAlign: "center", padding: "2px 2px", fontSize: "0.68rem", color, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "4px", width: "100%", outline: "none", fontFamily: "inherit" }} />
+                  ) : (
+                    <span style={{ fontSize: "0.8rem", fontWeight: 800, color }}>{getMetricValue(polygonOwnLog, field) || "0"}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 2. Equipos de Trabajo */}
+          {polygonGroups.length > 0 && (
+            <div style={{ ...sectionBox, background: "rgba(56, 189, 248, 0.03)", borderColor: "rgba(56, 189, 248, 0.15)" }}>
+              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "4px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <Users size={10} /> Equipos de Trabajo
+                {canEdit && (
+                  <label style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", userSelect: "none", fontSize: "0.58rem", fontWeight: 700, color: groupingMode ? "#38bdf8" : "var(--text-muted)", transition: "color 0.15s" }} title="Activar modo para agrupar equipos que trabajaron juntos">
+                    <input type="checkbox" checked={groupingMode} onChange={(e) => { setGroupingMode(e.target.checked); if (!e.target.checked) exitGroupingMode(); }} style={{ cursor: "pointer", width: "11px", height: "11px" }} />
+                    Agrupar
+                  </label>
+                )}
+                {canEdit && groupingMode && selectedIndices.size >= 2 && (
+                  <button type="button" onClick={handleGroupSelected} style={{ background: "rgba(56, 189, 248, 0.18)", border: "1px solid rgba(56, 189, 248, 0.4)", borderRadius: "5px", color: "#38bdf8", fontSize: "0.58rem", fontWeight: 700, padding: "2px 7px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <Link2 size={9} /> Agrupar {selectedIndices.size}
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {displayItems.map((item) => {
+                  if (item.type === "independent") {
+                    const { groupIdx, group } = item;
+                    const color = getGroupColor(groupIdx);
+                    const isSelected = selectedIndices.has(groupIdx);
+                    return (
+                      <div key={`ind-${groupIdx}`} style={{ background: isSelected ? "rgba(56, 189, 248, 0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${isSelected ? "rgba(56, 189, 248, 0.4)" : "rgba(255,255,255,0.05)"}`, borderRadius: "6px", padding: "5px 7px", transition: "all 0.15s ease" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                          {canEdit && groupingMode && (
+                            <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(groupIdx)} style={{ cursor: "pointer", width: "12px", height: "12px", flexShrink: 0, accentColor: "#38bdf8" }} title="Seleccionar para agrupar" />
+                          )}
+                          <span style={{ fontSize: "0.63rem", fontWeight: 700, color }}>{group.groupName || `Equipo ${groupIdx + 1}`}</span>
+                          {group.isVolunteer && (
+                            <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.48rem", fontWeight: 800, textTransform: "uppercase" }}>VOL</span>
+                          )}
+                          <span style={{ marginLeft: "auto", fontSize: "0.55rem", color: "var(--text-muted)" }}>{group.officersCount ? `${group.officersCount} func.` : ""}</span>
+                        </div>
+                        {canEdit && onGroupFieldChange ? (
+                          <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
+                        ) : (
+                          <MetricBadges group={group} />
+                        )}
+                        {showArrivalCheckbox ? (
+                          <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
+                            <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => onToggleArrivalGroup?.((groupIdx + 1) as 1 | 2 | 3 | 4, e.target.checked)} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
+                            <span>{group.hasArrived ? "Lleg\u00f3 del sitio" : "\u00bfYa lleg\u00f3 del sitio?"}</span>
+                          </label>
+                        ) : (
+                          group.hasArrived && <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}><Check size={9} /> Lleg\u00f3 del sitio</span>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // Joint group card
+                  const { commissionId, groupIndices, groups } = item;
+                  const primaryIdx = groupIndices[0];
+                  const primaryGroup = groups[0];
+                  return (
+                    <div key={`joint-${commissionId}`} style={{ background: "rgba(56, 189, 248, 0.05)", border: "2px dashed rgba(56, 189, 248, 0.35)", borderRadius: "8px", padding: "6px 8px", position: "relative" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "2px" }}>
+                        <Link2 size={10} style={{ color: "#38bdf8", flexShrink: 0 }} />
+                        <span style={{ fontSize: "0.63rem", fontWeight: 700, color: "#38bdf8" }}>
+                          {groups.map((g, i) => (
+                            <span key={i}>
+                              {i > 0 && <span style={{ color: "var(--text-muted)" }}> + </span>}
+                              {g.groupName || `Equipo ${groupIndices[i] + 1}`}
+                            </span>
+                          ))}
+                        </span>
+                        {canEdit && (
+                          <button type="button" onClick={() => handleUngroup(commissionId)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "4px", color: "#f87171", fontSize: "0.52rem", fontWeight: 700, padding: "1px 5px", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }} title="Desagrupar estos equipos">
+                            <Unlink size={8} /> Desagrupar
+                          </button>
+                        )}
+                      </div>
+                      <div style={{ fontSize: "0.5rem", color: "var(--text-muted)", marginBottom: "3px" }}>
+                        Equipos trabajando juntos \u2014 estadisticas compartidas
+                      </div>
+                      {canEdit && onGroupFieldChange ? (
+                        <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
+                      ) : (
+                        <MetricBadges group={primaryGroup} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 3. Puntos contenidos con estadisticas */}
           {containedWithLogs.length > 0 && (
-            <div style={sectionStyle}>
+            <div style={sectionBox}>
               <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <span>Puntos con reporte ({containedWithLogs.filter(({ log }) => {
-                  const rc = String(log.rescuedCount || "").trim();
-                  const rr = String(log.recoveredCount || "").trim();
-                  const ph = String(log.prehospitalCareCount || "").trim();
-                  const tr = String(log.transfersCount || "").trim();
-                  const rp = String(log.rescuedPetsCount || "").trim();
-                  return (rc && rc !== "0") || (rr && rr !== "0") || (ph && ph !== "0") || (tr && tr !== "0") || (rp && rp !== "0");
-                }).length})</span>
+                <span>Puntos con reporte ({containedWithLogs.filter(({ log }) => METRIC_FIELDS.some((m) => { const v = getMetricValue(log, m.field); return v && v !== "0"; })).length})</span>
                 <span style={{ fontWeight: 400, fontSize: "0.5rem", color: "var(--text-muted)", textAlign: "right" }}>
-                  <span style={{ color: "var(--color-green)" }}>Resc</span> | <span style={{ color: "var(--color-info)" }}>Recup</span> | <span style={{ color: "#38bdf8" }}>Atenc</span> | <span style={{ color: "var(--color-purple)" }}>Trasl</span> | <span style={{ color: "#a855f7" }}>Masc</span>
+                  {METRIC_FIELDS.map((m, i) => (
+                    <span key={m.field}>{i > 0 && " | "}<span style={{ color: m.color }}>{m.label.replace(".", "")}</span></span>
+                  ))}
                 </span>
               </div>
-              {containedWithLogs.map(({ point, log }) => {
-                const rc = String(log.rescuedCount || "0").trim();
-                const rr = String(log.recoveredCount || "0").trim();
-                const ph = String(log.prehospitalCareCount || "0").trim();
-                const tr = String(log.transfersCount || "0").trim();
-                const rp = String(log.rescuedPetsCount || "0").trim();
-                const hasData = (rc && rc !== "0") || (rr && rr !== "0") || (ph && ph !== "0") || (tr && tr !== "0") || (rp && rp !== "0");
+              {containedWithLogs.map(({ point, log: ptLog }) => {
+                const hasData = METRIC_FIELDS.some((m) => { const v = getMetricValue(ptLog, m.field); return v && v !== "0"; });
                 if (!hasData) return null;
                 return (
                   <div key={point.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
                     <span style={{ fontSize: "0.62rem", fontWeight: 600, color: "var(--text-main)" }}>{point.title}</span>
                     <div style={{ display: "flex", gap: "4px", fontSize: "0.6rem", alignItems: "center" }}>
-                      {rc !== "0" && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{rc}R</span>}
-                      {rr !== "0" && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{rr}Rec</span>}
-                      {ph !== "0" && <span style={{ color: "#38bdf8", fontWeight: 700 }}>{ph}A</span>}
-                      {tr !== "0" && <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>{tr}T</span>}
-                      {rp !== "0" && <span style={{ color: "#a855f7", fontWeight: 700 }}>{rp}M</span>}
+                      {METRIC_FIELDS.map((m) => {
+                        const v = getMetricValue(ptLog, m.field);
+                        if (!v || v === "0") return null;
+                        const shortLabel = m.label.charAt(0);
+                        return <span key={m.field} style={{ color: m.color, fontWeight: 700 }}>{v}{shortLabel}</span>;
+                      })}
                     </div>
                   </div>
                 );
@@ -333,74 +312,12 @@ export const InfoTab: React.FC<InfoTabProps> = ({
             </div>
           )}
 
-          {/* Muestra estadística por grupo en el polígono si existe */}
-          {polygonGroups.some((g) => g.rescuedCount || g.recoveredCount || g.prehospitalCareCount || g.transfersCount || g.rescuedPetsCount) && (
-            <div style={{ ...sectionStyle, background: "rgba(56, 189, 248, 0.04)", borderColor: "rgba(56, 189, 248, 0.2)" }}>
-              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px" }}>
-                Estadísticas de Grupos del Polígono:
-              </span>
-              {polygonGroups.map((g, gIdx) => {
-                const hasGMetrics = g.rescuedCount || g.recoveredCount || g.prehospitalCareCount || g.transfersCount || g.rescuedPetsCount;
-                if (!hasGMetrics) return null;
-                return (
-                  <div key={g.id || gIdx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "2px 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                    <span style={{ fontSize: "0.62rem", fontWeight: 600, color: "var(--text-main)" }}>{g.groupName || `Grupo #${gIdx + 1}`}</span>
-                    <div style={{ display: "flex", gap: "6px", fontSize: "0.6rem", flexWrap: "wrap" }}>
-                      {g.rescuedCount && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{g.rescuedCount} Rescat.</span>}
-                      {g.recoveredCount && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{g.recoveredCount} Recup.</span>}
-                      {g.prehospitalCareCount && <span style={{ color: "#38bdf8", fontWeight: 700 }}>{g.prehospitalCareCount} Atenc.</span>}
-                      {g.transfersCount && <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>{g.transfersCount} Trasl.</span>}
-                      {g.rescuedPetsCount && <span style={{ color: "#a855f7", fontWeight: 700 }}>{g.rescuedPetsCount} Masc.</span>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Muestra estadística manual general si existe */}
-          {hasPolygonManualLog && (
-            <div style={{ ...sectionStyle, background: "rgba(56, 189, 248, 0.04)", borderColor: "rgba(56, 189, 248, 0.2)" }}>
-              <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "var(--color-info)" }}>
-                Estadística manual general del polígono:
-              </span>
-              <div style={{ display: "flex", gap: "8px", fontSize: "0.6rem", flexWrap: "wrap", marginTop: "2px" }}>
-                {polygonOwnLog.rescuedCount && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{polygonOwnLog.rescuedCount} Rescat.</span>}
-                {polygonOwnLog.recoveredCount && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{polygonOwnLog.recoveredCount} Recup.</span>}
-                {polygonOwnLog.prehospitalCareCount && <span style={{ color: "#38bdf8", fontWeight: 700 }}>{polygonOwnLog.prehospitalCareCount} Atenc.</span>}
-                {polygonOwnLog.transfersCount && <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>{polygonOwnLog.transfersCount} Trasl.</span>}
-                {polygonOwnLog.rescuedPetsCount && <span style={{ color: "#a855f7", fontWeight: 700 }}>{polygonOwnLog.rescuedPetsCount} Masc.</span>}
-              </div>
-            </div>
-          )}
-
-          {/* Total de la zona */}
-          <div style={sectionStyle}>
+          {/* 4. Total de la zona */}
+          <div style={sectionBox}>
             <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
-              <Activity size={10} /> Total Zona (Polígono + Puntos)
+              <Activity size={10} /> Total Zona (General + Grupos + Puntos)
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "2px" }}>
-              <div style={{ textAlign: "center" }}>
-                <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Rescat.</span>
-                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--color-green)" }}>{aggregatedLog.rescuedCount || "0"}</span>
-              </div>
-              <div style={{ textAlign: "center" }}>
-                <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Recuper.</span>
-                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--color-info)" }}>{aggregatedLog.recoveredCount || "0"}</span>
-              </div>
-              <div style={{ textAlign: "center" }}>
-                <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Atenc.</span>
-                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#38bdf8" }}>{aggregatedLog.prehospitalCareCount || "0"}</span>
-              </div>
-              <div style={{ textAlign: "center" }}>
-                <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Trasl.</span>
-                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--color-purple)" }}>{aggregatedLog.transfersCount || "0"}</span>
-              </div>
-              <div style={{ textAlign: "center" }}>
-                <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Mascotas</span>
-                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#a855f7" }}>{aggregatedLog.rescuedPetsCount || "0"}</span>
-              </div>
-            </div>
+            <MetricDisplayGrid source={aggregatedLog} />
             {aggregatedLog.observations && (
               <div style={{ marginTop: "4px" }}>
                 <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "3px" }}><AlertTriangle size={9} /> Observaciones</span>
@@ -408,28 +325,36 @@ export const InfoTab: React.FC<InfoTabProps> = ({
               </div>
             )}
           </div>
+
+          {/* Boton Guardar Estadisticas */}
+          {canEdit && onSaveStats && (
+            <button type="button" onClick={onSaveStats} style={{ width: "100%", background: saveSuccess ? "rgba(34, 197, 94, 0.18)" : "rgba(56, 189, 248, 0.12)", border: `1px solid ${saveSuccess ? "rgba(34, 197, 94, 0.5)" : "rgba(56, 189, 248, 0.35)"}`, borderRadius: "7px", color: saveSuccess ? "#22c55e" : "#38bdf8", fontSize: "0.72rem", fontWeight: 700, padding: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "all 0.2s ease" }}>
+              {saveSuccess ? <Check size={13} /> : <Save size={13} />}
+              {saveSuccess ? "\u00a1Estadisticas Guardadas!" : "Guardar Estadisticas"}
+            </button>
+          )}
+
+          {polygonGroups.length === 0 && !hasGeneralStats && containedWithLogs.length === 0 && (
+            <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
+              No hay grupos ni datos cargados en esta zona
+            </div>
+          )}
         </>
       )}
 
-      {isPolygon && containedWithLogs.length === 0 && !hasPolygonManualLog && (
-        <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
-          No hay puntos ni datos cargados en esta zona
-        </div>
-      )}
-
       {/* Punto: sin datos */}
-      {!isPolygon && !(log.groupName || log.unitOut || log.managerName || log.officersCount) && !(log.rescuedCount || log.recoveredCount || log.rescuedPetsCount || log.prehospitalCareCount || log.transfersCount || log.observations) && (
+      {!isPolygon && !(log.groupName || log.unitOut || log.managerName || log.officersCount) && !pointHasMetrics && !log.observations && (
         <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
           Sin datos registrados para hoy
         </div>
       )}
 
-      {/* Grupos en disposición vertical (uno abajo del otro) */}
-      {getNormalizedGroupList(log).length > 0 && (
+      {/* Grupos en disposicion vertical - solo puntos */}
+      {!isPolygon && getNormalizedGroupList(log).length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {getNormalizedGroupList(log).map((gItem, gIdx) => (
-            <div key={gItem.id || gIdx} style={sectionStyle}>
-              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: gIdx === 0 ? "var(--color-info)" : gIdx === 1 ? "var(--color-purple)" : gIdx === 2 ? "#c084fc" : "#fb923c", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div key={gItem.id || gIdx} style={sectionBox}>
+              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: getGroupColor(gIdx), borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                   <Users size={10} /> {gItem.groupName || `Grupo ${gIdx + 1}`}
                 </span>
@@ -439,9 +364,9 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                       VOLUNTARIO
                     </span>
                   )}
-                  {gItem.commissionId && gItem.commissionId !== "independiente" && (
+                  {gItem.commissionId && gItem.commissionId !== COMMISSION_INDEPENDENT && (
                     <span style={{ background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8", border: "1px solid rgba(56, 189, 248, 0.3)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.52rem", fontWeight: 700 }}>
-                      Comisión Conjunta
+                      Comision Conjunta
                     </span>
                   )}
                 </div>
@@ -449,24 +374,16 @@ export const InfoTab: React.FC<InfoTabProps> = ({
               <ReadRow label="Unidad" value={gItem.unitOut} />
               <ReadRow label="Encargado" value={gItem.managerName} />
               <ReadRow label="Funcionarios" value={gItem.officersCount} />
-              <ReadRow label="Teléfono" value={gItem.managerPhone} />
-              {(!!gItem.rescuedCount || !!gItem.recoveredCount || !!gItem.prehospitalCareCount || !!gItem.transfersCount || !!gItem.rescuedPetsCount) && (
-                <div style={{ display: "flex", gap: "6px", fontSize: "0.6rem", flexWrap: "wrap", marginTop: "4px", padding: "3px 6px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "4px", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
-                  {gItem.rescuedCount && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{gItem.rescuedCount} Rescat.</span>}
-                  {gItem.recoveredCount && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{gItem.recoveredCount} Recup.</span>}
-                  {gItem.prehospitalCareCount && <span style={{ color: "#38bdf8", fontWeight: 700 }}>{gItem.prehospitalCareCount} Atenc.</span>}
-                  {gItem.transfersCount && <span style={{ color: "var(--color-purple)", fontWeight: 700 }}>{gItem.transfersCount} Trasl.</span>}
-                  {gItem.rescuedPetsCount && <span style={{ color: "#a855f7", fontWeight: 700 }}>{gItem.rescuedPetsCount} Masc.</span>}
-                </div>
-              )}
+              <ReadRow label="Telefono" value={gItem.managerPhone} />
+              <MetricBadges group={gItem} />
               {showArrivalCheckbox ? (
                 <label style={{ fontSize: "0.65rem", fontWeight: 700, color: gItem.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: gItem.hasArrived ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${gItem.hasArrived ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
                   <input type="checkbox" checked={!!gItem.hasArrived} onChange={(e) => onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked)} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
-                  <span>{gItem.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
+                  <span>{gItem.hasArrived ? "Lleg\u00f3 del sitio" : "\u00bfYa lleg\u00f3 del sitio?"}</span>
                 </label>
               ) : (
                 gItem.hasArrived && (
-                  <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Llegó del sitio</span>
+                  <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Lleg\u00f3 del sitio</span>
                 )
               )}
             </div>
@@ -474,71 +391,28 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
-      {/* Reportes de Hoy — solo para puntos con datos */}
-      {!isPolygon && (log.rescuedCount || log.recoveredCount || log.rescuedPetsCount || log.prehospitalCareCount || log.transfersCount || log.observations) && (
-        <div style={sectionStyle}>
+      {/* Reportes de Hoy - solo para puntos con datos */}
+      {!isPolygon && pointHasMetrics && (
+        <div style={sectionBox}>
           <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
             <Activity size={10} /> Reportes de Hoy
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "2px" }}>
-            <div style={{ textAlign: "center" }}>
-              <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Rescat.</span>
-              <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--color-green)" }}>{log.rescuedCount || "0"}</span>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Recuper.</span>
-              <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--color-info)" }}>{log.recoveredCount || "0"}</span>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Atenc.</span>
-              <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#38bdf8" }}>{log.prehospitalCareCount || "0"}</span>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Trasl.</span>
-              <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "var(--color-purple)" }}>{log.transfersCount || "0"}</span>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>Mascotas</span>
-              <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#a855f7" }}>{log.rescuedPetsCount || "0"}</span>
-            </div>
-          </div>
+          <MetricDisplayGrid source={log} />
           {log.observations && (
             <div style={{ marginTop: "4px" }}>
-              <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "3px" }}><AlertTriangle size={9} /> Observación</span>
+              <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "3px" }}><AlertTriangle size={9} /> Observacion</span>
               <span style={{ fontSize: "0.65rem", color: "var(--text-main)", lineHeight: 1.3, whiteSpace: "pre-line" }}>{log.observations}</span>
             </div>
           )}
         </div>
       )}
 
-      {/* Botón Editar — solo para administradores */}
-      {isAdmin && (
-        <button
-          type="button"
-          onClick={onEdit}
-          style={{
-            width: "100%",
-            background: "var(--color-info)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "6px",
-            padding: "6px 12px",
-            fontSize: "0.7rem",
-            fontWeight: 700,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "6px",
-            transition: "all 0.2s ease",
-            boxShadow: "0 0 10px rgba(56, 189, 248, 0.2)",
-            marginTop: "4px",
-          }}
-        >
-          <Edit3 size={12} /> {isPolygon ? "Añadir Estadísticas Directas al Polígono" : "Editar Registro"}
+      {/* Boton Editar - solo administradores en puntos */}
+      {isAdmin && !isPolygon && (
+        <button type="button" onClick={onEdit} style={{ width: "100%", background: "var(--color-info)", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "all 0.2s ease", boxShadow: "0 0 10px rgba(56, 189, 248, 0.2)", marginTop: "4px" }}>
+          <Edit3 size={12} /> Editar Registro
         </button>
       )}
     </div>
   );
 };
-

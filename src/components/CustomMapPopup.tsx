@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, Department, WorkGroup } from "../types";
 import { computeContainedItems } from "../utils/spatialUtils";
+import { getNormalizedGroupList } from "../utils/logUtils";
 import { Lock, Unlock, FileText, Settings, History, Layers, Info, X } from "lucide-react";
 import { TAB_BTN_BASE } from "./popup/popupStyles";
 import { GeneralTab } from "./popup/GeneralTab";
@@ -180,7 +181,39 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
   const handleLogFieldChange = (field: string, val: unknown) => {
     if (!canEditLog) return;
-    setLocalLog((prev) => ({ ...prev, [field]: val }));
+    setLocalLog((prev) => {
+      const updated = { ...prev, [field]: val };
+      // If the user edits any group-related field, clear log.groups so the flat
+      // key values always win when building the groups array on save.
+      if (
+        /^(groupName|unitOut|managerName|managerPhone|officersCount|rescuedCount|recoveredCount|rescuedPetsCount|prehospitalCareCount|transfersCount|commissionId|isVolunteer|hasArrivedG)\d*$/.test(field)
+      ) {
+        updated.groups = undefined;
+      }
+      return updated;
+    });
+  };
+
+  const handleGroupFieldChange = (groupIdx: number, field: string, value: string | boolean) => {
+    if (!canEditLog) return;
+    setLocalLog((prev) => {
+      // If groups not yet initialized (e.g. loaded from legacy flat fields),
+      // build the array from getNormalizedGroupList so updates are visible immediately.
+      const base =
+        Array.isArray(prev.groups) && prev.groups.length > 0
+          ? [...prev.groups]
+          : getNormalizedGroupList(prev as DailyLog).map((g) => ({ ...g }));
+      if (base[groupIdx] !== undefined) {
+        base[groupIdx] = { ...base[groupIdx], [field]: value };
+      }
+      return { ...prev, groups: base };
+    });
+  };
+
+  const handleGeneralFieldChange = (field: string, value: string) => {
+    if (!canEditLog) return;
+    // General polygon stats — update flat field without clearing the groups array
+    setLocalLog((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleToggleArrivalGroup = async (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => {
@@ -238,7 +271,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
           {canEditLog && (
             <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
-              <FileText size={12} /> {isPolygon ? "Estadísticas Directas" : "Editar"}
+              <FileText size={12} /> {isPolygon ? "Editar Grupos" : "Editar"}
             </button>
           )}
           {isPoint && (
@@ -255,7 +288,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
-            <FileText size={12} /> {isPolygon ? "Estadísticas Directas" : "Editar"}
+            <FileText size={12} /> {isPolygon ? "Editar Grupos" : "Editar"}
           </button>
           {isPoint && (
             <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}><History size={12} /> Historial</button>
@@ -276,7 +309,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       {isAdmin && isPolygon && layerVisibility.sketch && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={12} /> General</button>
-          <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={12} /> Estadísticas</button>
+          <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={12} /> Editar Grupos</button>
           <button onClick={() => setActiveTab("contained")} style={tabBtnStyle(activeTab === "contained")}><Layers size={12} /> Elementos</button>
         </div>
       )}
@@ -297,8 +330,14 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           drawnFeatures={drawnFeatures}
           popupEditDate={popupEditDate}
           isAdmin={isAdmin}
+          canEdit={canEditLog}
           canToggleArrival={canToggleArrival}
           onToggleArrivalGroup={handleToggleArrivalGroup}
+          localLog={localLog}
+          onGroupFieldChange={handleGroupFieldChange}
+          onGeneralFieldChange={handleGeneralFieldChange}
+          onSaveStats={handleLogSave}
+          saveSuccess={logSaveSuccess}
         />
       )}
 
