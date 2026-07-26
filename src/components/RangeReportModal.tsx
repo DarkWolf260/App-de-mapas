@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import type { DrawnFeature, DailyLog, DepartmentView, WorkGroup } from "../types";
 import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin, List, Layers } from "lucide-react";
+import { sectionBox } from "./popup/popupStyles";
 import { DateRow } from "./DateRow";
 import { InlineRowEditor } from "./InlineRowEditor";
 import { GroupDisplay } from "./GroupDisplay";
@@ -272,7 +273,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   };
 
   return (
-    <div className="rr-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="rr-backdrop">
       <div className="rr-modal">
         {/* Header */}
         <div className="rr-header">
@@ -348,8 +349,14 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
             </div>
              {/* Sección: Desglose por Grupos y Comisiones */}
             {((periodStats.jointCommissionStats && periodStats.jointCommissionStats.length > 0) || (periodStats.independentGroupStats && periodStats.independentGroupStats.length > 0) || sortedGroupStats.length > 0) && (
-              <div>
-                {/* Buscador de Grupos y Comisiones */}
+              <div style={{ ...sectionBox, background: "rgba(56, 189, 248, 0.03)", borderColor: "rgba(56, 189, 248, 0.15)" }}>
+                <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Users size={10} /> Desglose por Grupos y Comisiones
+                  <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontWeight: 400, marginLeft: "auto", fontStyle: "italic" }}>
+                    * Comisión Conjunta = borde punteado
+                  </span>
+                </div>
+                {/* Buscador */}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
                   <div style={{ position: "relative", flex: 1 }}>
                     <Search size={13} style={{ position: "absolute", left: "8px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
@@ -379,15 +386,6 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                     )}
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                    Desglose por Grupos y Comisiones
-                  </div>
-                  <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontStyle: "italic" }}>
-                    * Los equipos en Comisión Conjunta se agrupan con borde punteado; la última fila refleja la Suma General
-                  </div>
-                </div>
-
                 <div className="rr-stats-table-wrap">
                   <table className="rr-stats-table">
                     <thead>
@@ -582,9 +580,9 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 {/* Sectors section with dedicated Puntos Contenidos column */}
                 {periodStats.featureStats.some((fs) => isSectorFeature(fs)) && (
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.7rem", fontWeight: 800, color: "var(--color-info)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>
-                      <Layers size={12} /> Sectores
+                  <div style={{ ...sectionBox, background: "rgba(56, 189, 248, 0.03)", borderColor: "rgba(56, 189, 248, 0.15)" }}>
+                    <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Layers size={10} /> Sectores
                     </div>
                     <div className="rr-stats-table-wrap">
                       <table className="rr-stats-table">
@@ -632,9 +630,9 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
 
                 {/* Sitios de Trabajo section */}
                 {periodStats.featureStats.some((fs) => !isSectorFeature(fs)) && (
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.7rem", fontWeight: 800, color: "var(--accent-orange)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" }}>
-                      <MapPin size={12} /> Sitios de Trabajo
+                  <div style={{ ...sectionBox, background: "rgba(251, 146, 60, 0.03)", borderColor: "rgba(251, 146, 60, 0.15)" }}>
+                    <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#fb923c", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <MapPin size={10} /> Sitios de Trabajo
                     </div>
                     <div className="rr-stats-table-wrap">
                       <table className="rr-stats-table">

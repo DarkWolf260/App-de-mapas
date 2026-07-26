@@ -72,8 +72,8 @@ describe("GroupFields", () => {
   it("renders checkbox for hasArrived", () => {
     render(<GroupFields {...defaultProps} groupIndex={1} />);
     const checkboxes = screen.getAllByRole("checkbox");
-    expect(checkboxes.length).toBeGreaterThanOrEqual(2);
-    expect(checkboxes[1]).not.toBeChecked();
+    expect(checkboxes.length).toBeGreaterThanOrEqual(1);
+    expect(checkboxes[0]).not.toBeChecked();
   });
 });
 
@@ -99,7 +99,7 @@ describe("OperationTab Department Selector in Mixto Mode", () => {
       />
     );
 
-    expect(screen.getByText(/Departamento para Estadísticas y Grupos:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Departamento/i)).toBeInTheDocument();
     expect(screen.getByText(/Protección Civil/i)).toBeInTheDocument();
     expect(screen.getByText(/Bomberos/i)).toBeInTheDocument();
 

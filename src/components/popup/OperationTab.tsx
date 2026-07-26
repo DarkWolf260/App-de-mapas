@@ -1,7 +1,7 @@
 import React from "react";
-import { Save, Plus, Trash2, Calendar, Shield, Flame } from "lucide-react";
+import { Save, Plus, Trash2, Calendar, Shield, Flame, Users, FileText } from "lucide-react";
 import type { DailyLog, DepartmentView, Department, WorkGroup } from "../../types";
-import { inputStyle, sectionBox, sectionHeader, saveBtnStyle } from "./popupStyles";
+import { inputStyle, labelStyle, sectionBox, saveBtnStyle } from "./popupStyles";
 import { GroupFields } from "../GroupFields";
 
 interface OperationTabProps {
@@ -76,33 +76,33 @@ export const OperationTab: React.FC<OperationTabProps> = ({
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "10px", height: "100%" }}>
-      {/* Header & Date Selector */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--color-green)", display: "flex", alignItems: "center", gap: "4px" }}>
-          <Calendar size={13} /> Registro Diario
-        </span>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px", height: "100%" }}>
+      {/* Sección: Registro Diario */}
+      <div style={{ ...sectionBox, background: "rgba(34, 197, 94, 0.04)", borderColor: "rgba(34, 197, 94, 0.2)" }}>
+        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#22c55e", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+          <Calendar size={10} /> Registro Diario
+        </div>
         <input
           type="date"
           value={popupEditDate}
           onChange={(e) => setPopupEditDate(e.target.value)}
-          style={{ background: "rgba(0, 0, 0, 0.3)", border: "1px solid var(--border-subtle)", borderRadius: "4px", color: "var(--text-main)", fontSize: "0.68rem", padding: "3px 6px", cursor: "pointer", outline: "none" }}
+          style={{ background: "rgba(0, 0, 0, 0.3)", border: "1px solid var(--border-subtle)", borderRadius: "5px", color: "var(--text-main)", fontSize: "0.68rem", padding: "4px 8px", cursor: "pointer", outline: "none", width: "100%" }}
         />
       </div>
 
-      {/* Department Selector for Mixto Mode */}
+      {/* Sección: Departamento (solo mixto) */}
       {activeDepartment === "mixto" && onDepartmentSelect && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "3px", background: "rgba(0, 0, 0, 0.25)", padding: "5px 7px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
-          <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-            Departamento para Estadísticas y Grupos:
-          </span>
+        <div style={{ ...sectionBox, background: "rgba(255, 255, 255, 0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
+          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-muted)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <Shield size={10} /> Departamento
+          </div>
           <div style={{ display: "flex", gap: "4px" }}>
             <button
               type="button"
               onClick={() => onDepartmentSelect("pc")}
               style={{
                 flex: 1,
-                padding: "4px 6px",
+                padding: "5px 6px",
                 borderRadius: "6px",
                 border: selectedDept === "pc" ? "1px solid rgba(56, 189, 248, 0.6)" : "1px solid transparent",
                 background: selectedDept === "pc" ? "rgba(56, 189, 248, 0.18)" : "rgba(255, 255, 255, 0.03)",
@@ -124,7 +124,7 @@ export const OperationTab: React.FC<OperationTabProps> = ({
               onClick={() => onDepartmentSelect("bomberos")}
               style={{
                 flex: 1,
-                padding: "4px 6px",
+                padding: "5px 6px",
                 borderRadius: "6px",
                 border: selectedDept === "bomberos" ? "1px solid rgba(239, 68, 68, 0.6)" : "1px solid transparent",
                 background: selectedDept === "bomberos" ? "rgba(239, 68, 68, 0.18)" : "rgba(255, 255, 255, 0.03)",
@@ -145,63 +145,76 @@ export const OperationTab: React.FC<OperationTabProps> = ({
         </div>
       )}
 
-      {/* Grupos de Trabajo en disposición vertical (soporta N grupos) */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        {Array.from({ length: activeGroupCount }).map((_, i) => {
-          const groupIdx = i + 1;
-          return (
-            <div key={groupIdx} style={{ ...sectionBox, position: "relative" }}>
-              {groupIdx > 1 && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px" }}>
-                  <span style={{ fontSize: "0.62rem", fontWeight: 700, color: getGroupColor(groupIdx) }}>
-                    Grupo #{groupIdx}
-                  </span>
-                  <button type="button" onClick={() => clearGroupSlot(groupIdx)} style={{ background: "transparent", border: "none", color: "var(--color-high)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }} title={`Quitar Grupo ${groupIdx}`}>
-                    <Trash2 size={10} />
-                  </button>
-                </div>
-              )}
-              <GroupFields
-                groupIndex={groupIdx}
-                log={localLog}
-                onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
-                colorVar={getGroupColor(groupIdx)}
-                hideHeader={groupIdx > 1}
-                workGroups={workGroups}
-              />
-            </div>
-          );
-        })}
+      {/* Sección: Grupos de Trabajo */}
+      <div style={{ ...sectionBox, background: "rgba(56, 189, 248, 0.03)", borderColor: "rgba(56, 189, 248, 0.15)" }}>
+        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+          <Users size={10} /> Equipos de Trabajo
+          <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontWeight: 400, marginLeft: "auto" }}>{activeGroupCount} activo{activeGroupCount > 1 ? "s" : ""}</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {Array.from({ length: activeGroupCount }).map((_, i) => {
+            const groupIdx = i + 1;
+            const color = getGroupColor(groupIdx);
+            return (
+              <div key={groupIdx} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "6px", padding: "5px 7px", transition: "all 0.15s ease" }}>
+                {groupIdx > 1 ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px", paddingBottom: "2px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <span style={{ fontSize: "0.63rem", fontWeight: 700, color }}>
+                      Grupo #{groupIdx}
+                    </span>
+                    <button type="button" onClick={() => clearGroupSlot(groupIdx)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "4px", color: "#f87171", fontSize: "0.52rem", fontWeight: 700, padding: "1px 5px", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }} title={`Quitar Grupo ${groupIdx}`}>
+                      <Trash2 size={8} /> Quitar
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: "0.63rem", fontWeight: 700, color, paddingBottom: "2px", marginBottom: "2px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <Users size={9} /> Grupo Primario
+                  </div>
+                )}
+                <GroupFields
+                  groupIndex={groupIdx}
+                  log={localLog}
+                  onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
+                  colorVar={color}
+                  hideHeader={groupIdx > 1}
+                  workGroups={workGroups}
+                />
+              </div>
+            );
+          })}
 
-        <button
-          type="button"
-          onClick={() => setActiveGroupCount((c) => c + 1)}
-          style={{ background: "transparent", border: `1px dashed ${getGroupColor(activeGroupCount + 1)}80`, borderRadius: "6px", color: getGroupColor(activeGroupCount + 1), fontSize: "0.62rem", padding: "6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
-        >
-          <Plus size={10} /> Añadir Otro Grupo (Grupo #{activeGroupCount + 1})
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveGroupCount((c) => c + 1)}
+            style={{ background: "transparent", border: `1px dashed ${getGroupColor(activeGroupCount + 1)}80`, borderRadius: "6px", color: getGroupColor(activeGroupCount + 1), fontSize: "0.62rem", padding: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
+          >
+            <Plus size={10} /> Añadir Grupo #{activeGroupCount + 1}
+          </button>
+        </div>
       </div>
 
-      {/* Nota: Las estadísticas por grupo se editan en el Panel de Información */}
-      <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", textAlign: "center", padding: "4px 0", fontStyle: "italic", borderTop: "1px solid rgba(255,255,255,0.04)", marginTop: "4px" }}>
+      {/* Nota */}
+      <div style={{ fontSize: "0.56rem", color: "var(--text-muted)", textAlign: "center", padding: "2px 0", fontStyle: "italic" }}>
         Edita las estadísticas de cada equipo en la pestaña "Información"
       </div>
 
-      {/* Observaciones */}
-      <div>
-        <span style={{ fontSize: "0.58rem", color: "var(--text-muted)", display: "block", marginBottom: "2px", fontWeight: 700, textTransform: "uppercase" }}>Observación del Día</span>
+      {/* Sección: Observaciones */}
+      <div style={{ ...sectionBox, background: "rgba(168, 85, 247, 0.03)", borderColor: "rgba(168, 85, 247, 0.12)", flex: 1, display: "flex", flexDirection: "column" }}>
+        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#a855f7", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+          <FileText size={10} /> Observación del Día
+        </div>
         <textarea
           value={localLog.observations || ""}
           onChange={(e) => onFieldChange("observations", e.target.value)}
-          style={{ ...inputStyle, resize: "vertical", height: "60px", minHeight: "45px" }}
+          style={{ ...inputStyle, resize: "vertical", height: "50px", minHeight: "40px", flex: 1 }}
           placeholder="Notas u observaciones de hoy..."
         />
       </div>
 
-      {/* Botón Guardar en la parte inferior del Sidebar */}
-      <div style={{ marginTop: "auto", paddingTop: "8px", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
-        <button type="button" onClick={onSave} style={{ ...saveBtnStyle(saveSuccess), width: "100%", padding: "10px", fontSize: "0.78rem", fontWeight: 700 }}>
-          <Save size={14} /> {saveSuccess ? "¡Registro Guardado!" : "Guardar Registro"}
+      {/* Botón Guardar */}
+      <div style={{ marginTop: "auto" }}>
+        <button type="button" onClick={onSave} style={{ ...saveBtnStyle(saveSuccess), width: "100%", padding: "8px", fontSize: "0.75rem", fontWeight: 700 }}>
+          <Save size={13} /> {saveSuccess ? "¡Registro Guardado!" : "Guardar Registro"}
         </button>
       </div>
     </div>
