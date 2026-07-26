@@ -487,12 +487,12 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       {/* Novedades unificadas */}
       {canEdit && onAddNovedad && (() => {
         // Build unified list: polygon novedades + contained points novedades
-        type UnifiedEntry = { id: string; time: string; text: string; timestamp: string; origin: "zona" | "punto"; originLabel?: string; originFeatId?: number; isOwn: boolean };
-        const ownEntries: UnifiedEntry[] = novedades.map((n) => ({ id: n.id, time: n.time, text: n.text, timestamp: n.timestamp, origin: "zona" as const, isOwn: true }));
+        type UnifiedEntry = { key: string; entryId: string; time: string; text: string; timestamp: string; origin: "zona" | "punto"; originLabel?: string; originFeatId?: number; isOwn: boolean };
+        const ownEntries: UnifiedEntry[] = novedades.map((n) => ({ key: `zone-${n.id}`, entryId: n.id, time: n.time, text: n.text, timestamp: n.timestamp, origin: "zona" as const, isOwn: true }));
         const foreignEntries: UnifiedEntry[] = [];
         for (const group of containedNovedades) {
           for (const n of group.novedades) {
-            foreignEntries.push({ id: n.id, time: n.time, text: n.text, timestamp: n.timestamp, origin: "punto" as const, originLabel: group.origin, originFeatId: group.originFeatId, isOwn: false });
+            foreignEntries.push({ key: `pt-${group.originFeatId}-${n.id}`, entryId: n.id, time: n.time, text: n.text, timestamp: n.timestamp, origin: "punto" as const, originLabel: group.origin, originFeatId: group.originFeatId, isOwn: false });
           }
         }
         const allEntries = [...ownEntries, ...foreignEntries].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -520,8 +520,8 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                   const canNavigate = isForeign && onNavigateToFeature && entry.originFeatId;
 
                   return (
-                    <div
-                      key={entry.id}
+                     <div
+                      key={entry.key}
                       style={{
                         display: "flex", alignItems: "flex-start", gap: "6px",
                         padding: "5px 8px", borderRadius: "6px",
@@ -541,7 +541,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                         <span style={{ fontSize: "0.6rem", color: "var(--text-main)", lineHeight: 1.3 }}>{entry.text}</span>
                       </div>
                       {!isForeign && onDeleteNovedad && (
-                        <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteNovedadId(entry.id); }} style={{ flexShrink: 0, padding: "1px", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                        <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteNovedadId(entry.entryId); }} style={{ flexShrink: 0, padding: "1px", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
                           <X size={10} />
                         </button>
                       )}
