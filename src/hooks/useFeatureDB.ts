@@ -564,6 +564,30 @@ export function useFeatureDB() {
     }
   }, []);
 
+  const updateGlobalNovedad = useCallback(async (entryId: string, newText: string): Promise<void> => {
+    let previousEntry: NovedadEntry | undefined;
+    setGlobalNovedades((prev) => {
+      const idx = prev.findIndex((n) => n.id === entryId);
+      if (idx === -1) return prev;
+      previousEntry = prev[idx];
+      const updated = [...prev];
+      updated[idx] = { ...prev[idx], text: newText };
+      return updated;
+    });
+    try {
+      const { error } = await supabase.from("novedades").update({ text: newText }).eq("id", entryId);
+      if (error) {
+        if (previousEntry) setGlobalNovedades((prev) => prev.map((n) => n.id === entryId ? previousEntry! : n));
+        console.error("[Supabase:update] Error actualizando novedad global:", error);
+        showToast("Error al editar novedad. Verifique su conexión.", "error");
+      }
+    } catch (err) {
+      if (previousEntry) setGlobalNovedades((prev) => prev.map((n) => n.id === entryId ? previousEntry! : n));
+      console.error("[Supabase:update:exception] Error actualizando novedad global:", err);
+      showToast("Sin conexión con el servidor. Reintente.", "error");
+    }
+  }, []);
+
   const handleFeatureDeleted = async (id: number): Promise<void> => {
     try {
       const { error } = await supabase.from("drawn_features").delete().eq("id", String(id));
@@ -588,6 +612,7 @@ export function useFeatureDB() {
     fetchGlobalNovedades,
     saveGlobalNovedad,
     deleteGlobalNovedad,
+    updateGlobalNovedad,
     refreshFeatures: fetchFromSupabase,
   };
 }

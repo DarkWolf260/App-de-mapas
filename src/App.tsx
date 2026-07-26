@@ -77,6 +77,7 @@ function App() {
     fetchGlobalNovedades,
     saveGlobalNovedad,
     deleteGlobalNovedad,
+    updateGlobalNovedad,
     refreshFeatures,
   } = useFeatureDB();
 
@@ -332,6 +333,7 @@ function App() {
           onFetchGlobalNovedades={fetchGlobalNovedades}
           onSaveGlobalNovedad={saveGlobalNovedad}
           onDeleteGlobalNovedad={deleteGlobalNovedad}
+          onUpdateGlobalNovedad={updateGlobalNovedad}
           onRefreshFeatures={refreshFeatures}
           onNavigateToFeature={(feat) => {
             setRangeReportFeature(null);

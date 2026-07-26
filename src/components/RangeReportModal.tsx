@@ -36,6 +36,7 @@ interface RangeReportModalProps {
   onFetchGlobalNovedades?: (date: string, department?: string) => void;
   onSaveGlobalNovedad?: (entry: NovedadEntry, date: string, department: string) => Promise<void>;
   onDeleteGlobalNovedad?: (entryId: string) => Promise<void>;
+  onUpdateGlobalNovedad?: (entryId: string, newText: string) => Promise<void>;
   onRefreshFeatures?: () => Promise<void>;
   onNavigateToFeature?: (feat: DrawnFeature) => void;
 }
@@ -53,6 +54,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   onFetchGlobalNovedades,
   onSaveGlobalNovedad,
   onDeleteGlobalNovedad,
+  onUpdateGlobalNovedad,
   onRefreshFeatures,
   onNavigateToFeature,
 }) => {
@@ -67,6 +69,8 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const [novTime, setNovTime] = useState(() => new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false }));
   const [novType, setNovType] = useState<NovedadType>("novedad");
     const [confirmDeleteNovedad, setConfirmDeleteNovedad] = useState<TableEntry | null>(null);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [editingEntryText, setEditingEntryText] = useState("");
 
   const dates = useMemo(() => getDatesRange(REPORT_START_DATE), []);
   const [activeDateIndex, setActiveDateIndex] = useState(() => {
@@ -343,23 +347,13 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const tableEntries = useMemo<TableEntry[]>(() => {
     const features = isAllMode ? allFeatures : feat ? [feat] : [];
     const entries: TableEntry[] = [];
-    const handledChildIds = new Set<string>();
 
     // Novedades globales independientes de la bitácora
     globalNovedades.forEach((n) => {
       entries.push({ id: n.id, time: n.time, text: n.text, origin: "Bitácora", isObservation: false, type: n.type, rawTimestamp: n.timestamp, level: "libro" });
     });
 
-    if (isAllMode) {
-      for (const pt of features) {
-        if (!isSectorFeature(pt)) continue;
-        allFeatures
-          .filter((c) => String(parentsMap[c.id]) === String(pt.id))
-          .forEach((c) => handledChildIds.add(String(c.id)));
-      }
-    }
     for (const pt of features) {
-      if (handledChildIds.has(String(pt.id))) continue;
       const log = getLogForDate(pt, activeDate);
       const isSector = isSectorFeature(pt);
       (log.novedades || []).forEach((n) => {
@@ -368,7 +362,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
       if (log.observations && log.observations.trim()) {
         entries.push({ id: `obs-${pt.id}`, time: "—", text: log.observations, origin: pt.title, isObservation: true, featureId: pt.id, level: isSector ? "zona" : "punto" });
       }
-      if (isSector) {
+      if (isSector && isAllMode) {
         const containedPts = allFeatures.filter((c) => String(parentsMap[c.id]) === String(pt.id));
         for (const cPt of containedPts) {
           const cLog = getLogForDate(cPt, activeDate);
@@ -384,10 +378,11 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     return entries
       .filter((e, i, arr) => arr.findIndex((x) => x.id === e.id) === i)
       .sort((a, b) => {
-        if (a.isObservation && !b.isObservation) return 1;
-        if (!a.isObservation && b.isObservation) return -1;
-        if (a.rawTimestamp && b.rawTimestamp) return new Date(b.rawTimestamp).getTime() - new Date(a.rawTimestamp).getTime();
-        return 0;
+        const timeA = a.time || "";
+        const timeB = b.time || "";
+        if (timeA === "—") return 1;
+        if (timeB === "—") return -1;
+        return timeA.localeCompare(timeB);
       });
   }, [isAllMode, allFeatures, feat, activeDate, activeDepartment, parentsMap, globalNovedades]);
 
@@ -432,6 +427,36 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     if (!entry.featureId || !onNavigateToFeature) return;
     const target = allFeatures.find((f) => f.id === entry.featureId);
     if (target) onNavigateToFeature(target);
+  };
+
+  const handleStartEditEntry = (entry: TableEntry) => {
+    if (entry.isObservation) return;
+    setEditingEntryId(entry.id);
+    setEditingEntryText(entry.text);
+  };
+
+  const handleSaveEditEntry = async (entry: TableEntry) => {
+    if (!editingEntryText.trim()) return;
+    if (entry.level === "libro") {
+      await onUpdateGlobalNovedad?.(entry.id, editingEntryText.trim());
+    } else if (entry.featureId && onSaveDailyLog) {
+      const pt = allFeatures.find((f) => f.id === entry.featureId);
+      if (pt) {
+        const log = getLogForDate(pt, activeDate);
+        const updatedNovedades = (log.novedades || []).map((n) =>
+          n.id === entry.id ? { ...n, text: editingEntryText.trim() } : n
+        );
+        await onSaveDailyLog(pt.id, { ...log, novedades: updatedNovedades });
+      }
+    }
+    setEditingEntryId(null);
+    setEditingEntryText("");
+    await onRefreshFeatures?.();
+  };
+
+  const handleCancelEditEntry = () => {
+    setEditingEntryId(null);
+    setEditingEntryText("");
   };
 
   return (
@@ -1261,35 +1286,37 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                 <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "6px", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
                   <Plus size={10} /> Nueva Entrada
                 </div>
-                <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                    <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600 }}>Hora</span>
-                    <input
-                      type="time"
-                      value={novTime}
-                      onChange={(e) => setNovTime(e.target.value)}
-                      style={{ width: "80px", fontSize: "0.65rem", padding: "5px 6px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(17, 24, 39, 0.6)", color: "var(--text-main)", fontVariantNumeric: "tabular-nums", outline: "none" }}
-                    />
-                  </div>
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "3px" }}>
                     <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600 }}>Novedad</span>
                     <textarea
                       value={novText}
                       onChange={(e) => setNovText(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAddNovedad(); } }}
                       placeholder="Escribir novedad..."
-                      rows={2}
-                      style={{ flex: 1, resize: "none", fontSize: "0.65rem", padding: "5px 8px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(17, 24, 39, 0.5)", color: "var(--text-main)", fontFamily: "inherit", outline: "none" }}
+                      rows={4}
+                      style={{ resize: "vertical", fontSize: "0.65rem", padding: "8px 10px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(17, 24, 39, 0.5)", color: "var(--text-main)", fontFamily: "inherit", outline: "none", lineHeight: 1.5 }}
                     />
                   </div>
-                  <button
-                    onClick={handleAddNovedad}
-                    disabled={!novText.trim()}
-                    title="Agregar"
-                    style={{ padding: "5px 12px", borderRadius: "6px", border: "1px solid rgba(34,197,94,0.3)", background: novText.trim() ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.02)", color: novText.trim() ? "var(--color-green)" : "var(--text-muted)", cursor: novText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", gap: "4px", fontSize: "0.62rem", fontWeight: 700, transition: "all 0.15s ease", whiteSpace: "nowrap" }}
-                  >
-                    <Plus size={12} /> Agregar
-                  </button>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                      <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600 }}>Hora</span>
+                      <input
+                        type="time"
+                        value={novTime}
+                        onChange={(e) => setNovTime(e.target.value)}
+                        style={{ width: "90px", fontSize: "0.65rem", padding: "6px 8px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(17, 24, 39, 0.6)", color: "var(--text-main)", fontVariantNumeric: "tabular-nums", outline: "none" }}
+                      />
+                    </div>
+                    <button
+                      onClick={handleAddNovedad}
+                      disabled={!novText.trim()}
+                      title="Agregar"
+                      style={{ padding: "6px 16px", borderRadius: "6px", border: "1px solid rgba(34,197,94,0.3)", background: novText.trim() ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.02)", color: novText.trim() ? "var(--color-green)" : "var(--text-muted)", cursor: novText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.65rem", fontWeight: 700, transition: "all 0.15s ease", whiteSpace: "nowrap" }}
+                    >
+                      <Plus size={12} /> Agregar
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1351,7 +1378,38 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                           </td>
                           <td style={{ padding: "6px 10px", color: entry.isObservation ? "var(--text-muted)" : isLibro ? "var(--color-green)" : isPunto ? "#c4b5fd" : "var(--text-main)", fontStyle: entry.isObservation ? "italic" : "normal", lineHeight: 1.4 }}>
                             {entry.isObservation && <span style={{ color: "var(--accent-orange)", fontWeight: 700, fontSize: "0.55rem", marginRight: "4px" }}>OBS:</span>}
-                            {entry.text}
+                            {editingEntryId === entry.id ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                <textarea
+                                  value={editingEntryText}
+                                  onChange={(e) => setEditingEntryText(e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEditEntry(entry); } }}
+                                  autoFocus
+                                  rows={3}
+                                  style={{
+                                    fontSize: "0.62rem", padding: "4px 6px", borderRadius: "4px",
+                                    border: "1px solid rgba(56,189,248,0.3)", background: "rgba(17,24,39,0.7)",
+                                    color: "var(--text-main)", fontFamily: "inherit", resize: "vertical",
+                                    outline: "none", width: "100%",
+                                  }}
+                                />
+                                <div style={{ display: "flex", gap: "4px" }}>
+                                  <button onClick={() => handleSaveEditEntry(entry)} disabled={!editingEntryText.trim()} style={{ fontSize: "0.55rem", padding: "2px 8px", borderRadius: "3px", border: "1px solid rgba(34,197,94,0.3)", background: editingEntryText.trim() ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.02)", color: editingEntryText.trim() ? "var(--color-green)" : "var(--text-muted)", cursor: editingEntryText.trim() ? "pointer" : "default" }}>
+                                    Guardar
+                                  </button>
+                                  <button onClick={handleCancelEditEntry} style={{ fontSize: "0.55rem", padding: "2px 8px", borderRadius: "3px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)", color: "var(--text-muted)", cursor: "pointer" }}>
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <span
+                                onClick={(e) => { e.stopPropagation(); if (!entry.isObservation && onSaveDailyLog) handleStartEditEntry(entry); }}
+                                style={(!entry.isObservation && onSaveDailyLog) ? { cursor: "text", borderBottom: "1px dashed rgba(255,255,255,0.15)" } : {}}
+                              >
+                                {entry.text}
+                              </span>
+                            )}
                           </td>
                           <td style={{ padding: "6px 10px" }}>
                             <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", padding: "1px 6px", borderRadius: "4px", fontSize: "0.55rem", fontWeight: 600, background: entry.isObservation ? "rgba(251, 146, 60, 0.1)" : isLibro ? "rgba(34, 197, 94, 0.1)" : isPunto ? "rgba(167, 139, 250, 0.12)" : "rgba(56, 189, 248, 0.1)", color: entry.isObservation ? "var(--accent-orange)" : isLibro ? "var(--color-green)" : isPunto ? "#a78bfa" : "var(--color-info)", ...(canNavigate ? { cursor: "pointer" } : {}) }}>
