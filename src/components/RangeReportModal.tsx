@@ -394,11 +394,10 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const handleAddNovedad = async () => {
     if (!novText.trim() || !onSaveGlobalNovedad) return;
     const now = new Date();
-    const timeStr = now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false });
     const entry: NovedadEntry = {
       id: crypto.randomUUID(),
       timestamp: now.toISOString(),
-      time: timeStr,
+      time: novTime,
       text: novText.trim(),
       type: novType,
     };
