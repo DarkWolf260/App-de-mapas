@@ -340,15 +340,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
               <Activity size={10} /> Total del Sector
             </div>
             <MetricDisplayGrid source={aggregatedLog} />
-            {aggregatedLog.observations && (
-              <div style={{ marginTop: "4px" }}>
-                <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "3px" }}><AlertTriangle size={9} /> Observaciones</span>
-                <span style={{ fontSize: "0.65rem", color: "var(--text-main)", lineHeight: 1.3, whiteSpace: "pre-line" }}>{aggregatedLog.observations}</span>
-              </div>
-            )}
           </div>
-
-          {/* Boton Guardar Estadisticas */}
           {canEdit && onSaveStats && (
             <button type="button" onClick={onSaveStats} style={{ width: "100%", background: saveSuccess ? "rgba(34, 197, 94, 0.18)" : "rgba(56, 189, 248, 0.12)", border: `1px solid ${saveSuccess ? "rgba(34, 197, 94, 0.5)" : "rgba(56, 189, 248, 0.35)"}`, borderRadius: "7px", color: saveSuccess ? "#22c55e" : "#38bdf8", fontSize: "0.72rem", fontWeight: 700, padding: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "all 0.2s ease" }}>
               {saveSuccess ? <Check size={13} /> : <Save size={13} />}
@@ -365,7 +357,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       )}
 
       {/* Punto: sin datos */}
-      {!isPolygon && pointGroups.length === 0 && !pointHasMetrics && !log.observations && (
+      {!isPolygon && pointGroups.length === 0 && !pointHasMetrics && (
         <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
           Sin datos registrados para hoy
         </div>
@@ -477,12 +469,6 @@ export const InfoTab: React.FC<InfoTabProps> = ({
             <Activity size={10} /> Reportes de Hoy
           </div>
           <MetricDisplayGrid source={log} />
-          {log.observations && (
-            <div style={{ marginTop: "4px" }}>
-              <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "3px" }}><AlertTriangle size={9} /> Observacion</span>
-              <span style={{ fontSize: "0.65rem", color: "var(--text-main)", lineHeight: 1.3, whiteSpace: "pre-line" }}>{log.observations}</span>
-            </div>
-          )}
         </div>
       )}
 

@@ -361,9 +361,6 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
       (log.novedades || []).forEach((n) => {
         entries.push({ id: n.id, time: n.time, text: n.text, origin: pt.title, isObservation: false, type: n.type, featureId: pt.id, rawTimestamp: n.timestamp, level: isSector ? "zona" : "punto" });
       });
-      if (log.observations && log.observations.trim()) {
-        entries.push({ id: `obs-${pt.id}`, time: "—", text: log.observations, origin: pt.title, isObservation: true, featureId: pt.id, level: isSector ? "zona" : "punto" });
-      }
       if (isSector && isAllMode) {
         const containedPts = allFeatures.filter((c) => String(parentsMap[c.id]) === String(pt.id));
         for (const cPt of containedPts) {
@@ -371,21 +368,12 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
           (cLog.novedades || []).forEach((n) => {
             entries.push({ id: n.id, time: n.time, text: n.text, origin: cPt.title, isObservation: false, type: n.type, featureId: cPt.id, rawTimestamp: n.timestamp, level: "punto" });
           });
-          if (cLog.observations && cLog.observations.trim()) {
-            entries.push({ id: `obs-${cPt.id}`, time: "—", text: cLog.observations, origin: cPt.title, isObservation: true, featureId: cPt.id, level: "punto" });
-          }
         }
       }
     }
     return entries
       .filter((e, i, arr) => arr.findIndex((x) => x.id === e.id) === i)
-      .sort((a, b) => {
-        const timeA = a.time || "";
-        const timeB = b.time || "";
-        if (timeA === "—") return 1;
-        if (timeB === "—") return -1;
-        return timeA.localeCompare(timeB);
-      });
+      .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
   }, [isAllMode, allFeatures, feat, activeDate, activeDepartment, parentsMap, globalNovedades]);
 
   const handleAddNovedad = async () => {
