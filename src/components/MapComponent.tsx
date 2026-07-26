@@ -99,7 +99,11 @@ interface MapComponentProps {
     }
     if (!mapPoint) mapPoint = new Point({ longitude: -66.9331, latitude: 10.6000 });
     setCustomPopup({ mapPoint, feat });
-  }, [setCustomPopup]);
+    // Also fly the map to the feature's location
+    if (viewRef.current) {
+      viewRef.current.goTo({ target: mapPoint, zoom: Math.max(viewRef.current.zoom, 18) }, { duration: 400 });
+    }
+  }, [setCustomPopup, viewRef]);
 
   const defaultX = typeof window !== "undefined" ? Math.floor(window.innerWidth / 2 - 180) : 400;
   const { position: toolbarPos, dragHandleProps, isDragging } = useDraggable(
