@@ -105,6 +105,11 @@ interface MapComponentProps {
     }
   }, [setCustomPopup, viewRef]);
 
+  const handlePopupDateChange = React.useCallback((date: string) => {
+    setPopupEditDate(date);
+    props.onSelectedDateChange?.(date);
+  }, [setPopupEditDate, props.onSelectedDateChange]);
+
   const defaultX = typeof window !== "undefined" ? Math.floor(window.innerWidth / 2 - 180) : 400;
   const { position: toolbarPos, dragHandleProps, isDragging } = useDraggable(
     defaultX,
@@ -155,7 +160,7 @@ interface MapComponentProps {
         drawnFeatures={drawnFeatures}
         layerVisibility={layerVisibility}
         popupEditDate={popupEditDate}
-        setPopupEditDate={setPopupEditDate}
+        setPopupEditDate={handlePopupDateChange}
         onSaveDailyLog={onSaveDailyLog}
         onToggleFeatureLock={onToggleFeatureLock}
         onRenameFeature={onRenameFeature}

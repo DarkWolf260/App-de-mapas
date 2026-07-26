@@ -318,6 +318,8 @@ function App() {
           onClose={() => setRangeReportFeature(null)}
           onSaveDailyLog={handleSaveDailyLog}
           activeDepartment={activeDepartment}
+          selectedDate={selectedDate}
+          onSelectedDateChange={setSelectedDate}
         />
       )}
 

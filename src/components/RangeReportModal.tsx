@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import type { DrawnFeature, DailyLog, DepartmentView, WorkGroup, NovedadEntry, NovedadType } from "../types";
 import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin, List, Layers, FileText, Plus } from "lucide-react";
 import { sectionBox } from "./popup/popupStyles";
@@ -30,6 +30,8 @@ interface RangeReportModalProps {
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
   activeDepartment?: DepartmentView;
   workGroups?: WorkGroup[];
+  selectedDate?: string;
+  onSelectedDateChange?: (date: string) => void;
 }
 
 const RangeReportModal: React.FC<RangeReportModalProps> = ({
@@ -39,6 +41,8 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   onSaveDailyLog,
   activeDepartment = "pc",
   workGroups = [],
+  selectedDate: externalDate,
+  onSelectedDateChange,
 }) => {
   const [activeTab, setActiveTab] = useState<"registro" | "estadisticas" | "novedades">("registro");
   const [activeDateIndex, setActiveDateIndex] = useState(0);
@@ -53,10 +57,31 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const [novType, setNovType] = useState<NovedadType>("novedad");
   const [confirmDeleteNovedad, setConfirmDeleteNovedad] = useState<{ featureId: number; entryId: string } | null>(null);
 
-  const dates = getDatesRange(REPORT_START_DATE);
+  const dates = useMemo(() => getDatesRange(REPORT_START_DATE), []);
   const isAllMode = feat === "all";
   const activeDate = dates[activeDateIndex];
   const { parentsMap } = useMemo(() => buildParentsMap(allFeatures || []), [allFeatures]);
+
+  const lastExternalDateRef = useRef(externalDate);
+
+  useEffect(() => {
+    if (externalDate && externalDate !== lastExternalDateRef.current) {
+      lastExternalDateRef.current = externalDate;
+      const idx = dates.indexOf(externalDate);
+      if (idx !== -1 && idx !== activeDateIndex) {
+        setActiveDateIndex(idx);
+        setActiveEditFeatureId(null);
+      }
+    }
+  }, [externalDate, dates, activeDateIndex]);
+
+  const syncDateChange = (newIndex: number) => {
+    setActiveDateIndex(newIndex);
+    setActiveEditFeatureId(null);
+    if (onSelectedDateChange && dates[newIndex]) {
+      onSelectedDateChange(dates[newIndex]);
+    }
+  };
 
   const dayStats = useMemo(
     () => (feat ? (isAllMode ? getDayStats(allFeatures, activeDate, activeDepartment) : getDayStats([feat], activeDate, activeDepartment)) : null),
@@ -214,15 +239,13 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
 
   const handlePrevDay = () => {
     if (activeDateIndex < dates.length - 1) {
-      setActiveDateIndex(activeDateIndex + 1);
-      setActiveEditFeatureId(null);
+      syncDateChange(activeDateIndex + 1);
     }
   };
 
   const handleNextDay = () => {
     if (activeDateIndex > 0) {
-      setActiveDateIndex(activeDateIndex - 1);
-      setActiveEditFeatureId(null);
+      syncDateChange(activeDateIndex - 1);
     }
   };
 
@@ -298,27 +321,54 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     type?: NovedadType;
     featureId?: number;
     rawTimestamp?: string;
+    level?: "libro" | "zona" | "punto";
   }
 
   const tableEntries = useMemo<TableEntry[]>(() => {
     const features = isAllMode ? allFeatures : feat ? [feat] : [];
     const entries: TableEntry[] = [];
-    for (const pt of features) {
-      const log = getLogForDate(pt, activeDate);
-      (log.novedades || []).forEach((n) => {
-        entries.push({ id: n.id, time: n.time, text: n.text, origin: pt.title, isObservation: false, type: n.type, featureId: pt.id, rawTimestamp: n.timestamp });
-      });
-      if (log.observations && log.observations.trim()) {
-        entries.push({ id: `obs-${pt.id}`, time: "—", text: log.observations, origin: pt.title, isObservation: true, featureId: pt.id });
+    const handledChildIds = new Set<string>();
+    if (isAllMode) {
+      for (const pt of features) {
+        if (!isSectorFeature(pt)) continue;
+        allFeatures
+          .filter((c) => String(parentsMap[c.id]) === String(pt.id))
+          .forEach((c) => handledChildIds.add(String(c.id)));
       }
     }
-    return entries.sort((a, b) => {
-      if (a.isObservation && !b.isObservation) return 1;
-      if (!a.isObservation && b.isObservation) return -1;
-      if (a.rawTimestamp && b.rawTimestamp) return new Date(b.rawTimestamp).getTime() - new Date(a.rawTimestamp).getTime();
-      return 0;
-    });
-  }, [isAllMode, allFeatures, feat, activeDate, activeDepartment]);
+    for (const pt of features) {
+      if (handledChildIds.has(String(pt.id))) continue;
+      const log = getLogForDate(pt, activeDate);
+      const isSector = isSectorFeature(pt);
+      (log.novedades || []).forEach((n) => {
+        entries.push({ id: n.id, time: n.time, text: n.text, origin: pt.title, isObservation: false, type: n.type, featureId: pt.id, rawTimestamp: n.timestamp, level: isSector ? "zona" : "punto" });
+      });
+      if (log.observations && log.observations.trim()) {
+        entries.push({ id: `obs-${pt.id}`, time: "—", text: log.observations, origin: pt.title, isObservation: true, featureId: pt.id, level: isSector ? "zona" : "punto" });
+      }
+      // For sectors (polygons), also include novedades from contained points
+      if (isSector) {
+        const containedPts = allFeatures.filter((c) => String(parentsMap[c.id]) === String(pt.id));
+        for (const cPt of containedPts) {
+          const cLog = getLogForDate(cPt, activeDate);
+          (cLog.novedades || []).forEach((n) => {
+            entries.push({ id: n.id, time: n.time, text: n.text, origin: cPt.title, isObservation: false, type: n.type, featureId: cPt.id, rawTimestamp: n.timestamp, level: "punto" });
+          });
+          if (cLog.observations && cLog.observations.trim()) {
+            entries.push({ id: `obs-${cPt.id}`, time: "—", text: cLog.observations, origin: cPt.title, isObservation: true, featureId: cPt.id, level: "punto" });
+          }
+        }
+      }
+    }
+    return entries
+      .filter((e, i, arr) => arr.findIndex((x) => x.id === e.id) === i)
+      .sort((a, b) => {
+        if (a.isObservation && !b.isObservation) return 1;
+        if (!a.isObservation && b.isObservation) return -1;
+        if (a.rawTimestamp && b.rawTimestamp) return new Date(b.rawTimestamp).getTime() - new Date(a.rawTimestamp).getTime();
+        return 0;
+      });
+  }, [isAllMode, allFeatures, feat, activeDate, activeDepartment, parentsMap]);
 
   const handleAddNovedad = async () => {
     if (!novText.trim() || !onSaveDailyLog || !defaultSaveFeature) return;
@@ -345,6 +395,11 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     const updatedLog = { ...log, novedades: (log.novedades || []).filter((n) => n.id !== entryId) };
     await onSaveDailyLog(pt.id, updatedLog);
   };
+
+  const singleFeatContainedPts = useMemo(() => {
+    if (!feat || isAllMode || !isSectorFeature(feat)) return [];
+    return allFeatures.filter((c) => String(parentsMap[c.id]) === String(feat.id));
+  }, [feat, isAllMode, allFeatures, parentsMap]);
 
   return (
     <div className="rr-backdrop">
@@ -800,8 +855,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                       onSelectDate={(dStr) => {
                         const idx = dates.indexOf(dStr);
                         if (idx !== -1) {
-                          setActiveDateIndex(idx);
-                          setActiveEditFeatureId(null);
+                          syncDateChange(idx);
                         }
                         setShowCalendarPopover(false);
                       }}
@@ -1086,22 +1140,55 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                 </div>
               )}
             </>
-          ) : (
-            filteredDates.length === 0 ? (
-              <div className="rr-empty-state">
-                <ShieldAlert size={28} style={{ opacity: 0.5, color: "var(--color-info)" }} />
-                <div>No hay registros que coincidan con el filtro en este rango de fechas.</div>
-              </div>
             ) : (
-              filteredDates.map((dateStr) => {
-                const logs = feat.dailyLogs?.filter((l) =>
-                  l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
-                ) || [];
-                const log = logs[0];
-                return <DateRow key={dateStr} dateStr={dateStr} log={log} feat={feat} onSaveDailyLog={onSaveDailyLog} activeDepartment={activeDepartment} workGroups={workGroups} />;
-              })
-            )
-          )}
+              <>
+                {filteredDates.length === 0 && !isSectorFeature(feat) ? (
+                  <div className="rr-empty-state">
+                    <ShieldAlert size={28} style={{ opacity: 0.5, color: "var(--color-info)" }} />
+                    <div>No hay registros que coincidan con el filtro en este rango de fechas.</div>
+                  </div>
+                ) : (
+                  filteredDates.map((dateStr) => {
+                    const logs = feat.dailyLogs?.filter((l) =>
+                      l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+                    ) || [];
+                    const log = logs[0];
+                    return <DateRow key={dateStr} dateStr={dateStr} log={log} feat={feat} onSaveDailyLog={onSaveDailyLog} activeDepartment={activeDepartment} workGroups={workGroups} />;
+                  })
+                )}
+                {singleFeatContainedPts.length > 0 && (
+                    <div style={{ marginTop: "8px", padding: "8px 10px", background: "rgba(56, 189, 248, 0.04)", borderRadius: "8px", border: "1px dashed rgba(56, 189, 248, 0.2)", display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <MapPin size={10} /> PUNTOS CONTENIDOS ({singleFeatContainedPts.length})
+                      </div>
+                      {singleFeatContainedPts.map((cp) => {
+                        const cpLogs = cp.dailyLogs?.filter((l) =>
+                          l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+                        ) || [];
+                        const cpLog = cpLogs[0];
+                        if (!cpLog) return null;
+                        const hasData = logHasAnyData(cpLog);
+                        return (
+                          <div key={cp.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.63rem", color: "var(--text-main)", padding: "3px 6px", background: hasData ? "rgba(167, 139, 250, 0.06)" : "rgba(255,255,255,0.02)", borderRadius: "4px", borderLeft: `2px solid ${hasData ? "#a78bfa" : "transparent"}` }}>
+                            <span style={{ fontWeight: 600 }}>{cp.title} {cpLog.groupName ? `(${cpLog.groupName})` : ""}</span>
+                            <div style={{ display: "flex", gap: "6px", fontSize: "0.6rem" }}>
+                              {hasData ? (
+                                <>
+                                  {(parseInt(cpLog.rescuedCount || "0", 10) + parseInt(cpLog.rescuedCount2 || "0", 10)) > 0 && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{parseInt(cpLog.rescuedCount || "0", 10) + parseInt(cpLog.rescuedCount2 || "0", 10)}</span>}
+                                  {(parseInt(cpLog.recoveredCount || "0", 10) + parseInt(cpLog.recoveredCount2 || "0", 10)) > 0 && <span style={{ color: "var(--color-high)", fontWeight: 700 }}>{parseInt(cpLog.recoveredCount || "0", 10) + parseInt(cpLog.recoveredCount2 || "0", 10)}</span>}
+                                  {(parseInt(cpLog.prehospitalCareCount || "0", 10) + parseInt(cpLog.prehospitalCareCount2 || "0", 10)) > 0 && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{parseInt(cpLog.prehospitalCareCount || "0", 10) + parseInt(cpLog.prehospitalCareCount2 || "0", 10)}</span>}
+                                </>
+                              ) : (
+                                <span style={{ color: "var(--text-muted)", fontSize: "0.58rem" }}>Sin datos</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+              </>
+            )}
         </div>
         </> /* end registro tab */
         )}
@@ -1124,7 +1211,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                     </button>
                     {showCalendarPopover && (
                       <div className="rr-calendar-popover" onClick={(e) => e.stopPropagation()}>
-                        <BitacoraCalendar selectedDate={activeDate} onSelectDate={(dStr) => { const idx = dates.indexOf(dStr); if (idx !== -1) { setActiveDateIndex(idx); setActiveEditFeatureId(null); } setShowCalendarPopover(false); }} />
+                        <BitacoraCalendar selectedDate={activeDate} onSelectDate={(dStr) => { const idx = dates.indexOf(dStr); if (idx !== -1) { syncDateChange(idx); } setShowCalendarPopover(false); }} />
                       </div>
                     )}
                   </div>
@@ -1197,21 +1284,28 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {tableEntries.map((entry, idx) => (
-                        <tr key={entry.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)", background: idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)" }}>
-                          <td style={{ padding: "6px 10px", fontVariantNumeric: "tabular-nums", fontWeight: 600, color: entry.isObservation ? "var(--text-muted)" : "var(--text-main)", whiteSpace: "nowrap" }}>
+                      {tableEntries.map((entry, idx) => {
+                        const isPunto = entry.level === "punto";
+                        const rowBg = entry.isObservation
+                          ? "rgba(251,146,60,0.04)"
+                          : isPunto
+                            ? (idx % 2 === 0 ? "rgba(167,139,250,0.04)" : "rgba(167,139,250,0.02)")
+                            : (idx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)");
+                        return (
+                        <tr key={entry.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)", background: rowBg }}>
+                          <td style={{ padding: "6px 10px", fontVariantNumeric: "tabular-nums", fontWeight: 600, color: entry.isObservation ? "var(--text-muted)" : isPunto ? "#c4b5fd" : "var(--text-main)", whiteSpace: "nowrap" }}>
                             {entry.isObservation ? (
                               <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontStyle: "italic" }}>obs.</span>
                             ) : (
                               <>{entry.time} <span style={{ fontSize: "0.5rem", color: "var(--text-muted)" }}>HLV</span></>
                             )}
                           </td>
-                          <td style={{ padding: "6px 10px", color: entry.isObservation ? "var(--text-muted)" : "var(--text-main)", fontStyle: entry.isObservation ? "italic" : "normal", lineHeight: 1.4 }}>
+                          <td style={{ padding: "6px 10px", color: entry.isObservation ? "var(--text-muted)" : isPunto ? "#c4b5fd" : "var(--text-main)", fontStyle: entry.isObservation ? "italic" : "normal", lineHeight: 1.4 }}>
                             {entry.isObservation && <span style={{ color: "var(--accent-orange)", fontWeight: 700, fontSize: "0.55rem", marginRight: "4px" }}>OBS:</span>}
                             {entry.text}
                           </td>
                           <td style={{ padding: "6px 10px" }}>
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", padding: "1px 6px", borderRadius: "4px", fontSize: "0.55rem", fontWeight: 600, background: entry.isObservation ? "rgba(251, 146, 60, 0.1)" : "rgba(56, 189, 248, 0.1)", color: entry.isObservation ? "var(--accent-orange)" : "var(--color-info)" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", padding: "1px 6px", borderRadius: "4px", fontSize: "0.55rem", fontWeight: 600, background: entry.isObservation ? "rgba(251, 146, 60, 0.1)" : isPunto ? "rgba(167, 139, 250, 0.12)" : "rgba(56, 189, 248, 0.1)", color: entry.isObservation ? "var(--accent-orange)" : isPunto ? "#a78bfa" : "var(--color-info)" }}>
                               {entry.origin}
                             </span>
                           </td>
@@ -1225,7 +1319,8 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                             </td>
                           )}
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
