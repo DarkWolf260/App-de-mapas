@@ -45,7 +45,6 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   onSelectedDateChange,
 }) => {
   const [activeTab, setActiveTab] = useState<"registro" | "estadisticas" | "novedades">("registro");
-  const [activeDateIndex, setActiveDateIndex] = useState(0);
   const [activeEditFeatureId, setActiveEditFeatureId] = useState<number | null>(null);
   const [arrivalFilter, setArrivalFilter] = useState<"all" | "arrived" | "not_arrived">("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,6 +57,13 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const [confirmDeleteNovedad, setConfirmDeleteNovedad] = useState<{ featureId: number; entryId: string } | null>(null);
 
   const dates = useMemo(() => getDatesRange(REPORT_START_DATE), []);
+  const [activeDateIndex, setActiveDateIndex] = useState(() => {
+    if (externalDate) {
+      const idx = dates.indexOf(externalDate);
+      if (idx !== -1) return idx;
+    }
+    return 0;
+  });
   const isAllMode = feat === "all";
   const activeDate = dates[activeDateIndex];
   const { parentsMap } = useMemo(() => buildParentsMap(allFeatures || []), [allFeatures]);
