@@ -184,16 +184,30 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
       const phone = (log as any)[`managerPhone${idxS}`];
       const unit = (log as any)[`unitOut${idxS}`];
       const officers = (log as any)[`officersCount${idxS}`];
-      const rescued = (log as any)[`rescuedCount${idxS}`] || (log as any)[`rescuedCount${slot}`];
-      const recovered = (log as any)[`recoveredCount${idxS}`] || (log as any)[`recoveredCount${slot}`];
-      const pets = (log as any)[`rescuedPetsCount${idxS}`] || (log as any)[`rescuedPetsCount${slot}`];
-      const prehospital = (log as any)[`prehospitalCareCount${idxS}`] || (log as any)[`prehospitalCareCount${slot}`];
-      const transfers = (log as any)[`transfersCount${idxS}`] || (log as any)[`transfersCount${slot}`];
+      // Para slot 1, los campos planos rescuedCount/recoveredCount/etc. son estadísticas
+      // generales del polígono, NO métricas del grupo 1. El grupo 1 solo hereda identidad.
+      const rescued = slot === 1
+        ? ""
+        : ((log as any)[`rescuedCount${idxS}`] || (log as any)[`rescuedCount${slot}`] || "");
+      const recovered = slot === 1
+        ? ""
+        : ((log as any)[`recoveredCount${idxS}`] || (log as any)[`recoveredCount${slot}`] || "");
+      const pets = slot === 1
+        ? ""
+        : ((log as any)[`rescuedPetsCount${idxS}`] || (log as any)[`rescuedPetsCount${slot}`] || "");
+      const prehospital = slot === 1
+        ? ""
+        : ((log as any)[`prehospitalCareCount${idxS}`] || (log as any)[`prehospitalCareCount${slot}`] || "");
+      const transfers = slot === 1
+        ? ""
+        : ((log as any)[`transfersCount${idxS}`] || (log as any)[`transfersCount${slot}`] || "");
       const arrived = (log as any)[`hasArrivedG${slot}`];
       const commissionId = (log as any)[`commissionId${idxS}`];
       const isVolunteer = (log as any)[`isVolunteer${idxS}`];
 
-      const hasData = !!(name?.trim() || officers || unit?.trim() || mgr?.trim() || rescued || recovered || prehospital || transfers);
+      const hasData = slot === 1
+        ? !!(name?.trim() || officers || unit?.trim() || mgr?.trim())
+        : !!(name?.trim() || officers || unit?.trim() || mgr?.trim() || rescued || recovered || prehospital || transfers);
       if (hasData) {
         addLegacy(slot, name, mgr, phone, unit, officers, rescued, recovered, pets, prehospital, transfers, arrived, commissionId, isVolunteer);
       } else if (slot > 4) {

@@ -115,10 +115,7 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
     { key: (`officersCount${idxStr}`) as keyof DailyLog, placeholder: "Cant. Funcs.", type: "number", min: "0" },
   ];
 
-  const arrivedKey = (`hasArrivedG${groupIndex}`) as keyof DailyLog;
   const phoneKey = (`managerPhone${idxStr}`) as keyof DailyLog;
-  const departureKey = (`departureTime${idxStr}`) as keyof DailyLog;
-  const arrivalKey = (`arrivalTime${idxStr}`) as keyof DailyLog;
   const nameKey = (`groupName${idxStr}`) as keyof DailyLog;
   const mgrKey = (`managerName${idxStr}`) as keyof DailyLog;
 
@@ -258,83 +255,6 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
         />
       </div>
 
-
-
-      {/* Métricas Operativas */}
-      <div style={{ background: "rgba(0, 0, 0, 0.25)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "5px", padding: "6px" }}>
-        <span className="rr-editor-label" style={{ fontWeight: 700, color: "var(--color-info)", marginBottom: "4px", display: "block" }}>
-          Métricas Operativas — Grupo #{groupIndex}
-        </span>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px", marginBottom: "4px" }}>
-          <div>
-            <span className="rr-editor-label">Rescatados</span>
-            <input
-              type="number"
-              min="0"
-              placeholder="0"
-              className="rr-editor-input"
-              value={(log[rescuedKey] as string) || ""}
-              onChange={(e) => onFieldChange(rescuedKey, e.target.value)}
-            />
-          </div>
-          <div>
-            <span className="rr-editor-label">Recuperados</span>
-            <input
-              type="number"
-              min="0"
-              placeholder="0"
-              className="rr-editor-input"
-              value={(log[recoveredKey] as string) || ""}
-              onChange={(e) => onFieldChange(recoveredKey, e.target.value)}
-            />
-          </div>
-          <div>
-            <span className="rr-editor-label">Mascotas</span>
-            <input
-              type="number"
-              min="0"
-              placeholder="0"
-              className="rr-editor-input"
-              value={((log[(idxStr ? `rescuedPetsCount${idxStr}` : "rescuedPetsCount") as keyof DailyLog] as string) || "")}
-              onChange={(e) => onFieldChange((idxStr ? `rescuedPetsCount${idxStr}` : "rescuedPetsCount"), e.target.value)}
-            />
-          </div>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
-          <div>
-            <span className="rr-editor-label">Atenciones Prehosp.</span>
-            <input
-              type="number"
-              min="0"
-              placeholder="0"
-              className="rr-editor-input"
-              value={(log[prehospitalKey] as string) || ""}
-              onChange={(e) => onFieldChange(prehospitalKey, e.target.value)}
-            />
-          </div>
-          <div>
-            <span className="rr-editor-label">Traslados Realizados</span>
-            <input
-              type="number"
-              min="0"
-              placeholder="0"
-              className="rr-editor-input"
-              value={(log[transfersKey] as string) || ""}
-              onChange={(e) => onFieldChange(transfersKey, e.target.value)}
-            />
-          </div>
-        </div>
-      </div>
-
-      <label className="rr-editor-checkbox-label">
-        <input
-          type="checkbox"
-          checked={!!log[arrivedKey]}
-          onChange={(e) => onFieldChange(arrivedKey, e.target.checked)}
-          style={{ margin: 0, cursor: "pointer", width: "13px", height: "13px" }}
-        />
-        <span>¿Ya llegó del sitio el {headerLabel}?</span>
-      </label>
     </div>
   );
 };

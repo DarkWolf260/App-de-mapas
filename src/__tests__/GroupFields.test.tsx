@@ -51,29 +51,12 @@ describe("GroupFields", () => {
     expect(screen.getByPlaceholderText("Teléfono Encargado 2")).toBeInTheDocument();
   });
 
-  it('renders "¿Ya llegó del sitio el Grupo Primario?" for group 1', () => {
-    render(<GroupFields {...defaultProps} groupIndex={1} />);
-    expect(screen.getByText(/¿Ya llegó del sitio el Grupo Primario\?/i)).toBeInTheDocument();
-  });
-
-  it('renders "¿Ya llegó del sitio el Grupo Secundario?" for group 2', () => {
-    render(<GroupFields {...defaultProps} groupIndex={2} />);
-    expect(screen.getByText(/¿Ya llegó del sitio el Grupo Secundario\?/i)).toBeInTheDocument();
-  });
-
   it("calls onFieldChange when input changes", async () => {
     const user = userEvent.setup();
     render(<GroupFields {...defaultProps} groupIndex={1} />);
     const nameInput = screen.getByPlaceholderText("Nombre Grupo");
     await user.type(nameInput, "A");
     expect(defaultProps.onFieldChange).toHaveBeenCalledWith("groupName", "A");
-  });
-
-  it("renders checkbox for hasArrived", () => {
-    render(<GroupFields {...defaultProps} groupIndex={1} />);
-    const checkboxes = screen.getAllByRole("checkbox");
-    expect(checkboxes.length).toBeGreaterThanOrEqual(1);
-    expect(checkboxes[0]).not.toBeChecked();
   });
 });
 
