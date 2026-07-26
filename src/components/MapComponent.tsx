@@ -43,6 +43,7 @@ interface MapComponentProps {
   isOperador?: boolean;
   onOpenWorkGroups?: () => void;
   workGroups?: WorkGroup[];
+  onFeatureClick?: () => void;
 }
   
   const MapComponent: React.FC<MapComponentProps> = (props) => {

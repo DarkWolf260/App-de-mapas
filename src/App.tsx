@@ -293,6 +293,7 @@ function App() {
           onRefreshFeatures={refreshFeatures}
           onOpenRangeReport={(feat) => setRangeReportFeature(feat)}
           onOpenWorkGroups={() => setShowWorkGroups(true)}
+          onFeatureClick={() => setRangeReportFeature(null)}
           onToggleFeatureLock={handleToggleFeatureLock}
           onRenameFeature={handleRenameFeature}
           onUpdateFeatureDescription={handleUpdateFeatureDescription}

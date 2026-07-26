@@ -34,6 +34,7 @@ export interface UseMapSetupProps {
   selectedDate: string;
   zoomToCoords?: { lat: number; lon: number } | null;
   activeDepartment?: DepartmentView;
+  onFeatureClick?: () => void;
 }
 
 export const useMapSetup = ({
@@ -50,6 +51,7 @@ export const useMapSetup = ({
   selectedDate,
   zoomToCoords,
   activeDepartment = "pc",
+  onFeatureClick,
 }: UseMapSetupProps) => {
   const mapDiv = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
@@ -320,6 +322,7 @@ export const useMapSetup = ({
           const featId = g.attributes?.id || (g as any).uid;
           const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
           if (feat) {
+            onFeatureClick?.();
             setCustomPopup({ mapPoint: view.toMap(evt), feat });
           } else {
             setCustomPopup(null);
