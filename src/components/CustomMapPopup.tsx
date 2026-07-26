@@ -279,9 +279,9 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           const novedades = log?.novedades || [];
           const observations = log?.observations?.trim() || "";
           if (novedades.length === 0 && !observations) return null;
-          return { origin: feat.title || `Punto ${feat.id}`, novedades };
+          return { origin: feat.title || `Punto ${feat.id}`, originFeatId: feat.id, novedades };
         })
-        .filter(Boolean) as Array<{ origin: string; novedades: Array<{ id: string; timestamp: string; time: string; text: string; type: string }> }>;
+        .filter(Boolean) as Array<{ origin: string; originFeatId: number; novedades: Array<{ id: string; timestamp: string; time: string; text: string; type: string }> }>;
 
   const showSketchTabs = layerVisibility.sketch && isAdmin;
 
@@ -388,6 +388,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           onAddNovedad={handleAddNovedad}
           onDeleteNovedad={handleDeleteNovedad}
           containedNovedades={containedNovedades}
+          onNavigateToFeature={onNavigateToFeature}
         />
       )}
 
