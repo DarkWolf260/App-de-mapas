@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import type { DrawnFeature, DailyLog, DepartmentView, WorkGroup, NovedadEntry, NovedadType } from "../types";
-import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin, List, Layers, FileText, Plus } from "lucide-react";
+import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin, List, Layers, FileText, Plus, Pencil, EyeOff } from "lucide-react";
 import { sectionBox } from "./popup/popupStyles";
 import { ConfirmModal } from "./ConfirmModal";
 import { DateRow } from "./DateRow";
@@ -36,7 +36,7 @@ interface RangeReportModalProps {
   onFetchGlobalNovedades?: (date: string, department?: string) => void;
   onSaveGlobalNovedad?: (entry: NovedadEntry, date: string, department: string) => Promise<void>;
   onDeleteGlobalNovedad?: (entryId: string) => Promise<void>;
-  onUpdateGlobalNovedad?: (entryId: string, newText: string) => Promise<void>;
+  onUpdateGlobalNovedad?: (entryId: string, newText: string, newTime?: string) => Promise<void>;
   onRefreshFeatures?: () => Promise<void>;
   onNavigateToFeature?: (feat: DrawnFeature) => void;
 }
@@ -71,6 +71,8 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     const [confirmDeleteNovedad, setConfirmDeleteNovedad] = useState<TableEntry | null>(null);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editingEntryText, setEditingEntryText] = useState("");
+  const [editingEntryTime, setEditingEntryTime] = useState("");
+  const [showOrigin, setShowOrigin] = useState(true);
 
   const dates = useMemo(() => getDatesRange(REPORT_START_DATE), []);
   const [activeDateIndex, setActiveDateIndex] = useState(() => {
@@ -433,30 +435,33 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     if (entry.isObservation) return;
     setEditingEntryId(entry.id);
     setEditingEntryText(entry.text);
+    setEditingEntryTime(entry.time && entry.time !== "—" ? entry.time : "");
   };
 
   const handleSaveEditEntry = async (entry: TableEntry) => {
     if (!editingEntryText.trim()) return;
     if (entry.level === "libro") {
-      await onUpdateGlobalNovedad?.(entry.id, editingEntryText.trim());
+      await onUpdateGlobalNovedad?.(entry.id, editingEntryText.trim(), editingEntryTime || undefined);
     } else if (entry.featureId && onSaveDailyLog) {
       const pt = allFeatures.find((f) => f.id === entry.featureId);
       if (pt) {
         const log = getLogForDate(pt, activeDate);
         const updatedNovedades = (log.novedades || []).map((n) =>
-          n.id === entry.id ? { ...n, text: editingEntryText.trim() } : n
+          n.id === entry.id ? { ...n, text: editingEntryText.trim(), time: editingEntryTime || n.time } : n
         );
         await onSaveDailyLog(pt.id, { ...log, novedades: updatedNovedades });
       }
     }
     setEditingEntryId(null);
     setEditingEntryText("");
+    setEditingEntryTime("");
     await onRefreshFeatures?.();
   };
 
   const handleCancelEditEntry = () => {
     setEditingEntryId(null);
     setEditingEntryText("");
+    setEditingEntryTime("");
   };
 
   return (
@@ -1339,8 +1344,16 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                       <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                         <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700, color: "var(--text-muted)", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.06em", width: "60px" }}>Hora</th>
                         <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700, color: "var(--text-muted)", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>Novedad</th>
-                        <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700, color: "var(--text-muted)", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.06em", width: "120px" }}>Origen</th>
-                        {(onSaveDailyLog || onDeleteGlobalNovedad) && <th style={{ width: "30px" }} />}
+                        {showOrigin && (
+                          <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700, color: "var(--text-muted)", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.06em", width: "120px" }}>Origen</th>
+                        )}
+                        <th style={{ width: showOrigin ? "48px" : "48px" }}>
+                          {(onSaveDailyLog || onDeleteGlobalNovedad) && (
+                            <button onClick={() => setShowOrigin(!showOrigin)} title={showOrigin ? "Ocultar columna Origen" : "Mostrar columna Origen"} style={{ padding: "0 2px", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex", margin: "0 auto" }}>
+                              <EyeOff size={11} style={{ opacity: showOrigin ? 0.5 : 1, color: showOrigin ? "var(--text-muted)" : "var(--color-info)" }} />
+                            </button>
+                          )}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1380,6 +1393,14 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                             {entry.isObservation && <span style={{ color: "var(--accent-orange)", fontWeight: 700, fontSize: "0.55rem", marginRight: "4px" }}>OBS:</span>}
                             {editingEntryId === entry.id ? (
                               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                  <input
+                                    type="time"
+                                    value={editingEntryTime}
+                                    onChange={(e) => setEditingEntryTime(e.target.value)}
+                                    style={{ width: "80px", fontSize: "0.6rem", padding: "4px 5px", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(17,24,39,0.7)", color: "var(--text-main)", fontVariantNumeric: "tabular-nums", outline: "none", fontFamily: "inherit" }}
+                                  />
+                                </div>
                                 <textarea
                                   value={editingEntryText}
                                   onChange={(e) => setEditingEntryText(e.target.value)}
@@ -1404,13 +1425,14 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                               </div>
                             ) : (
                               <span
-                                onClick={(e) => { e.stopPropagation(); if (!entry.isObservation && onSaveDailyLog) handleStartEditEntry(entry); }}
-                                style={(!entry.isObservation && onSaveDailyLog) ? { cursor: "text", borderBottom: "1px dashed rgba(255,255,255,0.15)" } : {}}
+                                onClick={canNavigate ? (e) => { e.stopPropagation(); handleNavigateToEntry(entry); } : undefined}
+                                style={canNavigate ? { cursor: "pointer" } : {}}
                               >
                                 {entry.text}
                               </span>
                             )}
                           </td>
+                          {showOrigin && (
                           <td style={{ padding: "6px 10px" }}>
                             <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", padding: "1px 6px", borderRadius: "4px", fontSize: "0.55rem", fontWeight: 600, background: entry.isObservation ? "rgba(251, 146, 60, 0.1)" : isLibro ? "rgba(34, 197, 94, 0.1)" : isPunto ? "rgba(167, 139, 250, 0.12)" : "rgba(56, 189, 248, 0.1)", color: entry.isObservation ? "var(--accent-orange)" : isLibro ? "var(--color-green)" : isPunto ? "#a78bfa" : "var(--color-info)", ...(canNavigate ? { cursor: "pointer" } : {}) }}>
                               {isZona && <Layers size={10} />}
@@ -1418,12 +1440,18 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                               {entry.origin}
                             </span>
                           </td>
+                          )}
                           {(onSaveDailyLog || onDeleteGlobalNovedad) && (
-                            <td style={{ padding: "6px 4px", textAlign: "center" }}>
+                            <td style={{ padding: "6px 2px", textAlign: "center", whiteSpace: "nowrap" }}>
                               {!entry.isObservation && (
-                                <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteNovedad(entry); }} title="Eliminar" style={{ padding: "2px", borderRadius: "3px", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", transition: "color 0.15s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
-                                  <X size={11} />
-                                </button>
+                                <>
+                                  <button onClick={(e) => { e.stopPropagation(); handleStartEditEntry(entry); }} title="Editar" style={{ padding: "2px", borderRadius: "3px", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", transition: "color 0.15s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-info)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                                    <Pencil size={11} />
+                                  </button>
+                                  <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteNovedad(entry); }} title="Eliminar" style={{ padding: "2px", borderRadius: "3px", border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", transition: "color 0.15s ease" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                                    <X size={11} />
+                                  </button>
+                                </>
                               )}
                             </td>
                           )}

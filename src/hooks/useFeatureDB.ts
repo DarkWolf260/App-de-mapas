@@ -564,18 +564,20 @@ export function useFeatureDB() {
     }
   }, []);
 
-  const updateGlobalNovedad = useCallback(async (entryId: string, newText: string): Promise<void> => {
+  const updateGlobalNovedad = useCallback(async (entryId: string, newText: string, newTime?: string): Promise<void> => {
     let previousEntry: NovedadEntry | undefined;
     setGlobalNovedades((prev) => {
       const idx = prev.findIndex((n) => n.id === entryId);
       if (idx === -1) return prev;
       previousEntry = prev[idx];
       const updated = [...prev];
-      updated[idx] = { ...prev[idx], text: newText };
+      updated[idx] = { ...prev[idx], text: newText, ...(newTime !== undefined ? { time: newTime } : {}) };
       return updated;
     });
     try {
-      const { error } = await supabase.from("novedades").update({ text: newText }).eq("id", entryId);
+      const updatePayload: Record<string, string> = { text: newText };
+      if (newTime !== undefined) updatePayload.time = newTime;
+      const { error } = await supabase.from("novedades").update(updatePayload).eq("id", entryId);
       if (error) {
         if (previousEntry) setGlobalNovedades((prev) => prev.map((n) => n.id === entryId ? previousEntry! : n));
         console.error("[Supabase:update] Error actualizando novedad global:", error);
