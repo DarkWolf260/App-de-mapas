@@ -48,6 +48,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
           transfers += parseInt(g.transfersCount || "0", 10) || 0;
         }
 
+        // Fallback: if no groups but flat field has pets, use that
         if (gList.length === 0) {
           rescuedPeople += parseInt(todayLog.rescuedCount || "0", 10) || 0;
           recoveredBodies += parseInt(todayLog.recoveredCount || "0", 10) || 0;

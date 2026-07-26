@@ -453,6 +453,7 @@ export function getDayStats(
     const commRecovered = new Map<string, number>();
     const commPrehospital = new Map<string, number>();
     const commTransfers = new Map<string, number>();
+    const commPets = new Map<string, number>();
 
     for (const g of groups) {
       const p = parseInt(g.officersCount || "0", 10) || 0;
@@ -462,12 +463,14 @@ export function getDayStats(
       const rc = parseInt(g.recoveredCount || "0", 10) || 0;
       const ph = parseInt(g.prehospitalCareCount || "0", 10) || 0;
       const tr = parseInt(g.transfersCount || "0", 10) || 0;
+      const pets = parseInt(g.rescuedPetsCount || "0", 10) || 0;
 
       const commKey = g.commissionId && g.commissionId !== "independiente" ? g.commissionId : `ind_${Math.random()}`;
       commRescued.set(commKey, Math.max(commRescued.get(commKey) || 0, r));
       commRecovered.set(commKey, Math.max(commRecovered.get(commKey) || 0, rc));
       commPrehospital.set(commKey, Math.max(commPrehospital.get(commKey) || 0, ph));
       commTransfers.set(commKey, Math.max(commTransfers.get(commKey) || 0, tr));
+      commPets.set(commKey, Math.max(commPets.get(commKey) || 0, pets));
 
       if (g.hasArrived) groupsArrived++;
     }
@@ -476,8 +479,12 @@ export function getDayStats(
     commRecovered.forEach((val) => { totalRecovered += val; });
     commPrehospital.forEach((val) => { totalPrehospitalCare += val; });
     commTransfers.forEach((val) => { totalTransfers += val; });
+    commPets.forEach((val) => { totalPets += val; });
 
-    totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
+    // Fallback: if no groups but flat field has pets, use that
+    if (groups.length === 0) {
+      totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
+    }
   }
 
   return { totalPersonnel, totalRescued, totalRecovered, totalPets, totalPrehospitalCare, totalTransfers, activePoints, groupsArrived };
@@ -655,6 +662,7 @@ export function getPeriodStats(
       const commRecovered = new Map<string, number>();
       const commPrehospital = new Map<string, number>();
       const commTransfers = new Map<string, number>();
+      const commPets = new Map<string, number>();
 
       for (const g of groupList) {
         upsertGroupItem(g, log);
@@ -666,20 +674,26 @@ export function getPeriodStats(
         const rc = parseInt(g.recoveredCount || "0", 10) || 0;
         const ph = parseInt(g.prehospitalCareCount || "0", 10) || 0;
         const tr = parseInt(g.transfersCount || "0", 10) || 0;
+        const pets = parseInt(g.rescuedPetsCount || "0", 10) || 0;
 
         const commKey = g.commissionId && g.commissionId !== "independiente" ? g.commissionId : `ind_${Math.random()}`;
         commRescued.set(commKey, Math.max(commRescued.get(commKey) || 0, r));
         commRecovered.set(commKey, Math.max(commRecovered.get(commKey) || 0, rc));
         commPrehospital.set(commKey, Math.max(commPrehospital.get(commKey) || 0, ph));
         commTransfers.set(commKey, Math.max(commTransfers.get(commKey) || 0, tr));
+        commPets.set(commKey, Math.max(commPets.get(commKey) || 0, pets));
       }
 
       commRescued.forEach((val) => { totalRescued += val; });
       commRecovered.forEach((val) => { totalRecovered += val; });
       commPrehospital.forEach((val) => { totalPrehospitalCare += val; });
       commTransfers.forEach((val) => { totalTransfers += val; });
+      commPets.forEach((val) => { totalPets += val; });
 
-      totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
+      // Fallback: if no groups but flat field has pets, use that
+      if (groupList.length === 0) {
+        totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
+      }
 
       // Track joint commission partners per group in this log
       const logCommGroups = new Map<string, GroupLogEntry[]>();
@@ -741,22 +755,32 @@ export function getPeriodStats(
 
         featDates.add(log.date);
 
-        const p1 = parseInt(log.officersCount || "0", 10);
-        const p2 = parseInt(log.officersCount2 || "0", 10);
-        const r1 = parseInt(log.rescuedCount || "0", 10);
-        const r2 = parseInt(log.rescuedCount2 || "0", 10);
-        const rc1 = parseInt(log.recoveredCount || "0", 10);
-        const rc2 = parseInt(log.recoveredCount2 || "0", 10);
-        const ph1 = parseInt(log.prehospitalCareCount || "0", 10);
-        const ph2 = parseInt(log.prehospitalCareCount2 || "0", 10);
-        const tr1 = parseInt(log.transfersCount || "0", 10);
-        const tr2 = parseInt(log.transfersCount2 || "0", 10);
+        // Use getNormalizedGroupList for correct handling of groups[] array and commission de-dup
+        const gList = getNormalizedGroupList(log);
+        const fCommRescued = new Map<string, number>();
+        const fCommRecovered = new Map<string, number>();
+        const fCommPrehospital = new Map<string, number>();
+        const fCommTransfers = new Map<string, number>();
 
-        fStat.totalPersonnel += p1 + p2;
-        fStat.totalRescued += r1 + r2;
-        fStat.totalRecovered += rc1 + rc2;
-        fStat.totalPrehospitalCare += ph1 + ph2;
-        fStat.totalTransfers += tr1 + tr2;
+        for (const g of gList) {
+          fStat.totalPersonnel += parseInt(g.officersCount || "0", 10) || 0;
+
+          const r = parseInt(g.rescuedCount || "0", 10) || 0;
+          const rc = parseInt(g.recoveredCount || "0", 10) || 0;
+          const ph = parseInt(g.prehospitalCareCount || "0", 10) || 0;
+          const tr = parseInt(g.transfersCount || "0", 10) || 0;
+
+          const commKey = g.commissionId && g.commissionId !== "independiente" ? g.commissionId : `ind_${Math.random()}`;
+          fCommRescued.set(commKey, Math.max(fCommRescued.get(commKey) || 0, r));
+          fCommRecovered.set(commKey, Math.max(fCommRecovered.get(commKey) || 0, rc));
+          fCommPrehospital.set(commKey, Math.max(fCommPrehospital.get(commKey) || 0, ph));
+          fCommTransfers.set(commKey, Math.max(fCommTransfers.get(commKey) || 0, tr));
+        }
+
+        fCommRescued.forEach((val) => { fStat.totalRescued += val; });
+        fCommRecovered.forEach((val) => { fStat.totalRecovered += val; });
+        fCommPrehospital.forEach((val) => { fStat.totalPrehospitalCare += val; });
+        fCommTransfers.forEach((val) => { fStat.totalTransfers += val; });
       }
     }
 

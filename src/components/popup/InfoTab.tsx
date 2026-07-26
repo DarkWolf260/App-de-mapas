@@ -102,17 +102,27 @@ export const InfoTab: React.FC<InfoTabProps> = ({
     return getNormalizedGroupList(polygonOwnLog);
   }, [isPolygon, polygonOwnLog]);
 
+  // --- Point groups (uses localLog so grouping changes are reactive) ---
+  const pointGroups = useMemo(() => {
+    if (isPolygon) return [];
+    const src = localLog || dailyLog || {};
+    return getNormalizedGroupList(src);
+  }, [isPolygon, localLog, dailyLog]);
+
   // --- Aggregated totals ---
   const aggregatedLog = useMemo(() => {
     if (!isPolygon) return dailyLog || {};
     return aggregatePolygonLog(polygonOwnLog, polygonGroups, containedWithLogs);
   }, [isPolygon, dailyLog, containedWithLogs, polygonOwnLog, polygonGroups]);
 
-  const log = isPolygon ? aggregatedLog : (dailyLog || {});
+  const log = isPolygon ? aggregatedLog : (localLog || dailyLog || {});
 
-  // --- Grouping logic ---
+  // Unified groups for the active feature type
+  const activeGroups = isPolygon ? polygonGroups : pointGroups;
+
+  // --- Grouping logic (works for both points and polygons) ---
   const { groupingMode, setGroupingMode, selectedIndices, handleGroupSelected, handleUngroup, toggleSelect, exitGroupingMode } = useGrouping({
-    polygonGroups,
+    polygonGroups: activeGroups,
     onGroupFieldChange: onGroupFieldChange as ((idx: number, field: string, value: string) => void) | undefined,
     onSaveStats,
   });
@@ -122,7 +132,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
     return v && v !== "0" && v !== "";
   });
 
-  const displayItems = useMemo(() => buildDisplayItems(polygonGroups), [polygonGroups]);
+  const displayItems = useMemo(() => buildDisplayItems(activeGroups), [activeGroups]);
 
   const handleCopy = async () => {
     try {
@@ -343,51 +353,108 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       )}
 
       {/* Punto: sin datos */}
-      {!isPolygon && !(log.groupName || log.unitOut || log.managerName || log.officersCount) && !pointHasMetrics && !log.observations && (
+      {!isPolygon && pointGroups.length === 0 && !pointHasMetrics && !log.observations && (
         <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
           Sin datos registrados para hoy
         </div>
       )}
 
-      {/* Grupos en disposicion vertical - solo puntos */}
-      {!isPolygon && getNormalizedGroupList(log).length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {getNormalizedGroupList(log).map((gItem, gIdx) => (
-            <div key={gItem.id || gIdx} style={sectionBox}>
-              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: getGroupColor(gIdx), borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <Users size={10} /> {gItem.groupName || `Grupo ${gIdx + 1}`}
-                </span>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  {gItem.isVolunteer && (
-                    <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.52rem", fontWeight: 800, textTransform: "uppercase" }}>
-                      VOLUNTARIO
+      {/* ===== EQUIPOS DE TRABAJO — PUNTOS (con agrupación) ===== */}
+      {!isPolygon && pointGroups.length > 0 && (
+        <div style={{ ...sectionBox, background: "rgba(56, 189, 248, 0.03)", borderColor: "rgba(56, 189, 248, 0.15)" }}>
+          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "4px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
+            <Users size={10} /> Equipos de Trabajo
+            {canEdit && (
+              <label style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", userSelect: "none", fontSize: "0.58rem", fontWeight: 700, color: groupingMode ? "#38bdf8" : "var(--text-muted)", transition: "color 0.15s" }} title="Activar modo para agrupar equipos que trabajaron juntos">
+                <input type="checkbox" checked={groupingMode} onChange={(e) => { setGroupingMode(e.target.checked); if (!e.target.checked) exitGroupingMode(); }} style={{ cursor: "pointer", width: "11px", height: "11px" }} />
+                Agrupar
+              </label>
+            )}
+            {canEdit && groupingMode && selectedIndices.size >= 2 && (
+              <button type="button" onClick={handleGroupSelected} style={{ background: "rgba(56, 189, 248, 0.18)", border: "1px solid rgba(56, 189, 248, 0.4)", borderRadius: "5px", color: "#38bdf8", fontSize: "0.58rem", fontWeight: 700, padding: "2px 7px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+                <Link2 size={9} /> Agrupar {selectedIndices.size}
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {displayItems.map((item) => {
+              if (item.type === "independent") {
+                const { groupIdx, group } = item;
+                const color = getGroupColor(groupIdx);
+                const isSelected = selectedIndices.has(groupIdx);
+                return (
+                  <div key={`ind-${groupIdx}`} style={{ background: isSelected ? "rgba(56, 189, 248, 0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${isSelected ? "rgba(56, 189, 248, 0.4)" : "rgba(255,255,255,0.05)"}`, borderRadius: "6px", padding: "5px 7px", transition: "all 0.15s ease" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                      {canEdit && groupingMode && (
+                        <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(groupIdx)} style={{ cursor: "pointer", width: "12px", height: "12px", flexShrink: 0, accentColor: "#38bdf8" }} title="Seleccionar para agrupar" />
+                      )}
+                      <span style={{ fontSize: "0.63rem", fontWeight: 700, color }}>{group.groupName || `Equipo ${groupIdx + 1}`}</span>
+                      {group.isVolunteer && (
+                        <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.48rem", fontWeight: 800, textTransform: "uppercase" }}>VOL</span>
+                      )}
+                      <span style={{ marginLeft: "auto", fontSize: "0.55rem", color: "var(--text-muted)" }}>{group.officersCount ? `${group.officersCount} func.` : ""}</span>
+                    </div>
+                    <ReadRow label="Unidad" value={group.unitOut} />
+                    <ReadRow label="Encargado" value={group.managerName} />
+                    <ReadRow label="Tel\u00e9fono" value={group.managerPhone} />
+                    {canEdit && onGroupFieldChange ? (
+                      <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
+                    ) : (
+                      <MetricBadges group={group} />
+                    )}
+                    {showArrivalCheckbox ? (
+                      <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
+                        <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { onToggleArrivalGroup?.((groupIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
+                        <span>{group.hasArrived ? "Lleg\u00f3 del sitio" : "\u00bfYa lleg\u00f3 del sitio?"}</span>
+                      </label>
+                    ) : (
+                      group.hasArrived && <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}><Check size={9} /> Lleg\u00f3 del sitio</span>
+                    )}
+                  </div>
+                );
+              }
+
+              // Joint group card
+              const { commissionId, groupIndices, groups } = item;
+              const primaryIdx = groupIndices[0];
+              const primaryGroup = groups[0];
+              return (
+                <div key={`joint-${commissionId}`} style={{ background: "rgba(56, 189, 248, 0.05)", border: "2px dashed rgba(56, 189, 248, 0.35)", borderRadius: "8px", padding: "6px 8px", position: "relative" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "2px" }}>
+                    <Link2 size={10} style={{ color: "#38bdf8", flexShrink: 0 }} />
+                    <span style={{ fontSize: "0.63rem", fontWeight: 700, color: "#38bdf8" }}>
+                      {groups.map((g, i) => (
+                        <span key={i}>
+                          {i > 0 && <span style={{ color: "var(--text-muted)" }}> + </span>}
+                          {g.groupName || `Equipo ${groupIndices[i] + 1}`}
+                        </span>
+                      ))}
                     </span>
-                  )}
-                  {gItem.commissionId && gItem.commissionId !== COMMISSION_INDEPENDENT && (
-                    <span style={{ background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8", border: "1px solid rgba(56, 189, 248, 0.3)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.52rem", fontWeight: 700 }}>
-                      Comision Conjunta
-                    </span>
+                    {canEdit && (
+                      <button type="button" onClick={() => handleUngroup(commissionId)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "4px", color: "#f87171", fontSize: "0.52rem", fontWeight: 700, padding: "1px 5px", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }} title="Desagrupar estos equipos">
+                        <Unlink size={8} /> Desagrupar
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ fontSize: "0.5rem", color: "var(--text-muted)", marginBottom: "3px" }}>
+                    Equipos trabajando juntos \u2014 estad\u00edsticas compartidas
+                  </div>
+                  {groups.map((g, i) => (
+                    <div key={i} style={{ padding: "2px 0", borderBottom: i < groups.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                      <ReadRow label="Unidad" value={g.unitOut} />
+                      <ReadRow label="Encargado" value={g.managerName} />
+                    </div>
+                  ))}
+                  {canEdit && onGroupFieldChange ? (
+                    <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
+                  ) : (
+                    <MetricBadges group={primaryGroup} />
                   )}
                 </div>
-              </div>
-              <ReadRow label="Unidad" value={gItem.unitOut} />
-              <ReadRow label="Encargado" value={gItem.managerName} />
-              <ReadRow label="Funcionarios" value={gItem.officersCount} />
-              <ReadRow label="Telefono" value={gItem.managerPhone} />
-              <MetricBadges group={gItem} />
-              {showArrivalCheckbox ? (
-                <label style={{ fontSize: "0.65rem", fontWeight: 700, color: gItem.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: gItem.hasArrived ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${gItem.hasArrived ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
-                  <input type="checkbox" checked={!!gItem.hasArrived} onChange={(e) => { console.log(`[InfoTab:arrival:point] checkbox fired gIdx=${gIdx} checked=${e.target.checked} gItem.hasArrived=${gItem.hasArrived}`); onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
-                  <span>{gItem.hasArrived ? "Lleg\u00f3 del sitio" : "\u00bfYa lleg\u00f3 del sitio?"}</span>
-                </label>
-              ) : (
-                gItem.hasArrived && (
-                  <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px" }}><Check size={10} /> Lleg\u00f3 del sitio</span>
-                )
-              )}
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -405,6 +472,14 @@ export const InfoTab: React.FC<InfoTabProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* Botón Guardar Estadísticas — puntos */}
+      {canEdit && !isPolygon && onSaveStats && (
+        <button type="button" onClick={onSaveStats} style={{ width: "100%", background: saveSuccess ? "rgba(34, 197, 94, 0.18)" : "rgba(56, 189, 248, 0.12)", border: `1px solid ${saveSuccess ? "rgba(34, 197, 94, 0.5)" : "rgba(56, 189, 248, 0.35)"}`, borderRadius: "7px", color: saveSuccess ? "#22c55e" : "#38bdf8", fontSize: "0.72rem", fontWeight: 700, padding: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "all 0.2s ease" }}>
+          {saveSuccess ? <Check size={13} /> : <Save size={13} />}
+          {saveSuccess ? "\u00a1Estad\u00edsticas Guardadas!" : "Guardar Estad\u00edsticas"}
+        </button>
       )}
 
       {/* Boton Editar - solo administradores en puntos */}
