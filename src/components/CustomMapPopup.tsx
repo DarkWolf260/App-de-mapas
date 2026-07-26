@@ -320,7 +320,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           {isPoint && (
             <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}><History size={12} /> Historial</button>
           )}
-          {isPolygon && (
+          {isPolygon && isOperador && (
             <button onClick={() => setActiveTab("contained")} style={tabBtnStyle(activeTab === "contained")}><Layers size={12} /> Elementos</button>
           )}
         </div>

@@ -192,24 +192,26 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       {isPolygon && (
         <>
           {/* 1. Estadisticas generales */}
-          <div style={{ ...sectionBox, background: "rgba(16, 185, 129, 0.04)", borderColor: "rgba(16, 185, 129, 0.2)" }}>
-            <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#10b981", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-              <Activity size={10} /> Estadisticas Generales del Poligono
-              <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontWeight: 400, marginLeft: "auto" }}>Independiente de grupos</span>
+          {canEdit && (
+            <div style={{ ...sectionBox, background: "rgba(16, 185, 129, 0.04)", borderColor: "rgba(16, 185, 129, 0.2)" }}>
+              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#10b981", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                <Activity size={10} /> Estadistica del Sector
+                <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontWeight: 400, marginLeft: "auto" }}>Independiente de grupos</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
+                {METRIC_FIELDS.map(({ label, field, color }) => (
+                  <div key={field} style={{ textAlign: "center" }}>
+                    <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block", marginBottom: "2px" }}>{label}</span>
+                    {canEdit && onGeneralFieldChange ? (
+                      <input type="number" min="0" placeholder="0" value={getMetricValue(polygonOwnLog, field) || ""} onChange={(e) => onGeneralFieldChange(field, e.target.value)} style={{ textAlign: "center", padding: "2px 2px", fontSize: "0.68rem", color, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "4px", width: "100%", outline: "none", fontFamily: "inherit" }} />
+                    ) : (
+                      <span style={{ fontSize: "0.8rem", fontWeight: 800, color }}>{getMetricValue(polygonOwnLog, field) || "0"}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
-              {METRIC_FIELDS.map(({ label, field, color }) => (
-                <div key={field} style={{ textAlign: "center" }}>
-                  <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block", marginBottom: "2px" }}>{label}</span>
-                  {canEdit && onGeneralFieldChange ? (
-                    <input type="number" min="0" placeholder="0" value={getMetricValue(polygonOwnLog, field) || ""} onChange={(e) => onGeneralFieldChange(field, e.target.value)} style={{ textAlign: "center", padding: "2px 2px", fontSize: "0.68rem", color, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "4px", width: "100%", outline: "none", fontFamily: "inherit" }} />
-                  ) : (
-                    <span style={{ fontSize: "0.8rem", fontWeight: 800, color }}>{getMetricValue(polygonOwnLog, field) || "0"}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* 2. Equipos de Trabajo */}
           {polygonGroups.length > 0 && (
@@ -255,7 +257,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                         {showArrivalCheckbox ? (
                           <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
                             <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { console.log(`[InfoTab:arrival] checkbox fired groupIdx=${groupIdx} checked=${e.target.checked} group.hasArrived=${group.hasArrived}`); onToggleArrivalGroup?.((groupIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
-<span>{group.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
+                            <span>{group.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
                           </label>
                         ) : (
                           group.hasArrived && <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}><Check size={9} /> Llegó del sitio</span>
@@ -335,7 +337,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
           {/* 4. Total de la zona */}
           <div style={sectionBox}>
             <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
-              <Activity size={10} /> Total Zona (General + Grupos + Puntos)
+              <Activity size={10} /> Total del Sector
             </div>
             <MetricDisplayGrid source={aggregatedLog} />
             {aggregatedLog.observations && (
@@ -520,7 +522,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                   const canNavigate = isForeign && onNavigateToFeature && entry.originFeatId;
 
                   return (
-                     <div
+                    <div
                       key={entry.key}
                       style={{
                         display: "flex", alignItems: "flex-start", gap: "6px",
