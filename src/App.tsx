@@ -6,6 +6,7 @@ import { GlobalStatsWidget } from './components/GlobalStatsWidget';
 import { DateTimeline } from './components/DateTimeline';
 import { FloatingSearchBar } from './components/FloatingSearchBar';
 import { RangeReportModal } from './components/RangeReportModal';
+import { Toast } from './components/Toast';
 import { ImportPreviewModal } from './components/ImportPreviewModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { AuthModal } from './components/AuthModal';
@@ -364,6 +365,8 @@ function App() {
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      <Toast />
     </div>
   );
 }

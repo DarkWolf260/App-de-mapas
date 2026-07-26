@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabaseClient";
 import { initDatabase } from "../db/database";
 import type { DailyLog, DrawnFeature, NovedadEntry } from "../types";
 import { getNormalizedGroupList } from "../utils/logUtils";
+import { showToast } from "../utils/toast";
 
 export function useFeatureDB() {
   const [drawnFeatures, setDrawnFeatures] = useState<DrawnFeature[]>([]);
@@ -520,6 +521,7 @@ export function useFeatureDB() {
   }, []);
 
   const saveGlobalNovedad = useCallback(async (entry: NovedadEntry, date: string, department: string = "pc"): Promise<void> => {
+    setGlobalNovedades((prev) => [...prev, entry]);
     try {
       const { error } = await supabase.from("novedades").insert({
         id: entry.id,
@@ -530,18 +532,35 @@ export function useFeatureDB() {
         timestamp: entry.timestamp,
         department,
       });
-      if (error) console.error("[Supabase:save] Error guardando novedad global:", error);
+      if (error) {
+        setGlobalNovedades((prev) => prev.filter((n) => n.id !== entry.id));
+        console.error("[Supabase:save] Error guardando novedad global:", error);
+        showToast("Error al guardar novedad. Verifique su conexión.", "error");
+      }
     } catch (err) {
+      setGlobalNovedades((prev) => prev.filter((n) => n.id !== entry.id));
       console.error("[Supabase:save:exception] Error guardando novedad global:", err);
+      showToast("Sin conexión con el servidor. Reintente.", "error");
     }
   }, []);
 
   const deleteGlobalNovedad = useCallback(async (entryId: string): Promise<void> => {
+    let removedEntry: NovedadEntry | undefined;
+    setGlobalNovedades((prev) => {
+      removedEntry = prev.find((n) => n.id === entryId);
+      return prev.filter((n) => n.id !== entryId);
+    });
     try {
       const { error } = await supabase.from("novedades").delete().eq("id", entryId);
-      if (error) console.error("[Supabase:delete] Error eliminando novedad global:", error);
+      if (error) {
+        if (removedEntry) setGlobalNovedades((prev) => [...prev, removedEntry!]);
+        console.error("[Supabase:delete] Error eliminando novedad global:", error);
+        showToast("Error al eliminar novedad. Verifique su conexión.", "error");
+      }
     } catch (err) {
+      if (removedEntry) setGlobalNovedades((prev) => [...prev, removedEntry!]);
       console.error("[Supabase:delete:exception] Error eliminando novedad global:", err);
+      showToast("Sin conexión con el servidor. Reintente.", "error");
     }
   }, []);
 
