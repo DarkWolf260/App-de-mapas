@@ -245,10 +245,10 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                         {showArrivalCheckbox ? (
                           <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
                             <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { console.log(`[InfoTab:arrival] checkbox fired groupIdx=${groupIdx} checked=${e.target.checked} group.hasArrived=${group.hasArrived}`); onToggleArrivalGroup?.((groupIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
-                            <span>{group.hasArrived ? "Lleg\u00f3 del sitio" : "\u00bfYa lleg\u00f3 del sitio?"}</span>
+<span>{group.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
                           </label>
                         ) : (
-                          group.hasArrived && <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}><Check size={9} /> Lleg\u00f3 del sitio</span>
+                          group.hasArrived && <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}><Check size={9} /> Llegó del sitio</span>
                         )}
                       </div>
                     );
@@ -406,10 +406,10 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                     {showArrivalCheckbox ? (
                       <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
                         <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { onToggleArrivalGroup?.((groupIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
-                        <span>{group.hasArrived ? "Lleg\u00f3 del sitio" : "\u00bfYa lleg\u00f3 del sitio?"}</span>
+                        <span>{group.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
                       </label>
                     ) : (
-                      group.hasArrived && <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}><Check size={9} /> Lleg\u00f3 del sitio</span>
+                      group.hasArrived && <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}><Check size={9} /> Llegó del sitio</span>
                     )}
                   </div>
                 );
