@@ -495,7 +495,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
             foreignEntries.push({ key: `pt-${group.originFeatId}-${n.id}`, entryId: n.id, time: n.time, text: n.text, timestamp: n.timestamp, origin: "punto" as const, originLabel: group.origin, originFeatId: group.originFeatId, isOwn: false });
           }
         }
-        const allEntries = [...ownEntries, ...foreignEntries].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        const allEntries = [...ownEntries, ...foreignEntries].sort((a, b) => a.time.localeCompare(b.time));
         const totalOwn = ownEntries.length;
         const totalForeign = foreignEntries.length;
 
@@ -554,28 +554,30 @@ export const InfoTab: React.FC<InfoTabProps> = ({
             )}
 
             {/* Add form */}
-            <div style={{ display: "flex", gap: "6px", alignItems: "flex-end" }}>
-              <input
-                type="time"
-                value={novTime}
-                onChange={(e) => setNovTime(e.target.value)}
-                style={{ width: "72px", fontSize: "0.6rem", padding: "4px 5px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(17, 24, 39, 0.6)", color: "var(--text-main)", fontVariantNumeric: "tabular-nums", outline: "none" }}
-              />
-              <input
-                type="text"
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <textarea
                 value={novText}
                 onChange={(e) => setNovText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && novText.trim()) { e.preventDefault(); onAddNovedad(novTime, novText.trim()).then(() => setNovText("")); } }}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && novText.trim()) { e.preventDefault(); onAddNovedad(novTime, novText.trim()).then(() => setNovText("")); } }}
                 placeholder="Novedad..."
-                style={{ flex: 1, fontSize: "0.6rem", padding: "4px 7px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(17, 24, 39, 0.5)", color: "var(--text-main)", outline: "none" }}
+                rows={3}
+                style={{ fontSize: "0.6rem", padding: "6px 8px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(17, 24, 39, 0.5)", color: "var(--text-main)", outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.4 }}
               />
-              <button
-                onClick={() => { if (novText.trim()) { onAddNovedad(novTime, novText.trim()).then(() => setNovText("")); } }}
-                disabled={!novText.trim()}
-                style={{ padding: "4px 8px", borderRadius: "5px", border: "1px solid rgba(34,197,94,0.3)", background: novText.trim() ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.02)", color: novText.trim() ? "var(--color-green)" : "var(--text-muted)", cursor: novText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", fontSize: "0.6rem", fontWeight: 700, flexShrink: 0 }}
-              >
-                <Plus size={11} />
-              </button>
+              <div style={{ display: "flex", gap: "6px", alignItems: "flex-end" }}>
+                <input
+                  type="time"
+                  value={novTime}
+                  onChange={(e) => setNovTime(e.target.value)}
+                  style={{ width: "72px", fontSize: "0.6rem", padding: "4px 5px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(17, 24, 39, 0.6)", color: "var(--text-main)", fontVariantNumeric: "tabular-nums", outline: "none" }}
+                />
+                <button
+                  onClick={() => { if (novText.trim()) { onAddNovedad(novTime, novText.trim()).then(() => setNovText("")); } }}
+                  disabled={!novText.trim()}
+                  style={{ padding: "4px 10px", borderRadius: "5px", border: "1px solid rgba(34,197,94,0.3)", background: novText.trim() ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.02)", color: novText.trim() ? "var(--color-green)" : "var(--text-muted)", cursor: novText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", fontSize: "0.6rem", fontWeight: 700, flexShrink: 0 }}
+                >
+                  <Plus size={11} />
+                </button>
+              </div>
             </div>
           </div>
         );
