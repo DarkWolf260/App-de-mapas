@@ -15,7 +15,7 @@ export function useFeatureDB() {
         .select("*");
 
       if (featsErr) {
-        console.error("Error al cargar puntos/polígonos desde Supabase:", featsErr);
+        console.error("[Supabase:fetch] Error al cargar puntos/polígonos:", featsErr);
       }
 
       const { data: logsData, error: logsErr } = await supabase
@@ -23,8 +23,10 @@ export function useFeatureDB() {
         .select("*");
 
       if (logsErr) {
-        console.error("Error al cargar registros diarios desde Supabase:", logsErr);
+        console.error("[Supabase:fetch] Error al cargar registros diarios:", logsErr);
       }
+
+      console.log(`[Supabase:fetch] feats=${featsData?.length ?? 0} logs=${logsData?.length ?? 0}`);
 
       // Si Supabase retorna vacío o aún no tiene datos subidos, mostrar el respaldo local de RxDB
       if (!featsData || featsData.length === 0) {
@@ -129,6 +131,21 @@ export function useFeatureDB() {
         });
       }
 
+      // Log arrival status sample for debugging
+      if (logsData && logsData.length > 0) {
+        const sample = logsData.slice(0, 3).map((row: any) => {
+          const parsedGroups = Array.isArray(row.groups) ? row.groups : [];
+          return {
+            feature_id: row.feature_id,
+            date: row.date,
+            flat_g1: row.has_arrived_g1,
+            flat_g2: row.has_arrived_g2,
+            groups_arrival: parsedGroups.map((g: any) => ({ name: g.groupName, arrived: g.hasArrived })),
+          };
+        });
+        console.log("[Supabase:fetch:arrival_sample]", JSON.stringify(sample));
+      }
+
       const list: DrawnFeature[] = (featsData || []).map((row: any) => ({
         id: isNaN(Number(row.id)) ? (row.id as unknown as number) : Number(row.id),
         title: row.title,
@@ -144,7 +161,7 @@ export function useFeatureDB() {
 
       setDrawnFeatures(list);
     } catch (err) {
-      console.error("Error de sincronización con Supabase:", err);
+      console.error("[Supabase:fetch:exception] Error de sincronización con Supabase:", err);
     }
   }, []);
 
@@ -366,20 +383,31 @@ export function useFeatureDB() {
       const fidStr = String(featureId);
       const deptToUse = log.department || "pc";
 
-      const { data: existingRecords } = await supabase
+      console.log(`[Supabase:save:input] featureId=${fidStr} date=${log.date} dept=${deptToUse} hasArrivedG1=${log.hasArrivedG1} hasArrivedG2=${log.hasArrivedG2} hasArrivedG3=${log.hasArrivedG3} hasArrivedG4=${log.hasArrivedG4} groupsPresent=${!!log.groups}`);
+
+      const { data: existingRecords, error: lookupErr } = await supabase
         .from("daily_logs")
         .select("id")
         .eq("feature_id", fidStr)
         .eq("date", log.date)
         .eq("department", deptToUse);
 
+      if (lookupErr) {
+        console.error("[Supabase:save:lookup] ERROR:", lookupErr);
+      } else {
+        console.log(`[Supabase:save:lookup] existingRecords=${existingRecords?.length ?? 0} ids=${existingRecords?.map((r: any) => r.id).join(",") || "none"}`);
+      }
+
       const rawGroupsList = getNormalizedGroupList(log);
+      console.log(`[Supabase:save:normalize] rawGroupsList.length=${rawGroupsList.length}`, rawGroupsList.map((g) => ({ name: g.groupName, hasArrived: g.hasArrived, officers: g.officersCount, id: g.id })));
+
       // Filter out truly empty groups (no name, no metrics, no officers, no unit, no manager)
       const groupsList = rawGroupsList.filter((g) =>
         !!(g.groupName?.trim() || g.officersCount?.trim() || g.unitOut?.trim() || g.managerName?.trim() ||
            g.rescuedCount?.trim() || g.recoveredCount?.trim() || g.rescuedPetsCount?.trim() ||
            g.prehospitalCareCount?.trim() || g.transfersCount?.trim())
       );
+      console.log(`[Supabase:save:filter] filteredGroupsList.length=${groupsList.length}`);
 
       const g0 = groupsList[0];
       const g1 = groupsList[1];
@@ -447,20 +475,38 @@ export function useFeatureDB() {
         updated_at: new Date().toISOString(),
       };
 
+      console.log(`[Supabase:save:payload] has_arrived_g1=${payload.has_arrived_g1} has_arrived_g2=${payload.has_arrived_g2} has_arrived_g3=${payload.has_arrived_g3} has_arrived_g4=${payload.has_arrived_g4} groups_json_count=${payload.groups.length}`);
+
       if (existingRecords && existingRecords.length > 0) {
         const firstId = existingRecords[0].id;
-        await supabase.from("daily_logs").update(payload).eq("id", firstId);
+        const { data: updateData, error: updateErr } = await supabase.from("daily_logs").update(payload).eq("id", firstId).select("id");
+        if (updateErr) {
+          console.error(`[Supabase:save:exec] UPDATE FAILED for id=${firstId}:`, updateErr);
+        } else if (!updateData || updateData.length === 0) {
+          console.error(`[Supabase:save:exec] UPDATE silently blocked (RLS?) id=${firstId} — 0 rows affected. Check your RLS policies or auth role.`);
+        } else {
+          console.log(`[Supabase:save:exec] UPDATE OK id=${firstId} rows=${updateData.length}`);
+        }
         if (existingRecords.length > 1) {
           const extraIds = existingRecords.slice(1).map((r) => r.id);
-          await supabase.from("daily_logs").delete().in("id", extraIds);
+          console.log(`[Supabase:save:exec] cleaning ${extraIds.length} duplicate rows`);
+          const { error: delErr } = await supabase.from("daily_logs").delete().in("id", extraIds);
+          if (delErr) console.error("[Supabase:save:exec] DELETE duplicates FAILED:", delErr);
         }
       } else {
-        await supabase.from("daily_logs").insert(payload);
+        const { data: insertData, error: insertErr } = await supabase.from("daily_logs").insert(payload).select("id");
+        if (insertErr) {
+          console.error("[Supabase:save:exec] INSERT FAILED:", insertErr);
+        } else if (!insertData || insertData.length === 0) {
+          console.error("[Supabase:save:exec] INSERT silently blocked (RLS?) — 0 rows affected. Check your RLS policies or auth role.");
+        } else {
+          console.log(`[Supabase:save:exec] INSERT OK id=${insertData[0].id}`);
+        }
       }
 
       fetchFromSupabase();
     } catch (err) {
-      console.error("Error al guardar registro diario en Supabase:", err);
+      console.error("[Supabase:save:exception] Error al guardar registro diario en Supabase:", err);
     }
   };
 

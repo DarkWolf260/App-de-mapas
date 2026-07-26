@@ -234,7 +234,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                         )}
                         {showArrivalCheckbox ? (
                           <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
-                            <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => onToggleArrivalGroup?.((groupIdx + 1) as 1 | 2 | 3 | 4, e.target.checked)} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
+                            <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { console.log(`[InfoTab:arrival] checkbox fired groupIdx=${groupIdx} checked=${e.target.checked} group.hasArrived=${group.hasArrived}`); onToggleArrivalGroup?.((groupIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
                             <span>{group.hasArrived ? "Lleg\u00f3 del sitio" : "\u00bfYa lleg\u00f3 del sitio?"}</span>
                           </label>
                         ) : (
@@ -378,7 +378,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
               <MetricBadges group={gItem} />
               {showArrivalCheckbox ? (
                 <label style={{ fontSize: "0.65rem", fontWeight: 700, color: gItem.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", cursor: "pointer", background: gItem.hasArrived ? "rgba(34, 197, 94, 0.1)" : "rgba(249, 115, 22, 0.1)", padding: "3px 6px", borderRadius: "4px", border: `1px solid ${gItem.hasArrived ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"}` }}>
-                  <input type="checkbox" checked={!!gItem.hasArrived} onChange={(e) => onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked)} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
+                  <input type="checkbox" checked={!!gItem.hasArrived} onChange={(e) => { console.log(`[InfoTab:arrival:point] checkbox fired gIdx=${gIdx} checked=${e.target.checked} gItem.hasArrived=${gItem.hasArrived}`); onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "13px", height: "13px" }} />
                   <span>{gItem.hasArrived ? "Lleg\u00f3 del sitio" : "\u00bfYa lleg\u00f3 del sitio?"}</span>
                 </label>
               ) : (

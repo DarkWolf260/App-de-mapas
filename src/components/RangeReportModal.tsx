@@ -221,11 +221,16 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   };
 
   const handleToggleArrivalQuick = async (pt: DrawnFeature, groupIndex: 1 | 2 | 3 | 4, newArrived: boolean) => {
-    if (!onSaveDailyLog) return;
+    if (!onSaveDailyLog) {
+      console.log("[RangeReport:arrival] BLOCKED onSaveDailyLog is null");
+      return;
+    }
     const logs = pt.dailyLogs?.filter((l) =>
       l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
     ) || [];
     const currentLog = logs[0] || emptyLog(activeDate);
+
+    console.log(`[RangeReport:arrival] ptId=${pt.id} ptTitle=${pt.title} groupIndex=${groupIndex} newArrived=${newArrived} currentLog_hasArrivedG1=${currentLog.hasArrivedG1} groupsPresent=${!!currentLog.groups} groupsCount=${currentLog.groups?.length ?? 0}`);
 
     const nowTime = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
 
@@ -251,7 +256,10 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
       updatedLog.groups = updatedGroups;
     }
 
+    console.log(`[RangeReport:arrival:payload] hasArrivedG1=${updatedLog.hasArrivedG1} hasArrivedG2=${updatedLog.hasArrivedG2} groups[0].hasArrived=${updatedLog.groups?.[0]?.hasArrived}`);
+
     await onSaveDailyLog(pt.id, updatedLog);
+    console.log("[RangeReport:arrival:saved] onSaveDailyLog completed");
   };
 
   const handlePrint = () => {
