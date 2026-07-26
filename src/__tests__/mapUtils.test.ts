@@ -1,4 +1,4 @@
-import { typeLabel, symbolForType, makeSymbols, formatFeatureLabelText } from "../utils/mapUtils";
+import { typeLabel, symbolForType, makeSymbols, formatFeatureLabelText, getLabelText, getBasemapValue, DEFAULT_CENTER, DEFAULT_ZOOM } from "../utils/mapUtils";
 
 describe("typeLabel", () => {
   it("returns 'Poligono' for polygon", () => {
@@ -106,5 +106,77 @@ describe("formatFeatureLabelText", () => {
 
     const labelStr = formatFeatureLabelText(feat, "2026-07-24");
     expect(labelStr).toBe("Residencias Las Palmas");
+  });
+
+  it("includes rescued and recovered counts in label", () => {
+    const feat = {
+      id: 4,
+      title: "Sector A",
+      type: "polygon",
+      dailyLogs: [
+        { date: "2026-07-24", groupName: "Alpha", rescuedCount: "3", recoveredCount: "1" },
+      ],
+    } as any;
+    const label = formatFeatureLabelText(feat, "2026-07-24");
+    expect(label).toContain("3 Resc.");
+    expect(label).toContain("1 Recup.");
+  });
+
+  it("filters by activeDepartment", () => {
+    const feat = {
+      id: 5,
+      title: "Punto B",
+      type: "point",
+      dailyLogs: [
+        { date: "2026-07-24", department: "pc", groupName: "PC Group" },
+        { date: "2026-07-24", department: "bomberos", groupName: "Bomberos Group" },
+      ],
+    } as any;
+    const labelPc = formatFeatureLabelText(feat, "2026-07-24", "pc");
+    expect(labelPc).toContain("PC Group");
+    expect(labelPc).not.toContain("Bomberos Group");
+  });
+});
+
+describe("getLabelText", () => {
+  it("delegates to formatFeatureLabelText with date", () => {
+    const feat = {
+      id: 1,
+      title: "Test",
+      type: "point",
+      dailyLogs: [{ date: "2026-07-24", groupName: "G1" }],
+    } as any;
+    const label = getLabelText(feat, "2026-07-24");
+    expect(label).toContain("G1");
+  });
+
+  it("uses current date when no dateStr provided", () => {
+    const feat = { id: 1, title: "Test", type: "point", dailyLogs: [] } as any;
+    const label = getLabelText(feat);
+    expect(label).toBe("Test");
+  });
+});
+
+describe("getBasemapValue", () => {
+  it("returns string for non-satellite keys", () => {
+    expect(getBasemapValue("topo-vector")).toBe("topo-vector");
+    expect(getBasemapValue("dark-gray-vector")).toBe("dark-gray-vector");
+  });
+
+  it("returns Basemap object for satellite-free", () => {
+    const result = getBasemapValue("satellite-free");
+    expect(typeof result).not.toBe("string");
+  });
+});
+
+describe("DEFAULT_CENTER and DEFAULT_ZOOM", () => {
+  it("DEFAULT_CENTER is a [lon, lat] tuple", () => {
+    expect(DEFAULT_CENTER.length).toBe(2);
+    expect(typeof DEFAULT_CENTER[0]).toBe("number");
+    expect(typeof DEFAULT_CENTER[1]).toBe("number");
+  });
+
+  it("DEFAULT_ZOOM is a positive number", () => {
+    expect(DEFAULT_ZOOM).toBeGreaterThan(0);
   });
 });

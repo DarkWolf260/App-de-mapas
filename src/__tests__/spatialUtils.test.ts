@@ -2,6 +2,7 @@ import {
   calculatePolygonArea,
   isPointInPolygon,
   buildParentsMap,
+  geoToJSON,
 } from "../utils/spatialUtils";
 import type { DrawnFeature } from "../types";
 
@@ -129,5 +130,32 @@ describe("buildParentsMap", () => {
     const { parentsMap } = buildParentsMap(features);
     expect(parentsMap[1]).toBeUndefined();
     expect(parentsMap[2]).toBeUndefined();
+  });
+});
+
+describe("geoToJSON", () => {
+  it("returns null for null/undefined input", () => {
+    expect(geoToJSON(null)).toBeNull();
+    expect(geoToJSON(undefined)).toBeNull();
+  });
+
+  it("converts point geometry", () => {
+    const geo = geoToJSON({ type: "point", longitude: -66.9, latitude: 10.6, spatialReference: { wkid: 4326 } });
+    expect(geo).toEqual({ type: "Point", coordinates: [-66.9, 10.6] });
+  });
+
+  it("converts polyline geometry", () => {
+    const geo = geoToJSON({ type: "polyline", paths: [[[-66.9, 10.6], [-66.8, 10.7]]], spatialReference: { wkid: 4326 } });
+    expect(geo).toEqual({ type: "LineString", coordinates: [[-66.9, 10.6], [-66.8, 10.7]] });
+  });
+
+  it("converts polygon geometry", () => {
+    const rings = [[[-66.9, 10.6], [-66.8, 10.6], [-66.8, 10.7], [-66.9, 10.6]]];
+    const geo = geoToJSON({ type: "polygon", rings, spatialReference: { wkid: 4326 } });
+    expect(geo).toEqual({ type: "Polygon", coordinates: rings });
+  });
+
+  it("returns null for unknown geometry type", () => {
+    expect(geoToJSON({ type: "unknown", spatialReference: { wkid: 4326 } })).toBeNull();
   });
 });
