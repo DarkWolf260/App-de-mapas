@@ -210,16 +210,41 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     });
   }, [periodStats, searchQuery, statsSortKey, statsSortDir]);
 
+  const getLogForDate = (pt: DrawnFeature, dateStr: string): DailyLog => {
+    const logs = pt.dailyLogs?.filter(
+      (l) => l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department),
+    ) || [];
+    if (logs.length === 0) return emptyLog(dateStr, activeDepartment === "mixto" ? undefined : activeDepartment);
+    if (logs.length === 1) return logs[0];
+
+    // Mixto: merge all department logs for this date
+    const merged: DailyLog = { ...logs[0] };
+    const allNovedades = [...(merged.novedades || [])];
+    const allGroups = [...(merged.groups || [])];
+
+    for (let i = 1; i < logs.length; i++) {
+      const other = logs[i];
+      merged.rescuedCount = String((parseInt(merged.rescuedCount || "0") || 0) + (parseInt(other.rescuedCount || "0") || 0));
+      merged.recoveredCount = String((parseInt(merged.recoveredCount || "0") || 0) + (parseInt(other.recoveredCount || "0") || 0));
+      merged.rescuedPetsCount = String((parseInt(merged.rescuedPetsCount || "0") || 0) + (parseInt(other.rescuedPetsCount || "0") || 0));
+      merged.prehospitalCareCount = String((parseInt(merged.prehospitalCareCount || "0") || 0) + (parseInt(other.prehospitalCareCount || "0") || 0));
+      merged.transfersCount = String((parseInt(merged.transfersCount || "0") || 0) + (parseInt(other.transfersCount || "0") || 0));
+      if (other.novedades) allNovedades.push(...other.novedades);
+      if (other.groups) allGroups.push(...other.groups);
+    }
+    merged.novedades = allNovedades;
+    merged.groups = allGroups;
+    merged.department = undefined;
+    return merged;
+  };
+
   const activePoints = useMemo(() => {
     if (!feat) return [];
     const pts = isAllMode ? allFeatures : [feat];
     return pts.filter((pt) => {
       if (activeEditFeatureId === pt.id) return true;
       if (!featureMatchesSearch(pt, searchQuery, activeDate)) return false;
-      const logs = pt.dailyLogs?.filter((l) =>
-        l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
-      ) || [];
-      const log = logs[0];
+      const log = getLogForDate(pt, activeDate);
       if (!log || !logHasAnyData(log)) return false;
       return logMatchesArrivalFilter(log, arrivalFilter);
     }).sort((a, b) => a.title.localeCompare(b.title, "es", { sensitivity: "base" }));
@@ -230,10 +255,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     const pts = isAllMode ? allFeatures : [feat];
     return pts.filter((pt) => {
       if (!featureMatchesSearch(pt, searchQuery, activeDate)) return false;
-      const logs = pt.dailyLogs?.filter((l) =>
-        l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
-      ) || [];
-      const log = logs[0];
+      const log = getLogForDate(pt, activeDate);
       return !log || !logHasAnyData(log);
     }).sort((a, b) => a.title.localeCompare(b.title, "es", { sensitivity: "base" }));
   }, [isAllMode, allFeatures, feat, searchQuery, activeDate, activeDepartment]);
@@ -242,10 +264,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     if (!feat) return [];
     return dates.filter((dateStr) => {
       if (isAllMode) return true;
-      const logs = feat.dailyLogs?.filter((l) =>
-        l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
-      ) || [];
-      const log = logs[0];
+      const log = getLogForDate(feat, dateStr);
       return logMatchesArrivalFilter(log, arrivalFilter);
     });
   }, [dates, isAllMode, feat, arrivalFilter, activeDepartment]);
@@ -320,13 +339,6 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const handleSortToggle = (key: typeof statsSortKey) => {
     if (statsSortKey === key) setStatsSortDir((d) => d === "desc" ? "asc" : "desc");
     else { setStatsSortKey(key); setStatsSortDir("desc"); }
-  };
-
-  const getLogForDate = (pt: DrawnFeature, dateStr: string): DailyLog => {
-    const logs = pt.dailyLogs?.filter(
-      (l) => l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department),
-    ) || [];
-    return logs[0] || emptyLog(dateStr, activeDepartment === "mixto" ? undefined : activeDepartment);
   };
 
   const defaultSaveFeature = useMemo(() => {

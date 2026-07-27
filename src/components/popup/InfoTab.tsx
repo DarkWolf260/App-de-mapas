@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Copy, Check, Edit3, Users, Activity, AlertTriangle, Link2, Unlink, Save, FileText, Plus, X } from "lucide-react";
+import { Copy, Check, Edit3, Users, Activity, AlertTriangle, Link2, Unlink, Save, FileText, Plus, X, Pencil } from "lucide-react";
 import type { DrawnFeature, DailyLog, GroupLogEntry, NovedadEntry } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
 import { getNormalizedGroupList } from "../../utils/logUtils";
@@ -28,6 +28,7 @@ interface InfoTabProps {
   novedades?: NovedadEntry[];
   onAddNovedad?: (time: string, text: string) => Promise<void>;
   onDeleteNovedad?: (id: string) => Promise<void>;
+  onUpdateNovedad?: (entryId: string, newText: string, newTime?: string) => Promise<void>;
   containedNovedades?: Array<{ origin: string; originFeatId?: number; novedades: NovedadEntry[] }>;
   onNavigateToFeature?: (feat: DrawnFeature) => void;
 }
@@ -72,13 +73,16 @@ export const InfoTab: React.FC<InfoTabProps> = ({
   activeFeat, dailyLog, localLog, onEdit, drawnFeatures, popupEditDate,
   isAdmin = false, canEdit = false, canToggleArrival = false, onToggleArrivalGroup,
   onGroupFieldChange, onGeneralFieldChange, onSaveStats, saveSuccess,
-  novedades = [], onAddNovedad, onDeleteNovedad, containedNovedades = [], onNavigateToFeature,
+  novedades = [], onAddNovedad, onDeleteNovedad, onUpdateNovedad, containedNovedades = [], onNavigateToFeature,
 }) => {
   const showArrivalCheckbox = isAdmin || canToggleArrival;
   const [copied, setCopied] = useState(false);
   const [novTime, setNovTime] = useState(() => new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false }));
   const [novText, setNovText] = useState("");
   const [confirmDeleteNovedadId, setConfirmDeleteNovedadId] = useState<string | null>(null);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [editingEntryText, setEditingEntryText] = useState("");
+  const [editingEntryTime, setEditingEntryTime] = useState("");
   const isPolygon = activeFeat.type === "polygon";
   const coords = formatCoordinates(activeFeat);
 
@@ -153,6 +157,28 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const handleStartEditEntry = (entryId: string, text: string, time: string) => {
+    setEditingEntryId(entryId);
+    setEditingEntryText(text);
+    setEditingEntryTime(time && time !== "—" ? time : "");
+  };
+
+  const handleSaveEditEntry = async (entryId: string) => {
+    if (!editingEntryText.trim()) return;
+    if (onUpdateNovedad) {
+      await onUpdateNovedad(entryId, editingEntryText.trim(), editingEntryTime || undefined);
+    }
+    setEditingEntryId(null);
+    setEditingEntryText("");
+    setEditingEntryTime("");
+  };
+
+  const handleCancelEditEntry = () => {
+    setEditingEntryId(null);
+    setEditingEntryText("");
+    setEditingEntryTime("");
   };
 
   // --- Points: check if any metric has data ---
@@ -526,12 +552,48 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                     >
                       <span style={{ fontSize: "0.6rem", fontWeight: 700, color: timeColor, fontVariantNumeric: "tabular-nums", flexShrink: 0, minWidth: "36px" }}>{entry.time}</span>
                       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "1px" }}>
-                        <span style={{ fontSize: "0.6rem", color: "var(--text-main)", lineHeight: 1.3 }}>{entry.text}</span>
+                        {editingEntryId === entry.entryId ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                            <input
+                              type="time"
+                              value={editingEntryTime}
+                              onChange={(e) => setEditingEntryTime(e.target.value)}
+                              style={{ width: "80px", fontSize: "0.58rem", padding: "3px 4px", borderRadius: "3px", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(17,24,39,0.7)", color: "var(--text-main)", fontFamily: "inherit", outline: "none" }}
+                            />
+                            <textarea
+                              value={editingEntryText}
+                              onChange={(e) => setEditingEntryText(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEditEntry(entry.entryId); } }}
+                              autoFocus
+                              rows={2}
+                              style={{ fontSize: "0.58rem", padding: "3px 5px", borderRadius: "3px", border: "1px solid rgba(56,189,248,0.25)", background: "rgba(17,24,39,0.7)", color: "var(--text-main)", fontFamily: "inherit", resize: "vertical", outline: "none" }}
+                            />
+                            <div style={{ display: "flex", gap: "3px" }}>
+                              <button onClick={() => handleSaveEditEntry(entry.entryId)} disabled={!editingEntryText.trim()} style={{ fontSize: "0.5rem", padding: "1px 6px", borderRadius: "3px", border: "1px solid rgba(34,197,94,0.3)", background: editingEntryText.trim() ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.02)", color: editingEntryText.trim() ? "var(--color-green)" : "var(--text-muted)", cursor: editingEntryText.trim() ? "pointer" : "default" }}>
+                                Guardar
+                              </button>
+                              <button onClick={handleCancelEditEntry} style={{ fontSize: "0.5rem", padding: "1px 6px", borderRadius: "3px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)", color: "var(--text-muted)", cursor: "pointer" }}>
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: "0.6rem", color: "var(--text-main)", lineHeight: 1.3 }}>{entry.text}</span>
+                        )}
                       </div>
-                      {!isForeign && onDeleteNovedad && (
-                        <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteNovedadId(entry.entryId); }} style={{ flexShrink: 0, padding: "1px", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
-                          <X size={10} />
-                        </button>
+                      {!isForeign && (onDeleteNovedad || onUpdateNovedad) && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px", flexShrink: 0 }}>
+                          {onUpdateNovedad && (
+                            <button onClick={(e) => { e.stopPropagation(); handleStartEditEntry(entry.entryId, entry.text, entry.time); }} title="Editar" style={{ padding: "1px", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-info)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                              <Pencil size={10} />
+                            </button>
+                          )}
+                          {onDeleteNovedad && (
+                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteNovedadId(entry.entryId); }} title="Eliminar" style={{ padding: "1px", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                              <X size={10} />
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   );

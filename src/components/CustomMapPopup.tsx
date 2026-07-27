@@ -244,6 +244,18 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     await onRefreshFeatures?.();
   };
 
+  const handleUpdateNovedad = async (entryId: string, newText: string, newTime?: string) => {
+    if (!canEditLog || !onSaveDailyLog) return;
+    const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
+    const updatedNovedades = (localLog.novedades || []).map((n) =>
+      n.id === entryId ? { ...n, text: newText, ...(newTime !== undefined ? { time: newTime } : {}) } : n
+    );
+    const updatedLog = { ...localLog, department: deptToUse, novedades: updatedNovedades };
+    setLocalLog(updatedLog);
+    await onSaveDailyLog(activeFeat.id, updatedLog);
+    await onRefreshFeatures?.();
+  };
+
   const handleToggleArrivalGroup = async (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => {
     if (!canToggleArrival || !onSaveDailyLog) return;
     const fieldKey = groupIndex === 1 ? "hasArrivedG1" : groupIndex === 2 ? "hasArrivedG2" : groupIndex === 3 ? "hasArrivedG3" : "hasArrivedG4";
@@ -384,6 +396,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           novedades={localLog.novedades || []}
           onAddNovedad={handleAddNovedad}
           onDeleteNovedad={handleDeleteNovedad}
+          onUpdateNovedad={handleUpdateNovedad}
           containedNovedades={containedNovedades}
           onNavigateToFeature={onNavigateToFeature}
         />
