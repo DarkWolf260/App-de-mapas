@@ -231,6 +231,10 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
       merged.transfersCount = String((parseInt(merged.transfersCount || "0") || 0) + (parseInt(other.transfersCount || "0") || 0));
       if (other.novedades) allNovedades.push(...other.novedades);
       if (other.groups) allGroups.push(...other.groups);
+      // Merge arrival flags: if any log has it, set it
+      for (let g = 1; g <= 4; g++) {
+        if ((other as any)[`hasArrivedG${g}`]) (merged as any)[`hasArrivedG${g}`] = true;
+      }
     }
     merged.novedades = allNovedades;
     merged.groups = allGroups;

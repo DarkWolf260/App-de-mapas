@@ -130,6 +130,9 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       merged.transfersCount = String((parseInt(merged.transfersCount || "0", 10) || 0) + (parseInt(other.transfersCount || "0", 10) || 0));
       if (other.novedades) allNovedades.push(...other.novedades);
       if (other.groups) allGroups.push(...other.groups);
+      for (let g = 1; g <= 4; g++) {
+        if ((other as any)[`hasArrivedG${g}`]) (merged as any)[`hasArrivedG${g}`] = true;
+      }
     }
     merged.novedades = allNovedades;
     merged.groups = allGroups;
@@ -297,7 +300,13 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                             <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(groupIdx)} style={{ cursor: "pointer", width: "12px", height: "12px", flexShrink: 0, accentColor: "#38bdf8" }} title="Seleccionar para agrupar" />
                           )}
                           <span style={{ fontSize: "0.63rem", fontWeight: 700, color }}>{group.groupName || `Equipo ${groupIdx + 1}`}</span>
-                          {group.isVolunteer && (
+                          {canEdit && onGroupFieldChange && (
+                            <label style={{ fontSize: "0.5rem", fontWeight: 700, color: group.isVolunteer ? "#c084fc" : "var(--text-muted)", display: "flex", alignItems: "center", gap: "3px", cursor: "pointer", background: group.isVolunteer ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.03)", border: `1px solid ${group.isVolunteer ? "rgba(168,85,247,0.4)" : "rgba(255,255,255,0.08)"}`, borderRadius: "3px", padding: "1px 4px", flexShrink: 0 }}>
+                              <input type="checkbox" checked={!!group.isVolunteer} onChange={(e) => onGroupFieldChange(groupIdx, "isVolunteer", e.target.checked)} style={{ cursor: "pointer", width: "10px", height: "10px", margin: 0 }} />
+                              VOL
+                            </label>
+                          )}
+                          {!canEdit && group.isVolunteer && (
                             <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.48rem", fontWeight: 800, textTransform: "uppercase" }}>VOL</span>
                           )}
                           <span style={{ marginLeft: "auto", fontSize: "0.55rem", color: "var(--text-muted)" }}>{group.officersCount ? `${group.officersCount} func.` : ""}</span>
@@ -457,7 +466,13 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                         <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(groupIdx)} style={{ cursor: "pointer", width: "12px", height: "12px", flexShrink: 0, accentColor: "#38bdf8" }} title="Seleccionar para agrupar" />
                       )}
                       <span style={{ fontSize: "0.63rem", fontWeight: 700, color }}>{group.groupName || `Equipo ${groupIdx + 1}`}</span>
-                      {group.isVolunteer && (
+                      {canEdit && onGroupFieldChange && (
+                        <label style={{ fontSize: "0.5rem", fontWeight: 700, color: group.isVolunteer ? "#c084fc" : "var(--text-muted)", display: "flex", alignItems: "center", gap: "3px", cursor: "pointer", background: group.isVolunteer ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.03)", border: `1px solid ${group.isVolunteer ? "rgba(168,85,247,0.4)" : "rgba(255,255,255,0.08)"}`, borderRadius: "3px", padding: "1px 4px", flexShrink: 0 }}>
+                          <input type="checkbox" checked={!!group.isVolunteer} onChange={(e) => onGroupFieldChange(groupIdx, "isVolunteer", e.target.checked)} style={{ cursor: "pointer", width: "10px", height: "10px", margin: 0 }} />
+                          VOL
+                        </label>
+                      )}
+                      {!canEdit && group.isVolunteer && (
                         <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.48rem", fontWeight: 800, textTransform: "uppercase" }}>VOL</span>
                       )}
                       <span style={{ marginLeft: "auto", fontSize: "0.55rem", color: "var(--text-muted)" }}>{group.officersCount ? `${group.officersCount} func.` : ""}</span>

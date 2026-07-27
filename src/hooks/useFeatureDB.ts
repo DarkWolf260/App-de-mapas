@@ -404,9 +404,15 @@ export function useFeatureDB() {
       const g2 = groupsList[2];
       const g3 = groupsList[3];
 
+      // If groups exist, clear flat metric fields to prevent double-counting
+      // (the groups array already carries all per-group metrics)
+      const cleanLog = groupsList.length > 0
+        ? { ...log, rescuedCount: "", recoveredCount: "", rescuedPetsCount: "", prehospitalCareCount: "", transfersCount: "" }
+        : log;
+
       const payload = {
         feature_id: fidStr,
-        date: log.date,
+        date: cleanLog.date,
         department: deptToUse,
         groups: groupsList,
         group_name: g0?.groupName || log.groupName || "",
@@ -456,11 +462,11 @@ export function useFeatureDB() {
         transfers_count4: g3?.transfersCount || log.transfersCount4 || "",
         commission_id4: g3?.commissionId || log.commissionId4 || "independiente",
         is_volunteer4: g3?.isVolunteer ?? !!log.isVolunteer4,
-        rescued_count: log.rescuedCount || "",
-        recovered_count: log.recoveredCount || "",
-        rescued_pets_count: log.rescuedPetsCount || "",
-        prehospital_care_count: log.prehospitalCareCount || "",
-        transfers_count: log.transfersCount || "",
+        rescued_count: cleanLog.rescuedCount || "",
+        recovered_count: cleanLog.recoveredCount || "",
+        rescued_pets_count: cleanLog.rescuedPetsCount || "",
+        prehospital_care_count: cleanLog.prehospitalCareCount || "",
+        transfers_count: cleanLog.transfersCount || "",
         observations: log.observations || "",
         novedades: log.novedades || [],
         updated_at: new Date().toISOString(),

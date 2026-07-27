@@ -14,7 +14,7 @@ import type { Color } from "../utils/colorUtils";
 import { PALETTE, hexToRgb } from "../utils/colorUtils";
 import { ToolId } from "./DrawingToolbar";
 import { geoToJSON } from "../utils/spatialUtils";
-import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapValue, typeLabel, makeSymbols, getLabelText } from "../utils/mapUtils";
+import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapValue, typeLabel, makeSymbols } from "../utils/mapUtils";
 import { deconflictGraphics } from "../utils/labelDeconfliction";
 import { syncDrawnFeaturesToGraphics, syncImportedFeatures } from "../utils/graphicsSync";
 import type { DrawnFeature, HtmlLabel, LayerVisibility, RemoveFeatureId, DepartmentView } from "../types";
@@ -418,7 +418,7 @@ export const useMapSetup = ({
             const g = (result as any).graphic;
             const featId = g.attributes?.id || (g as any).uid;
             const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-            setTooltip({ text: feat ? getLabelText(feat, selectedDateRef.current) : (g.attributes?.title || "Elemento"), x: evt.x, y: evt.y, visible: true });
+            setTooltip({ text: (g.attributes?.title || "Elemento"), x: evt.x, y: evt.y, visible: true });
             return;
           }
           hideTooltip();
