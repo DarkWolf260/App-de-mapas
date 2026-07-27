@@ -70,13 +70,11 @@ export function getDayStats(
     commTransfers.forEach((val) => { totalTransfers += val; });
     commPets.forEach((val) => { totalPets += val; });
 
-    if (groups.length === 0) {
-      totalRescued += parseInt(log.rescuedCount || "0", 10) || 0;
-      totalRecovered += parseInt(log.recoveredCount || "0", 10) || 0;
-      totalPrehospitalCare += parseInt(log.prehospitalCareCount || "0", 10) || 0;
-      totalTransfers += parseInt(log.transfersCount || "0", 10) || 0;
-      totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
-    }
+    totalRescued += parseInt(log.rescuedCount || "0", 10) || 0;
+    totalRecovered += parseInt(log.recoveredCount || "0", 10) || 0;
+    totalPrehospitalCare += parseInt(log.prehospitalCareCount || "0", 10) || 0;
+    totalTransfers += parseInt(log.transfersCount || "0", 10) || 0;
+    totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
   }
 
   return { totalPersonnel, totalRescued, totalRecovered, totalPets, totalPrehospitalCare, totalTransfers, activePoints, groupsArrived };
@@ -243,13 +241,11 @@ export function getPeriodStats(
       commTransfers.forEach((val) => { totalTransfers += val; });
       commPets.forEach((val) => { totalPets += val; });
 
-      if (groupList.length === 0) {
-        totalRescued += parseInt(log.rescuedCount || "0", 10) || 0;
-        totalRecovered += parseInt(log.recoveredCount || "0", 10) || 0;
-        totalPrehospitalCare += parseInt(log.prehospitalCareCount || "0", 10) || 0;
-        totalTransfers += parseInt(log.transfersCount || "0", 10) || 0;
-        totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
-      }
+      totalRescued += parseInt(log.rescuedCount || "0", 10) || 0;
+      totalRecovered += parseInt(log.recoveredCount || "0", 10) || 0;
+      totalPrehospitalCare += parseInt(log.prehospitalCareCount || "0", 10) || 0;
+      totalTransfers += parseInt(log.transfersCount || "0", 10) || 0;
+      totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
 
       const logCommGroups = new Map<string, GroupLogEntry[]>();
       for (const g of groupList) {

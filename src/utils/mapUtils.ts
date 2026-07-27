@@ -87,12 +87,10 @@ export const formatFeatureLabelText = (feat: DrawnFeature, todayStr: string, act
       prehospital += parseInt(g.prehospitalCareCount || "0", 10) || 0;
       transfers += parseInt(g.transfersCount || "0", 10) || 0;
     }
-    if (groups.length === 0) {
-      rescued = parseInt(todayLog.rescuedCount || "0", 10) || 0;
-      recovered = parseInt(todayLog.recoveredCount || "0", 10) || 0;
-      prehospital = parseInt(todayLog.prehospitalCareCount || "0", 10) || 0;
-      transfers = parseInt(todayLog.transfersCount || "0", 10) || 0;
-    }
+    rescued += parseInt(todayLog.rescuedCount || "0", 10) || 0;
+    recovered += parseInt(todayLog.recoveredCount || "0", 10) || 0;
+    prehospital += parseInt(todayLog.prehospitalCareCount || "0", 10) || 0;
+    transfers += parseInt(todayLog.transfersCount || "0", 10) || 0;
 
     if (rescued > 0) parts.push(`${rescued} Resc.`);
     if (recovered > 0) parts.push(`${recovered} Recup.`);

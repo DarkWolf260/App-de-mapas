@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import type { DrawnFeature, DepartmentView } from "../types";
-import { getTotalPersonnel, getNormalizedGroupList, mergeLogs } from "../utils/logUtils";
+import { getTotalPersonnel, getNormalizedGroupList, mergeLogs, getDayStats } from "../utils/logUtils";
 import { LayoutDashboard, Users, MapPin, Tag, X, BarChart2, List } from "lucide-react";
 
 interface DeploymentSummaryCardProps {
@@ -48,7 +48,12 @@ function computeActivePoints(drawnFeatures: DrawnFeature[], targetDate: string, 
       const groupList = getNormalizedGroupList(log);
       const groups = groupList.length;
       const activeGroups = groupList.filter((g) => !g.hasArrived).length;
-      if (totalOff === 0 && groups === 0) return null;
+      const hasFlatStats = (parseInt(log.rescuedCount || "0", 10) || 0) > 0
+        || (parseInt(log.recoveredCount || "0", 10) || 0) > 0
+        || (parseInt(log.rescuedPetsCount || "0", 10) || 0) > 0
+        || (parseInt(log.prehospitalCareCount || "0", 10) || 0) > 0
+        || (parseInt(log.transfersCount || "0", 10) || 0) > 0;
+      if (totalOff === 0 && groups === 0 && !hasFlatStats) return null;
       return { id: f.id, title: f.title, color: f.color || "#22c55e", totalOff, groups, activeGroups };
     })
     .filter(Boolean) as ActivePoint[];
@@ -104,6 +109,17 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   const totalOff = activePoints.reduce((acc, item) => acc + item.totalOff, 0);
   const totalGroups = activePoints.reduce((acc, item) => acc + item.groups, 0);
   const totalActiveGroups = activePoints.reduce((acc, item) => acc + item.activeGroups, 0);
+
+  const dayStats = useMemo(() => getDayStats(drawnFeatures, targetDateStr, activeDepartment), [drawnFeatures, targetDateStr, activeDepartment]);
+
+  const metricBadges = [
+    { label: "Rescat.", value: dayStats.totalRescued, color: "var(--color-green)" },
+    { label: "Recup.", value: dayStats.totalRecovered, color: "var(--color-info)" },
+    { label: "Masc.", value: dayStats.totalPets, color: "#a855f7" },
+    { label: "Atenc.", value: dayStats.totalPrehospitalCare, color: "#38bdf8" },
+    { label: "Trasl.", value: dayStats.totalTransfers, color: "var(--color-purple)" },
+  ];
+  const hasMetrics = metricBadges.some((m) => m.value > 0);
 
   const statDivider = <div style={{ width: "1px", height: "28px", background: "rgba(255,255,255,0.1)" }} />;
 
@@ -235,15 +251,26 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
 
       {/* Modo 2: Vista de Totales (sólo muestra los números) */}
       {isCompact ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", padding: "10px 0" }}>
-          {renderStat("Funcionarios", totalOff, "rgba(56, 189, 248, 0.85)")}
-          {statDivider}
-          {renderStat("Grupos", totalGroups, "rgba(139, 92, 246, 0.85)")}
-          {totalActiveGroups > 0 && (
-            <>
-              {statDivider}
-              {renderStat("Activos", totalActiveGroups, "rgba(234, 179, 8, 0.95)")}
-            </>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "4px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around" }}>
+            {renderStat("Funcionarios", totalOff, "rgba(56, 189, 248, 0.85)")}
+            {statDivider}
+            {renderStat("Grupos", totalGroups, "rgba(139, 92, 246, 0.85)")}
+            {totalActiveGroups > 0 && (
+              <>
+                {statDivider}
+                {renderStat("Activos", totalActiveGroups, "rgba(234, 179, 8, 0.95)")}
+              </>
+            )}
+          </div>
+          {hasMetrics && (
+            <div style={{ display: "flex", justifyContent: "center", gap: "8px", flexWrap: "wrap", padding: "3px 6px", background: "rgba(255,255,255,0.03)", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.06)" }}>
+              {metricBadges.filter((m) => m.value > 0).map((m) => (
+                <span key={m.label} style={{ fontSize: "9px", fontWeight: 700, color: m.color, display: "flex", alignItems: "center", gap: "2px" }}>
+                  {m.value} {m.label}
+                </span>
+              ))}
+            </div>
           )}
         </div>
       ) : (
@@ -282,6 +309,15 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
           </div>
 
           {/* Content */}
+          {hasMetrics && (
+            <div style={{ display: "flex", justifyContent: "center", gap: "8px", flexWrap: "wrap", padding: "4px 6px", background: "rgba(255,255,255,0.03)", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.06)" }}>
+              {metricBadges.filter((m) => m.value > 0).map((m) => (
+                <span key={m.label} style={{ fontSize: "9px", fontWeight: 700, color: m.color, display: "flex", alignItems: "center", gap: "2px" }}>
+                  {m.value} {m.label}
+                </span>
+              ))}
+            </div>
+          )}
           {!hasData ? (
             <div style={{ fontSize: "10px", color: "var(--text-muted)", fontStyle: "italic", textAlign: "center", padding: "8px 0" }}>
               Sin personal desplegado hoy

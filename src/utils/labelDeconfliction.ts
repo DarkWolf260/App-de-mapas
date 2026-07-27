@@ -289,6 +289,10 @@ function buildHtmlLabels(
             transfersCount += parseInt(g.transfersCount || "0", 10) || 0;
             prehospitalCount += parseInt(g.prehospitalCareCount || "0", 10) || 0;
           }
+          rescuedCount += parseInt(l.rescuedCount || "0", 10) || 0;
+          recoveredCount += parseInt(l.recoveredCount || "0", 10) || 0;
+          prehospitalCount += parseInt(l.prehospitalCareCount || "0", 10) || 0;
+          transfersCount += parseInt(l.transfersCount || "0", 10) || 0;
         });
 
         const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0;

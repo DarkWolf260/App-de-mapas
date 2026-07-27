@@ -130,7 +130,13 @@ export function logHasAnyData(log?: Partial<DailyLog>): boolean {
   if (!log) return false;
   const groups = getNormalizedGroupList(log);
   if (groups.length > 0) return true;
-  return !!(log.observations && log.observations.trim());
+  if (!!(log.observations && log.observations.trim())) return true;
+  if (parseInt(log.rescuedCount || "0", 10) > 0) return true;
+  if (parseInt(log.recoveredCount || "0", 10) > 0) return true;
+  if (parseInt(log.rescuedPetsCount || "0", 10) > 0) return true;
+  if (parseInt(log.prehospitalCareCount || "0", 10) > 0) return true;
+  if (parseInt(log.transfersCount || "0", 10) > 0) return true;
+  return false;
 }
 
 export interface GroupData {
