@@ -36,6 +36,8 @@ export interface UseMapSetupProps {
   activeDepartment?: DepartmentView;
   onFeatureClick?: () => void;
   showAccumulated?: boolean;
+  showPoints?: boolean;
+  showAreas?: boolean;
 }
 
 export const useMapSetup = ({
@@ -54,6 +56,8 @@ export const useMapSetup = ({
   activeDepartment = "pc",
   onFeatureClick,
   showAccumulated,
+  showPoints,
+  showAreas,
 }: UseMapSetupProps) => {
   const mapDiv = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
@@ -111,6 +115,29 @@ export const useMapSetup = ({
 
   const showAccumulatedRef = useRef(showAccumulated);
   useEffect(() => { showAccumulatedRef.current = showAccumulated; }, [showAccumulated]);
+
+  const showPointsRef = useRef(showPoints);
+  useEffect(() => { showPointsRef.current = showPoints; }, [showPoints]);
+
+  const showAreasRef = useRef(showAreas);
+  useEffect(() => { showAreasRef.current = showAreas; }, [showAreas]);
+
+  useEffect(() => {
+    const layer = sketchLayerRef.current;
+    if (!layer) return;
+    const features = drawnFeaturesRef.current;
+    layer.graphics.forEach((g) => {
+      const pid = g.attributes?.parentId || g.attributes?.id || (g as any).uid;
+      const feat = features.find((f) => String(f.id) === String(pid));
+      if (!feat) return;
+      const individuallyHidden = hiddenFeaturesRef.current[String(pid)] || hiddenFeaturesRef.current[feat.id];
+      if (individuallyHidden) { g.visible = false; return; }
+      if (feat.type === "point" && !showPoints) g.visible = false;
+      else if ((feat.type === "polygon" || feat.type === "polyline") && !showAreas) g.visible = false;
+      else g.visible = true;
+    });
+    deconflictGraphicsRef.current?.();
+  }, [showPoints, showAreas]);
 
   const [mapReady, setMapReady] = useState(false);
   const [customPopup, setCustomPopup] = useState<{ mapPoint: Point; feat: DrawnFeature } | null>(null);

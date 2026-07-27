@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Copy, Check, Edit3, Users, Activity, AlertTriangle, Link2, Unlink, Save, FileText, Plus, X, Pencil } from "lucide-react";
-import type { DrawnFeature, DailyLog, GroupLogEntry, NovedadEntry } from "../../types";
+import type { DrawnFeature, DailyLog, GroupLogEntry, NovedadEntry, DepartmentView } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
 import { getNormalizedGroupList } from "../../utils/logUtils";
 import { labelStyle, sectionBox, readRowStyle, readLabelStyle, readValueStyle } from "./popupStyles";
@@ -31,6 +31,7 @@ interface InfoTabProps {
   onUpdateNovedad?: (entryId: string, newText: string, newTime?: string) => Promise<void>;
   containedNovedades?: Array<{ origin: string; originFeatId?: number; novedades: NovedadEntry[] }>;
   onNavigateToFeature?: (feat: DrawnFeature) => void;
+  activeDepartment?: DepartmentView;
 }
 
 function ReadRow({ label, value }: { label: string; value?: string }) {
@@ -74,6 +75,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
   isAdmin = false, canEdit = false, canToggleArrival = false, onToggleArrivalGroup,
   onGroupFieldChange, onGeneralFieldChange, onSaveStats, saveSuccess,
   novedades = [], onAddNovedad, onDeleteNovedad, onUpdateNovedad, containedNovedades = [], onNavigateToFeature,
+  activeDepartment = "pc",
 }) => {
   const showArrivalCheckbox = isAdmin || canToggleArrival;
   const [copied, setCopied] = useState(false);
@@ -111,17 +113,42 @@ export const InfoTab: React.FC<InfoTabProps> = ({
   const sourceLog: Partial<DailyLog> = (isPolygon && localLog) ? localLog : (dailyLog || {});
   const polygonOwnLog = isPolygon ? sourceLog : {};
 
+  // Mixto: merge groups from ALL departments for display
+  const mergedLogForDisplay = useMemo(() => {
+    if (activeDepartment !== "mixto") return null;
+    const allLogs = activeFeat.dailyLogs?.filter((l) => l.date === popupEditDate) || [];
+    if (allLogs.length <= 1) return null;
+    const merged: DailyLog = { ...allLogs[0], date: popupEditDate };
+    const allNovedades = [...(merged.novedades || [])];
+    const allGroups = [...(merged.groups || [])];
+    for (let i = 1; i < allLogs.length; i++) {
+      const other = allLogs[i];
+      merged.rescuedCount = String((parseInt(merged.rescuedCount || "0", 10) || 0) + (parseInt(other.rescuedCount || "0", 10) || 0));
+      merged.recoveredCount = String((parseInt(merged.recoveredCount || "0", 10) || 0) + (parseInt(other.recoveredCount || "0", 10) || 0));
+      merged.rescuedPetsCount = String((parseInt(merged.rescuedPetsCount || "0", 10) || 0) + (parseInt(other.rescuedPetsCount || "0", 10) || 0));
+      merged.prehospitalCareCount = String((parseInt(merged.prehospitalCareCount || "0", 10) || 0) + (parseInt(other.prehospitalCareCount || "0", 10) || 0));
+      merged.transfersCount = String((parseInt(merged.transfersCount || "0", 10) || 0) + (parseInt(other.transfersCount || "0", 10) || 0));
+      if (other.novedades) allNovedades.push(...other.novedades);
+      if (other.groups) allGroups.push(...other.groups);
+    }
+    merged.novedades = allNovedades;
+    merged.groups = allGroups;
+    merged.department = undefined;
+    return merged;
+  }, [activeDepartment, activeFeat.dailyLogs, popupEditDate]);
+
   const polygonGroups = useMemo(() => {
     if (!isPolygon) return [];
-    return getNormalizedGroupList(polygonOwnLog);
-  }, [isPolygon, polygonOwnLog]);
+    const src = mergedLogForDisplay || polygonOwnLog;
+    return getNormalizedGroupList(src);
+  }, [isPolygon, polygonOwnLog, mergedLogForDisplay]);
 
   // --- Point groups (uses localLog so grouping changes are reactive) ---
   const pointGroups = useMemo(() => {
     if (isPolygon) return [];
-    const src = localLog || dailyLog || {};
+    const src = mergedLogForDisplay || localLog || dailyLog || {};
     return getNormalizedGroupList(src);
-  }, [isPolygon, localLog, dailyLog]);
+  }, [isPolygon, localLog, dailyLog, mergedLogForDisplay]);
 
   // --- Aggregated totals ---
   const aggregatedLog = useMemo(() => {

@@ -61,6 +61,8 @@ function App() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string; type?: string } | null>(null);
   const [showWorkGroups, setShowWorkGroups] = useState(false);
   const [showAccumulated, setShowAccumulated] = useState(false);
+  const [showPoints, setShowPoints] = useState(true);
+  const [showAreas, setShowAreas] = useState(true);
   const { workGroups, saveWorkGroups: setWorkGroups } = useWorkGroups();
 
   // Conexión con Supabase en tiempo real
@@ -275,8 +277,12 @@ function App() {
         className={sidebarCollapsed ? 'collapsed' : ''}
         activeDepartment={activeDepartment}
         onDepartmentChange={setActiveDepartment}
-        isAdmin={isAdmin}
-      />
+          isAdmin={isAdmin}
+          showPoints={showPoints}
+          onToggleShowPoints={() => setShowPoints(!showPoints)}
+          showAreas={showAreas}
+          onToggleShowAreas={() => setShowAreas(!showAreas)}
+        />
 
       {/* Mapa Principal de ArcGIS con Comportamiento Completo de Puntos y Polígonos */}
       <div className="map-viewport">
@@ -312,6 +318,8 @@ function App() {
           isAdmin={isAdmin}
           isOperador={isOperador}
           showAccumulated={showAccumulated}
+          showPoints={showPoints}
+          showAreas={showAreas}
           workGroups={workGroups}
         />
       </div>

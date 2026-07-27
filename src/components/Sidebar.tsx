@@ -13,7 +13,9 @@ import {
   Layers,
   Map,
   Activity,
-  Info
+  Info,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 
 export interface MapPoint {
@@ -53,6 +55,10 @@ interface SidebarProps {
   activeDepartment?: DepartmentView;
   onDepartmentChange?: (dept: DepartmentView) => void;
   isAdmin?: boolean;
+  showPoints?: boolean;
+  onToggleShowPoints?: () => void;
+  showAreas?: boolean;
+  onToggleShowAreas?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -66,6 +72,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeDepartment = 'pc',
   onDepartmentChange,
   isAdmin = false,
+  showPoints = true,
+  onToggleShowPoints,
+  showAreas = true,
+  onToggleShowAreas,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -211,11 +221,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Listado de Puntos */}
         <div className="sidebar-section">
-          <div className="section-title">
+          <div className="section-title" onClick={onToggleShowPoints} style={{ cursor: "pointer" }}>
             <MapPin size={14} />
             <span>Puntos Operacionales ({filteredPoints.length})</span>
+            <span style={{ marginLeft: "auto" }}>{showPoints ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
           </div>
           
+          {showPoints && (
           <div className="element-list">
             {filteredPoints.length === 0 ? (
               <div className="empty-state">No hay puntos registrados</div>
@@ -268,15 +280,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ))
             )}
           </div>
+          )}
         </div>
 
         {/* Listado de Áreas */}
         <div className="sidebar-section">
-          <div className="section-title">
+          <div className="section-title" onClick={onToggleShowAreas} style={{ cursor: "pointer" }}>
             <Map size={14} />
             <span>Áreas y Polígonos ({filteredAreas.length})</span>
+            <span style={{ marginLeft: "auto" }}>{showAreas ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
           </div>
           
+          {showAreas && (
           <div className="element-list">
             {filteredAreas.length === 0 ? (
               <div className="empty-state">No hay áreas trazadas</div>
@@ -312,6 +327,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ))
             )}
           </div>
+          )}
         </div>
       </div>
 

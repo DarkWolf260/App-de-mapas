@@ -44,6 +44,8 @@ interface MapComponentProps {
   onOpenWorkGroups?: () => void;
   workGroups?: WorkGroup[];
   showAccumulated?: boolean;
+  showPoints?: boolean;
+  showAreas?: boolean;
   onFeatureClick?: () => void;
 }
   

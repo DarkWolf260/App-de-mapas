@@ -405,6 +405,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           onUpdateNovedad={handleUpdateNovedad}
           containedNovedades={containedNovedades}
           onNavigateToFeature={onNavigateToFeature}
+          activeDepartment={activeDepartment}
         />
       )}
 
