@@ -322,6 +322,16 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                       ) : (
                         <MetricBadges group={primaryGroup} />
                       )}
+                      {showArrivalCheckbox && groupIndices.map((gIdx) => {
+                        const g = groups[groupIndices.indexOf(gIdx)];
+                        if (!g) return null;
+                        return (
+                          <label key={`arr-${gIdx}`} style={{ fontSize: "0.56rem", fontWeight: 700, color: g.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "3px", cursor: "pointer" }}>
+                            <input type="checkbox" checked={!!g.hasArrived} onChange={(e) => { onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "11px", height: "11px" }} />
+                            <span>{g.groupName || `Equipo ${gIdx + 1}`}: {g.hasArrived ? "Llegó" : "¿Llegó?"}</span>
+                          </label>
+                        );
+                      })}
                     </div>
                   );
                 })}
@@ -481,6 +491,16 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                   ) : (
                     <MetricBadges group={primaryGroup} />
                   )}
+                  {showArrivalCheckbox && groupIndices.map((gIdx) => {
+                    const g = groups[groupIndices.indexOf(gIdx)];
+                    if (!g) return null;
+                    return (
+                      <label key={`arr-${gIdx}`} style={{ fontSize: "0.56rem", fontWeight: 700, color: g.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "3px", cursor: "pointer" }}>
+                        <input type="checkbox" checked={!!g.hasArrived} onChange={(e) => { onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "11px", height: "11px" }} />
+                        <span>{g.groupName || `Equipo ${gIdx + 1}`}: {g.hasArrived ? "Llegó" : "¿Llegó?"}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               );
             })}
