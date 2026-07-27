@@ -167,6 +167,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
       const logToSave = { ...localLog, department: deptToUse };
       await onSaveDailyLog(activeFeat.id, logToSave);
+      await onRefreshFeatures?.();
       setLogSaveSuccess(true);
       setTimeout(() => setLogSaveSuccess(false), 2000);
     } catch (err) {
@@ -266,6 +267,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     setLocalLog(updatedLog);
     try {
       await onSaveDailyLog(activeFeat.id, updatedLog);
+      await onRefreshFeatures?.();
     } catch (err) {
       console.error("[Popup] Error saving arrival status:", err);
     }

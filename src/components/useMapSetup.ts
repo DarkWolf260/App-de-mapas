@@ -536,7 +536,7 @@ export const useMapSetup = ({
     const layer = sketchLayerRef.current;
     if (zoomToFeature && viewRef.current && layer) {
       const g = layer.graphics.find((x) => (x as any).uid === zoomToFeature.id || x.attributes?.id === zoomToFeature.id);
-      if (g?.geometry) viewRef.current.goTo(g.geometry);
+      if (g?.geometry) viewRef.current.goTo({ target: g.geometry, zoom: 18 }, { duration: 400 });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- Uses ref.current only
   }, [zoomToFeature]);
