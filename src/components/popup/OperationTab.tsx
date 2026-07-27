@@ -31,6 +31,7 @@ export const OperationTab: React.FC<OperationTabProps> = ({
   activeDepartment,
   selectedDept = "pc",
   onDepartmentSelect,
+  workGroups = [],
 }) => {
   const groupsArray = localLog.groups || [];
   const [activeGroupCount, setActiveGroupCount] = React.useState<number>(() => Math.max(1, groupsArray.length || 1));
