@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X, MapPin, Activity, Square, AlertTriangle, Check, Upload } from "lucide-react";
 import type { ParsedFeature } from "../hooks/useGeoJSONIO";
+import { getGeometryHandler } from "../utils/geometryHandlers";
 
 interface ImportPreviewModalProps {
   features: ParsedFeature[];
@@ -17,13 +18,7 @@ const getTypeIcon = (type: ParsedFeature["type"], color: string) => {
   }
 };
 
-const getTypeText = (type: ParsedFeature["type"]) => {
-  switch (type) {
-    case "point": return "Punto";
-    case "polyline": return "Línea";
-    case "polygon": return "Polígono";
-  }
-};
+const getTypeText = (type: string) => getGeometryHandler(type).typeLabel;
 
 export const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
   features,

@@ -46,7 +46,7 @@ export interface GroupLogEntry {
   prehospitalCareCount?: string;
   transfersCount?: string;
   hasArrived?: boolean;
-  commissionId?: string; // e.g. "comision_1", "comision_2", "independiente"
+  commissionId?: string;
   isVolunteer?: boolean;
 }
 
@@ -60,30 +60,23 @@ export interface NovedadEntry {
   type: NovedadType;
 }
 
-type GroupSuffix = "" | "2" | "3" | "4";
-
-type GroupStringFields = {
-  [K in `groupName${GroupSuffix}` | `managerName${GroupSuffix}` | `managerPhone${GroupSuffix}` | `unitOut${GroupSuffix}` | `officersCount${GroupSuffix}` | `rescuedCount${GroupSuffix}` | `recoveredCount${GroupSuffix}` | `rescuedPetsCount${GroupSuffix}` | `prehospitalCareCount${GroupSuffix}` | `transfersCount${GroupSuffix}` | `commissionId${GroupSuffix}`]?: string;
-};
-
-type GroupBoolFields = {
-  [K in `isVolunteer${GroupSuffix}` | `hasArrivedG${"1" | "2" | "3" | "4"}`]?: boolean;
-};
-
-export type DailyLog = {
+export interface DailyLog {
   date: string;
   department?: Department;
   groups?: GroupLogEntry[];
   observations?: string;
   novedades?: NovedadEntry[];
-} & GroupStringFields & GroupBoolFields;
-
-export type DailyLogIndexed = DailyLog & { [key: string]: string | boolean | GroupLogEntry[] | NovedadEntry[] | undefined };
-
-export interface GeoJSONGeometry {
-  type: "Point" | "LineString" | "Polygon";
-  coordinates: number[] | number[][] | number[][][];
+  rescuedCount?: string;
+  recoveredCount?: string;
+  rescuedPetsCount?: string;
+  prehospitalCareCount?: string;
+  transfersCount?: string;
 }
+
+export type GeoJSONGeometry =
+  | { type: "Point"; coordinates: number[] }
+  | { type: "LineString"; coordinates: number[][] }
+  | { type: "Polygon"; coordinates: number[][][] };
 
 export interface DrawnFeature {
   id: number;
@@ -111,15 +104,4 @@ export interface LayerVisibility {
 export interface RemoveFeatureId {
   id: number;
   timestamp: number;
-}
-
-export interface WorkGroup {
-  id: string;           // UUID
-  name: string;         // Nombre del grupo
-  leaderName: string;   // Encargado / Jefe
-  leaderPhone: string;  // Teléfono de contacto
-  corps?: string;       // Cuerpo o dependencia (opcional)
-  department: Department; // "pc" | "bomberos"
-  unitVehicle?: string; // Unidad / Vehículo habitual
-  notes?: string;       // Observaciones adicionales
 }

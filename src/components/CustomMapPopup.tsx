@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, Department, WorkGroup } from "../types";
+import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, Department } from "../types";
 import { computeContainedItems } from "../utils/spatialUtils";
 import { getNormalizedGroupList } from "../utils/logUtils";
 import { Lock, Unlock, FileText, Settings, History, Info, X } from "lucide-react";
@@ -12,6 +12,14 @@ import { InfoTab } from "./popup/InfoTab";
 import Point from "@arcgis/core/geometry/Point";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 
+interface FeatureEditActions {
+  onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
+  onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
+  onUpdateFeatureColor?: (id: number, newColor: string) => Promise<void>;
+  onUpdateFeatureCollapsed?: (id: number, isCollapsed: boolean, collapsedCount: string | number) => Promise<void>;
+  onToggleFeatureLock?: (id: number, locked: boolean) => void;
+}
+
 interface CustomMapPopupProps {
   customPopup: { mapPoint: Point; feat: DrawnFeature } | null;
   popupScreenPos: { x: number; y: number } | null;
@@ -21,28 +29,19 @@ interface CustomMapPopupProps {
   setPopupEditDate: (date: string) => void;
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
   onRefreshFeatures?: () => Promise<void>;
-  onToggleFeatureLock?: (id: number, locked: boolean) => void;
-  onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
-  onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
-  onUpdateFeatureColor?: (id: number, newColor: string) => Promise<void>;
-  onUpdateFeatureCollapsed?: (id: number, isCollapsed: boolean, collapsedCount: string | number) => Promise<void>;
+  featureActions: FeatureEditActions;
   sketchLayer: GraphicsLayer | null;
   onClose: () => void;
   onNavigateToFeature?: (feat: DrawnFeature) => void;
   activeDepartment?: DepartmentView;
   isAdmin?: boolean;
   isOperador?: boolean;
-  workGroups?: WorkGroup[];
 }
 
 type TabId = "info" | "general" | "operation" | "history" | "contained";
 
 const EMPTY_LOG: Omit<DailyLog, "date"> = {
-  groupName: "", managerName: "", managerPhone: "", unitOut: "",
-  officersCount: "", hasArrivedG1: false,
-  rescuedCount: "", recoveredCount: "", rescuedPetsCount: "",
-  groupName2: "", managerName2: "", managerPhone2: "", unitOut2: "",
-  officersCount2: "", rescuedCount2: "", recoveredCount2: "", hasArrivedG2: false,
+  groups: [],
   observations: "",
 };
 
@@ -91,12 +90,11 @@ function tabBtnStyle(active: boolean): React.CSSProperties {
 export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   customPopup, _popupScreenPos, drawnFeatures, layerVisibility,
   popupEditDate, setPopupEditDate, onSaveDailyLog, onRefreshFeatures,
-  onToggleFeatureLock, onRenameFeature, onUpdateFeatureDescription,
-  onUpdateFeatureColor, onUpdateFeatureCollapsed, sketchLayer, onClose, onNavigateToFeature,
+  featureActions: { onToggleFeatureLock, onRenameFeature, onUpdateFeatureDescription, onUpdateFeatureColor, onUpdateFeatureCollapsed },
+  sketchLayer, onClose, onNavigateToFeature,
   activeDepartment = "pc",
   isAdmin = false,
   isOperador = false,
-  workGroups = [],
 }) => {
   const activeFeat = customPopup
     ? drawnFeatures.find((f) => String(f.id) === String(customPopup.feat.id)) || customPopup.feat
@@ -136,7 +134,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     ) || [];
     const todayLog = todayLogs[0];
     setLocalLog(todayLog ? { ...todayLog, department: deptToUse } : { date: popupEditDate, department: deptToUse, ...EMPTY_LOG });
-    setShowSecondGroup(todayLog ? !!todayLog.groupName2 || !!todayLog.unitOut2 : false);
+    setShowSecondGroup(todayLog ? (todayLog.groups && todayLog.groups.length > 1) : false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- activeFeat re-creates on every parent render; id+date cover the intended trigger
   }, [activeFeat?.id, popupEditDate, activeDepartment, selectedDept]);
 
@@ -176,17 +174,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
   const handleLogFieldChange = (field: string, val: unknown) => {
     if (!canEditLog) return;
-    setLocalLog((prev) => {
-      const updated = { ...prev, [field]: val };
-      // If the user edits any group-related field, clear log.groups so the flat
-      // key values always win when building the groups array on save.
-      if (
-        /^(groupName|unitOut|managerName|managerPhone|officersCount|rescuedCount|recoveredCount|rescuedPetsCount|prehospitalCareCount|transfersCount|commissionId|isVolunteer|hasArrivedG)\d*$/.test(field)
-      ) {
-        updated.groups = undefined;
-      }
-      return updated;
-    });
+    setLocalLog((prev) => ({ ...prev, [field]: val }));
   };
 
   const handleGroupFieldChange = (groupIdx: number, field: string, value: string | boolean) => {
@@ -250,7 +238,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
   const handleToggleArrivalGroup = async (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => {
     if (!canToggleArrival || !onSaveDailyLog) return;
-    const fieldKey = groupIndex === 1 ? "hasArrivedG1" : groupIndex === 2 ? "hasArrivedG2" : groupIndex === 3 ? "hasArrivedG3" : "hasArrivedG4";
     const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
     const updatedGroups = [...(localLog.groups || [])];
     const targetIdx = groupIndex - 1;
@@ -260,7 +247,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     const updatedLog = {
       ...localLog,
       department: deptToUse,
-      [fieldKey]: hasArrived,
       groups: updatedGroups,
     };
     setLocalLog(updatedLog);
@@ -433,7 +419,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           activeDepartment={activeDepartment}
           selectedDept={selectedDept}
           onDepartmentSelect={setSelectedDept}
-          workGroups={workGroups}
         />
       )}
 

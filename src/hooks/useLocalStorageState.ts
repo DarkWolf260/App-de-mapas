@@ -1,8 +1,14 @@
 import { useState } from "react";
+import { browserStorage } from "../repositories/storageImpl";
+import type { IStorage } from "../repositories/interfaces";
 
-export function useLocalStorageState<T>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void] {
+export function useLocalStorageState<T>(
+  key: string,
+  defaultValue: T,
+  storage: IStorage = browserStorage,
+): [T, (value: T | ((prev: T) => T)) => void] {
   const [state, setState] = useState<T>(() => {
-    const saved = localStorage.getItem(key);
+    const saved = storage.getItem(key);
     if (saved !== null) {
       try {
         return JSON.parse(saved) as T;
@@ -16,7 +22,7 @@ export function useLocalStorageState<T>(key: string, defaultValue: T): [T, (valu
   const setWithPersist = (value: T | ((prev: T) => T)) => {
     setState((prev) => {
       const next = typeof value === "function" ? (value as (prev: T) => T)(prev) : value;
-      localStorage.setItem(key, JSON.stringify(next));
+      storage.setItem(key, JSON.stringify(next));
       return next;
     });
   };

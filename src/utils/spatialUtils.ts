@@ -66,14 +66,10 @@ export const isPointInPolygon = (x: number, y: number, vs: number[][]): boolean 
  * Analiza el conjunto de geometrías dibujadas y determina la relación de inclusión
  * espacial jerárquica (qué punto/polígono está contenido dentro de qué otro polígono más pequeño).
  */
-let _cachedFeatures: DrawnFeature[] | null = null;
-let _cachedResult: { parentsMap: Record<string | number, string | number>; polygonAreas: Record<string | number, number> } | null = null;
-
 export const buildParentsMap = (drawnFeatures: DrawnFeature[]): {
   parentsMap: Record<string | number, string | number>;
   polygonAreas: Record<string | number, number>;
 } => {
-  if (drawnFeatures === _cachedFeatures && _cachedResult) return _cachedResult;
   const polys = drawnFeatures.filter((f) => f.type === "polygon");
   const polygonAreas: Record<string | number, number> = {};
   
@@ -129,9 +125,7 @@ export const buildParentsMap = (drawnFeatures: DrawnFeature[]): {
     }
   });
 
-  _cachedFeatures = drawnFeatures;
-  _cachedResult = { parentsMap, polygonAreas };
-  return _cachedResult;
+  return { parentsMap, polygonAreas };
 };
 
 export function computeContainedItems(

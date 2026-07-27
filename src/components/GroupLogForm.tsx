@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import type { DailyLog, DepartmentView, WorkGroup } from "../types";
+import type { DailyLog, DepartmentView, GroupLogEntry } from "../types";
 import { Save, Check, Shield, Flame, BookUser, Users, FileText, Plus, Trash2 } from "lucide-react";
 import { GroupFields } from "./GroupFields";
 import { inputStyle, sectionBox, saveBtnStyle } from "./popup/popupStyles";
@@ -12,7 +12,6 @@ interface GroupLogFormProps {
   saved?: boolean;
   compact?: boolean;
   activeDepartment?: DepartmentView;
-  workGroups?: WorkGroup[];
 }
 
 export const GroupLogForm: React.FC<GroupLogFormProps> = ({
@@ -23,55 +22,48 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
   saved = false,
   compact = false,
   activeDepartment,
-  workGroups = [],
 }) => {
-  const [showGroup2, setShowGroup2] = useState<boolean>(
-    !!(draft.groupName2 || draft.unitOut2 || draft.managerName2 || draft.officersCount2)
-  );
-  const [showGroup3, setShowGroup3] = useState<boolean>(
-    !!(draft.groupName3 || draft.unitOut3 || draft.managerName3 || draft.officersCount3)
-  );
-  const [showGroup4, setShowGroup4] = useState<boolean>(
-    !!(draft.groupName4 || draft.unitOut4 || draft.managerName4 || draft.officersCount4)
-  );
+  const groupsArray = draft.groups || [];
+  const [showGroup2, setShowGroup2] = useState<boolean>(groupsArray.length > 1);
+  const [showGroup3, setShowGroup3] = useState<boolean>(groupsArray.length > 2);
+  const [showGroup4, setShowGroup4] = useState<boolean>(groupsArray.length > 3);
 
   const handleToggleGroup2 = useCallback(() => {
     if (showGroup2) {
-      for (const key of ["groupName2", "managerName2", "managerPhone2", "unitOut2", "officersCount2", "rescuedCount2", "recoveredCount2", "hasArrivedG2"]) {
-        onChange(key as keyof DailyLog, key === "hasArrivedG2" ? false : "");
-      }
+      const updated = (draft.groups || []).filter((_, i) => i !== 1);
+      onChange("groups" as keyof DailyLog, updated as unknown as string | boolean);
     }
     setShowGroup2(!showGroup2);
-  }, [showGroup2, onChange]);
+  }, [showGroup2, onChange, draft.groups]);
 
   const handleToggleGroup3 = useCallback(() => {
     if (showGroup3) {
-      for (const key of ["groupName3", "managerName3", "managerPhone3", "unitOut3", "officersCount3", "rescuedCount3", "recoveredCount3", "hasArrivedG3"]) {
-        onChange(key as keyof DailyLog, key === "hasArrivedG3" ? false : "");
-      }
+      const updated = (draft.groups || []).filter((_, i) => i !== 2);
+      onChange("groups" as keyof DailyLog, updated as unknown as string | boolean);
     }
     setShowGroup3(!showGroup3);
-  }, [showGroup3, onChange]);
+  }, [showGroup3, onChange, draft.groups]);
 
   const handleToggleGroup4 = useCallback(() => {
     if (showGroup4) {
-      for (const key of ["groupName4", "managerName4", "managerPhone4", "unitOut4", "officersCount4", "rescuedCount4", "recoveredCount4", "hasArrivedG4"]) {
-        onChange(key as keyof DailyLog, key === "hasArrivedG4" ? false : "");
-      }
+      const updated = (draft.groups || []).filter((_, i) => i !== 3);
+      onChange("groups" as keyof DailyLog, updated as unknown as string | boolean);
     }
     setShowGroup4(!showGroup4);
-  }, [showGroup4, onChange]);
+  }, [showGroup4, onChange, draft.groups]);
 
   const currentDept = draft.department || "pc";
 
-  const handleAutofill = (groupId: string) => {
-    const wg = workGroups.find((g) => g.id === groupId);
-    if (!wg) return;
-    onChange("groupName", wg.name);
-    onChange("managerName", wg.leaderName);
-    onChange("managerPhone", wg.leaderPhone);
-    onChange("unitOut", wg.unitVehicle || "");
-    if (wg.department) onChange("department", wg.department);
+  const handleGroupFieldChange = (groupIdx: number, field: string, value: string | boolean) => {
+    const groups = [...(draft.groups || [])];
+    while (groups.length <= groupIdx) groups.push({ id: crypto.randomUUID(), groupName: "" });
+    groups[groupIdx] = { ...groups[groupIdx], [field]: value };
+    onChange("groups" as keyof DailyLog, groups as unknown as string | boolean);
+  };
+
+  const groupAt = (idx: number): GroupLogEntry => {
+    const groups = draft.groups || [];
+    return groups[idx] || { id: crypto.randomUUID(), groupName: "" };
   };
 
   const GROUP_COLORS = ["#22c55e", "var(--color-info)", "var(--color-purple)", "#c084fc", "#fb923c"];
@@ -79,26 +71,6 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: compact ? "6px" : "8px" }}>
-      {workGroups.length > 0 && (
-        <div style={{ ...sectionBox, background: "rgba(56,189,248,0.04)", borderColor: "rgba(56,189,248,0.15)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "2px" }}>
-            <BookUser size={10} style={{ color: "var(--color-info)", flexShrink: 0 }} />
-            <select
-              defaultValue=""
-              onChange={(e) => { if (e.target.value) { handleAutofill(e.target.value); e.target.value = ""; } }}
-              style={{ background: "transparent", border: "none", color: "var(--color-info)", fontSize: "0.65rem", outline: "none", cursor: "pointer", flex: 1, fontFamily: "inherit" }}
-            >
-              <option value="" disabled style={{ background: "#1e293b" }}>Autocompletar desde grupo guardado…</option>
-              {[...workGroups].sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" })).map((wg) => (
-                <option key={wg.id} value={wg.id} style={{ background: "#1e293b", color: "#e2e8f0" }}>
-                  {wg.name} {wg.leaderName ? `— Enc: ${wg.leaderName}` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
-
       {activeDepartment === "mixto" && (
         <div style={{ ...sectionBox, background: "rgba(255, 255, 255, 0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
           <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-muted)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
@@ -157,11 +129,10 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
           <Users size={10} /> Grupo 1
         </div>
         <GroupFields
-          groupIndex={1}
-          log={draft}
-          onFieldChange={onChange as (field: string, value: string | boolean) => void}
+          groupIndex={0}
+          group={groupAt(0)}
+          onGroupFieldChange={handleGroupFieldChange}
           colorVar={getGroupColor(1)}
-          workGroups={workGroups}
         />
       </div>
 
@@ -185,12 +156,11 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
             </button>
           </div>
           <GroupFields
-            groupIndex={2}
-            log={draft}
-            onFieldChange={onChange as (field: string, value: string | boolean) => void}
+            groupIndex={1}
+            group={groupAt(1)}
+            onGroupFieldChange={handleGroupFieldChange}
             colorVar={getGroupColor(2)}
             hideHeader
-            workGroups={workGroups}
           />
         </div>
       )}
@@ -215,12 +185,11 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
             </button>
           </div>
           <GroupFields
-            groupIndex={3}
-            log={draft}
-            onFieldChange={onChange as (field: string, value: string | boolean) => void}
+            groupIndex={2}
+            group={groupAt(2)}
+            onGroupFieldChange={handleGroupFieldChange}
             colorVar={getGroupColor(3)}
             hideHeader
-            workGroups={workGroups}
           />
         </div>
       ))}
@@ -245,12 +214,11 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
             </button>
           </div>
           <GroupFields
-            groupIndex={4}
-            log={draft}
-            onFieldChange={onChange as (field: string, value: string | boolean) => void}
+            groupIndex={3}
+            group={groupAt(3)}
+            onGroupFieldChange={handleGroupFieldChange}
             colorVar={getGroupColor(4)}
             hideHeader
-            workGroups={workGroups}
           />
         </div>
       ))}

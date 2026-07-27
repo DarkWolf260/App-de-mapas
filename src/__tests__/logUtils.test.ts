@@ -34,20 +34,18 @@ describe("emptyLog", () => {
   it("returns a DailyLog with date set and all fields empty/false", () => {
     const log = emptyLog("2026-07-15");
     expect(log.date).toBe("2026-07-15");
-    expect(log.groupName).toBe("");
-    expect(log.managerName).toBe("");
-    expect(log.officersCount).toBe("");
-    expect(log.hasArrivedG1).toBe(false);
-    expect(log.hasArrivedG2).toBe(false);
+    expect(log.groups).toEqual([]);
     expect(log.observations).toBe("");
   });
 });
 
 describe("getTotalPersonnel", () => {
-  it("sums officersCount and officersCount2", () => {
+  it("sums officersCount from groups array", () => {
     const log = emptyLog("2026-07-15");
-    log.officersCount = "5";
-    log.officersCount2 = "3";
+    log.groups = [
+      { id: "g1", groupName: "Alpha", officersCount: "5" },
+      { id: "g2", groupName: "Beta", officersCount: "3" },
+    ];
     expect(getTotalPersonnel(log)).toBe(8);
   });
 
@@ -59,7 +57,7 @@ describe("getTotalPersonnel", () => {
 describe("logHasPersonnel", () => {
   it("returns true when officersCount > 0", () => {
     const log = emptyLog("2026-07-15");
-    log.officersCount = "5";
+    log.groups = [{ id: "g1", groupName: "Alpha", officersCount: "5" }];
     expect(logHasPersonnel(log)).toBe(true);
   });
 
@@ -69,22 +67,16 @@ describe("logHasPersonnel", () => {
 });
 
 describe("logIsArrived", () => {
-  it("returns true when hasArrivedG1 is true", () => {
+  it("returns true when group has arrived", () => {
     const log = emptyLog("2026-07-15");
-    log.groupName = "Alpha";
-    log.hasArrivedG1 = true;
+    log.groups = [{ id: "g1", groupName: "Alpha", hasArrived: true }];
     expect(logIsArrived(log)).toBe(true);
   });
 
-  it("returns true when hasArrivedG2 is true", () => {
+  it("returns false when group has not arrived", () => {
     const log = emptyLog("2026-07-15");
-    log.groupName2 = "Beta";
-    log.hasArrivedG2 = true;
-    expect(logIsArrived(log)).toBe(true);
-  });
-
-  it("returns false when neither group has arrived", () => {
-    expect(logIsArrived(emptyLog("2026-07-15"))).toBe(false);
+    log.groups = [{ id: "g1", groupName: "Alpha", hasArrived: false }];
+    expect(logIsArrived(log)).toBe(false);
   });
 });
 
@@ -99,8 +91,7 @@ describe("logMatchesArrivalFilter", () => {
 
   it("returns true for arrived log with 'arrived' filter", () => {
     const log = emptyLog("2026-07-15");
-    log.groupName = "Alpha";
-    log.hasArrivedG1 = true;
+    log.groups = [{ id: "g1", groupName: "Alpha", hasArrived: true }];
     expect(logMatchesArrivalFilter(log, "arrived")).toBe(true);
   });
 });
@@ -108,7 +99,7 @@ describe("logMatchesArrivalFilter", () => {
 describe("logHasAnyData", () => {
   it("returns true when groupName is set", () => {
     const log = emptyLog("2026-07-15");
-    log.groupName = "Alpha";
+    log.groups = [{ id: "g1", groupName: "Alpha" }];
     expect(logHasAnyData(log)).toBe(true);
   });
 
@@ -120,9 +111,9 @@ describe("logHasAnyData", () => {
 describe("getGroupData", () => {
   it("returns group 1 fields correctly", () => {
     const log = emptyLog("2026-07-15");
-    log.groupName = "Alpha";
-    log.managerName = "Juan";
-    log.officersCount = "5";
+    log.groups = [
+      { id: "g1", groupName: "Alpha", managerName: "Juan", officersCount: "5" },
+    ];
     const data = getGroupData(log, 1);
     expect(data.groupName).toBe("Alpha");
     expect(data.managerName).toBe("Juan");
@@ -131,9 +122,10 @@ describe("getGroupData", () => {
 
   it("returns group 2 fields correctly", () => {
     const log = emptyLog("2026-07-15");
-    log.groupName2 = "Beta";
-    log.managerName2 = "Maria";
-    log.officersCount2 = "3";
+    log.groups = [
+      { id: "g1", groupName: "Alpha", officersCount: "5" },
+      { id: "g2", groupName: "Beta", managerName: "Maria", officersCount: "3" },
+    ];
     const data = getGroupData(log, 2);
     expect(data.groupName).toBe("Beta");
     expect(data.managerName).toBe("Maria");
@@ -193,12 +185,14 @@ describe("getNormalizedGroupList", () => {
     expect(getNormalizedGroupList(log)).toEqual([]);
   });
 
-  it("reads legacy flat keys (groupName, groupName2)", () => {
-    const log = emptyLog("2026-07-15");
-    log.groupName = "PC La Guaira";
-    log.officersCount = "10";
-    log.groupName2 = "Bomberos";
-    log.officersCount2 = "5";
+  it("reads groups from groups array", () => {
+    const log = {
+      date: "2026-07-15",
+      groups: [
+        { id: "g1", groupName: "PC La Guaira", officersCount: "10" },
+        { id: "g2", groupName: "Bomberos", officersCount: "5" },
+      ],
+    } as any;
     const groups = getNormalizedGroupList(log);
     expect(groups.length).toBe(2);
     expect(groups[0].groupName).toBe("PC La Guaira");
@@ -207,7 +201,7 @@ describe("getNormalizedGroupList", () => {
     expect(groups[1].officersCount).toBe("5");
   });
 
-  it("reads from groups array when no flat keys present", () => {
+  it("reads metrics from groups array", () => {
     const log = {
       date: "2026-07-15",
       groups: [
@@ -218,46 +212,15 @@ describe("getNormalizedGroupList", () => {
     const groups = getNormalizedGroupList(log);
     expect(groups.length).toBe(2);
     expect(groups[0].groupName).toBe("Alpha");
-    expect(groups[0].officersCount).toBe("8");
     expect(groups[0].rescuedCount).toBe("3");
     expect(groups[0].hasArrived).toBe(true);
-    expect(groups[1].groupName).toBe("Bravo");
-  });
-
-  it("flat keys override group array values when present", () => {
-    const log = {
-      date: "2026-07-15",
-      groupName: "OverrideName",
-      groups: [
-        { id: "g1", groupName: "Alpha", officersCount: "8" },
-      ],
-    } as any;
-    const groups = getNormalizedGroupList(log);
-    expect(groups[0].groupName).toBe("OverrideName");
-  });
-
-  it("reads up to slot 4 in legacy path even without data in earlier slots", () => {
-    const log = { date: "2026-07-15", groupName4: "SlotFour", officersCount4: "2" } as any;
-    const groups = getNormalizedGroupList(log);
-    expect(groups.length).toBe(1);
-    expect(groups[0].groupName).toBe("SlotFour");
-  });
-
-  it("reads slot 5 when it has data (no break before slot 5 with data)", () => {
-    const log = { date: "2026-07-15", groupName5: "SlotFive", officersCount5: "3" } as any;
-    const groups = getNormalizedGroupList(log);
-    expect(groups.length).toBe(1);
-    expect(groups[0].groupName).toBe("SlotFive");
-  });
-
-  it("breaks at slot 5 only when earlier slots are empty", () => {
-    const log = { date: "2026-07-15", groupName6: "ShouldNotAppear", officersCount6: "1" } as any;
-    const groups = getNormalizedGroupList(log);
-    expect(groups.length).toBe(0);
   });
 
   it("expands compound names into multiple entries", () => {
-    const log = { date: "2026-07-15", groupName: "PC Lara y PC Zulia", officersCount: "6" } as any;
+    const log = {
+      date: "2026-07-15",
+      groups: [{ id: "g1", groupName: "PC Lara y PC Zulia", officersCount: "6" }],
+    } as any;
     const groups = getNormalizedGroupList(log);
     expect(groups.length).toBe(2);
     expect(groups[0].groupName).toBe("PC Lara");
@@ -270,7 +233,11 @@ describe("featureMatchesSearch", () => {
   const pt = {
     title: "Residencias Las Palmas",
     dailyLogs: [
-      { date: "2026-07-15", groupName: "PC La Guaira", managerName: "Juan Perez", unitOut: "U-12", observations: "evacuacion" },
+      {
+        date: "2026-07-15",
+        groups: [{ id: "g1", groupName: "PC La Guaira", managerName: "Juan Perez", unitOut: "U-12" }],
+        observations: "evacuacion",
+      },
     ],
   };
 
@@ -282,11 +249,11 @@ describe("featureMatchesSearch", () => {
     expect(featureMatchesSearch(pt, "palmas", "2026-07-15")).toBe(true);
   });
 
-  it("matches by groupName", () => {
+  it("matches by groupName in groups array", () => {
     expect(featureMatchesSearch(pt, "la guaira", "2026-07-15")).toBe(true);
   });
 
-  it("matches by managerName", () => {
+  it("matches by managerName in groups array", () => {
     expect(featureMatchesSearch(pt, "juan", "2026-07-15")).toBe(true);
   });
 
@@ -346,12 +313,12 @@ describe("getDayStats", () => {
     const features = [
       {
         dailyLogs: [
-          { date: "2026-07-15", groupName: "Alpha", officersCount: "5", rescuedCount: "2" },
+          { date: "2026-07-15", groups: [{ id: "g1", groupName: "Alpha", officersCount: "5", rescuedCount: "2" }] },
         ],
       },
       {
         dailyLogs: [
-          { date: "2026-07-15", groupName: "Bravo", officersCount: "3" },
+          { date: "2026-07-15", groups: [{ id: "g1", groupName: "Bravo", officersCount: "3" }] },
         ],
       },
     ];
@@ -364,7 +331,7 @@ describe("getDayStats", () => {
     const features = [
       {
         dailyLogs: [
-          { date: "2026-07-15", groupName: "", officersCount: "", rescuedCount: "" },
+          { date: "2026-07-15", groups: [] },
         ],
       },
     ];
@@ -376,12 +343,12 @@ describe("getDayStats", () => {
     const features = [
       {
         dailyLogs: [
-          { date: "2026-07-15", department: "pc", groupName: "Alpha", officersCount: "5" },
+          { date: "2026-07-15", department: "pc", groups: [{ id: "g1", groupName: "Alpha", officersCount: "5" }] },
         ],
       },
       {
         dailyLogs: [
-          { date: "2026-07-15", department: "bomberos", groupName: "Bravo", officersCount: "3" },
+          { date: "2026-07-15", department: "bomberos", groups: [{ id: "g1", groupName: "Bravo", officersCount: "3" }] },
         ],
       },
     ];
@@ -394,7 +361,7 @@ describe("getDayStats", () => {
     const features = [
       {
         dailyLogs: [
-          { date: "2026-07-15", groupName: "Alpha", officersCount: "5", hasArrivedG1: true },
+          { date: "2026-07-15", groups: [{ id: "g1", groupName: "Alpha", officersCount: "5", hasArrived: true }] },
         ],
       },
     ];

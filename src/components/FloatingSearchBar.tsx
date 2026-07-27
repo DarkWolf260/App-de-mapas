@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import type { DrawnFeature } from "../types";
 import { Search, MapPin, Activity, Square, X, Crosshair, Plus } from "lucide-react";
+import { getGeometryHandler } from "../utils/geometryHandlers";
 
 interface FloatingSearchBarProps {
   drawnFeatures: DrawnFeature[];
@@ -111,16 +112,7 @@ export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
     }
   };
 
-  const getFeatureTypeText = (type: "point" | "polyline" | "polygon") => {
-    switch (type) {
-      case "point":
-        return "Punto";
-      case "polyline":
-        return "Línea";
-      case "polygon":
-        return "Polígono";
-    }
-  };
+  const getFeatureTypeText = (type: string) => getGeometryHandler(type).typeLabel;
 
   if (showSidebar) return null;
 

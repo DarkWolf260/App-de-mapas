@@ -27,17 +27,14 @@ interface ScreenLabel {
 
 function logHasData(l: any): boolean {
   if (!l) return false;
-  const hasGroup = !!(
-    l.groupName?.trim() || l.groupName2?.trim() || l.groupName3?.trim() || l.groupName4?.trim() ||
-    l.unitOut?.trim() || l.unitOut2?.trim() || l.unitOut3?.trim() || l.unitOut4?.trim()
-  );
-  const officers = (parseInt(l.officersCount || "0", 10) || 0) + (parseInt(l.officersCount2 || "0", 10) || 0) + (parseInt(l.officersCount3 || "0", 10) || 0) + (parseInt(l.officersCount4 || "0", 10) || 0);
-  const rescued = (parseInt(l.rescuedCount || "0", 10) || 0) + (parseInt(l.rescuedCount2 || "0", 10) || 0) + (parseInt(l.rescuedCount3 || "0", 10) || 0) + (parseInt(l.rescuedCount4 || "0", 10) || 0);
-  const recovered = (parseInt(l.recoveredCount || "0", 10) || 0) + (parseInt(l.recoveredCount2 || "0", 10) || 0) + (parseInt(l.recoveredCount3 || "0", 10) || 0) + (parseInt(l.recoveredCount4 || "0", 10) || 0);
-  const prehospital = (parseInt(l.prehospitalCareCount || "0", 10) || 0) + (parseInt(l.prehospitalCareCount2 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount3 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount4 || "0", 10) || 0);
-  const transfers = (parseInt(l.transfersCount || "0", 10) || 0) + (parseInt(l.transfersCount2 || "0", 10) || 0) + (parseInt(l.transfersCount3 || "0", 10) || 0) + (parseInt(l.transfersCount4 || "0", 10) || 0);
-  const pets = (parseInt(l.rescuedPetsCount || "0", 10) || 0);
-  return hasGroup || officers > 0 || rescued > 0 || recovered > 0 || prehospital > 0 || transfers > 0 || pets > 0;
+  const groups = getNormalizedGroupList(l);
+  if (groups.length > 0) return true;
+  const polyRescued = parseInt(l.rescuedCount || "0", 10) || 0;
+  const polyRecovered = parseInt(l.recoveredCount || "0", 10) || 0;
+  const polyPets = parseInt(l.rescuedPetsCount || "0", 10) || 0;
+  const polyPrehospital = parseInt(l.prehospitalCareCount || "0", 10) || 0;
+  const polyTransfers = parseInt(l.transfersCount || "0", 10) || 0;
+  return polyRescued > 0 || polyRecovered > 0 || polyPets > 0 || polyPrehospital > 0 || polyTransfers > 0;
 }
 
 function filterCandidateLabels(
@@ -263,7 +260,7 @@ function buildHtmlLabels(
         ) || false));
 
     if (hasPersonnel) {
-      // La etiqueta gráfica nativa de ESRI siempre se oculta para puntos con personal o estadísticas
+      // Etiqueta HTML con datos de personal (fondo negro con stats y badges)
       lbl.visible = false;
 
       if (item.visible && item.x !== null && item.y !== null) {
@@ -292,13 +289,6 @@ function buildHtmlLabels(
             transfersCount += parseInt(g.transfersCount || "0", 10) || 0;
             prehospitalCount += parseInt(g.prehospitalCareCount || "0", 10) || 0;
           }
-          // Fallback: if no groups, read flat fields
-          if (groups.length === 0) {
-            prehospitalCount += (parseInt(l.prehospitalCareCount || "0", 10) || 0) + (parseInt(l.prehospitalCareCount2 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount3 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount4 || "0", 10) || 0);
-            transfersCount += (parseInt(l.transfersCount || "0", 10) || 0) + (parseInt(l.transfersCount2 || "0", 10) || 0) + (parseInt(l.transfersCount3 || "0", 10) || 0) + (parseInt(l.transfersCount4 || "0", 10) || 0);
-            rescuedCount += (parseInt(l.rescuedCount || "0", 10) || 0) + (parseInt(l.rescuedCount2 || "0", 10) || 0) + (parseInt(l.rescuedCount3 || "0", 10) || 0) + (parseInt(l.rescuedCount4 || "0", 10) || 0);
-            recoveredCount += (parseInt(l.recoveredCount || "0", 10) || 0) + (parseInt(l.recoveredCount2 || "0", 10) || 0) + (parseInt(l.recoveredCount3 || "0", 10) || 0) + (parseInt(l.recoveredCount4 || "0", 10) || 0);
-          }
         });
 
         const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0;
@@ -315,6 +305,7 @@ function buildHtmlLabels(
         const y = item.y!;
 
         const { placement, box } = choosePlacement(x, y, w, h, allowOverlap, placedBoxes);
+        placedBoxes.push(box);
 
         activeHtmlLabels.push({
           id: pid,
@@ -332,11 +323,8 @@ function buildHtmlLabels(
           isCollapsed: feat?.isCollapsed,
           collapsedCount: feat?.collapsedCount,
         });
-        placedBoxes.push(box);
       }
     } else {
-      // Para puntos sin actividad y etiquetas de polígonos/líneas (etiquetas nativas):
-      // Obedecen item.visible para que se descarten si están solapadas
       lbl.visible = item.visible;
       if (lbl.symbol) lbl.symbol = lbl.symbol.clone();
     }

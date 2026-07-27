@@ -1,6 +1,13 @@
 import React from "react";
 import type { DrawnFeature } from "../types";
 import { Activity, Square, MapPin, Maximize2, Trash2, Lock, Unlock, ChevronUp, ChevronDown, ChevronRight, Calendar } from "lucide-react";
+import { getGeometryHandler } from "../utils/geometryHandlers";
+
+const FEATURE_ICONS: Record<string, React.ReactNode> = {
+  point: <MapPin size={13} style={{ color: "var(--color-green)" }} />,
+  polyline: <Activity size={13} style={{ color: "var(--color-purple)" }} />,
+  polygon: <Square size={13} style={{ color: "var(--color-info)" }} />,
+};
 
 interface FeatureCardProps {
   feat: DrawnFeature;
@@ -41,12 +48,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
     <div
       className="incident-card"
       style={{
-        borderLeftColor:
-          feat.type === "polygon"
-            ? "var(--color-info)"
-            : feat.type === "polyline"
-            ? "var(--color-purple)"
-            : "var(--color-green)",
+        borderLeftColor: getGeometryHandler(feat.type).accentColor,
         display: "flex",
         flexDirection: "column",
         gap: "4px",
@@ -79,13 +81,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         >
           {feat.locked ? <Lock size={12} /> : <Unlock size={12} style={{ opacity: 0.4 }} />}
         </button>
-        {feat.type === "polygon" ? (
-          <Square size={13} style={{ color: "var(--color-info)" }} />
-        ) : feat.type === "polyline" ? (
-          <Activity size={13} style={{ color: "var(--color-purple)" }} />
-        ) : (
-          <MapPin size={13} style={{ color: "var(--color-green)" }} />
-        )}
+        {FEATURE_ICONS[feat.type] || FEATURE_ICONS.point}
         <input
           type="text"
           value={feat.title}

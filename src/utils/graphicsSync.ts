@@ -79,19 +79,17 @@ function syncExistingLabel(
 
   if (label.symbol) {
     const ts = label.symbol as TextSymbol;
-    const targetText = getLabelText(feat, dateStr, activeDepartment);
-    const hasPersonnel = targetText !== feat.title;
-    const showBox = hasPersonnel;
-    const currentHasBox = ts.backgroundColor !== null && ts.backgroundColor !== undefined;
-    if (ts.text !== targetText || currentHasBox !== showBox) {
+    const isPoint = feat.geojsonGeometry?.type === "Point";
+    const labelText = feat.title;
+    if (ts.text !== labelText) {
       const clone = ts.clone();
-      clone.text = targetText;
-      clone.backgroundColor = showBox ? [15, 23, 42, 0.95] as any : null;
-      clone.borderLineColor = showBox ? [56, 189, 248, 0.95] as any : null;
-      clone.borderLineSize = showBox ? 1 : null;
-      clone.haloColor = showBox ? null : ("black" as any);
-      clone.haloSize = showBox ? null : ("1.5px" as any);
-      clone.yoffset = feat.geojsonGeometry?.type === "Point" ? (showBox ? 18 : 12) : 0;
+      clone.text = labelText;
+      clone.backgroundColor = null;
+      clone.borderLineColor = null;
+      clone.borderLineSize = null;
+      clone.haloColor = "black" as any;
+      clone.haloSize = "1.5px" as any;
+      clone.yoffset = isPoint ? 12 : 0;
       label.symbol = clone;
     }
   }
@@ -124,20 +122,20 @@ function addFeatureGraphic(
 
   if (feat.geojsonGeometry && (feat.geojsonGeometry.type === "Point" || feat.geojsonGeometry.type === "Polygon")) {
     const isPolyLabel = feat.geojsonGeometry.type === "Polygon";
-    const labelGeom = feat.geojsonGeometry.type === "Point" ? ng.geometry!.clone() : centroidExecute(ng.geometry!);
-    const hasPersonnel = getLabelText(feat, dateStr, activeDepartment) !== feat.title;
-    const showBox = hasPersonnel;
+    const isPoint = feat.geojsonGeometry.type === "Point";
+    const labelGeom = isPoint ? ng.geometry!.clone() : centroidExecute(ng.geometry!);
+    const labelText = feat.title;
 
     const labelSym = new TextSymbol({
-      text: getLabelText(feat, dateStr, activeDepartment),
+      text: labelText,
       color: "white",
-      backgroundColor: showBox ? [15, 23, 42, 0.95] as any : null,
-      borderLineColor: showBox ? [56, 189, 248, 0.95] as any : null,
-      borderLineSize: showBox ? 1 : null,
-      haloColor: showBox ? null : ("black" as any),
-      haloSize: showBox ? null : ("1.5px" as any),
+      backgroundColor: null,
+      borderLineColor: null,
+      borderLineSize: null,
+      haloColor: "black" as any,
+      haloSize: "1.5px" as any,
       font: { size: 10, family: "sans-serif", weight: "bold" },
-      yoffset: feat.geojsonGeometry.type === "Point" ? (showBox ? 18 : 12) : 0,
+      yoffset: isPoint ? 12 : 0,
     });
 
     const isSubpolygon = isPolyLabel && parentsMap[feat.id] !== undefined;

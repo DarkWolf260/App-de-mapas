@@ -1,5 +1,5 @@
 import React from "react";
-import type { DrawnFeature, DailyLog, WorkGroup } from "../types";
+import type { DrawnFeature, DailyLog } from "../types";
 import { GroupLogForm } from "./GroupLogForm";
 import { useLogEditor } from "../hooks/useLogEditor";
 import { emptyLog } from "../utils/logUtils";

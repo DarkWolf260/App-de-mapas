@@ -1,6 +1,6 @@
 import React from "react";
 import { Save, Plus, Trash2, Calendar, Shield, Flame, Users, FileText } from "lucide-react";
-import type { DailyLog, DepartmentView, Department, WorkGroup } from "../../types";
+import type { DailyLog, DepartmentView, Department, GroupLogEntry } from "../../types";
 import { inputStyle, sectionBox, saveBtnStyle } from "./popupStyles";
 import { GroupFields } from "../GroupFields";
 
@@ -31,33 +31,25 @@ export const OperationTab: React.FC<OperationTabProps> = ({
   activeDepartment,
   selectedDept = "pc",
   onDepartmentSelect,
-  workGroups = [],
 }) => {
-  const getActiveGroupCount = (): number => {
-    let maxIdx = 1;
-    let idx = 2;
-    while (idx <= 50) {
-      const idxS = String(idx);
-      const hasVal = !!(
-        (localLog as any)[`groupName${idxS}`] ||
-        (localLog as any)[`unitOut${idxS}`] ||
-        (localLog as any)[`managerName${idxS}`] ||
-        (localLog as any)[`officersCount${idxS}`]
-      );
-      if (hasVal) maxIdx = idx;
-      idx++;
-    }
-    return maxIdx;
+  const groupsArray = localLog.groups || [];
+  const [activeGroupCount, setActiveGroupCount] = React.useState<number>(() => Math.max(1, groupsArray.length || 1));
+
+  const handleGroupFieldChange = (groupIdx: number, field: string, value: string | boolean) => {
+    const groups = [...(localLog.groups || [])];
+    while (groups.length <= groupIdx) groups.push({ id: crypto.randomUUID(), groupName: "" });
+    groups[groupIdx] = { ...groups[groupIdx], [field]: value };
+    onFieldChange("groups", groups as unknown as string | boolean);
   };
 
-  const [activeGroupCount, setActiveGroupCount] = React.useState<number>(() => Math.max(1, getActiveGroupCount()));
+  const groupAt = (idx: number): GroupLogEntry => {
+    const groups = localLog.groups || [];
+    return groups[idx] || { id: crypto.randomUUID(), groupName: "" };
+  };
 
   const clearGroupSlot = (idx: number) => {
-    const idxS = idx > 1 ? String(idx) : "";
-    for (const prefix of ["groupName", "unitOut", "managerName", "managerPhone", "officersCount", "departureTime", "arrivalTime", "rescuedCount", "recoveredCount", "rescuedPetsCount", "prehospitalCareCount", "transfersCount", "commissionId", "isVolunteer"]) {
-      onFieldChange(`${prefix}${idxS}`, "");
-    }
-    onFieldChange(`hasArrivedG${idx}`, false);
+    const updated = (localLog.groups || []).filter((_, i) => i !== idx - 1);
+    onFieldChange("groups", updated as unknown as string | boolean);
     if (idx === activeGroupCount && activeGroupCount > 1) {
       setActiveGroupCount((c) => c - 1);
     }
@@ -144,16 +136,15 @@ export const OperationTab: React.FC<OperationTabProps> = ({
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {Array.from({ length: activeGroupCount }).map((_, i) => {
-            const groupIdx = i + 1;
-            const color = getGroupColor(groupIdx);
+            const color = getGroupColor(i + 1);
             return (
-              <div key={groupIdx} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "6px", padding: "5px 7px", transition: "all 0.15s ease" }}>
-                {groupIdx > 1 ? (
+              <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "6px", padding: "5px 7px", transition: "all 0.15s ease" }}>
+                {i > 0 ? (
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px", paddingBottom: "2px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                     <span style={{ fontSize: "0.63rem", fontWeight: 700, color }}>
-                      Grupo #{groupIdx}
+                      Grupo #{i + 1}
                     </span>
-                    <button type="button" onClick={() => clearGroupSlot(groupIdx)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "4px", color: "#f87171", fontSize: "0.52rem", fontWeight: 700, padding: "1px 5px", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }} title={`Quitar Grupo ${groupIdx}`}>
+                    <button type="button" onClick={() => clearGroupSlot(i + 1)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "4px", color: "#f87171", fontSize: "0.52rem", fontWeight: 700, padding: "1px 5px", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }} title={`Quitar Grupo ${i + 1}`}>
                       <Trash2 size={8} /> Quitar
                     </button>
                   </div>
@@ -163,11 +154,11 @@ export const OperationTab: React.FC<OperationTabProps> = ({
                   </div>
                 )}
                 <GroupFields
-                  groupIndex={groupIdx}
-                  log={localLog}
-                  onFieldChange={onFieldChange as (field: string, value: string | boolean) => void}
+                  groupIndex={i}
+                  group={groupAt(i)}
+                  onGroupFieldChange={handleGroupFieldChange}
                   colorVar={color}
-                  hideHeader={groupIdx > 1}
+                  hideHeader={i > 0}
                   workGroups={workGroups}
                 />
               </div>

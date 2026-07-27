@@ -1,15 +1,14 @@
 import React, { useCallback, useRef, useState } from "react";
+import { browserStorage } from "../repositories/storageImpl";
+import type { IStorage } from "../repositories/interfaces";
 
 const STORAGE_KEY = "pc_toolbar_position";
 
-interface Position {
-  x: number;
-  y: number;
-}
+interface Position { x: number; y: number; }
 
-function loadPosition(): Position | null {
+function loadPosition(storage: IStorage): Position | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = storage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Position;
     if (typeof parsed.x === "number" && typeof parsed.y === "number") return parsed;
@@ -17,15 +16,13 @@ function loadPosition(): Position | null {
   return null;
 }
 
-function savePosition(pos: Position) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(pos));
-  } catch {}
+function savePosition(storage: IStorage, pos: Position) {
+  try { storage.setItem(STORAGE_KEY, JSON.stringify(pos)); } catch {}
 }
 
-export function useDraggable(defaultX: number, defaultY: number) {
+export function useDraggable(defaultX: number, defaultY: number, storage: IStorage = browserStorage) {
   const [pos, setPos] = useState<Position>(() => {
-    const saved = loadPosition();
+    const saved = loadPosition(storage);
     return saved ?? { x: defaultX, y: defaultY };
   });
 
@@ -58,18 +55,15 @@ export function useDraggable(defaultX: number, defaultY: number) {
       dragging.current = false;
       setIsDragging(false);
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-      setPos((prev) => {
-        savePosition(prev);
-        return prev;
-      });
+      setPos((prev) => { savePosition(storage, prev); return prev; });
     },
-    [],
+    [storage],
   );
 
   const resetPosition = useCallback(() => {
     setPos({ x: defaultX, y: defaultY });
-    savePosition({ x: defaultX, y: defaultY });
-  }, [defaultX, defaultY]);
+    savePosition(storage, { x: defaultX, y: defaultY });
+  }, [defaultX, defaultY, storage]);
 
   const dragHandleProps = {
     onPointerDown,

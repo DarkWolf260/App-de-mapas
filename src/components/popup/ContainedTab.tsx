@@ -2,6 +2,7 @@ import React from "react";
 import { MapPin, Clock, Navigation } from "lucide-react";
 import type { DrawnFeature, DailyLog, Department, DepartmentView } from "../../types";
 import { getNormalizedGroupList } from "../../utils/logUtils";
+import { getGeometryHandler } from "../../utils/geometryHandlers";
 
 interface ContainedTabProps {
   features: DrawnFeature[];
@@ -72,7 +73,7 @@ export const ContainedTab: React.FC<ContainedTabProps> = ({ features, popupEditD
                   }}
                   title={onNavigateToFeature ? "Ir a este punto" : undefined}
                 >
-                  {feat.title || `${feat.type === "polygon" ? "Área" : feat.type === "polyline" ? "Línea" : "Punto"} ${feat.id}`}
+                  {feat.title || `${getGeometryHandler(feat.type).typeLabel} ${feat.id}`}
                 </span>
                 {onNavigateToFeature && (
                   <button

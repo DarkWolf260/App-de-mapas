@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import type { DrawnFeature } from "../types";
+import { browserStorage } from "../repositories/storageImpl";
+import type { IStorage } from "../repositories/interfaces";
 
-export function useFeatureOrder(drawnFeatures: DrawnFeature[]) {
+export function useFeatureOrder(drawnFeatures: DrawnFeature[], storage: IStorage = browserStorage) {
   const [featureOrder, setFeatureOrder] = useState<number[]>(() => {
-    const saved = localStorage.getItem("pc_feature_order");
+    const saved = storage.getItem("pc_feature_order");
     if (saved) {
       try { return JSON.parse(saved); } catch { /* ignore */ }
     }
@@ -22,13 +24,13 @@ export function useFeatureOrder(drawnFeatures: DrawnFeature[]) {
           }
         });
         if (changed) {
-          localStorage.setItem("pc_feature_order", JSON.stringify(next));
+          storage.setItem("pc_feature_order", JSON.stringify(next));
           return next;
         }
         return prev;
       });
     }
-  }, [drawnFeatures]);
+  }, [drawnFeatures, storage]);
 
   const sortedDrawnFeatures = useMemo(() => {
     return [...drawnFeatures].sort((a, b) => {
@@ -55,7 +57,7 @@ export function useFeatureOrder(drawnFeatures: DrawnFeature[]) {
         next[index] = next[index + 1];
         next[index + 1] = temp;
       }
-      localStorage.setItem("pc_feature_order", JSON.stringify(next));
+      storage.setItem("pc_feature_order", JSON.stringify(next));
       return next;
     });
   };

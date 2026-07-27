@@ -1,6 +1,6 @@
 import React from "react";
 import "@arcgis/core/assets/esri/themes/dark/main.css";
-import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DailyLog, DepartmentView, WorkGroup } from "../types";
+import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DailyLog, DepartmentView } from "../types";
 import { DrawingToolbar } from "./DrawingToolbar";
 import { CustomMapPopup } from "./CustomMapPopup";
 import { DeploymentSummaryCard } from "./DeploymentSummaryCard";
@@ -9,8 +9,9 @@ import { HtmlPointLabels } from "./HtmlPointLabels";
 import { SwipeComparison } from "./SwipeComparison";
 import { useMapSetup } from "./useMapSetup";
 import { useDraggable } from "../hooks/useDraggable";
+import type { MapFeatureActions, MapUIContext } from "./mapTypes";
 import Point from "@arcgis/core/geometry/Point";
-import { Satellite, Calendar, Users2 } from "lucide-react";
+import { Satellite, Calendar } from "lucide-react";
 
 interface MapComponentProps {
   apiKey: string;
@@ -19,51 +20,28 @@ interface MapComponentProps {
   layerVisibility: LayerVisibility;
   onToggleLayer?: (layerName: keyof LayerVisibility) => void;
   drawnFeatures: DrawnFeature[];
-  onFeatureAdded: (newFeat: DrawnFeature) => void;
-  onFeatureDeleted: (id: number) => void;
+  hiddenFeatures: Record<number, boolean>;
   zoomToFeature: DrawnFeature | null;
   removeFeatureId: RemoveFeatureId | null;
   importedFeatures: DrawnFeature[];
-  hiddenFeatures: Record<number, boolean>;
-  onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
-  onRefreshFeatures?: () => Promise<void>;
-  onOpenRangeReport?: (feat: DrawnFeature | "all") => void;
-  onToggleFeatureLock?: (id: number, locked: boolean) => void;
-  onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
-  onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
-  onUpdateFeatureColor?: (id: number, newColor: string) => Promise<void>;
-  onUpdateFeatureCollapsed?: (id: number, isCollapsed: boolean, collapsedCount: string | number) => Promise<void>;
-  onZoomToFeature?: (feat: DrawnFeature) => void;
   zoomToCoords?: { lat: number; lon: number } | null;
-  selectedDate: string;
-  onSelectedDateChange?: (date: string) => void;
-  activeDepartment?: DepartmentView;
-  showSidebar?: boolean;
-  isAdmin?: boolean;
-  isOperador?: boolean;
-  onOpenWorkGroups?: () => void;
-  workGroups?: WorkGroup[];
-  showAccumulated?: boolean;
-  showPoints?: boolean;
-  showAreas?: boolean;
-  sidebarOpen?: boolean;
-  bitacoraOpen?: boolean;
-  onFeatureClick?: () => void;
+  onZoomToFeature?: (feat: DrawnFeature) => void;
+  /** Feature CRUD + log + report actions */
+  actions: MapFeatureActions;
+  /** UI state: date, department, permissions, visibility toggles */
+  ui: MapUIContext;
 }
   
   const MapComponent: React.FC<MapComponentProps> = (props) => {
+    const { layerVisibility, drawnFeatures, onZoomToFeature, showSidebar = false, actions, ui } = props;
     const {
-      layerVisibility,
-      drawnFeatures,
       onSaveDailyLog,
       onToggleFeatureLock,
       onRenameFeature,
       onUpdateFeatureDescription,
       onUpdateFeatureColor,
       onUpdateFeatureCollapsed,
-      onZoomToFeature,
-      showSidebar = false,
-    } = props;
+    } = actions;
 
   const [widgetCollapsed, setWidgetCollapsed] = React.useState(() => {
     return localStorage.getItem("pc_widget_collapsed") === "true";
@@ -109,19 +87,19 @@ interface MapComponentProps {
     // Also fly the map to the feature's location
     if (viewRef.current) {
       const padding = {
-        left: props.sidebarOpen ? 380 : 0,
-        right: props.bitacoraOpen ? 480 : 440,
+        left: ui.sidebarOpen ? 380 : 0,
+        right: ui.bitacoraOpen ? 480 : 440,
       };
       const target: any = { target: mapPoint };
       if (feat.type === "point") target.zoom = Math.max(viewRef.current.zoom, 18);
       viewRef.current.goTo(target, { duration: 400, padding } as any);
     }
-  }, [setCustomPopup, viewRef, props.sidebarOpen, props.bitacoraOpen]);
+  }, [setCustomPopup, viewRef, ui.sidebarOpen, ui.bitacoraOpen]);
 
   const handlePopupDateChange = React.useCallback((date: string) => {
     setPopupEditDate(date);
-    props.onSelectedDateChange?.(date);
-  }, [setPopupEditDate, props.onSelectedDateChange]);
+    ui.onSelectedDateChange?.(date);
+  }, [setPopupEditDate, ui.onSelectedDateChange]);
 
   const defaultX = typeof window !== "undefined" ? Math.floor(window.innerWidth / 2 - 180) : 400;
   const { position: toolbarPos, dragHandleProps, isDragging } = useDraggable(
@@ -140,7 +118,7 @@ interface MapComponentProps {
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
       <div className="map-view-container" ref={mapDiv} style={{ width: "100%", height: "100%" }} />
       {/* Floating Draggable Drawing Toolbar (Solo visible para Administradores) */}
-      {props.isAdmin !== false && layerVisibility.sketch && (
+      {ui.isAdmin !== false && layerVisibility.sketch && (
         <div
           className="draw-toolbar-wrapper"
           style={{
@@ -175,19 +153,20 @@ interface MapComponentProps {
         popupEditDate={popupEditDate}
         setPopupEditDate={handlePopupDateChange}
         onSaveDailyLog={onSaveDailyLog}
-        onRefreshFeatures={props.onRefreshFeatures}
-        onToggleFeatureLock={onToggleFeatureLock}
-        onRenameFeature={onRenameFeature}
-        onUpdateFeatureDescription={onUpdateFeatureDescription}
-        onUpdateFeatureColor={onUpdateFeatureColor}
-        onUpdateFeatureCollapsed={onUpdateFeatureCollapsed}
+        onRefreshFeatures={actions.onRefreshFeatures}
+        featureActions={{
+          onToggleFeatureLock,
+          onRenameFeature,
+          onUpdateFeatureDescription,
+          onUpdateFeatureColor,
+          onUpdateFeatureCollapsed,
+        }}
         sketchLayer={sketchLayer}
         onClose={() => setCustomPopup(null)}
         onNavigateToFeature={handleNavigateToFeature}
-        activeDepartment={props.activeDepartment}
-        isAdmin={props.isAdmin}
-        isOperador={props.isOperador}
-        workGroups={props.workGroups}
+        activeDepartment={ui.activeDepartment}
+        isAdmin={ui.isAdmin}
+        isOperador={ui.isOperador}
       />
 
       {/* Floating hover tooltip for lines and polygons */}
@@ -233,9 +212,9 @@ interface MapComponentProps {
         }}
       >
         {/* Botón Flotante Discreto de Bitácora General (Verde Neón) */}
-        {props.onOpenRangeReport && (
+        {actions.onOpenRangeReport && (
           <button
-            onClick={() => props.onOpenRangeReport && props.onOpenRangeReport("all")}
+            onClick={() => actions.onOpenRangeReport && actions.onOpenRangeReport("all")}
             style={{
               width: "32px",
               height: "32px",
@@ -261,33 +240,6 @@ interface MapComponentProps {
         )}
 
         {/* Botón Flotante Grupos de Trabajo */}
-        {props.onOpenWorkGroups && (
-          <button
-            onClick={props.onOpenWorkGroups}
-            style={{
-              width: "32px",
-              height: "32px",
-              borderRadius: "50%",
-              background: "rgba(10, 15, 29, 0.85)",
-              border: "1px solid rgba(56, 189, 248, 0.4)",
-              color: "#38bdf8",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-              boxShadow: "0 4px 12px rgba(56, 189, 248, 0.2)",
-              transition: "all 0.2s ease",
-              padding: 0,
-              pointerEvents: "auto",
-            }}
-            title="Directorio de Grupos de Trabajo"
-          >
-            <Users2 size={15} style={{ color: "#38bdf8" }} />
-          </button>
-        )}
-
         {/* Map Settings & Layer Visibility Panel */}
         {props.onToggleLayer && (
           <div style={{ pointerEvents: "auto" }}>
@@ -319,8 +271,8 @@ interface MapComponentProps {
               if (!mapPoint) mapPoint = new Point({ longitude: -66.9331, latitude: 10.6000 });
               setCustomPopup({ mapPoint, feat });
             }}
-            selectedDate={props.selectedDate}
-            activeDepartment={props.activeDepartment}
+            selectedDate={ui.selectedDate}
+            activeDepartment={ui.activeDepartment}
           />
         </div>
       </div>

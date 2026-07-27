@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import type { DrawnFeature, DailyLog, DepartmentView, WorkGroup, NovedadEntry, NovedadType } from "../types";
+import type { DrawnFeature, DailyLog, DepartmentView, NovedadEntry, NovedadType } from "../types";
 import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin, Layers, FileText, Plus, Pencil, EyeOff } from "lucide-react";
 import { sectionBox } from "./popup/popupStyles";
 import { ConfirmModal } from "./ConfirmModal";
@@ -21,6 +21,7 @@ import {
   emptyLog,
   getPeriodStats,
   mergeLogs,
+  getNormalizedGroupList,
 } from "../utils/logUtils";
 
 interface RangeReportModalProps {
@@ -29,7 +30,6 @@ interface RangeReportModalProps {
   onClose: () => void;
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
   activeDepartment?: DepartmentView;
-  workGroups?: WorkGroup[];
   selectedDate?: string;
   onSelectedDateChange?: (date: string) => void;
   globalNovedades?: NovedadEntry[];
@@ -47,7 +47,6 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   onClose,
   onSaveDailyLog,
   activeDepartment = "pc",
-  workGroups = [],
   selectedDate: externalDate,
   onSelectedDateChange,
   globalNovedades = [],
@@ -330,29 +329,12 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     ) || [];
     const currentLog = logs[0] || emptyLog(activeDate);
 
-    const _nowTime = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-
-    let updatedLog: DailyLog;
-    if (groupIndex === 1) {
-      updatedLog = { ...currentLog, hasArrivedG1: newArrived };
-    } else if (groupIndex === 2) {
-      updatedLog = { ...currentLog, hasArrivedG2: newArrived };
-    } else if (groupIndex === 3) {
-      updatedLog = { ...currentLog, hasArrivedG3: newArrived };
-    } else {
-      updatedLog = { ...currentLog, hasArrivedG4: newArrived };
+    const updatedGroups = [...(currentLog.groups || [])];
+    while (updatedGroups.length < groupIndex) updatedGroups.push({ id: crypto.randomUUID(), groupName: "" });
+    if (updatedGroups[groupIndex - 1]) {
+      updatedGroups[groupIndex - 1] = { ...updatedGroups[groupIndex - 1], hasArrived: newArrived };
     }
-
-    if (currentLog.groups && currentLog.groups.length >= groupIndex) {
-      const updatedGroups = [...currentLog.groups];
-      if (updatedGroups[groupIndex - 1]) {
-        updatedGroups[groupIndex - 1] = {
-          ...updatedGroups[groupIndex - 1],
-          hasArrived: newArrived,
-        };
-      }
-      updatedLog.groups = updatedGroups;
-    }
+    const updatedLog = { ...currentLog, groups: updatedGroups };
 
     await onSaveDailyLog(pt.id, updatedLog);
   };
@@ -1020,7 +1002,8 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                           ) || [];
                           const log = logs[0];
                           const isEditingThis = activeEditFeatureId === pt.id;
-                          const hasG2 = !!(log?.groupName2 || log?.unitOut2);
+                          const groupsForCheck = getNormalizedGroupList(log);
+                          const hasG2 = groupsForCheck.length > 1;
                           const containedPoints = (allFeatures || []).filter((c) => String(parentsMap[c.id]) === String(pt.id));
 
                           return (
@@ -1054,14 +1037,25 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                                   {containedPoints.map((cp) => {
                                     const cpLog = cp.dailyLogs?.find((l) => l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department) && logHasAnyData(l));
                                     if (!cpLog) return null;
-                                    const r = (parseInt(cpLog.rescuedCount || "0", 10) + parseInt(cpLog.rescuedCount2 || "0", 10));
-                                    const rc = (parseInt(cpLog.recoveredCount || "0", 10) + parseInt(cpLog.recoveredCount2 || "0", 10));
-                                    const ph = (parseInt(cpLog.prehospitalCareCount || "0", 10) + parseInt(cpLog.prehospitalCareCount2 || "0", 10));
-                                    const tr = (parseInt(cpLog.transfersCount || "0", 10) + parseInt(cpLog.transfersCount2 || "0", 10));
-                                    const off = (parseInt(cpLog.officersCount || "0", 10) + parseInt(cpLog.officersCount2 || "0", 10));
+                                    const cpGroups = getNormalizedGroupList(cpLog);
+                                    let r = 0, rc = 0, ph = 0, tr = 0, off = 0;
+                                    for (const g of cpGroups) {
+                                      r += parseInt(g.rescuedCount || "0", 10) || 0;
+                                      rc += parseInt(g.recoveredCount || "0", 10) || 0;
+                                      ph += parseInt(g.prehospitalCareCount || "0", 10) || 0;
+                                      tr += parseInt(g.transfersCount || "0", 10) || 0;
+                                      off += parseInt(g.officersCount || "0", 10) || 0;
+                                    }
+                                    if (cpGroups.length === 0) {
+                                      r = parseInt(cpLog.rescuedCount || "0", 10) || 0;
+                                      rc = parseInt(cpLog.recoveredCount || "0", 10) || 0;
+                                      ph = parseInt(cpLog.prehospitalCareCount || "0", 10) || 0;
+                                      tr = parseInt(cpLog.transfersCount || "0", 10) || 0;
+                                    }
+                                    const firstGroupName = cpGroups[0]?.groupName;
                                     return (
                                       <div key={cp.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.63rem", color: "var(--text-main)", padding: "2px 4px", background: "rgba(255, 255, 255, 0.02)", borderRadius: "4px" }}>
-                                        <span style={{ fontWeight: 600 }}>📍 {cp.title} {cpLog.groupName ? `(${cpLog.groupName})` : ""}</span>
+                                        <span style={{ fontWeight: 600 }}>📍 {cp.title} {firstGroupName ? `(${firstGroupName})` : ""}</span>
                                         <div style={{ display: "flex", gap: "6px", fontSize: "0.6rem" }}>
                                           {off > 0 && <span style={{ color: "#94a3b8" }}>👥 {off}</span>}
                                           {r > 0 && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>↑{r}</span>}
@@ -1122,9 +1116,9 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                               {!isEditingThis && log && (
                                 <div className="rr-card-body">
                                   <GroupDisplay group={getGroupData(log, 1)} label="G1" accentColor="#38bdf8" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 1, newArrived)} />
-                                  {!!(log.groupName2 || log.unitOut2) && <GroupDisplay group={getGroupData(log, 2)} label="G2" accentColor="#a855f7" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 2, newArrived)} />}
-                                  {!!(log.groupName3 || log.unitOut3) && <GroupDisplay group={getGroupData(log, 3)} label="G3" accentColor="#c084fc" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 3, newArrived)} />}
-                                  {!!(log.groupName4 || log.unitOut4) && <GroupDisplay group={getGroupData(log, 4)} label="G4" accentColor="#fb923c" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 4, newArrived)} />}
+                                  {getNormalizedGroupList(log).length > 1 && <GroupDisplay group={getGroupData(log, 2)} label="G2" accentColor="#a855f7" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 2, newArrived)} />}
+                                  {getNormalizedGroupList(log).length > 2 && <GroupDisplay group={getGroupData(log, 3)} label="G3" accentColor="#c084fc" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 3, newArrived)} />}
+                                  {getNormalizedGroupList(log).length > 3 && <GroupDisplay group={getGroupData(log, 4)} label="G4" accentColor="#fb923c" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 4, newArrived)} />}
                                 </div>
                               )}
 
@@ -1203,15 +1197,28 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                         const cpLog = cpLogs[0];
                         if (!cpLog) return null;
                         const hasData = logHasAnyData(cpLog);
+                        const cpGroups = getNormalizedGroupList(cpLog);
+                        const firstCpName = cpGroups[0]?.groupName;
+                        let rescuedSum = 0, recoveredSum = 0, prehospitalSum = 0;
+                        for (const g of cpGroups) {
+                          rescuedSum += parseInt(g.rescuedCount || "0", 10) || 0;
+                          recoveredSum += parseInt(g.recoveredCount || "0", 10) || 0;
+                          prehospitalSum += parseInt(g.prehospitalCareCount || "0", 10) || 0;
+                        }
+                        if (cpGroups.length === 0) {
+                          rescuedSum = parseInt(cpLog.rescuedCount || "0", 10) || 0;
+                          recoveredSum = parseInt(cpLog.recoveredCount || "0", 10) || 0;
+                          prehospitalSum = parseInt(cpLog.prehospitalCareCount || "0", 10) || 0;
+                        }
                         return (
                           <div key={cp.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.63rem", color: "var(--text-main)", padding: "3px 6px", background: hasData ? "rgba(167, 139, 250, 0.06)" : "rgba(255,255,255,0.02)", borderRadius: "4px", borderLeft: `2px solid ${hasData ? "#a78bfa" : "transparent"}` }}>
-                            <span style={{ fontWeight: 600 }}>{cp.title} {cpLog.groupName ? `(${cpLog.groupName})` : ""}</span>
+                            <span style={{ fontWeight: 600 }}>{cp.title} {firstCpName ? `(${firstCpName})` : ""}</span>
                             <div style={{ display: "flex", gap: "6px", fontSize: "0.6rem" }}>
                               {hasData ? (
                                 <>
-                                  {(parseInt(cpLog.rescuedCount || "0", 10) + parseInt(cpLog.rescuedCount2 || "0", 10)) > 0 && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{parseInt(cpLog.rescuedCount || "0", 10) + parseInt(cpLog.rescuedCount2 || "0", 10)}</span>}
-                                  {(parseInt(cpLog.recoveredCount || "0", 10) + parseInt(cpLog.recoveredCount2 || "0", 10)) > 0 && <span style={{ color: "var(--color-high)", fontWeight: 700 }}>{parseInt(cpLog.recoveredCount || "0", 10) + parseInt(cpLog.recoveredCount2 || "0", 10)}</span>}
-                                  {(parseInt(cpLog.prehospitalCareCount || "0", 10) + parseInt(cpLog.prehospitalCareCount2 || "0", 10)) > 0 && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{parseInt(cpLog.prehospitalCareCount || "0", 10) + parseInt(cpLog.prehospitalCareCount2 || "0", 10)}</span>}
+                                  {rescuedSum > 0 && <span style={{ color: "var(--color-green)", fontWeight: 700 }}>{rescuedSum}</span>}
+                                  {recoveredSum > 0 && <span style={{ color: "var(--color-high)", fontWeight: 700 }}>{recoveredSum}</span>}
+                                  {prehospitalSum > 0 && <span style={{ color: "var(--color-info)", fontWeight: 700 }}>{prehospitalSum}</span>}
                                 </>
                               ) : (
                                 <span style={{ color: "var(--text-muted)", fontSize: "0.58rem" }}>Sin datos</span>

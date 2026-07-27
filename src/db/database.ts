@@ -5,11 +5,9 @@ import type { DailyLog } from "../types";
 
 addRxPlugin(RxDBMigrationSchemaPlugin);
 
-// ── Database Schema ───────────────────────────────────────────────────────────
-
 export const FeatureSchema = {
   title: "feature schema",
-  version: 14,
+  version: 15,
   primaryKey: "id",
   type: "object",
   properties: {
@@ -28,42 +26,26 @@ export const FeatureSchema = {
         properties: {
           date: { type: "string" },
           department: { type: "string" },
-          groupName: { type: "string" },
-          managerName: { type: "string" },
-          managerPhone: { type: "string" },
-          unitOut: { type: "string" },
-          officersCount: { type: "string" },
+          groups: { type: "array" },
+          observations: { type: "string" },
+          novedades: { type: "array" },
           rescuedCount: { type: "string" },
           recoveredCount: { type: "string" },
           rescuedPetsCount: { type: "string" },
-          groupName2: { type: "string" },
-          managerName2: { type: "string" },
-          managerPhone2: { type: "string" },
-          unitOut2: { type: "string" },
-          officersCount2: { type: "string" },
-          rescuedCount2: { type: "string" },
-          recoveredCount2: { type: "string" },
-          hasArrivedG1: { type: "boolean" },
-          hasArrivedG2: { type: "boolean" },
-          observations: { type: "string" },
-          novedades: { type: "array" },
+          prehospitalCareCount: { type: "string" },
+          transfersCount: { type: "string" },
         },
         required: ["date"],
       },
     },
     geojsonGeometry: {
       type: "object",
-      properties: {
-        type: { type: "string" },
-        coordinates: { type: "array" },
-      },
+      properties: { type: { type: "string" }, coordinates: { type: "array" } },
       required: ["type", "coordinates"],
     },
   },
   required: ["id", "title", "type", "geojsonGeometry"],
 };
-
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 export type RxDrawnFeatureDocument = {
   id: string;
@@ -75,21 +57,12 @@ export type RxDrawnFeatureDocument = {
   isCollapsed?: boolean;
   collapsedCount?: string;
   dailyLogs?: DailyLog[];
-  geojsonGeometry: {
-    type: "Point" | "LineString" | "Polygon";
-    coordinates: any;
-  };
+  geojsonGeometry: { type: "Point" | "LineString" | "Polygon"; coordinates: any };
 };
 
 export type RxDrawnFeatureCollection = RxCollection<RxDrawnFeatureDocument>;
-
-export type RxDrawnDatabaseCollections = {
-  features: RxDrawnFeatureCollection;
-};
-
+export type RxDrawnDatabaseCollections = { features: RxDrawnFeatureCollection };
 export type RxDrawnDatabase = RxDatabase<RxDrawnDatabaseCollections>;
-
-// ── Database Initialization ──────────────────────────────────────────────────
 
 let dbPromise: Promise<RxDrawnDatabase> | null = null;
 let _dbInstance: RxDrawnDatabase | null = null;
@@ -97,159 +70,62 @@ let _dbInstance: RxDrawnDatabase | null = null;
 export const initDatabase = (): Promise<RxDrawnDatabase> => {
   if (!dbPromise) {
     dbPromise = (async () => {
-      // 1. Create database
       const db = await createRxDatabase<RxDrawnDatabaseCollections>({
         name: "proteccion_civil_db",
         storage: getRxStorageDexie(),
       });
       _dbInstance = db;
 
-      // 2. Add collections
       await db.addCollections({
         features: {
           schema: FeatureSchema,
           migrationStrategies: {
-            1: (oldDoc: any) => {
-              oldDoc.description = "";
-              return oldDoc;
+            1: (d: any) => { d.description = ""; return d; },
+            2: (d: any) => { d.color = "#3b82f6"; return d; },
+            3: (d: any) => { d.dailyLogs = []; return d; },
+            4: (d: any) => { if (d.dailyLogs) d.dailyLogs = d.dailyLogs.map((l: any) => ({ ...l, departureTime: "", arrivalTime: "" })); return d; },
+            5: (d: any) => { if (d.dailyLogs) d.dailyLogs = d.dailyLogs.map((l: any) => ({ ...l, officersCount: "" })); return d; },
+            6: (d: any) => { d.locked = false; return d; },
+            7: (d: any) => { if (d.dailyLogs) d.dailyLogs = d.dailyLogs.map((l: any) => ({ ...l, groupName2: "", managerName2: "", managerPhone2: "", unitOut2: "", departureTime2: "", arrivalTime2: "", officersCount2: "" })); return d; },
+            8: (d: any) => { if (d.dailyLogs) d.dailyLogs = d.dailyLogs.map((l: any) => ({ ...l, rescuedCount: "", recoveredCount: "", rescuedCount2: "", recoveredCount2: "" })); return d; },
+            9: (d: any) => { if (d.dailyLogs) d.dailyLogs = d.dailyLogs.map((l: any) => ({ ...l, hasArrivedG1: false, hasArrivedG2: false })); return d; },
+            10: (d: any) => { if (d.dailyLogs) d.dailyLogs = d.dailyLogs.map((l: any) => ({ ...l, rescuedPetsCount: "" })); return d; },
+            11: (d: any) => { if (d.dailyLogs) d.dailyLogs = d.dailyLogs.map((l: any) => ({ ...l, observations: "" })); return d; },
+            12: (d: any) => { if (d.dailyLogs) d.dailyLogs = d.dailyLogs.map((l: any) => ({ ...l, department: "pc" })); return d; },
+            13: (d: any) => { d.isCollapsed = false; d.collapsedCount = ""; return d; },
+            14: (d: any) => { if (d.dailyLogs) d.dailyLogs = d.dailyLogs.map((l: any) => ({ ...l, novedades: l.novedades || [] })); return d; },
+            15: (d: any) => {
+              if (d.dailyLogs) d.dailyLogs = d.dailyLogs.map((l: any) => ({
+                date: l.date, department: l.department || "pc",
+                groups: l.groups || [],
+                observations: l.observations || "", novedades: l.novedades || [],
+                rescuedCount: l.rescuedCount || "", recoveredCount: l.recoveredCount || "",
+                rescuedPetsCount: l.rescuedPetsCount || "", prehospitalCareCount: l.prehospitalCareCount || "",
+                transfersCount: l.transfersCount || "",
+              }));
+              return d;
             },
-            2: (oldDoc: any) => {
-              oldDoc.color = "#3b82f6";
-              return oldDoc;
-            },
-            3: (oldDoc: any) => {
-              oldDoc.dailyLogs = [];
-              return oldDoc;
-            },
-            4: (oldDoc: any) => {
-              if (oldDoc.dailyLogs && Array.isArray(oldDoc.dailyLogs)) {
-                oldDoc.dailyLogs = oldDoc.dailyLogs.map((log: any) => ({
-                  ...log,
-                  departureTime: "",
-                  arrivalTime: ""
-                }));
-              }
-              return oldDoc;
-            },
-            5: (oldDoc: any) => {
-              if (oldDoc.dailyLogs && Array.isArray(oldDoc.dailyLogs)) {
-                oldDoc.dailyLogs = oldDoc.dailyLogs.map((log: any) => ({
-                  ...log,
-                  officersCount: ""
-                }));
-              }
-              return oldDoc;
-            },
-            6: (oldDoc: any) => {
-              oldDoc.locked = false;
-              return oldDoc;
-            },
-            7: (oldDoc: any) => {
-              if (oldDoc.dailyLogs && Array.isArray(oldDoc.dailyLogs)) {
-                oldDoc.dailyLogs = oldDoc.dailyLogs.map((log: any) => ({
-                  ...log,
-                  groupName2: "",
-                  managerName2: "",
-                  managerPhone2: "",
-                  unitOut2: "",
-                  departureTime2: "",
-                  arrivalTime2: "",
-                  officersCount2: ""
-                }));
-              }
-              return oldDoc;
-            },
-            8: (oldDoc: any) => {
-              if (oldDoc.dailyLogs && Array.isArray(oldDoc.dailyLogs)) {
-                oldDoc.dailyLogs = oldDoc.dailyLogs.map((log: any) => ({
-                  ...log,
-                  rescuedCount: "",
-                  recoveredCount: "",
-                  rescuedCount2: "",
-                  recoveredCount2: ""
-                }));
-              }
-              return oldDoc;
-            },
-            9: (oldDoc: any) => {
-              if (oldDoc.dailyLogs && Array.isArray(oldDoc.dailyLogs)) {
-                oldDoc.dailyLogs = oldDoc.dailyLogs.map((log: any) => ({
-                  ...log,
-                  hasArrivedG1: false,
-                  hasArrivedG2: false
-                }));
-              }
-              return oldDoc;
-            },
-            10: (oldDoc: any) => {
-              if (oldDoc.dailyLogs && Array.isArray(oldDoc.dailyLogs)) {
-                oldDoc.dailyLogs = oldDoc.dailyLogs.map((log: any) => ({
-                  ...log,
-                  rescuedPetsCount: ""
-                }));
-              }
-              return oldDoc;
-            },
-            11: (oldDoc: any) => {
-              if (oldDoc.dailyLogs && Array.isArray(oldDoc.dailyLogs)) {
-                oldDoc.dailyLogs = oldDoc.dailyLogs.map((log: any) => ({
-                  ...log,
-                  observations: ""
-                }));
-              }
-              return oldDoc;
-            },
-            12: (oldDoc: any) => {
-              if (oldDoc.dailyLogs && Array.isArray(oldDoc.dailyLogs)) {
-                oldDoc.dailyLogs = oldDoc.dailyLogs.map((log: any) => ({
-                  ...log,
-                  department: "pc"
-                }));
-              }
-              return oldDoc;
-            },
-            13: (oldDoc: any) => {
-              oldDoc.isCollapsed = false;
-              oldDoc.collapsedCount = "";
-              return oldDoc;
-            },
-            14: (oldDoc: any) => {
-              if (oldDoc.dailyLogs && Array.isArray(oldDoc.dailyLogs)) {
-                oldDoc.dailyLogs = oldDoc.dailyLogs.map((log: any) => ({
-                  ...log,
-                  novedades: log.novedades || []
-                }));
-              }
-              return oldDoc;
-            }
-          }
+          },
         },
       });
 
-      // 3. Migrate from localStorage (if exists)
       try {
         const oldData = localStorage.getItem("pc_drawn_features");
         if (oldData) {
           const parsed = JSON.parse(oldData);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const featuresCollection = db.features;
-            const existing = await featuresCollection.find().exec();
+            const existing = await db.features.find().exec();
             if (existing.length === 0) {
-              const toInsert = parsed.map((item: any) => ({
-                id: String(item.id),
-                title: String(item.title),
+              await db.features.bulkInsert(parsed.map((item: any) => ({
+                id: String(item.id), title: String(item.title),
                 type: String(item.type) as "point" | "polyline" | "polygon",
                 geojsonGeometry: item.geojsonGeometry,
-              }));
-              await featuresCollection.bulkInsert(toInsert);
-              console.log("RxDB: Migrated features from localStorage");
+              })));
             }
             localStorage.removeItem("pc_drawn_features");
           }
         }
-      } catch (err) {
-        console.error("RxDB: Migration failed", err);
-      }
+      } catch (err) { console.error("RxDB: Migration failed", err); }
 
       return db;
     })();
@@ -259,12 +135,7 @@ export const initDatabase = (): Promise<RxDrawnDatabase> => {
 
 export const closeDatabase = async (): Promise<void> => {
   if (_dbInstance) {
-    try {
-      await _dbInstance.destroy();
-    } catch (err) {
-      console.error("RxDB: Destroy failed", err);
-    }
-    _dbInstance = null;
-    dbPromise = null;
+    try { await _dbInstance.destroy(); } catch (err) { console.error("RxDB: Destroy failed", err); }
+    _dbInstance = null; dbPromise = null;
   }
 };

@@ -1,9 +1,9 @@
 import React from "react";
-import type { DrawnFeature, DailyLog, DepartmentView, WorkGroup } from "../types";
+import type { DrawnFeature, DailyLog, DepartmentView } from "../types";
 import { ChevronDown, ChevronUp, Calendar, Users, FileText, CheckCircle2, ShieldAlert } from "lucide-react";
 import { GroupLogForm } from "./GroupLogForm";
 import { useLogEditor } from "../hooks/useLogEditor";
-import { emptyLog, logHasAnyData, getGroupData, formatDateFriendly } from "../utils/logUtils";
+import { emptyLog, logHasAnyData, getGroupData, formatDateFriendly, getNormalizedGroupList } from "../utils/logUtils";
 
 interface DateRowProps {
   dateStr: string;
@@ -11,10 +11,9 @@ interface DateRowProps {
   feat: DrawnFeature;
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
   activeDepartment?: DepartmentView;
-  workGroups?: WorkGroup[];
 }
 
-export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDailyLog, activeDepartment, workGroups = [] }) => {
+export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDailyLog, activeDepartment }) => {
   const [expanded, setExpanded] = React.useState(false);
   const effectiveLog = log ?? emptyLog(dateStr);
 
@@ -26,7 +25,7 @@ export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDail
   const hasData = logHasAnyData(effectiveLog);
   const g1 = getGroupData(effectiveLog, 1);
   const g2 = getGroupData(effectiveLog, 2);
-  const hasG2 = !!(effectiveLog.groupName2 || effectiveLog.unitOut2);
+  const hasG2 = getNormalizedGroupList(effectiveLog).length > 1;
 
   const toggleExpand = () => {
     const next = !expanded;

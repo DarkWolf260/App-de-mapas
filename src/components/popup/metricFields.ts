@@ -1,4 +1,5 @@
-import type { DailyLog, GroupLogEntry } from "../../types";
+import type { DailyLog, GroupLogEntry, FeatureType, DrawnFeature } from "../../types";
+import { getGeometryHandler } from "../../utils/geometryHandlers";
 
 export const METRIC_FIELDS = [
   { label: "Rescat.", field: "rescuedCount" as const, color: "var(--color-green)" },
@@ -41,27 +42,13 @@ export function hasAnyMetric(source: Partial<DailyLog> | GroupLogEntry): boolean
   });
 }
 
-export function formatCoordFromFeature(feat: { type: string; geojsonGeometry?: { coordinates: unknown } }): { lat: number; lon: number } | null {
+export function formatCoordFromFeature(feat: { type: string; geojsonGeometry?: { type?: string; coordinates: unknown } }): { lat: number; lon: number } | null {
   const geom = feat.geojsonGeometry;
   if (!geom) return null;
-  const coords = geom.coordinates;
-
-  if (feat.type === "point" && Array.isArray(coords)) {
-    const [lon, lat] = coords as number[];
-    return { lat, lon };
-  }
-  if (feat.type === "polyline" && Array.isArray(coords) && coords.length > 0) {
-    const [lon, lat] = (coords as number[][])[0];
-    return { lat, lon };
-  }
-  if (feat.type === "polygon" && Array.isArray(coords)) {
-    const rings = coords as number[][][];
-    if (rings.length > 0 && rings[0].length > 0) {
-      const [lon, lat] = rings[0][0];
-      return { lat, lon };
-    }
-  }
-  return null;
+  const handler = getGeometryHandler(feat.type);
+  const coord = handler.getFirstCoordinate(geom as any);
+  if (!coord) return null;
+  return { lon: coord[0], lat: coord[1] };
 }
 
 export function formatCoordinates(feat: { type: string; geojsonGeometry?: { coordinates: unknown } }): string {
@@ -71,8 +58,6 @@ export function formatCoordinates(feat: { type: string; geojsonGeometry?: { coor
 }
 
 export function getCoordLabel(feat: { type: string }): string {
-  if (feat.type === "point") return "Ubicación";
-  if (feat.type === "polyline") return "Punto inicial";
-  if (feat.type === "polygon") return "Primer vértice";
-  return "Coordenadas";
+  if (!["point", "polyline", "polygon"].includes(feat.type)) return "Coordenadas";
+  return getGeometryHandler(feat.type).coordinateLabel;
 }
