@@ -260,10 +260,16 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     if (!canToggleArrival || !onSaveDailyLog) return;
     const fieldKey = groupIndex === 1 ? "hasArrivedG1" : groupIndex === 2 ? "hasArrivedG2" : groupIndex === 3 ? "hasArrivedG3" : "hasArrivedG4";
     const deptToUse: Department = activeDepartment === "mixto" ? selectedDept : (activeDepartment === "bomberos" ? "bomberos" : "pc");
+    const updatedGroups = [...(localLog.groups || [])];
+    const targetIdx = groupIndex - 1;
+    if (targetIdx < updatedGroups.length) {
+      updatedGroups[targetIdx] = { ...updatedGroups[targetIdx], hasArrived };
+    }
     const updatedLog = {
       ...localLog,
       department: deptToUse,
       [fieldKey]: hasArrived,
+      groups: updatedGroups,
     };
     setLocalLog(updatedLog);
     try {
