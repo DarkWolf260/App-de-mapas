@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Copy, Check, Edit3, Users, Activity, AlertTriangle, Link2, Unlink, Save, FileText, Plus, X, Pencil } from "lucide-react";
 import type { DrawnFeature, DailyLog, GroupLogEntry, NovedadEntry, DepartmentView } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
-import { getNormalizedGroupList } from "../../utils/logUtils";
+import { getNormalizedGroupList, mergeLogs } from "../../utils/logUtils";
 import { labelStyle, sectionBox, readRowStyle, readLabelStyle, readValueStyle } from "./popupStyles";
 import { COMMISSION_INDEPENDENT, getGroupColor, formatCoordinates, getCoordLabel, METRIC_FIELDS, getMetricValue } from "./metricFields";
 import { MetricInputs, MetricBadges, MetricDisplayGrid } from "./MetricGrid";
@@ -118,26 +118,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
     if (activeDepartment !== "mixto") return null;
     const allLogs = activeFeat.dailyLogs?.filter((l) => l.date === popupEditDate) || [];
     if (allLogs.length <= 1) return null;
-    const merged: DailyLog = { ...allLogs[0], date: popupEditDate };
-    const allNovedades = [...(merged.novedades || [])];
-    const allGroups = [...(merged.groups || [])];
-    for (let i = 1; i < allLogs.length; i++) {
-      const other = allLogs[i];
-      merged.rescuedCount = String((parseInt(merged.rescuedCount || "0", 10) || 0) + (parseInt(other.rescuedCount || "0", 10) || 0));
-      merged.recoveredCount = String((parseInt(merged.recoveredCount || "0", 10) || 0) + (parseInt(other.recoveredCount || "0", 10) || 0));
-      merged.rescuedPetsCount = String((parseInt(merged.rescuedPetsCount || "0", 10) || 0) + (parseInt(other.rescuedPetsCount || "0", 10) || 0));
-      merged.prehospitalCareCount = String((parseInt(merged.prehospitalCareCount || "0", 10) || 0) + (parseInt(other.prehospitalCareCount || "0", 10) || 0));
-      merged.transfersCount = String((parseInt(merged.transfersCount || "0", 10) || 0) + (parseInt(other.transfersCount || "0", 10) || 0));
-      if (other.novedades) allNovedades.push(...other.novedades);
-      if (other.groups) allGroups.push(...other.groups);
-      for (let g = 1; g <= 4; g++) {
-        if ((other as any)[`hasArrivedG${g}`]) (merged as any)[`hasArrivedG${g}`] = true;
-      }
-    }
-    merged.novedades = allNovedades;
-    merged.groups = allGroups;
-    merged.department = undefined;
-    return merged;
+    return mergeLogs(allLogs);
   }, [activeDepartment, activeFeat.dailyLogs, popupEditDate]);
 
   const polygonGroups = useMemo(() => {

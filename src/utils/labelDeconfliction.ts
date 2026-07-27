@@ -285,10 +285,20 @@ function buildHtmlLabels(
         let recoveredCount = 0;
 
         statLogs.forEach((l) => {
-          prehospitalCount += (parseInt(l.prehospitalCareCount || "0", 10) || 0) + (parseInt(l.prehospitalCareCount2 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount3 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount4 || "0", 10) || 0);
-          transfersCount += (parseInt(l.transfersCount || "0", 10) || 0) + (parseInt(l.transfersCount2 || "0", 10) || 0) + (parseInt(l.transfersCount3 || "0", 10) || 0) + (parseInt(l.transfersCount4 || "0", 10) || 0);
-          rescuedCount += (parseInt(l.rescuedCount || "0", 10) || 0) + (parseInt(l.rescuedCount2 || "0", 10) || 0) + (parseInt(l.rescuedCount3 || "0", 10) || 0) + (parseInt(l.rescuedCount4 || "0", 10) || 0);
-          recoveredCount += (parseInt(l.recoveredCount || "0", 10) || 0) + (parseInt(l.recoveredCount2 || "0", 10) || 0) + (parseInt(l.recoveredCount3 || "0", 10) || 0) + (parseInt(l.recoveredCount4 || "0", 10) || 0);
+          const groups = getNormalizedGroupList(l);
+          for (const g of groups) {
+            rescuedCount += parseInt(g.rescuedCount || "0", 10) || 0;
+            recoveredCount += parseInt(g.recoveredCount || "0", 10) || 0;
+            transfersCount += parseInt(g.transfersCount || "0", 10) || 0;
+            prehospitalCount += parseInt(g.prehospitalCareCount || "0", 10) || 0;
+          }
+          // Fallback: if no groups, read flat fields
+          if (groups.length === 0) {
+            prehospitalCount += (parseInt(l.prehospitalCareCount || "0", 10) || 0) + (parseInt(l.prehospitalCareCount2 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount3 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount4 || "0", 10) || 0);
+            transfersCount += (parseInt(l.transfersCount || "0", 10) || 0) + (parseInt(l.transfersCount2 || "0", 10) || 0) + (parseInt(l.transfersCount3 || "0", 10) || 0) + (parseInt(l.transfersCount4 || "0", 10) || 0);
+            rescuedCount += (parseInt(l.rescuedCount || "0", 10) || 0) + (parseInt(l.rescuedCount2 || "0", 10) || 0) + (parseInt(l.rescuedCount3 || "0", 10) || 0) + (parseInt(l.rescuedCount4 || "0", 10) || 0);
+            recoveredCount += (parseInt(l.recoveredCount || "0", 10) || 0) + (parseInt(l.recoveredCount2 || "0", 10) || 0) + (parseInt(l.recoveredCount3 || "0", 10) || 0) + (parseInt(l.recoveredCount4 || "0", 10) || 0);
+          }
         });
 
         const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0;

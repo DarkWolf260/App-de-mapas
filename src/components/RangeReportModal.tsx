@@ -21,6 +21,7 @@ import {
   REPORT_START_DATE,
   emptyLog,
   getPeriodStats,
+  mergeLogs,
 } from "../utils/logUtils";
 
 interface RangeReportModalProps {
@@ -214,32 +215,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     const logs = pt.dailyLogs?.filter(
       (l) => l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department),
     ) || [];
-    if (logs.length === 0) return emptyLog(dateStr, activeDepartment === "mixto" ? undefined : activeDepartment);
-    if (logs.length === 1) return logs[0];
-
-    // Mixto: merge all department logs for this date
-    const merged: DailyLog = { ...logs[0] };
-    const allNovedades = [...(merged.novedades || [])];
-    const allGroups = [...(merged.groups || [])];
-
-    for (let i = 1; i < logs.length; i++) {
-      const other = logs[i];
-      merged.rescuedCount = String((parseInt(merged.rescuedCount || "0") || 0) + (parseInt(other.rescuedCount || "0") || 0));
-      merged.recoveredCount = String((parseInt(merged.recoveredCount || "0") || 0) + (parseInt(other.recoveredCount || "0") || 0));
-      merged.rescuedPetsCount = String((parseInt(merged.rescuedPetsCount || "0") || 0) + (parseInt(other.rescuedPetsCount || "0") || 0));
-      merged.prehospitalCareCount = String((parseInt(merged.prehospitalCareCount || "0") || 0) + (parseInt(other.prehospitalCareCount || "0") || 0));
-      merged.transfersCount = String((parseInt(merged.transfersCount || "0") || 0) + (parseInt(other.transfersCount || "0") || 0));
-      if (other.novedades) allNovedades.push(...other.novedades);
-      if (other.groups) allGroups.push(...other.groups);
-      // Merge arrival flags: if any log has it, set it
-      for (let g = 1; g <= 4; g++) {
-        if ((other as any)[`hasArrivedG${g}`]) (merged as any)[`hasArrivedG${g}`] = true;
-      }
-    }
-    merged.novedades = allNovedades;
-    merged.groups = allGroups;
-    merged.department = undefined;
-    return merged;
+    return mergeLogs(logs) || emptyLog(dateStr, activeDepartment === "mixto" ? undefined : activeDepartment);
   };
 
   const activePoints = useMemo(() => {

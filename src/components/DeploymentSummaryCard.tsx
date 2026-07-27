@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
-import type { DrawnFeature, DepartmentView, DailyLog } from "../types";
-import { getTotalPersonnel, getNormalizedGroupList } from "../utils/logUtils";
+import type { DrawnFeature, DepartmentView } from "../types";
+import { getTotalPersonnel, getNormalizedGroupList, mergeLogs } from "../utils/logUtils";
 import { LayoutDashboard, Users, MapPin, Tag, X, BarChart2, List } from "lucide-react";
 
 interface DeploymentSummaryCardProps {
@@ -36,31 +36,13 @@ interface TeamEntry {
 
 type ViewMode = "sitios" | "equipos";
 
-function getMergedLog(logs: DailyLog[]): DailyLog | null {
-  if (logs.length === 0) return null;
-  if (logs.length === 1) return logs[0];
-  const merged: DailyLog = { ...logs[0] };
-  const allGroups = [...(merged.groups || [])];
-  for (let i = 1; i < logs.length; i++) {
-    if (logs[i].groups) allGroups.push(...logs[i].groups);
-    // Merge arrival flags: if any log has the flag, set it
-    for (let g = 1; g <= 4; g++) {
-      const key = `hasArrivedG${g}` as keyof DailyLog;
-      if (logs[i][key]) (merged as any)[key] = true;
-    }
-  }
-  merged.groups = allGroups;
-  merged.department = undefined;
-  return merged;
-}
-
 function computeActivePoints(drawnFeatures: DrawnFeature[], targetDate: string, activeDepartment?: DepartmentView): ActivePoint[] {
   return drawnFeatures
     .map((f) => {
       const logs = f.dailyLogs?.filter((l) =>
         l.date === targetDate && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
       ) || [];
-      const log = getMergedLog(logs);
+      const log = mergeLogs(logs);
       if (!log) return null;
       const totalOff = getTotalPersonnel(log);
       const groupList = getNormalizedGroupList(log);
@@ -78,7 +60,7 @@ function computeTeams(drawnFeatures: DrawnFeature[], targetDate: string, activeD
     const logs = f.dailyLogs?.filter((l) =>
       l.date === targetDate && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
     ) || [];
-    const log = getMergedLog(logs);
+    const log = mergeLogs(logs);
     if (!log) return;
     const color = f.color || "#22c55e";
     const groupList = getNormalizedGroupList(log);
