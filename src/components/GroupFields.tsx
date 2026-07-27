@@ -2,55 +2,6 @@ import React from "react";
 import { BookUser } from "lucide-react";
 import type { DailyLog, WorkGroup } from "../types";
 
-type DailyLogKey = keyof DailyLog;
-
-interface GroupFieldDef {
-  key: DailyLogKey;
-  placeholder: string;
-  type?: string;
-  min?: string;
-}
-
-const GROUP1_FIELDS_ROW1: [GroupFieldDef, GroupFieldDef] = [
-  { key: "groupName", placeholder: "Nombre Grupo" },
-  { key: "unitOut", placeholder: "Unidad (Vehículo)" },
-];
-
-const GROUP1_FIELDS_ROW2: [GroupFieldDef, GroupFieldDef] = [
-  { key: "managerName", placeholder: "Encargado" },
-  { key: "officersCount", placeholder: "Cant. Funcs.", type: "number", min: "0" },
-];
-
-const GROUP2_FIELDS_ROW1: [GroupFieldDef, GroupFieldDef] = [
-  { key: "groupName2", placeholder: "Nombre Grupo 2" },
-  { key: "unitOut2", placeholder: "Unidad 2 (Vehículo)" },
-];
-
-const GROUP2_FIELDS_ROW2: [GroupFieldDef, GroupFieldDef] = [
-  { key: "managerName2", placeholder: "Encargado 2" },
-  { key: "officersCount2", placeholder: "Cant. Funcs.", type: "number", min: "0" },
-];
-
-const GROUP3_FIELDS_ROW1: [GroupFieldDef, GroupFieldDef] = [
-  { key: "groupName3", placeholder: "Nombre Grupo 3" },
-  { key: "unitOut3", placeholder: "Unidad 3 (Vehículo)" },
-];
-
-const GROUP3_FIELDS_ROW2: [GroupFieldDef, GroupFieldDef] = [
-  { key: "managerName3", placeholder: "Encargado 3" },
-  { key: "officersCount3", placeholder: "Cant. Funcs.", type: "number", min: "0" },
-];
-
-const GROUP4_FIELDS_ROW1: [GroupFieldDef, GroupFieldDef] = [
-  { key: "groupName4", placeholder: "Nombre Grupo 4" },
-  { key: "unitOut4", placeholder: "Unidad 4 (Vehículo)" },
-];
-
-const GROUP4_FIELDS_ROW2: [GroupFieldDef, GroupFieldDef] = [
-  { key: "managerName4", placeholder: "Encargado 4" },
-  { key: "officersCount4", placeholder: "Cant. Funcs.", type: "number", min: "0" },
-];
-
 interface GroupFieldsProps {
   groupIndex: number;
   log: Partial<DailyLog>;
@@ -63,101 +14,38 @@ interface GroupFieldsProps {
   headerStyle?: React.CSSProperties;
 }
 
-function GridRow({ fields, log, onFieldChange, inputStyle }: {
-  fields: [GroupFieldDef, GroupFieldDef];
-  log: Partial<DailyLog>;
-  onFieldChange: (field: string, value: string | boolean) => void;
-  inputStyle: React.CSSProperties;
-}) {
-  const [left, right] = fields;
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "4px" }}>
-      <input
-        type={left.type || "text"}
-        min={left.min}
-        placeholder={left.placeholder}
-        value={(log[left.key] as string) || ""}
-        onChange={(e) => onFieldChange(left.key, e.target.value)}
-        style={inputStyle}
-      />
-      <input
-        type={right.type || "text"}
-        min={right.min}
-        placeholder={right.placeholder}
-        value={(log[right.key] as string) || ""}
-        onChange={(e) => onFieldChange(right.key, e.target.value)}
-        style={inputStyle}
-      />
-    </div>
-  );
-}
-
 export const GroupFields: React.FC<GroupFieldsProps> = ({
   groupIndex,
   log,
   onFieldChange,
-  colorVar,
+  _colorVar,
   workGroups = [],
   hideHeader = false,
   style,
-  inputStyle: inputStyleProp,
-  headerStyle: headerStyleProp,
+  inputStyle: _inputStyleProp,
+  headerStyle: _headerStyleProp,
 }) => {
   const idxStr = groupIndex > 1 ? String(groupIndex) : "";
-
-  const fieldsRow1: [GroupFieldDef, GroupFieldDef] = [
-    { key: (`groupName${idxStr}`) as keyof DailyLog, placeholder: groupIndex === 1 ? "Nombre Grupo" : `Nombre Grupo ${groupIndex}` },
-    { key: (`unitOut${idxStr}`) as keyof DailyLog, placeholder: groupIndex === 1 ? "Unidad (Vehículo)" : `Unidad ${groupIndex} (Vehículo)` },
-  ];
-
-  const fieldsRow2: [GroupFieldDef, GroupFieldDef] = [
-    { key: (`managerName${idxStr}`) as keyof DailyLog, placeholder: groupIndex === 1 ? "Encargado" : `Encargado ${groupIndex}` },
-    { key: (`officersCount${idxStr}`) as keyof DailyLog, placeholder: "Cant. Funcs.", type: "number", min: "0" },
-  ];
 
   const phoneKey = (`managerPhone${idxStr}`) as keyof DailyLog;
   const nameKey = (`groupName${idxStr}`) as keyof DailyLog;
   const mgrKey = (`managerName${idxStr}`) as keyof DailyLog;
 
-  const headerLabel =
-    groupIndex === 1
-      ? "Grupo Primario"
-      : groupIndex === 2
-      ? "Grupo Secundario"
-      : `Grupo ${groupIndex}`;
+  const fieldsRow1 = [
+    { key: (`groupName${idxStr}`) as keyof DailyLog, placeholder: groupIndex === 1 ? "Nombre Grupo" : `Nombre Grupo ${groupIndex}` },
+    { key: (`unitOut${idxStr}`) as keyof DailyLog, placeholder: groupIndex === 1 ? "Unidad (Vehículo)" : `Unidad ${groupIndex} (Vehículo)` },
+  ] as const;
 
-  const defaultInputStyle: React.CSSProperties = {
-    background: "rgba(0, 0, 0, 0.3)",
-    border: "1px solid var(--border-subtle)",
-    borderRadius: "4px",
-    color: "var(--text-main)",
-    fontSize: "0.62rem",
-    padding: "3px 5px",
-    width: "100%",
-    outline: "none",
-    fontFamily: "inherit",
-  };
-  const inputSt = inputStyleProp || defaultInputStyle;
+  const fieldsRow2 = [
+    { key: (`managerName${idxStr}`) as keyof DailyLog, placeholder: groupIndex === 1 ? "Encargado" : `Encargado ${groupIndex}` },
+    { key: (`officersCount${idxStr}`) as keyof DailyLog, placeholder: "Cant. Funcs.", type: "number", min: "0" },
+  ] as const;
 
-  const defaultHeaderStyle: React.CSSProperties = {
-    fontSize: "0.68rem",
-    fontWeight: 800,
-    color: colorVar,
-    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-    paddingBottom: "4px",
-    marginBottom: "6px",
-    textTransform: "uppercase",
-    letterSpacing: "0.04em",
-  };
-
-  const rescuedKey = (idxStr ? `rescuedCount${idxStr}` : "rescuedCount") as keyof DailyLog;
-  const recoveredKey = (idxStr ? `recoveredCount${idxStr}` : "recoveredCount") as keyof DailyLog;
-  const prehospitalKey = (idxStr ? `prehospitalCareCount${idxStr}` : "prehospitalCareCount") as keyof DailyLog;
-  const transfersKey = (idxStr ? `transfersCount${idxStr}` : "transfersCount") as keyof DailyLog;
+  const headerLabel = `Grupo ${groupIndex}`;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", ...style }}>
-      {!hideHeader && <div style={headerStyleProp || defaultHeaderStyle}>{headerLabel}</div>}
+      {!hideHeader && <div style={_headerStyleProp || { fontSize: "0.68rem", fontWeight: 800, color: _colorVar, borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: "4px", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>{headerLabel}</div>}
       {workGroups && workGroups.length > 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(15, 23, 42, 0.6)", border: "1px solid rgba(56, 189, 248, 0.25)", borderRadius: "5px", padding: "4px 8px", marginBottom: "2px" }}>
           <BookUser size={12} style={{ color: "#38bdf8", flexShrink: 0 }} />

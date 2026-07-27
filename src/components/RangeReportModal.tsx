@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import type { DrawnFeature, DailyLog, DepartmentView, WorkGroup, NovedadEntry, NovedadType } from "../types";
-import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin, List, Layers, FileText, Plus, Pencil, EyeOff } from "lucide-react";
+import { X, Calendar, ShieldAlert, Users, Search, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart2, HeartHandshake, HeartPulse, Ambulance, TrendingUp, MapPin, Layers, FileText, Plus, Pencil, EyeOff } from "lucide-react";
 import { sectionBox } from "./popup/popupStyles";
 import { ConfirmModal } from "./ConfirmModal";
 import { DateRow } from "./DateRow";
@@ -13,7 +13,6 @@ import {
   getDatesRange,
   getGroupData,
   logMatchesArrivalFilter,
-  logHasPersonnel,
   logHasAnyData,
   isSectorFeature,
   getDayStats,
@@ -68,7 +67,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const [showCalendarPopover, setShowCalendarPopover] = useState(false);
   const [novText, setNovText] = useState("");
   const [novTime, setNovTime] = useState(() => new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false }));
-  const [novType, setNovType] = useState<NovedadType>("novedad");
+  const [novType] = useState<NovedadType>("novedad");
     const [confirmDeleteNovedad, setConfirmDeleteNovedad] = useState<TableEntry | null>(null);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editingEntryText, setEditingEntryText] = useState("");
@@ -264,6 +263,52 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     }, 0);
   }, [dates, isAllMode, allFeatures, feat, activeDepartment]);
 
+  interface TableEntry {
+    id: string;
+    time: string;
+    text: string;
+    origin: string;
+    isObservation: boolean;
+    type?: NovedadType;
+    featureId?: number;
+    rawTimestamp?: string;
+    level?: "libro" | "zona" | "punto";
+  }
+
+  const tableEntries = useMemo<TableEntry[]>(() => {
+    const features = isAllMode ? allFeatures : feat ? [feat] : [];
+    const entries: TableEntry[] = [];
+
+    globalNovedades.forEach((n) => {
+      entries.push({ id: n.id, time: n.time, text: n.text, origin: "Bitácora", isObservation: false, type: n.type, rawTimestamp: n.timestamp, level: "libro" });
+    });
+
+    for (const pt of features) {
+      const log = getLogForDate(pt, activeDate);
+      const isSector = isSectorFeature(pt);
+      (log.novedades || []).forEach((n) => {
+        entries.push({ id: n.id, time: n.time, text: n.text, origin: pt.title, isObservation: false, type: n.type, featureId: pt.id, rawTimestamp: n.timestamp, level: isSector ? "zona" : "punto" });
+      });
+      if (isSector && isAllMode) {
+        const containedPts = allFeatures.filter((c) => String(parentsMap[c.id]) === String(pt.id));
+        for (const cPt of containedPts) {
+          const cLog = getLogForDate(cPt, activeDate);
+          (cLog.novedades || []).forEach((n) => {
+            entries.push({ id: n.id, time: n.time, text: n.text, origin: cPt.title, isObservation: false, type: n.type, featureId: cPt.id, rawTimestamp: n.timestamp, level: "punto" });
+          });
+        }
+      }
+    }
+    return entries
+      .filter((e, i, arr) => arr.findIndex((x) => x.id === e.id) === i)
+      .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+  }, [isAllMode, allFeatures, feat, activeDate, activeDepartment, parentsMap, globalNovedades]);
+
+  const singleFeatContainedPts = useMemo(() => {
+    if (!feat || isAllMode || !isSectorFeature(feat)) return [];
+    return allFeatures.filter((c) => String(parentsMap[c.id]) === String(feat.id));
+  }, [feat, isAllMode, allFeatures, parentsMap]);
+
   if (!feat) return null;
 
   const handlePrevDay = () => {
@@ -285,7 +330,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     ) || [];
     const currentLog = logs[0] || emptyLog(activeDate);
 
-    const nowTime = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    const _nowTime = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
 
     let updatedLog: DailyLog;
     if (groupIndex === 1) {
@@ -321,53 +366,6 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     else { setStatsSortKey(key); setStatsSortDir("desc"); }
   };
 
-  const defaultSaveFeature = useMemo(() => {
-    const features = isAllMode ? allFeatures : feat ? [feat] : [];
-    return features[0] || null;
-  }, [isAllMode, allFeatures, feat]);
-
-  interface TableEntry {
-    id: string;
-    time: string;
-    text: string;
-    origin: string;
-    isObservation: boolean;
-    type?: NovedadType;
-    featureId?: number;
-    rawTimestamp?: string;
-    level?: "libro" | "zona" | "punto";
-  }
-
-  const tableEntries = useMemo<TableEntry[]>(() => {
-    const features = isAllMode ? allFeatures : feat ? [feat] : [];
-    const entries: TableEntry[] = [];
-
-    // Novedades globales independientes de la bitácora
-    globalNovedades.forEach((n) => {
-      entries.push({ id: n.id, time: n.time, text: n.text, origin: "Bitácora", isObservation: false, type: n.type, rawTimestamp: n.timestamp, level: "libro" });
-    });
-
-    for (const pt of features) {
-      const log = getLogForDate(pt, activeDate);
-      const isSector = isSectorFeature(pt);
-      (log.novedades || []).forEach((n) => {
-        entries.push({ id: n.id, time: n.time, text: n.text, origin: pt.title, isObservation: false, type: n.type, featureId: pt.id, rawTimestamp: n.timestamp, level: isSector ? "zona" : "punto" });
-      });
-      if (isSector && isAllMode) {
-        const containedPts = allFeatures.filter((c) => String(parentsMap[c.id]) === String(pt.id));
-        for (const cPt of containedPts) {
-          const cLog = getLogForDate(cPt, activeDate);
-          (cLog.novedades || []).forEach((n) => {
-            entries.push({ id: n.id, time: n.time, text: n.text, origin: cPt.title, isObservation: false, type: n.type, featureId: cPt.id, rawTimestamp: n.timestamp, level: "punto" });
-          });
-        }
-      }
-    }
-    return entries
-      .filter((e, i, arr) => arr.findIndex((x) => x.id === e.id) === i)
-      .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
-  }, [isAllMode, allFeatures, feat, activeDate, activeDepartment, parentsMap, globalNovedades]);
-
   const handleAddNovedad = async () => {
     if (!novText.trim() || !onSaveGlobalNovedad) return;
     const now = new Date();
@@ -399,11 +397,6 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     await onSaveDailyLog(pt.id, updatedLog);
     await onRefreshFeatures?.();
   };
-
-  const singleFeatContainedPts = useMemo(() => {
-    if (!feat || isAllMode || !isSectorFeature(feat)) return [];
-    return allFeatures.filter((c) => String(parentsMap[c.id]) === String(feat.id));
-  }, [feat, isAllMode, allFeatures, parentsMap]);
 
   const handleNavigateToEntry = (entry: TableEntry) => {
     if (!entry.featureId || !onNavigateToFeature) return;
@@ -775,7 +768,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                         <tbody>
                           {periodStats.featureStats.filter((fs) => isSectorFeature(fs)).map((fs, idx) => {
                             const containedPoints = (allFeatures || []).filter((c) => String(parentsMap[c.id]) === String(fs.featureId));
-                            const pointsText = containedPoints.map((c) => c.title).join(", ");
+                            const _pointsText = containedPoints.map((c) => c.title).join(", ");
 
                             return (
                               <tr key={fs.featureId} className={idx % 2 === 0 ? "rr-tr-even" : ""}>
@@ -1111,7 +1104,6 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                           ) || [];
                           const log = logs[0];
                           const isEditingThis = activeEditFeatureId === pt.id;
-                          const hasG2 = !!(log?.groupName2 || log?.unitOut2);
 
                           return (
                             <div key={pt.id} className="rr-point-card">

@@ -379,12 +379,13 @@ export function useFeatureDB() {
       const fidStr = String(featureId);
       const deptToUse = log.department || "pc";
 
-      const { data: existingRecords, error: lookupErr } = await supabase
+      const { data: existingRecord, error: lookupErr } = await supabase
         .from("daily_logs")
         .select("id")
         .eq("feature_id", fidStr)
         .eq("date", log.date)
-        .eq("department", deptToUse);
+        .eq("department", deptToUse)
+        .maybeSingle();
 
       if (lookupErr) {
         console.error("[Supabase:save] lookup error:", lookupErr);
@@ -472,17 +473,10 @@ export function useFeatureDB() {
         updated_at: new Date().toISOString(),
       };
 
-      if (existingRecords && existingRecords.length > 0) {
-        const firstId = existingRecords[0].id;
-        const { data: updateData, error: updateErr } = await supabase.from("daily_logs").update(payload).eq("id", firstId).select("id");
+      if (existingRecord?.id) {
+        const { error: updateErr } = await supabase.from("daily_logs").update(payload).eq("id", existingRecord.id);
         if (updateErr) {
-          console.error(`[Supabase:save] UPDATE FAILED for id=${firstId}:`, updateErr);
-        } else if (!updateData || updateData.length === 0) {
-          console.warn(`[Supabase:save] UPDATE silently blocked (RLS?) id=${firstId}`);
-        }
-        if (existingRecords.length > 1) {
-          const extraIds = existingRecords.slice(1).map((r) => r.id);
-          await supabase.from("daily_logs").delete().in("id", extraIds);
+          console.error(`[Supabase:save] UPDATE FAILED for id=${existingRecord.id}:`, updateErr);
         }
       } else {
         const { data: insertData, error: insertErr } = await supabase.from("daily_logs").insert(payload).select("id");

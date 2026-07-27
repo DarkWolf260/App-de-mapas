@@ -60,73 +60,25 @@ export interface NovedadEntry {
   type: NovedadType;
 }
 
-export interface DailyLog {
+type GroupSuffix = "" | "2" | "3" | "4";
+
+type GroupStringFields = {
+  [K in `groupName${GroupSuffix}` | `managerName${GroupSuffix}` | `managerPhone${GroupSuffix}` | `unitOut${GroupSuffix}` | `officersCount${GroupSuffix}` | `rescuedCount${GroupSuffix}` | `recoveredCount${GroupSuffix}` | `rescuedPetsCount${GroupSuffix}` | `prehospitalCareCount${GroupSuffix}` | `transfersCount${GroupSuffix}` | `commissionId${GroupSuffix}`]?: string;
+};
+
+type GroupBoolFields = {
+  [K in `isVolunteer${GroupSuffix}` | `hasArrivedG${"1" | "2" | "3" | "4"}`]?: boolean;
+};
+
+export type DailyLog = {
   date: string;
   department?: Department;
   groups?: GroupLogEntry[];
-
-  groupName?: string;
-  managerName?: string;
-  managerPhone?: string;
-  unitOut?: string;
-  officersCount?: string;
-  rescuedCount?: string;
-  recoveredCount?: string;
-  rescuedPetsCount?: string;
-  prehospitalCareCount?: string;
-  transfersCount?: string;
-  hasArrivedG1?: boolean;
-  commissionId?: string;
-  isVolunteer?: boolean;
-
-  // Group 2
-  groupName2?: string;
-  managerName2?: string;
-  managerPhone2?: string;
-  unitOut2?: string;
-  officersCount2?: string;
-  rescuedCount2?: string;
-  recoveredCount2?: string;
-  rescuedPetsCount2?: string;
-  prehospitalCareCount2?: string;
-  transfersCount2?: string;
-  hasArrivedG2?: boolean;
-  commissionId2?: string;
-  isVolunteer2?: boolean;
-
-  // Group 3
-  groupName3?: string;
-  managerName3?: string;
-  managerPhone3?: string;
-  unitOut3?: string;
-  officersCount3?: string;
-  rescuedCount3?: string;
-  recoveredCount3?: string;
-  rescuedPetsCount3?: string;
-  prehospitalCareCount3?: string;
-  transfersCount3?: string;
-  hasArrivedG3?: boolean;
-  commissionId3?: string;
-  isVolunteer3?: boolean;
-
-  // Group 4
-  groupName4?: string;
-  managerName4?: string;
-  managerPhone4?: string;
-  unitOut4?: string;
-  officersCount4?: string;
-  rescuedCount4?: string;
-  recoveredCount4?: string;
-  rescuedPetsCount4?: string;
-  prehospitalCareCount4?: string;
-  transfersCount4?: string;
-  hasArrivedG4?: boolean;
-  commissionId4?: string;
-  isVolunteer4?: boolean;
-
   observations?: string;
   novedades?: NovedadEntry[];
-}
+} & GroupStringFields & GroupBoolFields;
+
+export type DailyLogIndexed = DailyLog & { [key: string]: string | boolean | GroupLogEntry[] | NovedadEntry[] | undefined };
 
 export interface GeoJSONGeometry {
   type: "Point" | "LineString" | "Polygon";

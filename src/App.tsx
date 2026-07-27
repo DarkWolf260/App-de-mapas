@@ -22,7 +22,7 @@ import { useFeatureOrder } from './hooks/useFeatureOrder';
 import { useGeoJSONIO, ParsedFeature } from './hooks/useGeoJSONIO';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
 import { useWorkGroups } from './hooks/useWorkGroups';
-import type { DepartmentView, DrawnFeature, LayerVisibility, RemoveFeatureId, WorkGroup } from './types';
+import type { DepartmentView, DrawnFeature, LayerVisibility, RemoveFeatureId } from './types';
 import './App.css';
 
 const CATEGORY_COLORS = {
@@ -86,7 +86,7 @@ function App() {
 
   const { hiddenFeatures, handleToggleFeatureVisibility } = useFeatureVisibility();
   const { sortedDrawnFeatures } = useFeatureOrder(drawnFeatures);
-  const { handleImportFeatures } = useGeoJSONIO(null, drawnFeatures, setImportedFeatures);
+  const { handleImportFeatures: _handleImportFeatures } = useGeoJSONIO(null, drawnFeatures, setImportedFeatures);
 
   // Mapeo a Puntos de COE para Sidebar
   const points: MapPoint[] = useMemo(() => {

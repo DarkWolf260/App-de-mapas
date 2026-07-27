@@ -24,14 +24,14 @@ describe("GroupFields", () => {
     vi.clearAllMocks();
   });
 
-  it('renders "Grupo Primario" header when groupIndex=1', () => {
+  it('renders "Grupo 1" header when groupIndex=1', () => {
     render(<GroupFields {...defaultProps} groupIndex={1} />);
-    expect(screen.getByText("Grupo Primario")).toBeInTheDocument();
+    expect(screen.getByText("Grupo 1")).toBeInTheDocument();
   });
 
-  it('renders "Grupo Secundario" header when groupIndex=2', () => {
+  it('renders "Grupo 2" header when groupIndex=2', () => {
     render(<GroupFields {...defaultProps} groupIndex={2} />);
-    expect(screen.getByText("Grupo Secundario")).toBeInTheDocument();
+    expect(screen.getByText("Grupo 2")).toBeInTheDocument();
   });
 
   it("renders correct placeholder texts for group 1", () => {

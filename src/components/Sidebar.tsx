@@ -140,7 +140,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           } else {
             alert('El formato del archivo no es válido.');
           }
-        } catch (err) {
+        } catch {
           alert('Error al leer el archivo JSON.');
         }
       };

@@ -416,8 +416,6 @@ export const useMapSetup = ({
           );
           if (result) {
             const g = (result as any).graphic;
-            const featId = g.attributes?.id || (g as any).uid;
-            const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
             setTooltip({ text: (g.attributes?.title || "Elemento"), x: evt.x, y: evt.y, visible: true });
             return;
           }

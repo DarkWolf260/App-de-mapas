@@ -92,6 +92,7 @@ export type RxDrawnDatabase = RxDatabase<RxDrawnDatabaseCollections>;
 // ── Database Initialization ──────────────────────────────────────────────────
 
 let dbPromise: Promise<RxDrawnDatabase> | null = null;
+let _dbInstance: RxDrawnDatabase | null = null;
 
 export const initDatabase = (): Promise<RxDrawnDatabase> => {
   if (!dbPromise) {
@@ -101,6 +102,7 @@ export const initDatabase = (): Promise<RxDrawnDatabase> => {
         name: "proteccion_civil_db",
         storage: getRxStorageDexie(),
       });
+      _dbInstance = db;
 
       // 2. Add collections
       await db.addCollections({
@@ -253,4 +255,16 @@ export const initDatabase = (): Promise<RxDrawnDatabase> => {
     })();
   }
   return dbPromise;
+};
+
+export const closeDatabase = async (): Promise<void> => {
+  if (_dbInstance) {
+    try {
+      await _dbInstance.destroy();
+    } catch (err) {
+      console.error("RxDB: Destroy failed", err);
+    }
+    _dbInstance = null;
+    dbPromise = null;
+  }
 };

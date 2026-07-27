@@ -1,5 +1,5 @@
 import React from "react";
-import { MapPin, FileText, Clock, Navigation } from "lucide-react";
+import { MapPin, Clock, Navigation } from "lucide-react";
 import type { DrawnFeature, DailyLog, Department, DepartmentView } from "../../types";
 import { getNormalizedGroupList } from "../../utils/logUtils";
 

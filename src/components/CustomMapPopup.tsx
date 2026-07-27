@@ -9,7 +9,6 @@ import { OperationTab } from "./popup/OperationTab";
 import { HistoryTab } from "./popup/HistoryTab";
 import { InfoTab } from "./popup/InfoTab";
 
-import Graphic from "@arcgis/core/Graphic";
 import Point from "@arcgis/core/geometry/Point";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 
@@ -90,7 +89,7 @@ function tabBtnStyle(active: boolean): React.CSSProperties {
 }
 
 export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
-  customPopup, popupScreenPos, drawnFeatures, layerVisibility,
+  customPopup, _popupScreenPos, drawnFeatures, layerVisibility,
   popupEditDate, setPopupEditDate, onSaveDailyLog, onRefreshFeatures,
   onToggleFeatureLock, onRenameFeature, onUpdateFeatureDescription,
   onUpdateFeatureColor, onUpdateFeatureCollapsed, sketchLayer, onClose, onNavigateToFeature,

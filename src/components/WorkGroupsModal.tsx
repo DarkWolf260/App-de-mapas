@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import type { WorkGroup, Department } from "../types";
 import {
-  X, Plus, Edit2, Trash2, Users, Phone, Shield, Flame,
+  X, Edit2, Trash2, Users, Phone, Shield, Flame,
   Truck, FileText, Search, ChevronDown, ChevronUp, Save, Check
 } from "lucide-react";
 
@@ -48,13 +48,6 @@ export const WorkGroupsModal: React.FC<WorkGroupsModalProps> = ({ groups, onSave
       })
       .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
   }, [groups, search, deptFilter]);
-
-  const handleNew = () => {
-    setEditingGroup(null);
-    setFormDraft(EMPTY_DRAFT);
-    setSaved(false);
-    setActiveTab("form");
-  };
 
   const handleEdit = (g: WorkGroup) => {
     setEditingGroup(g);

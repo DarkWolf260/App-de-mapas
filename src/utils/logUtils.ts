@@ -1,4 +1,4 @@
-import type { DailyLog, Department, DepartmentView, FeatureType, DrawnFeature, GroupLogEntry } from "../types";
+import type { DailyLog, Department, DepartmentView, FeatureType, DrawnFeature, GroupLogEntry, DailyLogIndexed } from "../types";
 import { buildParentsMap } from "./spatialUtils";
 
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -71,11 +71,11 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
 
       // Identity fields: read from flat keys only if they have a real value,
       // otherwise fall back to the group object value.
-      const name = (log as any)[`groupName${idxS}`]?.trim() || g.groupName || "";
-      const mgr = (log as any)[`managerName${idxS}`]?.trim() || g.managerName || "";
-      const phone = (log as any)[`managerPhone${idxS}`]?.trim() || g.managerPhone || "";
-      const unit = (log as any)[`unitOut${idxS}`]?.trim() || g.unitOut || "";
-      const officers = (log as any)[`officersCount${idxS}`]?.trim() || g.officersCount || "";
+      const name = (log as DailyLogIndexed)[`groupName${idxS}`]?.trim() || g.groupName || "";
+      const mgr = (log as DailyLogIndexed)[`managerName${idxS}`]?.trim() || g.managerName || "";
+      const phone = (log as DailyLogIndexed)[`managerPhone${idxS}`]?.trim() || g.managerPhone || "";
+      const unit = (log as DailyLogIndexed)[`unitOut${idxS}`]?.trim() || g.unitOut || "";
+      const officers = (log as DailyLogIndexed)[`officersCount${idxS}`]?.trim() || g.officersCount || "";
 
       // Metric fields: ALWAYS come from the group object.
       // The flat rescuedCount/recoveredCount/etc. are GENERAL polygon stats, not Group 1 metrics.
@@ -84,13 +84,13 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
       const pets = g.rescuedPetsCount;
       const prehospital = g.prehospitalCareCount;
       const transfers = g.transfersCount;
-      const arrived = g.hasArrived !== undefined ? !!g.hasArrived : !!(log as any)[`hasArrivedG${slot}`];
-      const flatCommId = (log as any)[`commissionId${idxS}`];
+      const arrived = g.hasArrived !== undefined ? !!g.hasArrived : !!(log as DailyLogIndexed)[`hasArrivedG${slot}`];
+      const flatCommId = (log as DailyLogIndexed)[`commissionId${idxS}`];
       const arrayCommId = g.commissionId;
       const commissionId = (arrayCommId && arrayCommId !== "independiente")
         ? arrayCommId
         : (flatCommId || arrayCommId || "independiente");
-      const isVolunteer = (log as any)[`isVolunteer${idxS}`] !== undefined ? !!(log as any)[`isVolunteer${idxS}`] : g.isVolunteer;
+      const isVolunteer = (log as DailyLogIndexed)[`isVolunteer${idxS}`] !== undefined ? !!(log as DailyLogIndexed)[`isVolunteer${idxS}`] : g.isVolunteer;
 
       const hasData = !!(name?.trim() || officers || unit?.trim() || mgr?.trim() || rescued || recovered || prehospital || transfers);
       if (hasData) {
@@ -116,19 +116,19 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
     let slot = log.groups.length + 1;
     while (slot <= 50) {
       const idxS = String(slot);
-      const name = (log as any)[`groupName${idxS}`];
-      const mgr = (log as any)[`managerName${idxS}`];
-      const phone = (log as any)[`managerPhone${idxS}`];
-      const unit = (log as any)[`unitOut${idxS}`];
-      const officers = (log as any)[`officersCount${idxS}`];
-      const rescued = (log as any)[`rescuedCount${idxS}`];
-      const recovered = (log as any)[`recoveredCount${idxS}`];
-      const pets = (log as any)[`rescuedPetsCount${idxS}`];
-      const prehospital = (log as any)[`prehospitalCareCount${idxS}`];
-      const transfers = (log as any)[`transfersCount${idxS}`];
-      const arrived = (log as any)[`hasArrivedG${slot}`];
-      const commissionId = (log as any)[`commissionId${idxS}`];
-      const isVolunteer = (log as any)[`isVolunteer${idxS}`];
+      const name = (log as DailyLogIndexed)[`groupName${idxS}`];
+      const mgr = (log as DailyLogIndexed)[`managerName${idxS}`];
+      const phone = (log as DailyLogIndexed)[`managerPhone${idxS}`];
+      const unit = (log as DailyLogIndexed)[`unitOut${idxS}`];
+      const officers = (log as DailyLogIndexed)[`officersCount${idxS}`];
+      const rescued = (log as DailyLogIndexed)[`rescuedCount${idxS}`];
+      const recovered = (log as DailyLogIndexed)[`recoveredCount${idxS}`];
+      const pets = (log as DailyLogIndexed)[`rescuedPetsCount${idxS}`];
+      const prehospital = (log as DailyLogIndexed)[`prehospitalCareCount${idxS}`];
+      const transfers = (log as DailyLogIndexed)[`transfersCount${idxS}`];
+      const arrived = (log as DailyLogIndexed)[`hasArrivedG${slot}`];
+      const commissionId = (log as DailyLogIndexed)[`commissionId${idxS}`];
+      const isVolunteer = (log as DailyLogIndexed)[`isVolunteer${idxS}`];
 
       const hasData = !!(name?.trim() || officers || unit?.trim() || mgr?.trim() || rescued || recovered || prehospital || transfers);
       if (hasData) {
@@ -179,19 +179,19 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
     let slot = 1;
     while (slot <= 50) {
       const idxS = slot > 1 ? String(slot) : "";
-      const name = (log as any)[`groupName${idxS}`];
-      const mgr = (log as any)[`managerName${idxS}`];
-      const phone = (log as any)[`managerPhone${idxS}`];
-      const unit = (log as any)[`unitOut${idxS}`];
-      const officers = (log as any)[`officersCount${idxS}`];
-      const rescued = (log as any)[`rescuedCount${idxS}`] || (log as any)[`rescuedCount${slot}`];
-      const recovered = (log as any)[`recoveredCount${idxS}`] || (log as any)[`recoveredCount${slot}`];
-      const pets = (log as any)[`rescuedPetsCount${idxS}`] || (log as any)[`rescuedPetsCount${slot}`];
-      const prehospital = (log as any)[`prehospitalCareCount${idxS}`] || (log as any)[`prehospitalCareCount${slot}`];
-      const transfers = (log as any)[`transfersCount${idxS}`] || (log as any)[`transfersCount${slot}`];
-      const arrived = (log as any)[`hasArrivedG${slot}`];
-      const commissionId = (log as any)[`commissionId${idxS}`];
-      const isVolunteer = (log as any)[`isVolunteer${idxS}`];
+      const name = (log as DailyLogIndexed)[`groupName${idxS}`];
+      const mgr = (log as DailyLogIndexed)[`managerName${idxS}`];
+      const phone = (log as DailyLogIndexed)[`managerPhone${idxS}`];
+      const unit = (log as DailyLogIndexed)[`unitOut${idxS}`];
+      const officers = (log as DailyLogIndexed)[`officersCount${idxS}`];
+      const rescued = (log as DailyLogIndexed)[`rescuedCount${idxS}`] || (log as DailyLogIndexed)[`rescuedCount${slot}`];
+      const recovered = (log as DailyLogIndexed)[`recoveredCount${idxS}`] || (log as DailyLogIndexed)[`recoveredCount${slot}`];
+      const pets = (log as DailyLogIndexed)[`rescuedPetsCount${idxS}`] || (log as DailyLogIndexed)[`rescuedPetsCount${slot}`];
+      const prehospital = (log as DailyLogIndexed)[`prehospitalCareCount${idxS}`] || (log as DailyLogIndexed)[`prehospitalCareCount${slot}`];
+      const transfers = (log as DailyLogIndexed)[`transfersCount${idxS}`] || (log as DailyLogIndexed)[`transfersCount${slot}`];
+      const arrived = (log as DailyLogIndexed)[`hasArrivedG${slot}`];
+      const commissionId = (log as DailyLogIndexed)[`commissionId${idxS}`];
+      const isVolunteer = (log as DailyLogIndexed)[`isVolunteer${idxS}`];
 
       const hasData = !!(name?.trim() || officers || unit?.trim() || mgr?.trim() || rescued || recovered || prehospital || transfers);
       if (hasData) {
@@ -442,7 +442,7 @@ export function mergeLogs(logs: DailyLog[]): DailyLog | null {
     if (other.novedades) allNovedades.push(...other.novedades);
     if (other.groups) allGroups.push(...other.groups);
     for (let g = 1; g <= 4; g++) {
-      if ((other as any)[`hasArrivedG${g}`]) (merged as any)[`hasArrivedG${g}`] = true;
+      if ((other as DailyLogIndexed)[`hasArrivedG${g}`]) (merged as DailyLogIndexed)[`hasArrivedG${g}`] = true;
     }
   }
   merged.novedades = allNovedades;
@@ -862,7 +862,7 @@ export function getPeriodStats(
       const groupList = getNormalizedGroupList(log).filter((g) => g.groupName.trim());
       if (groupList.length === 0) continue;
 
-      const hasMultipleGroups = groupList.length > 1;
+      const _hasMultipleGroups = groupList.length > 1;
 
       // Log-level group classification strictly following point configuration commissionId
       const logCommBuckets = new Map<string, GroupLogEntry[]>();

@@ -96,7 +96,7 @@ function computeScreenLabels(
   const screenLabels = candidateLabels.map((lbl) => {
     const screenPt = lbl.geometry ? view.toScreen(lbl.geometry as any) : null;
     const pid = lbl.attributes?.parentId;
-    const isPolygonLabel = lbl.attributes?.isPolygonLabel;
+    const _isPolygonLabel = lbl.attributes?.isPolygonLabel;
     let priority = 2;
     let hasPersonnel = false;
 
@@ -211,7 +211,7 @@ function buildHtmlLabels(
   screenLabels.forEach((item) => {
     const lbl = item.graphic;
     const pid = lbl.attributes?.parentId;
-    const isPolygonLabel = lbl.attributes?.isPolygonLabel;
+    const _isPolygonLabel = lbl.attributes?.isPolygonLabel;
     const todayStr = dateStr;
     const feat = (refs.drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
     let title = feat ? feat.title : (lbl.symbol as TextSymbol)?.text || "";

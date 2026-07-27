@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import type { DailyLog, DepartmentView, WorkGroup } from "../types";
 import { Save, Check, Shield, Flame, BookUser, Users, FileText, Plus, Trash2 } from "lucide-react";
 import { GroupFields } from "./GroupFields";
-import { inputStyle, labelStyle, sectionBox, saveBtnStyle } from "./popup/popupStyles";
+import { inputStyle, sectionBox, saveBtnStyle } from "./popup/popupStyles";
 
 interface GroupLogFormProps {
   draft: DailyLog;
@@ -154,7 +154,7 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
       {/* GRUPO 1 */}
       <div style={{ ...sectionBox, background: "rgba(34, 197, 94, 0.04)", borderColor: "rgba(34, 197, 94, 0.2)" }}>
         <div style={{ fontSize: "0.62rem", fontWeight: 700, color: getGroupColor(1), paddingBottom: "2px", marginBottom: "2px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "4px" }}>
-          <Users size={10} /> Grupo Primario
+          <Users size={10} /> Grupo 1
         </div>
         <GroupFields
           groupIndex={1}

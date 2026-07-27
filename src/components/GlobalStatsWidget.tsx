@@ -16,7 +16,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
   drawnFeatures,
   selectedDate,
   activeDepartment = "pc",
-  showSidebar = false,
+  _showSidebar = false,
   showAccumulated = false,
   onToggleAccumulated,
 }) => {

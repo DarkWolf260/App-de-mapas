@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Copy, Check, Edit3, Users, Activity, AlertTriangle, Link2, Unlink, Save, FileText, Plus, X, Pencil } from "lucide-react";
+import { Copy, Check, Edit3, Users, Activity, Link2, Unlink, Save, FileText, Plus, X, Pencil } from "lucide-react";
 import type { DrawnFeature, DailyLog, GroupLogEntry, NovedadEntry, DepartmentView } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
 import { getNormalizedGroupList, mergeLogs } from "../../utils/logUtils";

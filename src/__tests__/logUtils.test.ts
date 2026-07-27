@@ -15,7 +15,6 @@ import {
   isSectorFeature,
   REPORT_START_DATE,
 } from "../utils/logUtils";
-import type { DailyLog } from "../types";
 
 describe("formatDateFriendly", () => {
   it("returns '15 Jul' for 2026-07-15", () => {

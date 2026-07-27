@@ -1,7 +1,7 @@
 import React from "react";
 import { Save, Plus, Trash2, Calendar, Shield, Flame, Users, FileText } from "lucide-react";
 import type { DailyLog, DepartmentView, Department, WorkGroup } from "../../types";
-import { inputStyle, labelStyle, sectionBox, saveBtnStyle } from "./popupStyles";
+import { inputStyle, sectionBox, saveBtnStyle } from "./popupStyles";
 import { GroupFields } from "../GroupFields";
 
 interface OperationTabProps {
@@ -23,8 +23,8 @@ export const OperationTab: React.FC<OperationTabProps> = ({
   localLog,
   popupEditDate,
   setPopupEditDate,
-  showSecondGroup,
-  setShowSecondGroup,
+  _showSecondGroup,
+  _setShowSecondGroup,
   onFieldChange,
   onSave,
   saveSuccess,
@@ -65,15 +65,6 @@ export const OperationTab: React.FC<OperationTabProps> = ({
 
   const GROUP_COLORS = ["var(--color-info)", "var(--color-purple)", "#c084fc", "#fb923c", "#38bdf8", "#4ade80", "#f43f5e", "#a855f7"];
   const getGroupColor = (idx: number) => GROUP_COLORS[(idx - 1) % GROUP_COLORS.length];
-
-  const groupHeaderStyle = (color: string): React.CSSProperties => ({
-    fontSize: "0.62rem",
-    fontWeight: 700,
-    color,
-    borderBottom: "1px solid rgba(255,255,255,0.05)",
-    paddingBottom: "2px",
-    marginBottom: "2px",
-  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px", height: "100%" }}>
@@ -168,7 +159,7 @@ export const OperationTab: React.FC<OperationTabProps> = ({
                   </div>
                 ) : (
                   <div style={{ fontSize: "0.63rem", fontWeight: 700, color, paddingBottom: "2px", marginBottom: "2px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "4px" }}>
-                    <Users size={9} /> Grupo Primario
+                    <Users size={9} /> Grupo 1
                   </div>
                 )}
                 <GroupFields

@@ -71,7 +71,7 @@ interface SwipeComparisonProps {
   showSidebar?: boolean;
 }
 
-export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose }) => {
+export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose: _onClose }) => {
   const [warning, setWarning] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [layerVis, setLayerVis] = useState<Record<string, boolean>>({ cogA: false, cogB: true, cogC: false, cogD: false });
