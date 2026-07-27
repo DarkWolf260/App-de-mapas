@@ -112,7 +112,6 @@ export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDail
             saving={saving}
             saved={saved}
             activeDepartment={activeDepartment}
-            workGroups={workGroups}
           />
         </div>
       )}

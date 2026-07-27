@@ -33,7 +33,7 @@ interface MapComponentProps {
 }
   
   const MapComponent: React.FC<MapComponentProps> = (props) => {
-    const { layerVisibility, drawnFeatures, onZoomToFeature, showSidebar = false, actions, ui } = props;
+    const { layerVisibility, drawnFeatures, onZoomToFeature, actions, ui } = props;
     const {
       onSaveDailyLog,
       onToggleFeatureLock,
@@ -74,7 +74,19 @@ interface MapComponentProps {
     handleDeleteSelected,
     handleToggleEditMode,
     handleColorChange,
-  } = useMapSetup(props);
+  } = useMapSetup({
+    ...props,
+    selectedDate: ui.selectedDate,
+    onFeatureAdded: actions.onFeatureAdded,
+    onFeatureDeleted: actions.onFeatureDeleted,
+    activeDepartment: ui.activeDepartment,
+    onFeatureClick: ui.onFeatureClick,
+    showAccumulated: ui.showAccumulated,
+    showPoints: ui.showPoints,
+    showAreas: ui.showAreas,
+    sidebarOpen: ui.sidebarOpen,
+    bitacoraOpen: ui.bitacoraOpen,
+  });
 
   const handleNavigateToFeature = React.useCallback((feat: DrawnFeature) => {
     let mapPoint: Point | null = null;
@@ -112,7 +124,7 @@ interface MapComponentProps {
     return toolbarPos.y + 60 > vh / 2 ? "top" : "bottom";
   })();
 
-  const displayX = (showSidebar && toolbarPos.x < 380) ? 396 : Math.max(16, toolbarPos.x);
+  const displayX = (ui.showSidebar && toolbarPos.x < 380) ? 396 : Math.max(16, toolbarPos.x);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
@@ -304,7 +316,7 @@ interface MapComponentProps {
 
       {/* Satellite Swipe Comparison */}
       {swipeActive && viewRef.current && (
-        <SwipeComparison view={viewRef.current} onClose={deactivateSwipe} showSidebar={showSidebar} />
+        <SwipeComparison view={viewRef.current} onClose={deactivateSwipe} />
       )}
 
       {/* Floating comparison toggle button — bottom-left */}

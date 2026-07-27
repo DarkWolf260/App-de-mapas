@@ -531,8 +531,8 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
-      {/* Reportes de Hoy - solo para puntos con datos */}
-      {!isPolygon && pointHasMetrics && (
+      {/* Reportes de Hoy - solo para puntos con datos y sin grupos */}
+      {!isPolygon && pointHasMetrics && pointGroups.length === 0 && (
         <div style={sectionBox}>
           <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
             <Activity size={10} /> Reportes de Hoy

@@ -68,7 +68,6 @@ type LayerStatus = "idle" | "loading" | "ok" | "error";
 interface SwipeComparisonProps {
   view: MapView;
   onClose: () => void;
-  showSidebar?: boolean;
 }
 
 export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose: _onClose }) => {

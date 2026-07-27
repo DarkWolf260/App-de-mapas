@@ -1075,7 +1075,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
 
                               {isEditingThis && (
                                 <div className="rr-point-edit-zone">
-                                  <InlineRowEditor dateStr={activeDate} log={log} feat={pt} onSaveDailyLog={onSaveDailyLog} onCloseEditor={() => setActiveEditFeatureId(null)} workGroups={workGroups} />
+                                  <InlineRowEditor dateStr={activeDate} log={log} feat={pt} onSaveDailyLog={onSaveDailyLog} onCloseEditor={() => setActiveEditFeatureId(null)} />
                                 </div>
                               )}
                             </div>
@@ -1128,7 +1128,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
 
                               {isEditingThis && (
                                 <div className="rr-point-edit-zone">
-                                  <InlineRowEditor dateStr={activeDate} log={log} feat={pt} onSaveDailyLog={onSaveDailyLog} onCloseEditor={() => setActiveEditFeatureId(null)} workGroups={workGroups} />
+                                  <InlineRowEditor dateStr={activeDate} log={log} feat={pt} onSaveDailyLog={onSaveDailyLog} onCloseEditor={() => setActiveEditFeatureId(null)} />
                                 </div>
                               )}
                             </div>
@@ -1182,7 +1182,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                       l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
                     ) || [];
                     const log = logs[0];
-                    return <DateRow key={dateStr} dateStr={dateStr} log={log} feat={feat} onSaveDailyLog={onSaveDailyLog} activeDepartment={activeDepartment} workGroups={workGroups} />;
+                    return <DateRow key={dateStr} dateStr={dateStr} log={log} feat={feat} onSaveDailyLog={onSaveDailyLog} activeDepartment={activeDepartment} />;
                   })
                 )}
                 {singleFeatContainedPts.length > 0 && (

@@ -16,7 +16,6 @@ interface OperationTabProps {
   activeDepartment?: DepartmentView;
   selectedDept?: Department;
   onDepartmentSelect?: (dept: Department) => void;
-  workGroups?: WorkGroup[];
 }
 
 export const OperationTab: React.FC<OperationTabProps> = ({
@@ -31,7 +30,6 @@ export const OperationTab: React.FC<OperationTabProps> = ({
   activeDepartment,
   selectedDept = "pc",
   onDepartmentSelect,
-  workGroups = [],
 }) => {
   const groupsArray = localLog.groups || [];
   const [activeGroupCount, setActiveGroupCount] = React.useState<number>(() => Math.max(1, groupsArray.length || 1));
@@ -160,7 +158,6 @@ export const OperationTab: React.FC<OperationTabProps> = ({
                   onGroupFieldChange={handleGroupFieldChange}
                   colorVar={color}
                   hideHeader={i > 0}
-                  workGroups={workGroups}
                 />
               </div>
             );
