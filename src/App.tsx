@@ -322,6 +322,8 @@ function App() {
           showAccumulated={showAccumulated}
           showPoints={showPoints}
           showAreas={showAreas}
+          sidebarOpen={!sidebarCollapsed}
+          bitacoraOpen={rangeReportFeature !== null}
           workGroups={workGroups}
         />
       </div>

@@ -38,6 +38,8 @@ export interface UseMapSetupProps {
   showAccumulated?: boolean;
   showPoints?: boolean;
   showAreas?: boolean;
+  sidebarOpen?: boolean;
+  bitacoraOpen?: boolean;
 }
 
 export const useMapSetup = ({
@@ -58,6 +60,8 @@ export const useMapSetup = ({
   showAccumulated,
   showPoints,
   showAreas,
+  sidebarOpen,
+  bitacoraOpen,
 }: UseMapSetupProps) => {
   const mapDiv = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
@@ -113,14 +117,25 @@ export const useMapSetup = ({
   const activeDepartmentRef = useRef(activeDepartment);
   useEffect(() => { activeDepartmentRef.current = activeDepartment; }, [activeDepartment]);
 
-  const showAccumulatedRef = useRef(showAccumulated);
-  useEffect(() => { showAccumulatedRef.current = showAccumulated; }, [showAccumulated]);
+  const showAccumulatedRef = useRef<boolean>(showAccumulated ?? false);
+  useEffect(() => { showAccumulatedRef.current = showAccumulated ?? false; }, [showAccumulated]);
 
   const showPointsRef = useRef(showPoints);
   useEffect(() => { showPointsRef.current = showPoints; }, [showPoints]);
 
   const showAreasRef = useRef(showAreas);
   useEffect(() => { showAreasRef.current = showAreas; }, [showAreas]);
+
+  const sidebarOpenRef = useRef(sidebarOpen);
+  useEffect(() => { sidebarOpenRef.current = sidebarOpen; }, [sidebarOpen]);
+
+  const bitacoraOpenRef = useRef(bitacoraOpen);
+  useEffect(() => { bitacoraOpenRef.current = bitacoraOpen; }, [bitacoraOpen]);
+
+  const getViewPadding = () => ({
+    left: sidebarOpenRef.current ? 380 : 0,
+    right: customPopupRef.current ? 440 : (bitacoraOpenRef.current ? 480 : 0),
+  });
 
   useEffect(() => {
     const layer = sketchLayerRef.current;
@@ -130,7 +145,7 @@ export const useMapSetup = ({
       const pid = g.attributes?.parentId || g.attributes?.id || (g as any).uid;
       const feat = features.find((f) => String(f.id) === String(pid));
       if (!feat) return;
-      const individuallyHidden = hiddenFeaturesRef.current[String(pid)] || hiddenFeaturesRef.current[feat.id];
+      const individuallyHidden = hiddenFeaturesRef.current[String(pid) as any] || hiddenFeaturesRef.current[feat.id];
       if (individuallyHidden) { g.visible = false; return; }
       if (feat.type === "point" && !showPoints) g.visible = false;
       else if ((feat.type === "polygon" || feat.type === "polyline") && !showAreas) g.visible = false;
@@ -141,6 +156,8 @@ export const useMapSetup = ({
 
   const [mapReady, setMapReady] = useState(false);
   const [customPopup, setCustomPopup] = useState<{ mapPoint: Point; feat: DrawnFeature } | null>(null);
+  const customPopupRef = useRef<{ mapPoint: Point; feat: DrawnFeature } | null>(null);
+  useEffect(() => { customPopupRef.current = customPopup; }, [customPopup]);
   const [_showHistoryInPopup, setShowHistoryInPopup] = useState(false);
   const [popupEditDate, setPopupEditDate] = useState(selectedDate);
   const [popupTick, setPopupTick] = useState(0);
@@ -536,7 +553,10 @@ export const useMapSetup = ({
     const layer = sketchLayerRef.current;
     if (zoomToFeature && viewRef.current && layer) {
       const g = layer.graphics.find((x) => (x as any).uid === zoomToFeature.id || x.attributes?.id === zoomToFeature.id);
-      if (g?.geometry) viewRef.current.goTo({ target: g.geometry, zoom: 18 }, { duration: 400 });
+      if (g?.geometry) {
+        const opts: any = { target: g.geometry, ...(zoomToFeature?.type === "point" ? { zoom: 18 } : {}) };
+        viewRef.current.goTo(opts, { duration: 400, padding: getViewPadding() } as any);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- Uses ref.current only
   }, [zoomToFeature]);
@@ -545,7 +565,7 @@ export const useMapSetup = ({
     if (zoomToCoords && viewRef.current) {
       viewRef.current.goTo(
         { center: [zoomToCoords.lon, zoomToCoords.lat], zoom: 16 },
-        { duration: 800, easing: "ease-in-out" },
+        { duration: 800, easing: "ease-in-out", padding: getViewPadding() } as any,
       ).catch(() => {});
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -582,7 +602,7 @@ export const useMapSetup = ({
 
   useEffect(() => {
     if (viewRef.current) {
-      viewRef.current.goTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM }, { duration: 1500, easing: "ease-in-out" });
+      viewRef.current.goTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM }, { duration: 1500, easing: "ease-in-out", padding: getViewPadding() } as any);
     }
   }, [activeCity]);
 

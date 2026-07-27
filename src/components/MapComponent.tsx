@@ -46,6 +46,8 @@ interface MapComponentProps {
   showAccumulated?: boolean;
   showPoints?: boolean;
   showAreas?: boolean;
+  sidebarOpen?: boolean;
+  bitacoraOpen?: boolean;
   onFeatureClick?: () => void;
 }
   
@@ -106,9 +108,15 @@ interface MapComponentProps {
     setCustomPopup({ mapPoint, feat });
     // Also fly the map to the feature's location
     if (viewRef.current) {
-      viewRef.current.goTo({ target: mapPoint, zoom: Math.max(viewRef.current.zoom, 18) }, { duration: 400 });
+      const padding = {
+        left: props.sidebarOpen ? 380 : 0,
+        right: props.bitacoraOpen ? 480 : 440,
+      };
+      const target: any = { target: mapPoint };
+      if (feat.type === "point") target.zoom = Math.max(viewRef.current.zoom, 18);
+      viewRef.current.goTo(target, { duration: 400, padding } as any);
     }
-  }, [setCustomPopup, viewRef]);
+  }, [setCustomPopup, viewRef, props.sidebarOpen, props.bitacoraOpen]);
 
   const handlePopupDateChange = React.useCallback((date: string) => {
     setPopupEditDate(date);
