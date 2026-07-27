@@ -43,6 +43,7 @@ interface MapComponentProps {
   isOperador?: boolean;
   onOpenWorkGroups?: () => void;
   workGroups?: WorkGroup[];
+  showAccumulated?: boolean;
   onFeatureClick?: () => void;
 }
   

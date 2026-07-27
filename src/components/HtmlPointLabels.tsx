@@ -60,7 +60,7 @@ function computePlacement(lbl: HtmlLabel, borderStyle: string): Placement {
 
 export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, onSelectLabel }) => (
   <>
-    {labels.map((lbl) => {
+    {[...labels].sort((a, b) => b.y - a.y).map((lbl) => {
       const borderStyle = `1px solid ${lbl.themeColor ? `${lbl.themeColor}90` : "rgba(56, 189, 248, 0.5)"}`;
       const { top, left, transform, arrowStyle } = computePlacement(lbl, borderStyle);
       const statusColor = lbl.hasArrived ? "#22c55e" : "#f97316";

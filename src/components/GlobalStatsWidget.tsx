@@ -1,13 +1,15 @@
 import React, { useState, useMemo } from "react";
 import type { DrawnFeature, DepartmentView } from "../types";
-import { getNormalizedGroupList } from "../utils/logUtils";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { getPeriodStats, getNormalizedGroupList } from "../utils/logUtils";
+import { ChevronUp, ChevronDown, Clock, Calendar } from "lucide-react";
 
 interface GlobalStatsWidgetProps {
   drawnFeatures: DrawnFeature[];
   selectedDate?: string;
   activeDepartment?: DepartmentView;
   showSidebar?: boolean;
+  showAccumulated?: boolean;
+  onToggleAccumulated?: () => void;
 }
 
 export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
@@ -15,11 +17,13 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
   selectedDate,
   activeDepartment = "pc",
   showSidebar = false,
+  showAccumulated = false,
+  onToggleAccumulated,
 }) => {
   const todayStr = useMemo(() => selectedDate || new Date().toLocaleDateString('en-CA'), [selectedDate]);
 
-  // Compute auto values from map features (ONLY today's logs, filtered by department)
-  const stats = useMemo(() => {
+  // Mode 1: Today's stats
+  const dailyStats = useMemo(() => {
     let rescuedPeople = 0;
     let recoveredBodies = 0;
     let rescuedPets = 0;
@@ -34,7 +38,6 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
       for (const todayLog of todayLogs) {
         const gList = getNormalizedGroupList(todayLog);
         const seenComms = new Set<string>();
-
         for (const g of gList) {
           const cid = g.commissionId || "independiente";
           if (cid !== "independiente") {
@@ -47,8 +50,6 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
           prehospitalCare += parseInt(g.prehospitalCareCount || "0", 10) || 0;
           transfers += parseInt(g.transfersCount || "0", 10) || 0;
         }
-
-        // Fallback: if no groups but flat field has pets, use that
         if (gList.length === 0) {
           rescuedPeople += parseInt(todayLog.rescuedCount || "0", 10) || 0;
           recoveredBodies += parseInt(todayLog.recoveredCount || "0", 10) || 0;
@@ -61,6 +62,20 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
 
     return { rescuedPeople, recoveredBodies, rescuedPets, prehospitalCare, transfers };
   }, [drawnFeatures, todayStr, activeDepartment]);
+
+  // Mode 2: Accumulated totals across ALL dates
+  const periodStats = useMemo(() => {
+    const period = getPeriodStats(drawnFeatures, activeDepartment);
+    return {
+      rescuedPeople: period.totalRescued,
+      recoveredBodies: period.totalRecovered,
+      rescuedPets: period.totalPets,
+      prehospitalCare: period.totalPrehospitalCare,
+      transfers: period.totalTransfers,
+    };
+  }, [drawnFeatures, activeDepartment]);
+
+  const stats = showAccumulated ? periodStats : dailyStats;
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     return localStorage.getItem("pc_stats_widget_collapsed") === "true";
@@ -115,6 +130,33 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
           <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.transfers}</span>
         </div>
       </div>
+
+      {/* Mode toggle */}
+      {onToggleAccumulated && (
+        <button
+          onClick={onToggleAccumulated}
+          title={showAccumulated ? "Cambiar a modo diario" : "Cambiar a modo acumulado"}
+          style={{
+            padding: "2px 8px",
+            borderRadius: "6px",
+            border: `1px solid ${showAccumulated ? "rgba(56,189,248,0.4)" : "rgba(255,255,255,0.12)"}`,
+            background: showAccumulated ? "rgba(56,189,248,0.15)" : "rgba(255,255,255,0.03)",
+            color: showAccumulated ? "#38bdf8" : "var(--text-muted)",
+            cursor: "pointer",
+            fontSize: "0.58rem",
+            fontWeight: 700,
+            display: "flex",
+            alignItems: "center",
+            gap: "3px",
+            transition: "all 0.15s ease",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}
+        >
+          {showAccumulated ? <Calendar size={10} /> : <Clock size={10} />}
+          {showAccumulated ? "Acumulado" : "Hoy"}
+        </button>
+      )}
 
       {/* Slide Toggle Tab */}
       <button

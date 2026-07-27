@@ -35,6 +35,7 @@ export interface UseMapSetupProps {
   zoomToCoords?: { lat: number; lon: number } | null;
   activeDepartment?: DepartmentView;
   onFeatureClick?: () => void;
+  showAccumulated?: boolean;
 }
 
 export const useMapSetup = ({
@@ -52,6 +53,7 @@ export const useMapSetup = ({
   zoomToCoords,
   activeDepartment = "pc",
   onFeatureClick,
+  showAccumulated,
 }: UseMapSetupProps) => {
   const mapDiv = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
@@ -107,6 +109,9 @@ export const useMapSetup = ({
   const activeDepartmentRef = useRef(activeDepartment);
   useEffect(() => { activeDepartmentRef.current = activeDepartment; }, [activeDepartment]);
 
+  const showAccumulatedRef = useRef(showAccumulated);
+  useEffect(() => { showAccumulatedRef.current = showAccumulated; }, [showAccumulated]);
+
   const [mapReady, setMapReady] = useState(false);
   const [customPopup, setCustomPopup] = useState<{ mapPoint: Point; feat: DrawnFeature } | null>(null);
   const [_showHistoryInPopup, setShowHistoryInPopup] = useState(false);
@@ -142,7 +147,7 @@ export const useMapSetup = ({
     const sketchLayer = sketchLayerRef.current;
     const view = viewRef.current;
     if (sketchLayer && view) {
-      deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef, selectedDateRef, activeDepartmentRef }, setHtmlLabels);
+        deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef, selectedDateRef, activeDepartmentRef, showAccumulatedRef }, setHtmlLabels);
     }
   }, []);
 
@@ -209,7 +214,7 @@ export const useMapSetup = ({
       sketchVMRef.current = svm;
 
       const runDeconflict = () => {
-        deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef, selectedDateRef, activeDepartmentRef }, setHtmlLabels);
+      deconflictGraphics(sketchLayer, view, { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef, selectedDateRef, activeDepartmentRef, showAccumulatedRef }, setHtmlLabels);
       };
       deconflictGraphicsRef.current = runDeconflict;
       runDeconflict();

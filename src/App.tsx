@@ -60,6 +60,7 @@ function App() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string; type?: string } | null>(null);
   const [showWorkGroups, setShowWorkGroups] = useState(false);
+  const [showAccumulated, setShowAccumulated] = useState(false);
   const { workGroups, saveWorkGroups: setWorkGroups } = useWorkGroups();
 
   // Conexión con Supabase en tiempo real
@@ -245,12 +246,14 @@ function App() {
       </button>
 
       {/* Widget de Estadísticas de COE */}
-      <GlobalStatsWidget
-        drawnFeatures={sortedDrawnFeatures}
-        selectedDate={selectedDate}
-        activeDepartment={activeDepartment}
-        showSidebar={!sidebarCollapsed}
-      />
+          <GlobalStatsWidget
+            drawnFeatures={sortedDrawnFeatures}
+            selectedDate={selectedDate}
+            activeDepartment={activeDepartment}
+            showSidebar={!sidebarCollapsed}
+            showAccumulated={showAccumulated}
+            onToggleAccumulated={() => setShowAccumulated(!showAccumulated)}
+          />
 
       {/* Buscador Flotante de COE */}
       <FloatingSearchBar
@@ -308,6 +311,7 @@ function App() {
           showSidebar={!sidebarCollapsed}
           isAdmin={isAdmin}
           isOperador={isOperador}
+          showAccumulated={showAccumulated}
           workGroups={workGroups}
         />
       </div>

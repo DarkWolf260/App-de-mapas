@@ -13,6 +13,7 @@ interface DeconflictRefs {
   layerVisibilityRef: React.MutableRefObject<LayerVisibility>;
   selectedDateRef: React.MutableRefObject<string>;
   activeDepartmentRef?: React.MutableRefObject<DepartmentView>;
+  showAccumulatedRef?: React.MutableRefObject<boolean>;
 }
 
 interface ScreenLabel {
@@ -88,8 +89,10 @@ function computeScreenLabels(
   drawnFeaturesRef: DeconflictRefs["drawnFeaturesRef"],
   dateStr: string,
   activeDepartment?: DepartmentView,
+  showAccumulatedRef?: React.MutableRefObject<boolean | undefined>,
 ): ScreenLabel[] {
   const activeDept = activeDepartment;
+  const accMode = showAccumulatedRef?.current === true;
   const screenLabels = candidateLabels.map((lbl) => {
     const screenPt = lbl.geometry ? view.toScreen(lbl.geometry as any) : null;
     const pid = lbl.attributes?.parentId;
@@ -99,15 +102,21 @@ function computeScreenLabels(
 
     const feat = (drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
     if (feat) {
-      const todayLogs = feat.dailyLogs?.filter((l) =>
-        l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
-      ) || [];
-      if (todayLogs.length > 0) {
+      if (accMode) {
         hasPersonnel = feat.dailyLogs?.some((l) =>
-          l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
+          (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
         ) || false;
-        if (hasPersonnel) priority = 1;
+      } else {
+        const todayLogs = feat.dailyLogs?.filter((l) =>
+          l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
+        ) || [];
+        if (todayLogs.length > 0) {
+          hasPersonnel = todayLogs.some((l) =>
+            (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
+          );
+        }
       }
+      if (hasPersonnel) priority = 1;
     }
     return { graphic: lbl, x: screenPt?.x ?? null, y: screenPt?.y ?? null, visible: screenPt !== null, priority, hasPersonnel };
   });
@@ -208,56 +217,74 @@ function buildHtmlLabels(
     let title = feat ? feat.title : (lbl.symbol as TextSymbol)?.text || "";
     let info = "";
 
-    if (feat) {
-      const todayLogs = feat.dailyLogs?.filter((l) =>
-        l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
-      ) || [];
+    const accMode = refs.showAccumulatedRef?.current === true;
 
-      const groupItems: Array<{ name?: string; unit?: string }> = [];
-      for (const todayLog of todayLogs) {
-        const activeGroups = getNormalizedGroupList(todayLog);
-        for (const g of activeGroups) {
-          if (g.groupName?.trim() || g.unitOut?.trim()) {
-            groupItems.push({ name: g.groupName?.trim(), unit: g.unitOut?.trim() });
+    if (feat) {
+      const sourceLogs = accMode
+        ? (feat.dailyLogs?.filter((l) =>
+            activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department
+          ) || [])
+        : (feat.dailyLogs?.filter((l) =>
+            l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
+          ) || []);
+
+      // En modo acumulado, no mostrar nombres de equipos — solo estadísticas
+      if (!accMode) {
+        const refLog = sourceLogs[0];
+        if (refLog) {
+          const activeGroups = getNormalizedGroupList(refLog);
+          const groupItems: Array<{ name?: string; unit?: string }> = [];
+          for (const g of activeGroups) {
+            if (g.groupName?.trim() || g.unitOut?.trim()) {
+              groupItems.push({ name: g.groupName?.trim(), unit: g.unitOut?.trim() });
+            }
+          }
+          if (groupItems.length > 0) {
+            const onlyNames = groupItems.length > 2;
+            const parts = groupItems
+              .map((item) => {
+                if (onlyNames) return item.name || item.unit || "";
+                if (item.name && item.unit) return `${item.name}, ${item.unit}`;
+                return item.name || item.unit || "";
+              })
+              .filter(Boolean);
+            info = parts.join(" | ");
           }
         }
       }
-
-      if (groupItems.length > 0) {
-        const onlyNames = groupItems.length > 2;
-        const parts = groupItems
-          .map((item) => {
-            if (onlyNames) {
-              return item.name || item.unit || "";
-            }
-            if (item.name && item.unit) return `${item.name}, ${item.unit}`;
-            return item.name || item.unit || "";
-          })
-          .filter(Boolean);
-        info = parts.join(" | ");
-      }
     }
 
-    const hasPersonnel = !!feat && (feat.dailyLogs?.some((l) =>
-      l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
-    ) || false);
+    const hasPersonnel = accMode
+      ? (!!feat && (feat.dailyLogs?.some((l) =>
+          (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
+        ) || false))
+      : (!!feat && (feat.dailyLogs?.some((l) =>
+          l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
+        ) || false));
 
     if (hasPersonnel) {
       // La etiqueta gráfica nativa de ESRI siempre se oculta para puntos con personal o estadísticas
       lbl.visible = false;
 
       if (item.visible && item.x !== null && item.y !== null) {
-        const todayLogs = feat?.dailyLogs?.filter((l) =>
-          l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
-        ) || [];
-        const todayLog = todayLogs[0];
+        const statLogs = accMode
+          ? (feat?.dailyLogs?.filter((l) =>
+              activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department
+            ) || [])
+          : (feat?.dailyLogs?.filter((l) =>
+              l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
+            ) || []);
+
+        const refFeatLog = accMode && statLogs.length > 0
+          ? [...statLogs].sort((a, b) => b.date.localeCompare(a.date))[0]
+          : statLogs[0];
 
         let prehospitalCount = 0;
         let transfersCount = 0;
         let rescuedCount = 0;
         let recoveredCount = 0;
 
-        todayLogs.forEach((l) => {
+        statLogs.forEach((l) => {
           prehospitalCount += (parseInt(l.prehospitalCareCount || "0", 10) || 0) + (parseInt(l.prehospitalCareCount2 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount3 || "0", 10) || 0) + (parseInt(l.prehospitalCareCount4 || "0", 10) || 0);
           transfersCount += (parseInt(l.transfersCount || "0", 10) || 0) + (parseInt(l.transfersCount2 || "0", 10) || 0) + (parseInt(l.transfersCount3 || "0", 10) || 0) + (parseInt(l.transfersCount4 || "0", 10) || 0);
           rescuedCount += (parseInt(l.rescuedCount || "0", 10) || 0) + (parseInt(l.rescuedCount2 || "0", 10) || 0) + (parseInt(l.rescuedCount3 || "0", 10) || 0) + (parseInt(l.rescuedCount4 || "0", 10) || 0);
@@ -265,7 +292,7 @@ function buildHtmlLabels(
         });
 
         const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0;
-        const activeGroupsList = todayLog ? getNormalizedGroupList(todayLog) : [];
+        const activeGroupsList = refFeatLog ? getNormalizedGroupList(refFeatLog) : [];
         const hasActiveGroups = activeGroupsList.length > 0;
         const hasArrived = hasActiveGroups ? activeGroupsList.every((g) => !!g.hasArrived) : true;
 
@@ -331,7 +358,7 @@ export function deconflictGraphics(
     });
 
     const dateStr = refs.selectedDateRef.current;
-    const screenLabels = computeScreenLabels(candidateLabels, view, refs.drawnFeaturesRef, dateStr, refs.activeDepartmentRef?.current);
+    const screenLabels = computeScreenLabels(candidateLabels, view, refs.drawnFeaturesRef, dateStr, refs.activeDepartmentRef?.current, refs.showAccumulatedRef);
     const allowOverlapSetting = refs.layerVisibilityRef.current.allowLabelOverlap;
 
     // 1. Las etiquetas sin personal (y polígonos) SIEMPRE se descolisionan (se comportan siempre como si la opción estuviera desactivada)
