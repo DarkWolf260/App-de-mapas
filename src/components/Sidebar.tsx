@@ -59,6 +59,8 @@ interface SidebarProps {
   onToggleShowPoints?: () => void;
   showAreas?: boolean;
   onToggleShowAreas?: () => void;
+  hiddenFeatures?: Record<number, boolean>;
+  onToggleFeatureVisibility?: (id: number) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -76,6 +78,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleShowPoints,
   showAreas = true,
   onToggleShowAreas,
+  hiddenFeatures = {},
+  onToggleFeatureVisibility,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -258,8 +262,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         Colapsado: {point.collapsedCount || "1"}
                       </span>
                     )}
-                    {isAdmin && (
-                      <div className="element-actions" onClick={(e) => e.stopPropagation()}>
+                    <div className="element-actions" onClick={(e) => e.stopPropagation()}>
+                      {onToggleFeatureVisibility && (
+                        <input
+                          type="checkbox"
+                          checked={!hiddenFeatures[Number(point.id)]}
+                          onChange={() => onToggleFeatureVisibility(Number(point.id))}
+                          title={hiddenFeatures[Number(point.id)] ? "Mostrar punto" : "Ocultar punto"}
+                          style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#38bdf8", flexShrink: 0 }}
+                        />
+                      )}
+                      {isAdmin && (
                         <button 
                           className="action-icon-btn" 
                           onClick={() => onDeleteItem(point.id, 'point')}
@@ -267,8 +280,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         >
                           <Trash2 size={14} />
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                   <span className="element-desc">{point.description || 'Sin descripción'}</span>
                   <div className="element-meta">
@@ -304,9 +317,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   style={{ borderLeftColor: area.color }}
                 >
                   <div className="element-header">
-                    <span className="element-name">{area.name}</span>
-                    {isAdmin && (
-                      <div className="element-actions" onClick={(e) => e.stopPropagation()}>
+                     <span className="element-name">{area.name}</span>
+                    <div className="element-actions" onClick={(e) => e.stopPropagation()}>
+                      {onToggleFeatureVisibility && (
+                        <input
+                          type="checkbox"
+                          checked={!hiddenFeatures[Number(area.id)]}
+                          onChange={() => onToggleFeatureVisibility(Number(area.id))}
+                          title={hiddenFeatures[Number(area.id)] ? "Mostrar área" : "Ocultar área"}
+                          style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#38bdf8", flexShrink: 0 }}
+                        />
+                      )}
+                      {isAdmin && (
                         <button 
                           className="action-icon-btn" 
                           onClick={() => onDeleteItem(area.id, 'area')}
@@ -314,8 +336,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         >
                           <Trash2 size={14} />
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                   <span className="element-desc">{area.description || 'Sin descripción'}</span>
                   <div className="element-meta">

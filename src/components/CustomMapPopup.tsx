@@ -2,12 +2,11 @@ import React, { useState, useEffect } from "react";
 import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, Department, WorkGroup } from "../types";
 import { computeContainedItems } from "../utils/spatialUtils";
 import { getNormalizedGroupList } from "../utils/logUtils";
-import { Lock, Unlock, FileText, Settings, History, Layers, Info, X } from "lucide-react";
+import { Lock, Unlock, FileText, Settings, History, Info, X } from "lucide-react";
 import { TAB_BTN_BASE } from "./popup/popupStyles";
 import { GeneralTab } from "./popup/GeneralTab";
 import { OperationTab } from "./popup/OperationTab";
 import { HistoryTab } from "./popup/HistoryTab";
-import { ContainedTab } from "./popup/ContainedTab";
 import { InfoTab } from "./popup/InfoTab";
 
 import Graphic from "@arcgis/core/Graphic";
@@ -143,14 +142,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   }, [activeFeat?.id, popupEditDate, activeDepartment, selectedDept]);
 
   useEffect(() => {
-    if (isAdmin && layerVisibility.sketch) {
-      setActiveTab("general");
-    } else if (canEditLog && !layerVisibility.sketch) {
-      setActiveTab("info");
-    } else {
-      setActiveTab("info");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- activeFeat?.id + type cover all needed resets
+    setActiveTab(isAdmin && layerVisibility.sketch ? "general" : "info");
   }, [activeFeat?.id, activeFeat?.type, layerVisibility.sketch, isAdmin]);
 
   if (!customPopup || !activeFeat) return null;
@@ -332,14 +324,11 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
           {canEditLog && (
             <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
-              <FileText size={12} /> {isPolygon ? "Editar Grupos" : "Editar"}
+              <FileText size={12} /> Editar Grupos
             </button>
           )}
           {isPoint && (
             <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}><History size={12} /> Historial</button>
-          )}
-          {isPolygon && isOperador && (
-            <button onClick={() => setActiveTab("contained")} style={tabBtnStyle(activeTab === "contained")}><Layers size={12} /> Elementos</button>
           )}
         </div>
       )}
@@ -347,9 +336,10 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       {/* Tab Selector — for admin (sketch off) */}
       {isAdmin && !layerVisibility.sketch && (
         <div style={TAB_BAR_STYLE}>
+          <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={12} /> General</button>
           <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
-            <FileText size={12} /> {isPolygon ? "Editar Grupos" : "Editar"}
+            <FileText size={12} /> Editar Grupos
           </button>
           {isPoint && (
             <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}><History size={12} /> Historial</button>
@@ -361,7 +351,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       {isAdmin && isPoint && layerVisibility.sketch && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={12} /> General</button>
-          <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={12} /> Operación</button>
+          <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
+          <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={12} /> Editar Grupos</button>
           <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}><History size={12} /> Historial</button>
         </div>
       )}
@@ -370,8 +361,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       {isAdmin && isPolygon && layerVisibility.sketch && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={12} /> General</button>
+          <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}><FileText size={12} /> Editar Grupos</button>
-          <button onClick={() => setActiveTab("contained")} style={tabBtnStyle(activeTab === "contained")}><Layers size={12} /> Elementos</button>
         </div>
       )}
 
@@ -447,14 +438,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
       {activeTab === "history" && <HistoryTab logs={activeFeat.dailyLogs?.filter((l) => activeDepartment === "mixto" || l.department === activeDepartment || !l.department)} />}
 
-      {activeTab === "contained" && (
-        <ContainedTab
-          features={containedItems}
-          popupEditDate={popupEditDate}
-          activeDepartment={activeDepartment}
-          onNavigateToFeature={onNavigateToFeature}
-        />
-      )}
     </div>
   );
 };

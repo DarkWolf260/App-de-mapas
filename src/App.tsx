@@ -84,7 +84,7 @@ function App() {
     refreshFeatures,
   } = useFeatureDB();
 
-  const { hiddenFeatures } = useFeatureVisibility();
+  const { hiddenFeatures, handleToggleFeatureVisibility } = useFeatureVisibility();
   const { sortedDrawnFeatures } = useFeatureOrder(drawnFeatures);
   const { handleImportFeatures } = useGeoJSONIO(null, drawnFeatures, setImportedFeatures);
 
@@ -282,6 +282,8 @@ function App() {
           onToggleShowPoints={() => setShowPoints(!showPoints)}
           showAreas={showAreas}
           onToggleShowAreas={() => setShowAreas(!showAreas)}
+          hiddenFeatures={hiddenFeatures}
+          onToggleFeatureVisibility={handleToggleFeatureVisibility}
         />
 
       {/* Mapa Principal de ArcGIS con Comportamiento Completo de Puntos y Polígonos */}
