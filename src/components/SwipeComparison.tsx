@@ -3,7 +3,7 @@ import ImageryTileLayer from "@arcgis/core/layers/ImageryTileLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
 import RasterStretchRenderer from "@arcgis/core/renderers/RasterStretchRenderer";
 import Swipe from "@arcgis/core/widgets/Swipe";
-import { X, ChevronUp, ChevronDown, AlertTriangle, Layers, Check, Loader } from "lucide-react";
+import { X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, AlertTriangle, Layers, Check, Loader } from "lucide-react";
 import type MapView from "@arcgis/core/views/MapView";
 
 const COG_SOURCES = [
@@ -77,8 +77,15 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
   const [layerStatus, setLayerStatus] = useState<Record<string, LayerStatus>>({ cogA: "idle", cogB: "idle", cogC: "idle", cogD: "idle" });
   const groupLayerRef = useRef<GroupLayer | null>(null);
   const swipeWidgetRef = useRef<Swipe | null>(null);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 768);
 
   const leftPos = "16px";
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const setStatus = useCallback((id: string, status: LayerStatus) => {
     setLayerStatus((prev) => ({ ...prev, [id]: status }));
@@ -145,18 +152,18 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
       map.add(groupLayer, 0);
     }
 
+    const swipeDirection = isMobile ? "vertical" : "horizontal";
+
     const swipeWidget = new Swipe({
       view: view,
       leadingLayers: [],
       trailingLayers: [groupLayer],
-      direction: "vertical",
+      direction: swipeDirection,
       position: 50,
     });
 
     swipeWidgetRef.current = swipeWidget;
     view.ui.add(swipeWidget);
-
-    const isMobile = window.innerWidth <= 768;
 
     if (isMobile) {
       COG_SOURCES.forEach((src) => {
@@ -189,13 +196,13 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
       <div className="swipe-overlay">
         <div className="swipe-label-bar">
           <span className="swipe-label swipe-label-before">
-            <ChevronUp size={14} />
-            ARRIBA
+            {isMobile ? <ChevronUp size={14} /> : <ChevronLeft size={14} />}
+            {isMobile ? "ARRIBA" : "IZQUIERDA"}
           </span>
           <span className="swipe-label swipe-label-divider">|</span>
           <span className="swipe-label swipe-label-after">
             POST-SISMO
-            <ChevronDown size={14} />
+            {isMobile ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </span>
         </div>
       </div>

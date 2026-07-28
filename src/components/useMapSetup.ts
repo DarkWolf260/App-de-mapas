@@ -41,7 +41,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     onFeatureAdded, onFeatureDeleted, zoomToFeature, removeFeatureId,
     importedFeatures, hiddenFeatures, selectedDate, zoomToCoords,
     activeDepartment = "pc", onFeatureClick,
-    showAccumulated, showPoints, showAreas, sidebarOpen, bitacoraOpen,
+    showAccumulated, sidebarOpen, bitacoraOpen,
   } = props;
 
   const [activeColor, setActiveColor] = useState<Color>(PALETTE[0]);
@@ -52,6 +52,11 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     onFeatureAdded,
     onFeatureDeleted,
     onFeatureClick,
+    onGraphicSelected: (g) => {
+      setActiveTool(null);
+      setSelectedGraphic(g);
+      setEditMode("transform");
+    },
     getActiveColor: () => activeColorRef.current,
   });
 
@@ -82,10 +87,6 @@ export const useMapSetup = (props: UseMapSetupProps) => {
   const customPopupRef = useRef(init.customPopup);
   useEffect(() => { customPopupRef.current = init.customPopup; }, [init.customPopup]);
 
-  const showPointsRef = useRef(showPoints);
-  useEffect(() => { showPointsRef.current = showPoints; }, [showPoints]);
-  const showAreasRef = useRef(showAreas);
-  useEffect(() => { showAreasRef.current = showAreas; }, [showAreas]);
   const sidebarOpenRef = useRef(sidebarOpen);
   useEffect(() => { sidebarOpenRef.current = sidebarOpen; }, [sidebarOpen]);
   const bitacoraOpenRef = useRef(bitacoraOpen);
@@ -244,21 +245,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     }
   }, [activeCity, viewRef]);
 
-  useEffect(() => {
-    const layer = sketchLayerRef.current;
-    if (!layer) return;
-    layer.graphics.forEach((g) => {
-      const pid = g.attributes?.parentId || g.attributes?.id || (g as any).uid;
-      const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(pid));
-      if (!feat) return;
-      const individuallyHidden = hiddenFeaturesRef.current[String(pid) as any] || hiddenFeaturesRef.current[feat.id];
-      if (individuallyHidden) { g.visible = false; return; }
-      if (feat.type === "point" && !showPoints) g.visible = false;
-      else if ((feat.type === "polygon" || feat.type === "polyline") && !showAreas) g.visible = false;
-      else g.visible = true;
-    });
-    deconflictGraphicsRef.current?.();
-  }, [showPoints, showAreas, sketchLayerRef, deconflictGraphicsRef]);
+
 
   const activateSwipe = useCallback(() => {
     if (layerVisibilityRef.current.sketch) {

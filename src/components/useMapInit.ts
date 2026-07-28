@@ -31,6 +31,7 @@ export interface MapInitCallbacks {
   onFeatureAdded: (feat: DrawnFeature) => void;
   onFeatureDeleted: (id: number) => void;
   onFeatureClick?: () => void;
+  onGraphicSelected?: (graphic: Graphic) => void;
   getActiveColor: () => Color;
 }
 
@@ -221,6 +222,12 @@ export function useMapInit(
           if (feat) {
             callbacks.onFeatureClick?.();
             setCustomPopup({ mapPoint: view.toMap(evt), feat });
+
+            const svm = sketchVMRef.current;
+            if (svm && svm.state !== "active" && callbacks.onGraphicSelected && !feat.locked) {
+              callbacks.onGraphicSelected(g);
+              svm.update([g], { tool: "transform" });
+            }
           } else {
             setCustomPopup(null);
           }

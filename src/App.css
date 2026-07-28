@@ -3201,7 +3201,9 @@ input:checked+.slider:before {
   }
 
   .swipe-label-bar {
-    display: none;
+    gap: 8px;
+    padding: 4px 10px;
+    font-size: 0.65rem;
   }
 
   /* Grupo de botones swipe (capas + satélite/cerrar) */
