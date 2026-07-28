@@ -39,6 +39,7 @@ interface RangeReportModalProps {
   onUpdateGlobalNovedad?: (entryId: string, newText: string, newTime?: string) => Promise<void>;
   onRefreshFeatures?: () => Promise<void>;
   onNavigateToFeature?: (feat: DrawnFeature) => void;
+  canEdit?: boolean;
 }
 
 const RangeReportModal: React.FC<RangeReportModalProps> = ({
@@ -56,6 +57,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   onUpdateGlobalNovedad,
   onRefreshFeatures,
   onNavigateToFeature,
+  canEdit = false,
 }) => {
   const [activeTab, setActiveTab] = useState<"registro" | "estadisticas" | "novedades">("registro");
   const [activeEditFeatureId, setActiveEditFeatureId] = useState<number | null>(null);
@@ -1017,9 +1019,11 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                                     SECTOR
                                   </span>
                                 </div>
-                                <button onClick={() => setActiveEditFeatureId(isEditingThis ? null : pt.id)} className="rr-edit-btn">
-                                  {isEditingThis ? "Cerrar Editor" : "Editar Sitio"}
-                                </button>
+                                {canEdit && (
+                                  <button onClick={() => setActiveEditFeatureId(isEditingThis ? null : pt.id)} className="rr-edit-btn">
+                                    {isEditingThis ? "Cerrar Editor" : "Editar Sitio"}
+                                  </button>
+                                )}
                               </div>
 
                               {!isEditingThis && log && (
@@ -1108,9 +1112,11 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                                   <span className="rr-card-title">{pt.title}</span>
                                   <span className="rr-meta-chip" style={{ background: "rgba(249, 115, 22, 0.12)", color: "#fb923c", fontSize: "0.58rem" }}>SITIO</span>
                                 </div>
-                                <button onClick={() => setActiveEditFeatureId(isEditingThis ? null : pt.id)} className="rr-edit-btn">
-                                  {isEditingThis ? "Cerrar Editor" : "Editar Sitio"}
-                                </button>
+                                {canEdit && (
+                                  <button onClick={() => setActiveEditFeatureId(isEditingThis ? null : pt.id)} className="rr-edit-btn">
+                                    {isEditingThis ? "Cerrar Editor" : "Editar Sitio"}
+                                  </button>
+                                )}
                               </div>
 
                               {!isEditingThis && log && (
@@ -1182,7 +1188,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                       l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
                     ) || [];
                     const log = logs[0];
-                    return <DateRow key={dateStr} dateStr={dateStr} log={log} feat={feat} onSaveDailyLog={onSaveDailyLog} activeDepartment={activeDepartment} />;
+                    return <DateRow key={dateStr} dateStr={dateStr} log={log} feat={feat} onSaveDailyLog={onSaveDailyLog} activeDepartment={activeDepartment} canEdit={canEdit} />;
                   })
                 )}
                 {singleFeatContainedPts.length > 0 && (
@@ -1265,7 +1271,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
             )}
 
             {/* Add form */}
-            {onSaveGlobalNovedad && (
+            {canEdit && onSaveGlobalNovedad && (
               <div style={{ ...sectionBox, background: "rgba(34, 197, 94, 0.03)", borderColor: "rgba(34, 197, 94, 0.15)" }}>
                 <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "6px", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
                   <Plus size={10} /> Nueva Entrada
@@ -1327,7 +1333,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                           <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700, color: "var(--text-muted)", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.06em", width: "120px" }}>Origen</th>
                         )}
                         <th style={{ width: showOrigin ? "48px" : "48px" }}>
-                          {(onSaveDailyLog || onDeleteGlobalNovedad) && (
+                          {canEdit && (onSaveDailyLog || onDeleteGlobalNovedad) && (
                             <button onClick={() => setShowOrigin(!showOrigin)} title={showOrigin ? "Ocultar columna Origen" : "Mostrar columna Origen"} style={{ padding: "0 2px", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex", margin: "0 auto" }}>
                               <EyeOff size={11} style={{ opacity: showOrigin ? 0.5 : 1, color: showOrigin ? "var(--text-muted)" : "var(--color-info)" }} />
                             </button>
@@ -1420,7 +1426,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
                             </span>
                           </td>
                           )}
-                          {(onSaveDailyLog || onDeleteGlobalNovedad) && (
+                          {canEdit && (onSaveDailyLog || onDeleteGlobalNovedad) && (
                             <td style={{ padding: "6px 2px", textAlign: "center", whiteSpace: "nowrap" }}>
                               {!entry.isObservation && (
                                 <>

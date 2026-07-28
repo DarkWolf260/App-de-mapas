@@ -164,6 +164,7 @@ function App() {
             state.setRangeReportFeature(null);
             state.setZoomToFeature(feat);
           }}
+          canEdit={isAuthenticated}
         />
       )}
 

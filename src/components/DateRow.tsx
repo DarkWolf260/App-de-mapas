@@ -11,9 +11,10 @@ interface DateRowProps {
   feat: DrawnFeature;
   onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
   activeDepartment?: DepartmentView;
+  canEdit?: boolean;
 }
 
-export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDailyLog, activeDepartment }) => {
+export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDailyLog, activeDepartment, canEdit = false }) => {
   const [expanded, setExpanded] = React.useState(false);
   const effectiveLog = log ?? emptyLog(dateStr);
 
@@ -59,9 +60,11 @@ export const DateRow: React.FC<DateRowProps> = ({ dateStr, log, feat, onSaveDail
         </div>
 
         <div className="rr-date-card-right">
-          <button className="rr-edit-btn" onClick={(e) => { e.stopPropagation(); toggleExpand(); }}>
-            {expanded ? "Cerrar Editor" : hasData ? "Editar Registro" : "+ Añadir Datos"}
-          </button>
+          {canEdit && (
+            <button className="rr-edit-btn" onClick={(e) => { e.stopPropagation(); toggleExpand(); }}>
+              {expanded ? "Cerrar Editor" : hasData ? "Editar Registro" : "+ Añadir Datos"}
+            </button>
+          )}
           {expanded ? <ChevronUp size={14} style={{ color: "var(--text-muted)" }} /> : <ChevronDown size={14} style={{ color: "var(--text-muted)" }} />}
         </div>
       </div>

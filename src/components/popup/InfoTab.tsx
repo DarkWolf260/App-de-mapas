@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Copy, Check, Edit3, Users, Activity, Link2, Unlink, Save, FileText, Plus, X, Pencil } from "lucide-react";
 import type { DrawnFeature, DailyLog, GroupLogEntry, NovedadEntry, DepartmentView } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
@@ -146,6 +146,28 @@ export const InfoTab: React.FC<InfoTabProps> = ({
   // Unified groups for the active feature type
   const activeGroups = isPolygon ? polygonGroups : pointGroups;
 
+  // --- Mixto index mapping: translate merged display index → localLog/dailyLog index ---
+  const editGroups = useMemo(() => {
+    if (activeDepartment !== "mixto" || !mergedLogForDisplay) return null;
+    return getNormalizedGroupList(localLog || dailyLog || {});
+  }, [activeDepartment, mergedLogForDisplay, localLog, dailyLog]);
+
+  const translateGroupIdx = (displayIdx: number): number => {
+    if (!editGroups) return displayIdx;
+    const displayGroup = activeGroups[displayIdx];
+    if (!displayGroup) return displayIdx;
+    const localIdx = editGroups.findIndex((g) => g.id === displayGroup.id);
+    return localIdx >= 0 ? localIdx : displayIdx;
+  };
+
+  const onGroupEdit = useCallback((displayIdx: number, field: string, value: string | boolean) => {
+    onGroupFieldChange?.(translateGroupIdx(displayIdx), field, value);
+  }, [onGroupFieldChange, editGroups, activeGroups]);
+
+  const onToggleArrival = useCallback((displayIdx: number, hasArrived: boolean) => {
+    onToggleArrivalGroup?.((translateGroupIdx(displayIdx) + 1) as 1 | 2 | 3 | 4, hasArrived);
+  }, [onToggleArrivalGroup, editGroups, activeGroups]);
+
   // --- Grouping logic (works for both points and polygons) ---
   const { groupingMode, setGroupingMode, selectedIndices, handleGroupSelected, handleUngroup, toggleSelect, exitGroupingMode } = useGrouping({
     polygonGroups: activeGroups,
@@ -284,7 +306,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                           <span style={{ fontSize: "0.63rem", fontWeight: 700, color }}>{group.groupName || `Equipo ${groupIdx + 1}`}</span>
                           {canEdit && onGroupFieldChange && (
                             <label style={{ fontSize: "0.5rem", fontWeight: 700, color: group.isVolunteer ? "#c084fc" : "var(--text-muted)", display: "flex", alignItems: "center", gap: "3px", cursor: "pointer", background: group.isVolunteer ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.03)", border: `1px solid ${group.isVolunteer ? "rgba(168,85,247,0.4)" : "rgba(255,255,255,0.08)"}`, borderRadius: "3px", padding: "1px 4px", flexShrink: 0 }}>
-                              <input type="checkbox" checked={!!group.isVolunteer} onChange={(e) => onGroupFieldChange(groupIdx, "isVolunteer", e.target.checked)} style={{ cursor: "pointer", width: "10px", height: "10px", margin: 0 }} />
+                              <input type="checkbox" checked={!!group.isVolunteer} onChange={(e) => onGroupEdit(groupIdx, "isVolunteer", e.target.checked)} style={{ cursor: "pointer", width: "10px", height: "10px", margin: 0 }} />
                               VOL
                             </label>
                           )}
@@ -296,13 +318,13 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                         {canViewDetails && (
                           <>
                             {canEdit && onGroupFieldChange ? (
-                              <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
+                              <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} />
                             ) : (
                               <MetricBadges group={group} />
                             )}
                             {showArrivalCheckbox ? (
                               <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
-                                <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { console.log(`[InfoTab:arrival] checkbox fired groupIdx=${groupIdx} checked=${e.target.checked} group.hasArrived=${group.hasArrived}`); onToggleArrivalGroup?.((groupIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
+                                <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { onToggleArrival?.(groupIdx, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
                                 <span>{group.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
                               </label>
                             ) : (
@@ -342,7 +364,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                       {canViewDetails && (
                         <>
                           {canEdit && onGroupFieldChange ? (
-                            <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
+                            <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} />
                           ) : (
                             <MetricBadges group={primaryGroup} />
                           )}
@@ -351,7 +373,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                             if (!g) return null;
                             return (
                               <label key={`arr-${gIdx}`} style={{ fontSize: "0.56rem", fontWeight: 700, color: g.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "3px", cursor: "pointer" }}>
-                                <input type="checkbox" checked={!!g.hasArrived} onChange={(e) => { onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "11px", height: "11px" }} />
+                                <input type="checkbox" checked={!!g.hasArrived} onChange={(e) => { onToggleArrival?.(gIdx, e.target.checked); }} style={{ cursor: "pointer", width: "11px", height: "11px" }} />
                                 <span>{g.groupName || `Equipo ${gIdx + 1}`}: {g.hasArrived ? "Llegó" : "¿Llegó?"}</span>
                               </label>
                             );
@@ -479,7 +501,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                       <span style={{ fontSize: "0.63rem", fontWeight: 700, color }}>{group.groupName || `Equipo ${groupIdx + 1}`}</span>
                       {canEdit && onGroupFieldChange && (
                         <label style={{ fontSize: "0.5rem", fontWeight: 700, color: group.isVolunteer ? "#c084fc" : "var(--text-muted)", display: "flex", alignItems: "center", gap: "3px", cursor: "pointer", background: group.isVolunteer ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.03)", border: `1px solid ${group.isVolunteer ? "rgba(168,85,247,0.4)" : "rgba(255,255,255,0.08)"}`, borderRadius: "3px", padding: "1px 4px", flexShrink: 0 }}>
-                          <input type="checkbox" checked={!!group.isVolunteer} onChange={(e) => onGroupFieldChange(groupIdx, "isVolunteer", e.target.checked)} style={{ cursor: "pointer", width: "10px", height: "10px", margin: 0 }} />
+                          <input type="checkbox" checked={!!group.isVolunteer} onChange={(e) => onGroupEdit(groupIdx, "isVolunteer", e.target.checked)} style={{ cursor: "pointer", width: "10px", height: "10px", margin: 0 }} />
                           VOL
                         </label>
                       )}
@@ -494,13 +516,13 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                         <ReadRow label="Encargado" value={group.managerName} />
                         <ReadRow label="Tel\u00e9fono" value={group.managerPhone} />
                         {canEdit && onGroupFieldChange ? (
-                          <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
+                          <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} />
                         ) : (
                           <MetricBadges group={group} />
                         )}
                         {showArrivalCheckbox ? (
                       <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
-                        <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { onToggleArrivalGroup?.((groupIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
+                        <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { onToggleArrival?.(groupIdx, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
                         <span>{group.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
                       </label>
                     ) : (
@@ -546,7 +568,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                         </div>
                       ))}
                       {canEdit && onGroupFieldChange ? (
-                        <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
+                        <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} />
                       ) : (
                         <MetricBadges group={primaryGroup} />
                       )}
@@ -555,7 +577,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                         if (!g) return null;
                         return (
                           <label key={`arr-${gIdx}`} style={{ fontSize: "0.56rem", fontWeight: 700, color: g.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "3px", cursor: "pointer" }}>
-                            <input type="checkbox" checked={!!g.hasArrived} onChange={(e) => { onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "11px", height: "11px" }} />
+                            <input type="checkbox" checked={!!g.hasArrived} onChange={(e) => { onToggleArrival?.(gIdx, e.target.checked); }} style={{ cursor: "pointer", width: "11px", height: "11px" }} />
                             <span>{g.groupName || `Equipo ${gIdx + 1}`}: {g.hasArrived ? "Llegó" : "¿Llegó?"}</span>
                           </label>
                         );
