@@ -8,6 +8,16 @@
   font-family: var(--sans-font);
 }
 
+html, body {
+  touch-action: manipulation;
+  -ms-touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
+.map-viewport {
+  touch-action: none;
+}
+
 /* Panel Lateral (Sidebar) */
 .sidebar {
   width: 380px;
