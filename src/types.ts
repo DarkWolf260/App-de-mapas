@@ -21,6 +21,7 @@ export interface HtmlLabel {
   recoveredCount?: number;
   isCollapsed?: boolean;
   collapsedCount?: string | number;
+  teamNames?: string[];
 }
 
 export interface MapPoint {

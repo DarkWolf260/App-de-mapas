@@ -265,11 +265,26 @@ function buildHtmlLabels(
         const hasActiveGroups = activeGroupsList.length > 0;
         const hasArrived = hasActiveGroups ? activeGroupsList.every((g) => !!g.hasArrived) : true;
 
+        const teamNames: string[] = [];
+        const seenTeams = new Set<string>();
+        for (const g of activeGroupsList) {
+          const name = g.groupName?.trim();
+          const unit = g.unitOut?.trim();
+          const entry: string[] = [];
+          if (name) entry.push(name);
+          if (unit) entry.push(unit);
+          const label = entry.length > 0 ? entry.join(" - ") : "";
+          if (label && !seenTeams.has(label)) {
+            seenTeams.add(label);
+            teamNames.push(label);
+          }
+        }
+
         const charWidth = 6;
         const padding = 20;
         const textLength = Math.max(title.length, info.length);
         const w = Math.min(220, Math.max(100, textLength * charWidth + padding));
-        const h = (info || hasBadges || feat?.isCollapsed) ? 42 : 28;
+        const h = (info || hasBadges || feat?.isCollapsed || teamNames.length > 0) ? 42 : 28;
         const x = item.x!;
         const y = item.y!;
 
@@ -291,6 +306,7 @@ function buildHtmlLabels(
           recoveredCount: recoveredCount || undefined,
           isCollapsed: feat?.isCollapsed,
           collapsedCount: feat?.collapsedCount,
+          teamNames: teamNames.length > 0 ? teamNames : undefined,
         });
       }
     } else {

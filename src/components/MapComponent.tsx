@@ -301,6 +301,7 @@ interface MapComponentProps {
       {/* HTML point labels with background (personnel info) */}
       <HtmlPointLabels
         labels={htmlLabels}
+        isAuthenticated={ui.isAuthenticated ?? false}
         onSelectLabel={(lblId) => {
           const feat = drawnFeatures.find((f) => String(f.id) === String(lblId));
           if (feat) {

@@ -19,6 +19,7 @@ export interface MapUIContext {
   showSidebar?: boolean;
   isAdmin?: boolean;
   isOperador?: boolean;
+  isAuthenticated?: boolean;
   showAccumulated?: boolean;
   showPoints?: boolean;
   showAreas?: boolean;

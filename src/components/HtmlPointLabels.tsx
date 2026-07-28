@@ -3,6 +3,7 @@ import type { HtmlLabel } from "../types";
 
 interface HtmlPointLabelsProps {
   labels: HtmlLabel[];
+  isAuthenticated?: boolean;
   onSelectLabel?: (id: number | string) => void;
 }
 
@@ -58,7 +59,7 @@ function computePlacement(lbl: HtmlLabel, borderStyle: string): Placement {
   };
 }
 
-export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, onSelectLabel }) => (
+export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, isAuthenticated, onSelectLabel }) => (
   <>
     {[...labels].sort((a, b) => b.y - a.y).map((lbl) => {
       const borderStyle = `1px solid ${lbl.themeColor ? `${lbl.themeColor}90` : "rgba(56, 189, 248, 0.5)"}`;
@@ -126,6 +127,26 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, onSele
                 }}
               >
                 {lbl.info}
+              </div>
+            )}
+
+            {/* Insignias de equipos desplegados — solo visible para personal autenticado */}
+            {isAuthenticated && lbl.teamNames && lbl.teamNames.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "3px", marginTop: "4px", fontSize: "8px", fontWeight: 700 }}>
+                {lbl.teamNames.map((name, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      color: "#94a3b8",
+                      background: "rgba(148,163,184,0.15)",
+                      border: "1px solid rgba(148,163,184,0.30)",
+                      padding: "1px 5px",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    {name}
+                  </span>
+                ))}
               </div>
             )}
 

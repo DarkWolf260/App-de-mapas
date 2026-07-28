@@ -21,7 +21,7 @@ import './App.css';
 function App() {
   const apiKey: string = import.meta.env.VITE_ARCGIS_API_KEY || '';
   const [activeCity] = ['venezuela'];
-  const { isAdmin, isOperador } = useAuth();
+  const { isAdmin, isOperador, isAuthenticated } = useAuth();
   const state = useAppState(isAdmin);
 
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
@@ -129,6 +129,7 @@ function App() {
             showSidebar: !state.sidebarCollapsed,
             isAdmin,
             isOperador,
+            isAuthenticated,
             showAccumulated: state.showAccumulated,
             showPoints: state.showPoints,
             showAreas: state.showAreas,
