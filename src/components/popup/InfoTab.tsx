@@ -409,10 +409,31 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </>
       )}
 
-      {/* Punto: sin datos */}
-      {!isPolygon && pointGroups.length === 0 && !pointHasMetrics && (
+      {/* Punto: sin datos (solo para usuarios que no pueden editar) */}
+      {!isPolygon && pointGroups.length === 0 && !pointHasMetrics && !canEdit && (
         <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
           Sin datos registrados para hoy
+        </div>
+      )}
+
+      {!isPolygon && canEdit && (
+        <div style={{ ...sectionBox, background: "rgba(249, 115, 22, 0.04)", borderColor: "rgba(249, 115, 22, 0.2)" }}>
+          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#f97316", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <Activity size={10} /> Estadisticas del Area de Trabajo
+            <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontWeight: 400, marginLeft: "auto" }}>Independiente de grupos</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
+            {METRIC_FIELDS.map(({ label, field, color }) => (
+              <div key={field} style={{ textAlign: "center" }}>
+                <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block", marginBottom: "2px" }}>{label}</span>
+                {onGeneralFieldChange ? (
+                  <input type="number" min="0" placeholder="0" value={getMetricValue(localLog || {}, field) || ""} onChange={(e) => onGeneralFieldChange(field, e.target.value)} style={{ textAlign: "center", padding: "2px 2px", fontSize: "0.68rem", color, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "4px", width: "100%", outline: "none", fontFamily: "inherit" }} />
+                ) : (
+                  <span style={{ fontSize: "0.8rem", fontWeight: 800, color }}>{getMetricValue(localLog || {}, field) || "0"}</span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
