@@ -20,7 +20,7 @@ export interface MapInitRefs {
   sketchLayerRef: React.MutableRefObject<GraphicsLayer | null>;
   sketchVMRef: React.MutableRefObject<SketchViewModel | null>;
   drawnFeaturesRef: React.MutableRefObject<DrawnFeature[]>;
-  hiddenFeaturesRef: React.MutableRefObject<Record<number, boolean>>;
+  hiddenFeaturesRef: React.MutableRefObject<Record<string, boolean>>;
   layerVisibilityRef: React.MutableRefObject<LayerVisibility>;
   selectedDateRef: React.MutableRefObject<string>;
   activeDepartmentRef: React.MutableRefObject<DepartmentView>;
@@ -53,7 +53,7 @@ export function useMapInit(
   useEffect(() => { onFeatureDeletedRef.current = callbacks.onFeatureDeleted; }, [callbacks.onFeatureDeleted]);
 
   const drawnFeaturesRef = useRef<DrawnFeature[]>([]);
-  const hiddenFeaturesRef = useRef<Record<number, boolean>>({});
+  const hiddenFeaturesRef = useRef<Record<string, boolean>>({});
   const layerVisibilityRef = useRef(layerVisibility);
   const selectedDateRef = useRef<string>("");
   const activeDepartmentRef = useRef<DepartmentView>("pc");

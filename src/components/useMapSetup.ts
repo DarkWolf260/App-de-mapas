@@ -23,7 +23,7 @@ export interface UseMapSetupProps {
   zoomToFeature: DrawnFeature | null;
   removeFeatureId: RemoveFeatureId | null;
   importedFeatures: DrawnFeature[];
-  hiddenFeatures: Record<number, boolean>;
+  hiddenFeatures: Record<string, boolean>;
   selectedDate: string;
   zoomToCoords?: { lat: number; lon: number } | null;
   activeDepartment?: DepartmentView;

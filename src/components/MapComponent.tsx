@@ -20,7 +20,7 @@ interface MapComponentProps {
   layerVisibility: LayerVisibility;
   onToggleLayer?: (layerName: keyof LayerVisibility) => void;
   drawnFeatures: DrawnFeature[];
-  hiddenFeatures: Record<number, boolean>;
+  hiddenFeatures: Record<string, boolean>;
   zoomToFeature: DrawnFeature | null;
   removeFeatureId: RemoveFeatureId | null;
   importedFeatures: DrawnFeature[];

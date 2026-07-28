@@ -10,7 +10,7 @@ import type { DrawnFeature, LayerVisibility, DepartmentView } from "../types";
 
 export function syncDrawnFeaturesToGraphics(
   drawnFeatures: DrawnFeature[],
-  hiddenFeatures: Record<number, boolean>,
+  hiddenFeatures: Record<string, boolean>,
   layerVisibility: LayerVisibility,
   currentZoom: number,
   layer: GraphicsLayer,
@@ -21,7 +21,7 @@ export function syncDrawnFeaturesToGraphics(
 
   drawnFeatures.forEach((feat) => {
     const g = layer.graphics.find((x) => String((x as any).uid) === String(feat.id) || String(x.attributes?.id) === String(feat.id));
-    const isHidden = !!hiddenFeatures[feat.id];
+    const isHidden = !!hiddenFeatures[String(feat.id)];
     const isNestedArea = feat.type === "polygon" && (parentsMap as any)[feat.id] !== undefined;
     const shouldHideNested = isNestedArea && layerVisibility.hideNestedAreas;
     const featColor = feat.color || "#3b82f6";
@@ -97,7 +97,7 @@ function syncExistingLabel(
 
 function addFeatureGraphic(
   feat: DrawnFeature,
-  hiddenFeatures: Record<number, boolean>,
+  hiddenFeatures: Record<string, boolean>,
   layerVisibility: LayerVisibility,
   currentZoom: number,
   parentsMap: Record<string | number, any>,

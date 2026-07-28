@@ -9,7 +9,7 @@ import type { HtmlLabel } from "../types";
 
 interface DeconflictRefs {
   drawnFeaturesRef: React.MutableRefObject<DrawnFeature[]>;
-  hiddenFeaturesRef: React.MutableRefObject<Record<number, boolean>>;
+  hiddenFeaturesRef: React.MutableRefObject<Record<string, boolean>>;
   layerVisibilityRef: React.MutableRefObject<LayerVisibility>;
   selectedDateRef: React.MutableRefObject<string>;
   activeDepartmentRef?: React.MutableRefObject<DepartmentView>;
@@ -55,7 +55,7 @@ function filterCandidateLabels(
       (x) => !x.attributes?.isLabel && (String((x as any).uid) === String(pid) || String(x.attributes?.id) === String(pid))
     );
     if (!parentGraphic || !parentGraphic.visible || !parentGraphic.geometry) return false;
-    if (refs.hiddenFeaturesRef.current[pid]) return false;
+    if (refs.hiddenFeaturesRef.current[String(pid)]) return false;
 
     const feat = (refs.drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
     const isSubpolygon = isPolygonLabel && feat && parentsMap[feat.id] !== undefined;
@@ -332,7 +332,7 @@ export function deconflictGraphics(
 
     points.forEach((g) => {
       const pid = g.attributes?.id || (g as any).uid;
-      g.visible = !refs.hiddenFeaturesRef.current[pid];
+      g.visible = !refs.hiddenFeaturesRef.current[String(pid)];
     });
 
     const candidateLabels = filterCandidateLabels(labels, sketchLayer, view, refs);

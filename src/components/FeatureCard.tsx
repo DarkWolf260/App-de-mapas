@@ -11,7 +11,7 @@ const FEATURE_ICONS: Record<string, React.ReactNode> = {
 
 interface FeatureCardProps {
   feat: DrawnFeature;
-  hiddenFeatures: Record<number, boolean>;
+  hiddenFeatures: Record<string, boolean>;
   onToggleFeatureVisibility: (id: number) => void;
   onRenameFeature: (id: number, newTitle: string) => void;
   onUpdateFeatureDescription: (id: number, newDesc: string) => void;
@@ -42,7 +42,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   onToggleChildren,
   childrenCount,
 }) => {
-  const isHidden = hiddenFeatures[feat.id];
+  const isHidden = hiddenFeatures[String(feat.id)];
 
   return (
     <div

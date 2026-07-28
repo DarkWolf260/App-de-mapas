@@ -7,7 +7,7 @@ import { Crosshair, Plus } from "lucide-react";
 
 interface DrawnFeaturesListProps {
   drawnFeatures: DrawnFeature[];
-  hiddenFeatures: Record<number, boolean>;
+  hiddenFeatures: Record<string, boolean>;
   rootPoints: DrawnFeature[];
   rootLines: DrawnFeature[];
   rootPolygons: DrawnFeature[];
@@ -92,7 +92,7 @@ export const DrawnFeaturesList: React.FC<DrawnFeaturesListProps> = ({
 
   const isGroupAllVisible = (groupFeatures: DrawnFeature[]) => {
     if (groupFeatures.length === 0) return false;
-    return groupFeatures.every((f) => !hiddenFeatures[f.id]);
+    return groupFeatures.every((f) => !hiddenFeatures[String(f.id)]);
   };
 
   const handleGroupVisibilityClick = (groupFeatures: DrawnFeature[], e: React.SyntheticEvent) => {

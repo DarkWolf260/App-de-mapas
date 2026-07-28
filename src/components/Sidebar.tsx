@@ -59,8 +59,8 @@ interface SidebarProps {
   onToggleShowPoints?: () => void;
   showAreas?: boolean;
   onToggleShowAreas?: () => void;
-  hiddenFeatures?: Record<number, boolean>;
-  onToggleFeatureVisibility?: (id: number) => void;
+  hiddenFeatures?: Record<string, boolean>;
+  onToggleFeatureVisibility?: (id: string | number) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -266,9 +266,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {onToggleFeatureVisibility && (
                         <input
                           type="checkbox"
-                          checked={!hiddenFeatures[Number(point.id)]}
-                          onChange={() => onToggleFeatureVisibility(Number(point.id))}
-                          title={hiddenFeatures[Number(point.id)] ? "Mostrar punto" : "Ocultar punto"}
+                          checked={!hiddenFeatures[String(point.id)]}
+                          onChange={() => onToggleFeatureVisibility(String(point.id))}
+                          title={hiddenFeatures[String(point.id)] ? "Mostrar punto" : "Ocultar punto"}
                           style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#38bdf8", flexShrink: 0 }}
                         />
                       )}
@@ -322,9 +322,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {onToggleFeatureVisibility && (
                         <input
                           type="checkbox"
-                          checked={!hiddenFeatures[Number(area.id)]}
-                          onChange={() => onToggleFeatureVisibility(Number(area.id))}
-                          title={hiddenFeatures[Number(area.id)] ? "Mostrar área" : "Ocultar área"}
+                          checked={!hiddenFeatures[String(area.id)]}
+                          onChange={() => onToggleFeatureVisibility(String(area.id))}
+                          title={hiddenFeatures[String(area.id)] ? "Mostrar área" : "Ocultar área"}
                           style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#38bdf8", flexShrink: 0 }}
                         />
                       )}

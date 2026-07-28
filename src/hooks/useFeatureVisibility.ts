@@ -1,16 +1,17 @@
 import { useLocalStorageState } from "./useLocalStorageState";
 
 export function useFeatureVisibility() {
-  const [hiddenFeatures, setHiddenFeatures] = useLocalStorageState<Record<number, boolean>>("pc_hidden_features", {});
+  const [hiddenFeatures, setHiddenFeatures] = useLocalStorageState<Record<string, boolean>>("pc_hidden_features", {});
 
-  const handleToggleFeatureVisibility = (id: number): void => {
-    setHiddenFeatures((prev) => ({ ...prev, [id]: !prev[id] }));
+  const handleToggleFeatureVisibility = (id: string | number): void => {
+    const key = String(id);
+    setHiddenFeatures((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleToggleFeaturesVisibility = (ids: number[], visible: boolean): void => {
+  const handleToggleFeaturesVisibility = (ids: (string | number)[], visible: boolean): void => {
     setHiddenFeatures((prev) => {
       const next = { ...prev };
-      ids.forEach((id) => { next[id] = !visible; });
+      ids.forEach((id) => { next[String(id)] = !visible; });
       return next;
     });
   };
