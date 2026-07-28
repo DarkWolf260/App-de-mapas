@@ -151,7 +151,7 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, isAuth
             )}
 
             {/* Badges para Atenciones y Traslados / Rescates */}
-            {(!!lbl.prehospitalCount || !!lbl.transfersCount || !!lbl.rescuedCount || !!lbl.recoveredCount) && (
+            {(!!lbl.prehospitalCount || !!lbl.transfersCount || !!lbl.rescuedCount || !!lbl.recoveredCount || !!lbl.rescuedPetsCount) && (
               <div style={{ display: "flex", gap: "4px", marginTop: "4px", fontSize: "8.5px", fontWeight: 700 }}>
                 {!!lbl.rescuedCount && (
                   <span style={{ color: "#4ade80", background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.35)", padding: "1px 5px", borderRadius: "4px" }}>
@@ -161,6 +161,11 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, isAuth
                 {!!lbl.recoveredCount && (
                   <span style={{ color: "#38bdf8", background: "rgba(56,189,248,0.18)", border: "1px solid rgba(56,189,248,0.35)", padding: "1px 5px", borderRadius: "4px" }}>
                     Recup. {lbl.recoveredCount}
+                  </span>
+                )}
+                {!!lbl.rescuedPetsCount && (
+                  <span style={{ color: "#f97316", background: "rgba(249,115,22,0.18)", border: "1px solid rgba(249,115,22,0.35)", padding: "1px 5px", borderRadius: "4px" }}>
+                    Masc. {lbl.rescuedPetsCount}
                   </span>
                 )}
                 {!!lbl.prehospitalCount && (

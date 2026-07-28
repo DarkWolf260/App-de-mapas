@@ -19,6 +19,7 @@ export interface HtmlLabel {
   transfersCount?: number;
   rescuedCount?: number;
   recoveredCount?: number;
+  rescuedPetsCount?: number;
   isCollapsed?: boolean;
   collapsedCount?: string | number;
   teamNames?: string[];

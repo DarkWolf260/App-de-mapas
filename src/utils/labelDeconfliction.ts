@@ -245,22 +245,25 @@ function buildHtmlLabels(
         let transfersCount = 0;
         let rescuedCount = 0;
         let recoveredCount = 0;
+        let rescuedPetsCount = 0;
 
         statLogs.forEach((l) => {
           const groups = getNormalizedGroupList(l);
           for (const g of groups) {
             rescuedCount += parseInt(g.rescuedCount || "0", 10) || 0;
             recoveredCount += parseInt(g.recoveredCount || "0", 10) || 0;
+            rescuedPetsCount += parseInt(g.rescuedPetsCount || "0", 10) || 0;
             transfersCount += parseInt(g.transfersCount || "0", 10) || 0;
             prehospitalCount += parseInt(g.prehospitalCareCount || "0", 10) || 0;
           }
           rescuedCount += parseInt(l.rescuedCount || "0", 10) || 0;
           recoveredCount += parseInt(l.recoveredCount || "0", 10) || 0;
+          rescuedPetsCount += parseInt(l.rescuedPetsCount || "0", 10) || 0;
           prehospitalCount += parseInt(l.prehospitalCareCount || "0", 10) || 0;
           transfersCount += parseInt(l.transfersCount || "0", 10) || 0;
         });
 
-        const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0;
+        const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0 || rescuedPetsCount > 0;
         const activeGroupsList = refFeatLog ? getNormalizedGroupList(refFeatLog) : [];
         const hasActiveGroups = activeGroupsList.length > 0;
         const hasArrived = hasActiveGroups ? activeGroupsList.every((g) => !!g.hasArrived) : true;
@@ -304,6 +307,7 @@ function buildHtmlLabels(
           transfersCount: transfersCount || undefined,
           rescuedCount: rescuedCount || undefined,
           recoveredCount: recoveredCount || undefined,
+          rescuedPetsCount: rescuedPetsCount || undefined,
           isCollapsed: feat?.isCollapsed,
           collapsedCount: feat?.collapsedCount,
           teamNames: teamNames.length > 0 ? teamNames : undefined,
