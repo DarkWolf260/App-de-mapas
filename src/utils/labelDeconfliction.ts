@@ -216,41 +216,6 @@ function buildHtmlLabels(
 
     const accMode = refs.showAccumulatedRef?.current === true;
 
-    if (feat) {
-      const sourceLogs = accMode
-        ? (feat.dailyLogs?.filter((l) =>
-            activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department
-          ) || [])
-        : (feat.dailyLogs?.filter((l) =>
-            l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
-          ) || []);
-
-      // En modo acumulado, no mostrar nombres de equipos — solo estadísticas
-      if (!accMode) {
-        const refLog = sourceLogs[0];
-        if (refLog) {
-          const activeGroups = getNormalizedGroupList(refLog);
-          const groupItems: Array<{ name?: string; unit?: string }> = [];
-          for (const g of activeGroups) {
-            if (g.groupName?.trim() || g.unitOut?.trim()) {
-              groupItems.push({ name: g.groupName?.trim(), unit: g.unitOut?.trim() });
-            }
-          }
-          if (groupItems.length > 0) {
-            const onlyNames = groupItems.length > 2;
-            const parts = groupItems
-              .map((item) => {
-                if (onlyNames) return item.name || item.unit || "";
-                if (item.name && item.unit) return `${item.name}, ${item.unit}`;
-                return item.name || item.unit || "";
-              })
-              .filter(Boolean);
-            info = parts.join(" | ");
-          }
-        }
-      }
-    }
-
     const hasPersonnel = accMode
       ? (!!feat && (feat.dailyLogs?.some((l) =>
           (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)

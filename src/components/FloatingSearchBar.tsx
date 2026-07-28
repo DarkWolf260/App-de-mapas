@@ -9,6 +9,7 @@ interface FloatingSearchBarProps {
   onGoToCoords: (lat: number, lon: number) => void;
   onCreatePointAtCoords: (lat: number, lon: number) => void;
   showSidebar: boolean;
+  canViewDetails?: boolean;
 }
 
 function parseCoords(input: string): { lat: number; lon: number } | null {
@@ -47,6 +48,7 @@ export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
   onGoToCoords,
   onCreatePointAtCoords,
   showSidebar,
+  canViewDetails = false,
 }) => {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -182,14 +184,16 @@ export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
                   <div className="floating-search-item-header">
                     {getFeatureIcon(feat.type, feat.color || "")}
                     <span className="floating-search-item-title">{feat.title}</span>
-                    {feat.isCollapsed && (
+                    {canViewDetails && feat.isCollapsed && (
                       <span style={{ fontSize: "0.6rem", fontWeight: 800, color: "#f87171", background: "rgba(239, 68, 68, 0.2)", padding: "1px 5px", borderRadius: "4px", border: "1px solid rgba(239, 68, 68, 0.4)", marginLeft: "4px" }}>
                         Colapsado: {feat.collapsedCount || "1"}
                       </span>
                     )}
-                    <span className="floating-search-item-badge">
-                      {getFeatureTypeText(feat.type)}
-                    </span>
+                    {canViewDetails && (
+                      <span className="floating-search-item-badge">
+                        {getFeatureTypeText(feat.type)}
+                      </span>
+                    )}
                   </div>
                   {feat.description && (
                     <p className="floating-search-item-desc">{feat.description}</p>

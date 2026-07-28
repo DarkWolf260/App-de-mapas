@@ -74,6 +74,7 @@ function App() {
         onGoToCoords={state.handleGoToCoords}
         onCreatePointAtCoords={state.handleCreatePointAtCoords}
         showSidebar={!state.sidebarCollapsed}
+        canViewDetails={isAdmin || isOperador}
       />
 
       <Sidebar

@@ -78,6 +78,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
   activeDepartment = "pc",
 }) => {
   const showArrivalCheckbox = isAdmin || canToggleArrival;
+  const canViewDetails = isAdmin || canEdit || canToggleArrival;
   const [copied, setCopied] = useState(false);
   const [novTime, setNovTime] = useState(() => new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false }));
   const [novText, setNovText] = useState("");
@@ -201,7 +202,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Badge de Edificio Colapsado */}
-      {!isPolygon && activeFeat.isCollapsed && (
+      {!isPolygon && activeFeat.isCollapsed && canViewDetails && (
         <div style={{ background: "rgba(239, 68, 68, 0.14)", border: "1px solid rgba(239, 68, 68, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#f87171", fontSize: "0.72rem", fontWeight: 700 }}>
           <span>Estructura Colapsada</span>
           <span style={{ background: "#ef4444", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontSize: "0.68rem", fontWeight: 800 }}>
@@ -292,18 +293,22 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                           )}
                           <span style={{ marginLeft: "auto", fontSize: "0.55rem", color: "var(--text-muted)" }}>{group.officersCount ? `${group.officersCount} func.` : ""}</span>
                         </div>
-                        {canEdit && onGroupFieldChange ? (
-                          <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
-                        ) : (
-                          <MetricBadges group={group} />
-                        )}
-                        {showArrivalCheckbox ? (
-                          <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
-                            <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { console.log(`[InfoTab:arrival] checkbox fired groupIdx=${groupIdx} checked=${e.target.checked} group.hasArrived=${group.hasArrived}`); onToggleArrivalGroup?.((groupIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
-                            <span>{group.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
-                          </label>
-                        ) : (
-                          group.hasArrived && <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}><Check size={9} /> Llegó del sitio</span>
+                        {canViewDetails && (
+                          <>
+                            {canEdit && onGroupFieldChange ? (
+                              <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
+                            ) : (
+                              <MetricBadges group={group} />
+                            )}
+                            {showArrivalCheckbox ? (
+                              <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
+                                <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { console.log(`[InfoTab:arrival] checkbox fired groupIdx=${groupIdx} checked=${e.target.checked} group.hasArrived=${group.hasArrived}`); onToggleArrivalGroup?.((groupIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
+                                <span>{group.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
+                              </label>
+                            ) : (
+                              group.hasArrived && <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}><Check size={9} /> Llegó del sitio</span>
+                            )}
+                          </>
                         )}
                       </div>
                     );
@@ -334,21 +339,25 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                       <div style={{ fontSize: "0.5rem", color: "var(--text-muted)", marginBottom: "3px" }}>
                         Equipos trabajando juntos \u2014 estadisticas compartidas
                       </div>
-                      {canEdit && onGroupFieldChange ? (
-                        <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
-                      ) : (
-                        <MetricBadges group={primaryGroup} />
+                      {canViewDetails && (
+                        <>
+                          {canEdit && onGroupFieldChange ? (
+                            <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
+                          ) : (
+                            <MetricBadges group={primaryGroup} />
+                          )}
+                          {showArrivalCheckbox && groupIndices.map((gIdx) => {
+                            const g = groups[groupIndices.indexOf(gIdx)];
+                            if (!g) return null;
+                            return (
+                              <label key={`arr-${gIdx}`} style={{ fontSize: "0.56rem", fontWeight: 700, color: g.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "3px", cursor: "pointer" }}>
+                                <input type="checkbox" checked={!!g.hasArrived} onChange={(e) => { onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "11px", height: "11px" }} />
+                                <span>{g.groupName || `Equipo ${gIdx + 1}`}: {g.hasArrived ? "Llegó" : "¿Llegó?"}</span>
+                              </label>
+                            );
+                          })}
+                        </>
                       )}
-                      {showArrivalCheckbox && groupIndices.map((gIdx) => {
-                        const g = groups[groupIndices.indexOf(gIdx)];
-                        if (!g) return null;
-                        return (
-                          <label key={`arr-${gIdx}`} style={{ fontSize: "0.56rem", fontWeight: 700, color: g.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "3px", cursor: "pointer" }}>
-                            <input type="checkbox" checked={!!g.hasArrived} onChange={(e) => { onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "11px", height: "11px" }} />
-                            <span>{g.groupName || `Equipo ${gIdx + 1}`}: {g.hasArrived ? "Llegó" : "¿Llegó?"}</span>
-                          </label>
-                        );
-                      })}
                     </div>
                   );
                 })}
@@ -479,21 +488,25 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                       )}
                       <span style={{ marginLeft: "auto", fontSize: "0.55rem", color: "var(--text-muted)" }}>{group.officersCount ? `${group.officersCount} func.` : ""}</span>
                     </div>
-                    <ReadRow label="Unidad" value={group.unitOut} />
-                    <ReadRow label="Encargado" value={group.managerName} />
-                    <ReadRow label="Tel\u00e9fono" value={group.managerPhone} />
-                    {canEdit && onGroupFieldChange ? (
-                      <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
-                    ) : (
-                      <MetricBadges group={group} />
-                    )}
-                    {showArrivalCheckbox ? (
+                    {canViewDetails && (
+                      <>
+                        <ReadRow label="Unidad" value={group.unitOut} />
+                        <ReadRow label="Encargado" value={group.managerName} />
+                        <ReadRow label="Tel\u00e9fono" value={group.managerPhone} />
+                        {canEdit && onGroupFieldChange ? (
+                          <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
+                        ) : (
+                          <MetricBadges group={group} />
+                        )}
+                        {showArrivalCheckbox ? (
                       <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
                         <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { onToggleArrivalGroup?.((groupIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
                         <span>{group.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
                       </label>
                     ) : (
                       group.hasArrived && <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}><Check size={9} /> Llegó del sitio</span>
+                    )}
+                      </>
                     )}
                   </div>
                 );
@@ -524,27 +537,31 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                   <div style={{ fontSize: "0.5rem", color: "var(--text-muted)", marginBottom: "3px" }}>
                     Equipos trabajando juntos \u2014 estad\u00edsticas compartidas
                   </div>
-                  {groups.map((g, i) => (
-                    <div key={i} style={{ padding: "2px 0", borderBottom: i < groups.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
-                      <ReadRow label="Unidad" value={g.unitOut} />
-                      <ReadRow label="Encargado" value={g.managerName} />
-                    </div>
-                  ))}
-                  {canEdit && onGroupFieldChange ? (
-                    <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
-                  ) : (
-                    <MetricBadges group={primaryGroup} />
+                  {canViewDetails && (
+                    <>
+                      {groups.map((g, i) => (
+                        <div key={i} style={{ padding: "2px 0", borderBottom: i < groups.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                          <ReadRow label="Unidad" value={g.unitOut} />
+                          <ReadRow label="Encargado" value={g.managerName} />
+                        </div>
+                      ))}
+                      {canEdit && onGroupFieldChange ? (
+                        <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={onGroupFieldChange as (idx: number, field: string, value: string) => void} />
+                      ) : (
+                        <MetricBadges group={primaryGroup} />
+                      )}
+                      {showArrivalCheckbox && groupIndices.map((gIdx) => {
+                        const g = groups[groupIndices.indexOf(gIdx)];
+                        if (!g) return null;
+                        return (
+                          <label key={`arr-${gIdx}`} style={{ fontSize: "0.56rem", fontWeight: 700, color: g.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "3px", cursor: "pointer" }}>
+                            <input type="checkbox" checked={!!g.hasArrived} onChange={(e) => { onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "11px", height: "11px" }} />
+                            <span>{g.groupName || `Equipo ${gIdx + 1}`}: {g.hasArrived ? "Llegó" : "¿Llegó?"}</span>
+                          </label>
+                        );
+                      })}
+                    </>
                   )}
-                  {showArrivalCheckbox && groupIndices.map((gIdx) => {
-                    const g = groups[groupIndices.indexOf(gIdx)];
-                    if (!g) return null;
-                    return (
-                      <label key={`arr-${gIdx}`} style={{ fontSize: "0.56rem", fontWeight: 700, color: g.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "3px", cursor: "pointer" }}>
-                        <input type="checkbox" checked={!!g.hasArrived} onChange={(e) => { onToggleArrivalGroup?.((gIdx + 1) as 1 | 2 | 3 | 4, e.target.checked); }} style={{ cursor: "pointer", width: "11px", height: "11px" }} />
-                        <span>{g.groupName || `Equipo ${gIdx + 1}`}: {g.hasArrived ? "Llegó" : "¿Llegó?"}</span>
-                      </label>
-                    );
-                  })}
                 </div>
               );
             })}
@@ -552,8 +569,8 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
-      {/* Reportes de Hoy - solo para puntos con datos y sin grupos */}
-      {!isPolygon && pointHasMetrics && pointGroups.length === 0 && (
+      {/* Reportes de Hoy - solo para puntos con datos, sin grupos y con permisos */}
+      {!isPolygon && pointHasMetrics && pointGroups.length === 0 && canViewDetails && (
         <div style={sectionBox}>
           <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
             <Activity size={10} /> Reportes de Hoy
