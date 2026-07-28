@@ -20,6 +20,28 @@ export interface ParsedFeature {
   selected: boolean;
 }
 
+function isPointInPolygon(px: number, py: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+function getPolygonCentroid(ring: number[][]): [number, number] | null {
+  if (!ring || ring.length === 0) return null;
+  let cx = 0, cy = 0;
+  for (const c of ring) {
+    cx += c[0];
+    cy += c[1];
+  }
+  return [cx / ring.length, cy / ring.length];
+}
+
 export function useGeoJSONIO(
   db: RxDrawnDatabase | null,
   drawnFeatures: DrawnFeature[],
@@ -40,6 +62,10 @@ export function useGeoJSONIO(
         })
       );
 
+      const existingPolygons = drawnFeatures.filter(
+        (f) => f.type === "polygon" && Array.isArray(f.geojsonGeometry?.coordinates) && (f.geojsonGeometry.coordinates as any[])[0]
+      );
+
       const results: ParsedFeature[] = [];
       geojson.features.forEach((feat, index) => {
         const title = (feat.properties?.title as string) ?? `Elemento ${index + 1}`;
@@ -56,7 +82,24 @@ export function useGeoJSONIO(
 
         const firstCoord = Array.isArray(feat.geometry.coordinates) ? JSON.stringify(feat.geometry.coordinates[0]) : "";
         const key = `${title}|${type}|${firstCoord}`;
-        const isDuplicate = existingKeys.has(key);
+        let isDuplicate = existingKeys.has(key);
+
+        // Spatial check for polygons: if centroid falls inside an existing polygon, it's a duplicate
+        if (!isDuplicate && type === "polygon") {
+          const importRing = (feat.geometry.coordinates as number[][][])?.[0];
+          const centroid = importRing ? getPolygonCentroid(importRing) : null;
+          if (centroid) {
+            for (const existing of existingPolygons) {
+              const existingRing = (existing.geojsonGeometry!.coordinates as number[][][])?.[0];
+              if (existingRing && isPointInPolygon(centroid[0], centroid[1], existingRing)) {
+                isDuplicate = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!isDuplicate) existingKeys.add(key);
 
         results.push({
           index,
@@ -70,8 +113,6 @@ export function useGeoJSONIO(
           isDuplicate,
           selected: !isDuplicate,
         });
-
-        if (!isDuplicate) existingKeys.add(key);
       });
 
       return results;

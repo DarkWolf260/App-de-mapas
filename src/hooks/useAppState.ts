@@ -163,8 +163,12 @@ export function useAppState(isAdmin: boolean) {
 
   const handleImportData = (data: { points: MapPoint[]; areas: MapArea[] }) => {
     if (!isAdmin) return;
+    const existingTitles = new Set(drawnFeatures.map((f) => `${f.title}|${f.type}`));
     if (data.points) {
       for (const p of data.points) {
+        const key = `${p.name}|point`;
+        if (existingTitles.has(key)) continue;
+        existingTitles.add(key);
         handleFeatureAdded({
           id: Number(p.id) || Date.now() + Math.floor(Math.random() * 1000),
           title: p.name,
@@ -177,6 +181,9 @@ export function useAppState(isAdmin: boolean) {
     }
     if (data.areas) {
       for (const a of data.areas) {
+        const key = `${a.name}|polygon`;
+        if (existingTitles.has(key)) continue;
+        existingTitles.add(key);
         handleFeatureAdded({
           id: Number(a.id) || Date.now() + Math.floor(Math.random() * 1000),
           title: a.name,
