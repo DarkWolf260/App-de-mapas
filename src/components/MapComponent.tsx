@@ -226,6 +226,7 @@ interface MapComponentProps {
         {/* Botón Flotante Discreto de Bitácora General (Verde Neón) */}
         {actions.onOpenRangeReport && (
           <button
+            className="bitacora-floating-btn"
             onClick={() => actions.onOpenRangeReport && actions.onOpenRangeReport("all")}
             style={{
               width: "32px",
@@ -254,7 +255,7 @@ interface MapComponentProps {
         {/* Botón Flotante Grupos de Trabajo */}
         {/* Map Settings & Layer Visibility Panel */}
         {props.onToggleLayer && (
-          <div style={{ pointerEvents: "auto" }}>
+          <div style={{ pointerEvents: "auto" }} className="map-settings-wrapper">
             <MapSettingsPanel
               layerVisibility={layerVisibility}
               onToggleLayer={props.onToggleLayer}
@@ -324,10 +325,6 @@ interface MapComponentProps {
         className={`swipe-toggle-btn ${swipeActive ? "active" : ""}`}
         onClick={swipeActive ? deactivateSwipe : activateSwipe}
         title={swipeActive ? "Cerrar comparación" : "Comparar antes/después"}
-        style={{
-          left: "16px",
-          bottom: "36px",
-        }}
       >
         <Satellite size={16} />
         <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Después"}</span>

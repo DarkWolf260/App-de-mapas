@@ -120,7 +120,6 @@ export const FloatingSearchBar: React.FC<FloatingSearchBarProps> = ({
     <div
       ref={containerRef}
       className="floating-search-container"
-      style={{ left: "80px" }}
     >
       <div className="floating-search-bar">
         <Search className="floating-search-icon" size={16} />

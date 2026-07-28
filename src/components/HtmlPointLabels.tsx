@@ -68,6 +68,7 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, onSele
       return (
         <div
           key={lbl.id}
+          className="html-point-label"
           onClick={(e) => {
             e.stopPropagation();
             onSelectLabel?.(lbl.id);

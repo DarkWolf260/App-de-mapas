@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import MapComponent from './components/MapComponent';
 import { Sidebar } from './components/Sidebar';
 import { GlobalStatsWidget } from './components/GlobalStatsWidget';
@@ -10,6 +11,10 @@ import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { AuthModal } from './components/AuthModal';
 import { useAuth } from './hooks/useAuth';
 import { useAppState } from './hooks/useAppState';
+import { MobileBottomBar } from './components/MobileBottomBar';
+import { MobilePersonalSheet } from './components/MobilePersonalSheet';
+import { MobileSettingsSheet } from './components/MobileSettingsSheet';
+import { Sheet } from './components/Sheet';
 import { Menu, ChevronLeft } from 'lucide-react';
 import './App.css';
 
@@ -19,12 +24,31 @@ function App() {
   const { isAdmin, isOperador } = useAuth();
   const state = useAppState(isAdmin);
 
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [mobilePanel, setMobilePanel] = useState<'personal' | 'settings' | null>(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      state.setSidebarCollapsed(true);
+      state.setActiveDepartment('mixto');
+    }
+  }, [isMobile]);
+
   return (
     <div className="app-container">
+      {!isMobile && (
       <div style={{ position: "absolute", top: "16px", right: "65px", zIndex: 130, pointerEvents: "auto" }}>
         <AuthModal />
       </div>
+      )}
 
+      {!isMobile && (
       <button
         className={`toggle-sidebar-btn ${state.sidebarCollapsed ? 'collapsed' : ''}`}
         onClick={() => state.setSidebarCollapsed(!state.sidebarCollapsed)}
@@ -32,6 +56,7 @@ function App() {
       >
         {state.sidebarCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
       </button>
+      )}
 
       <GlobalStatsWidget
         drawnFeatures={state.drawnFeatures}
@@ -40,6 +65,7 @@ function App() {
         showSidebar={!state.sidebarCollapsed}
         showAccumulated={state.showAccumulated}
         onToggleAccumulated={() => state.setShowAccumulated(!state.showAccumulated)}
+        compact={isMobile}
       />
 
       <FloatingSearchBar
@@ -156,6 +182,34 @@ function App() {
       />
 
       <Toast />
+
+      {isMobile && (
+        <MobileBottomBar
+          onOpenPersonal={() => setMobilePanel(mobilePanel === 'personal' ? null : 'personal')}
+          onOpenBitacora={() => { setMobilePanel(null); state.setRangeReportFeature('all'); }}
+          onOpenSettings={() => setMobilePanel(mobilePanel === 'settings' ? null : 'settings')}
+        />
+      )}
+
+      {isMobile && mobilePanel === 'personal' && (
+        <Sheet open={true} onClose={() => setMobilePanel(null)} height="65vh">
+          <MobilePersonalSheet
+            drawnFeatures={state.drawnFeatures}
+            selectedDate={state.selectedDate}
+            activeDepartment={state.activeDepartment}
+            onSelectFeature={(feat) => { setMobilePanel(null); state.setZoomToFeature(feat); }}
+          />
+        </Sheet>
+      )}
+
+      {isMobile && mobilePanel === 'settings' && (
+        <Sheet open={true} onClose={() => setMobilePanel(null)} height="55vh">
+          <MobileSettingsSheet
+            layerVisibility={state.layerVisibility}
+            onToggleLayer={state.handleToggleLayer}
+          />
+        </Sheet>
+      )}
     </div>
   );
 }

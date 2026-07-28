@@ -10,15 +10,17 @@ interface GlobalStatsWidgetProps {
   showSidebar?: boolean;
   showAccumulated?: boolean;
   onToggleAccumulated?: () => void;
+  compact?: boolean;
 }
 
 export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
   drawnFeatures,
   selectedDate,
   activeDepartment = "pc",
-  _showSidebar = false,
+  showSidebar: _showSidebar = false,
   showAccumulated = false,
   onToggleAccumulated,
+  compact = false,
 }) => {
   const todayStr = useMemo(() => selectedDate || new Date().toLocaleDateString('en-CA'), [selectedDate]);
 
@@ -63,6 +65,79 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
     return localStorage.getItem("pc_stats_widget_collapsed") === "true";
   });
 
+  if (compact) {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "44px",
+          background: "rgba(10, 15, 28, 0.95)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+          zIndex: 110,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 10px",
+          fontFamily: "var(--font-sans)",
+          boxShadow: "0 1px 8px rgba(0,0,0,0.4)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, justifyContent: "center", overflow: "hidden" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.rescuedPeople}</span>
+            <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#38bdf8", textTransform: "uppercase", opacity: 0.8 }}>Rescatados</span>
+          </div>
+          <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "0.8rem" }}>|</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.recoveredBodies}</span>
+            <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#ef4444", textTransform: "uppercase", opacity: 0.8 }}>Cadáveres</span>
+          </div>
+          <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "0.8rem" }}>|</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.rescuedPets}</span>
+            <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#22c55e", textTransform: "uppercase", opacity: 0.8 }}>Mascotas</span>
+          </div>
+          <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "0.8rem" }}>|</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.prehospitalCare}</span>
+            <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#38bdf8", textTransform: "uppercase", opacity: 0.8 }}>Atenciones</span>
+          </div>
+          <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "0.8rem" }}>|</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.transfers}</span>
+            <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#c084fc", textTransform: "uppercase", opacity: 0.8 }}>Traslados</span>
+          </div>
+        </div>
+
+        {onToggleAccumulated && (
+          <button
+            onClick={onToggleAccumulated}
+            style={{
+              padding: "3px 8px",
+              borderRadius: "4px",
+              border: `1px solid ${showAccumulated ? "rgba(56,189,248,0.3)" : "rgba(255,255,255,0.1)"}`,
+              background: showAccumulated ? "rgba(56,189,248,0.12)" : "transparent",
+              color: showAccumulated ? "#38bdf8" : "var(--text-muted)",
+              cursor: "pointer",
+              fontSize: "0.52rem",
+              fontWeight: 700,
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            {showAccumulated ? "Acum." : "Hoy"}
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -86,30 +161,30 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
       }}
     >
       {/* Stats Display */}
-      <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: compact ? "6px" : "14px" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "var(--color-info)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>Rescatados</span>
-          <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.rescuedPeople}</span>
+          <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "var(--color-info)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "R." : "Rescatados"}</span>
+          <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.rescuedPeople}</span>
         </div>
-        <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+        <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.08)" }} />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>Cadáveres</span>
-          <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.recoveredBodies}</span>
+          <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "C." : "Cadáveres"}</span>
+          <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.recoveredBodies}</span>
         </div>
-        <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+        <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.08)" }} />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "var(--color-green)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>Mascotas</span>
-          <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.rescuedPets}</span>
+          <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "var(--color-green)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "M." : "Mascotas"}</span>
+          <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.rescuedPets}</span>
         </div>
-        <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+        {!compact && <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.08)" }} />}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#38bdf8", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>Atenciones</span>
-          <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.prehospitalCare}</span>
+          <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "#38bdf8", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "At." : "Atenciones"}</span>
+          <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.prehospitalCare}</span>
         </div>
-        <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+        <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.08)" }} />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "var(--color-purple)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>Traslados</span>
-          <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.transfers}</span>
+          <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "var(--color-purple)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "T." : "Traslados"}</span>
+          <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.transfers}</span>
         </div>
       </div>
 

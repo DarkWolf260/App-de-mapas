@@ -3,7 +3,7 @@ import ImageryTileLayer from "@arcgis/core/layers/ImageryTileLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
 import RasterStretchRenderer from "@arcgis/core/renderers/RasterStretchRenderer";
 import Swipe from "@arcgis/core/widgets/Swipe";
-import { X, ChevronLeft, ChevronRight, AlertTriangle, Layers, Check, Loader } from "lucide-react";
+import { X, ChevronUp, ChevronDown, AlertTriangle, Layers, Check, Loader } from "lucide-react";
 import type MapView from "@arcgis/core/views/MapView";
 
 const COG_SOURCES = [
@@ -149,14 +149,23 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
       view: view,
       leadingLayers: [],
       trailingLayers: [groupLayer],
-      direction: "horizontal",
+      direction: "vertical",
       position: 50,
     });
 
     swipeWidgetRef.current = swipeWidget;
     view.ui.add(swipeWidget);
 
-    loadCog("cogB");
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+      COG_SOURCES.forEach((src) => {
+        loadCog(src.id);
+        setLayerVis((prev) => ({ ...prev, [src.id]: true }));
+      });
+    } else {
+      loadCog("cogB");
+    }
 
     return () => {
       try {
@@ -180,25 +189,34 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
       <div className="swipe-overlay">
         <div className="swipe-label-bar">
           <span className="swipe-label swipe-label-before">
-            <ChevronLeft size={14} />
-            ACTUAL
+            <ChevronUp size={14} />
+            ARRIBA
           </span>
           <span className="swipe-label swipe-label-divider">|</span>
           <span className="swipe-label swipe-label-after">
             POST-SISMO
-            <ChevronRight size={14} />
+            <ChevronDown size={14} />
           </span>
         </div>
       </div>
 
-      <button
-        className="swipe-layer-toggle"
-        onClick={() => setPanelOpen((p) => !p)}
-        title="Seleccionar capas"
-        style={{ left: leftPos }}
-      >
-        <Layers size={16} />
-      </button>
+      <div className="swipe-buttons-group">
+        <button
+          className="swipe-layer-toggle"
+          onClick={() => setPanelOpen((p) => !p)}
+          title="Seleccionar capas"
+        >
+          <Layers size={16} />
+        </button>
+
+        <button
+          className="swipe-close-btn"
+          onClick={_onClose}
+          title="Cerrar comparación"
+        >
+          <X size={16} />
+        </button>
+      </div>
 
       {panelOpen && (
         <div
