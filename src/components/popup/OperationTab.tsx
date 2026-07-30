@@ -1,17 +1,16 @@
-import React from "react";
-import { Save, Plus, Trash2, Calendar, Shield, Flame, Users, FileText } from "lucide-react";
-import type { DailyLog, DepartmentView, Department, GroupLogEntry } from "../../types";
-import { inputStyle, sectionBox, saveBtnStyle } from "./popupStyles";
+import React, { useState } from "react";
+import type { DailyLog, Department, DepartmentView, GroupLogEntry } from "../../types";
+import { Save, Check, Shield, Flame, Users, Calendar, Trash2, Plus } from "lucide-react";
 import { GroupFields } from "../GroupFields";
+import { inputStyle, sectionBox, saveBtnStyle } from "./popupStyles";
+import { GROUP_COLORS, getGroupColor } from "./metricFields";
 
 interface OperationTabProps {
-  localLog: Partial<DailyLog>;
+  localLog: DailyLog;
   popupEditDate: string;
-  setPopupEditDate: (date: string) => void;
-  showSecondGroup: boolean;
-  setShowSecondGroup: (show: boolean) => void;
-  onFieldChange: (field: string, val: unknown) => void;
-  onSave: () => void;
+  setPopupEditDate: (d: string) => void;
+  onFieldChange: (field: keyof DailyLog, value: string | boolean) => void;
+  onSave: () => Promise<void>;
   saveSuccess: boolean;
   activeDepartment?: DepartmentView;
   selectedDept?: Department;
@@ -22,8 +21,6 @@ export const OperationTab: React.FC<OperationTabProps> = ({
   localLog,
   popupEditDate,
   setPopupEditDate,
-  _showSecondGroup,
-  _setShowSecondGroup,
   onFieldChange,
   onSave,
   saveSuccess,
@@ -32,7 +29,7 @@ export const OperationTab: React.FC<OperationTabProps> = ({
   onDepartmentSelect,
 }) => {
   const groupsArray = localLog.groups || [];
-  const [activeGroupCount, setActiveGroupCount] = React.useState<number>(() => Math.max(1, groupsArray.length || 1));
+  const [activeGroupCount, setActiveGroupCount] = useState<number>(() => Math.max(1, groupsArray.length || 1));
 
   const handleGroupFieldChange = (groupIdx: number, field: string, value: string | boolean) => {
     const groups = [...(localLog.groups || [])];
@@ -46,86 +43,91 @@ export const OperationTab: React.FC<OperationTabProps> = ({
     return groups[idx] || { id: crypto.randomUUID(), groupName: "" };
   };
 
-  const clearGroupSlot = (idx: number) => {
-    const updated = (localLog.groups || []).filter((_, i) => i !== idx - 1);
-    onFieldChange("groups", updated as unknown as string | boolean);
-    if (idx === activeGroupCount && activeGroupCount > 1) {
-      setActiveGroupCount((c) => c - 1);
+  const clearGroupSlot = (groupNum: number) => {
+    const idx = groupNum - 1;
+    const groups = [...(localLog.groups || [])];
+    if (idx < groups.length) {
+      groups.splice(idx, 1);
+      onFieldChange("groups", groups as unknown as string | boolean);
     }
+    setActiveGroupCount((c) => Math.max(1, c - 1));
   };
 
-  const GROUP_COLORS = ["var(--color-info)", "var(--color-purple)", "#c084fc", "#fb923c", "#38bdf8", "#4ade80", "#f43f5e", "#a855f7"];
-  const getGroupColor = (idx: number) => GROUP_COLORS[(idx - 1) % GROUP_COLORS.length];
+  const currentDept = localLog.department || selectedDept || "pc";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px", height: "100%" }}>
-      {/* Sección: Registro Diario */}
-      <div style={{ ...sectionBox, background: "rgba(34, 197, 94, 0.04)", borderColor: "rgba(34, 197, 94, 0.2)" }}>
-        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#22c55e", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-          <Calendar size={10} /> Registro Diario
-        </div>
-        <input
-          type="date"
-          value={popupEditDate}
-          onChange={(e) => setPopupEditDate(e.target.value)}
-          style={{ background: "rgba(0, 0, 0, 0.3)", border: "1px solid var(--border-subtle)", borderRadius: "5px", color: "var(--text-main)", fontSize: "0.68rem", padding: "4px 8px", cursor: "pointer", outline: "none", width: "100%" }}
-        />
-      </div>
-
-      {/* Sección: Departamento (solo mixto) */}
-      {activeDepartment === "mixto" && onDepartmentSelect && (
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {/* Selector de Departamento */}
+      {activeDepartment === "mixto" && (
         <div style={{ ...sectionBox, background: "rgba(255, 255, 255, 0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
           <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-muted)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-            <Shield size={10} /> Departamento
+            <Shield size={10} /> Departamento del Registro
           </div>
           <div style={{ display: "flex", gap: "4px" }}>
             <button
               type="button"
-              onClick={() => onDepartmentSelect("pc")}
+              onClick={() => {
+                onFieldChange("department", "pc");
+                onDepartmentSelect?.("pc");
+              }}
               style={{
                 flex: 1,
-                padding: "5px 6px",
+                padding: "4px 6px",
                 borderRadius: "6px",
-                border: selectedDept === "pc" ? "1px solid rgba(56, 189, 248, 0.6)" : "1px solid transparent",
-                background: selectedDept === "pc" ? "rgba(56, 189, 248, 0.18)" : "rgba(255, 255, 255, 0.03)",
-                color: selectedDept === "pc" ? "var(--color-info)" : "var(--text-muted)",
-                fontSize: "0.64rem",
+                border: currentDept === "pc" ? "1px solid rgba(56, 189, 248, 0.6)" : "1px solid transparent",
+                background: currentDept === "pc" ? "rgba(56, 189, 248, 0.18)" : "rgba(255, 255, 255, 0.03)",
+                color: currentDept === "pc" ? "var(--color-info)" : "var(--text-muted)",
+                fontSize: "0.62rem",
                 fontWeight: 700,
                 cursor: "pointer",
-                transition: "all 0.15s ease",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "4px",
+                gap: "3px",
               }}
             >
-              <Shield size={11} /> Protección Civil
+              <Shield size={10} /> Protección Civil
             </button>
             <button
               type="button"
-              onClick={() => onDepartmentSelect("bomberos")}
+              onClick={() => {
+                onFieldChange("department", "bomberos");
+                onDepartmentSelect?.("bomberos");
+              }}
               style={{
                 flex: 1,
-                padding: "5px 6px",
+                padding: "4px 6px",
                 borderRadius: "6px",
-                border: selectedDept === "bomberos" ? "1px solid rgba(239, 68, 68, 0.6)" : "1px solid transparent",
-                background: selectedDept === "bomberos" ? "rgba(239, 68, 68, 0.18)" : "rgba(255, 255, 255, 0.03)",
-                color: selectedDept === "bomberos" ? "#ef4444" : "var(--text-muted)",
-                fontSize: "0.64rem",
+                border: currentDept === "bomberos" ? "1px solid rgba(239, 68, 68, 0.6)" : "1px solid transparent",
+                background: currentDept === "bomberos" ? "rgba(239, 68, 68, 0.18)" : "rgba(255, 255, 255, 0.03)",
+                color: currentDept === "bomberos" ? "#ef4444" : "var(--text-muted)",
+                fontSize: "0.62rem",
                 fontWeight: 700,
                 cursor: "pointer",
-                transition: "all 0.15s ease",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "4px",
+                gap: "3px",
               }}
             >
-              <Flame size={11} /> Bomberos
+              <Flame size={10} /> Bomberos
             </button>
           </div>
         </div>
       )}
+
+      {/* Fecha */}
+      <div style={{ ...sectionBox, background: "rgba(255, 255, 255, 0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
+        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-muted)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+          <Calendar size={10} /> Fecha de Operación
+        </div>
+        <input
+          type="date"
+          value={popupEditDate}
+          onChange={(e) => e.target.value && setPopupEditDate(e.target.value)}
+          style={{ ...inputStyle, cursor: "pointer" }}
+        />
+      </div>
 
       {/* Sección: Grupos de Trabajo */}
       <div style={{ ...sectionBox, background: "rgba(56, 189, 248, 0.03)", borderColor: "rgba(56, 189, 248, 0.15)" }}>
@@ -135,29 +137,25 @@ export const OperationTab: React.FC<OperationTabProps> = ({
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {Array.from({ length: activeGroupCount }).map((_, i) => {
-            const color = getGroupColor(i + 1);
+            const color = getGroupColor(i);
             return (
               <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "6px", padding: "5px 7px", transition: "all 0.15s ease" }}>
-                {i > 0 ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px", paddingBottom: "2px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <span style={{ fontSize: "0.63rem", fontWeight: 700, color }}>
-                      Grupo #{i + 1}
-                    </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px", paddingBottom: "2px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                  <span style={{ fontSize: "0.63rem", fontWeight: 700, color, display: "flex", alignItems: "center", gap: "4px" }}>
+                    <Users size={9} /> Grupo {i + 1}
+                  </span>
+                  {i > 0 && (
                     <button type="button" onClick={() => clearGroupSlot(i + 1)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "4px", color: "#f87171", fontSize: "0.52rem", fontWeight: 700, padding: "1px 5px", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }} title={`Quitar Grupo ${i + 1}`}>
                       <Trash2 size={8} /> Quitar
                     </button>
-                  </div>
-                ) : (
-                  <div style={{ fontSize: "0.63rem", fontWeight: 700, color, paddingBottom: "2px", marginBottom: "2px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "4px" }}>
-                    <Users size={9} /> Grupo 1
-                  </div>
-                )}
+                  )}
+                </div>
                 <GroupFields
                   groupIndex={i}
                   group={groupAt(i)}
                   onGroupFieldChange={handleGroupFieldChange}
                   colorVar={color}
-                  hideHeader={i > 0}
+                  hideHeader
                 />
               </div>
             );
@@ -166,9 +164,26 @@ export const OperationTab: React.FC<OperationTabProps> = ({
           <button
             type="button"
             onClick={() => setActiveGroupCount((c) => c + 1)}
-            style={{ background: "transparent", border: `1px dashed ${getGroupColor(activeGroupCount + 1)}80`, borderRadius: "6px", color: getGroupColor(activeGroupCount + 1), fontSize: "0.62rem", padding: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
+            style={{
+              background: "rgba(168, 85, 247, 0.12)",
+              border: "1px solid rgba(168, 85, 247, 0.4)",
+              borderRadius: "6px",
+              color: "#c084fc",
+              fontSize: "0.65rem",
+              fontWeight: 700,
+              fontFamily: "var(--font-sans)",
+              letterSpacing: "0.02em",
+              padding: "5px 10px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "5px",
+              transition: "all 0.2s ease",
+              marginTop: "4px",
+            }}
           >
-            <Plus size={10} /> Añadir Grupo #{activeGroupCount + 1}
+            <Plus size={11} /> Añadir Grupo #{activeGroupCount + 1}
           </button>
         </div>
       </div>
@@ -180,23 +195,27 @@ export const OperationTab: React.FC<OperationTabProps> = ({
 
       {/* Sección: Observaciones */}
       <div style={{ ...sectionBox, background: "rgba(168, 85, 247, 0.03)", borderColor: "rgba(168, 85, 247, 0.12)", flex: 1, display: "flex", flexDirection: "column" }}>
-        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#a855f7", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-          <FileText size={10} /> Observación del Día
+        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#a855f7", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px" }}>
+          Observación / Notas del Día
         </div>
         <textarea
+          style={{ ...inputStyle, flex: 1, minHeight: "50px", resize: "vertical" }}
+          placeholder="Notas u observaciones..."
           value={localLog.observations || ""}
           onChange={(e) => onFieldChange("observations", e.target.value)}
-          style={{ ...inputStyle, resize: "vertical", height: "50px", minHeight: "40px", flex: 1 }}
-          placeholder="Notas u observaciones de hoy..."
         />
       </div>
 
       {/* Botón Guardar */}
-      <div style={{ marginTop: "auto" }}>
-        <button type="button" onClick={onSave} style={{ ...saveBtnStyle(saveSuccess), width: "100%", padding: "8px", fontSize: "0.75rem", fontWeight: 700 }}>
-          <Save size={13} /> {saveSuccess ? "¡Registro Guardado!" : "Guardar Registro"}
-        </button>
-      </div>
+      {saveSuccess && (
+        <span style={{ fontSize: "0.62rem", color: "#22c55e", fontWeight: 700, display: "flex", alignItems: "center", gap: "3px" }}>
+          <Check size={11} /> Guardado correctamente
+        </span>
+      )}
+      <button type="button" onClick={onSave} style={saveBtnStyle(saveSuccess)}>
+        <Save size={13} />
+        {saveSuccess ? "Guardado" : "Guardar Registro"}
+      </button>
     </div>
   );
 };

@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from "react";
 import type { DailyLog, DepartmentView, GroupLogEntry } from "../types";
-import { Save, Check, Shield, Flame, BookUser, Users, FileText, Plus, Trash2 } from "lucide-react";
+import { Save, Check, Shield, Flame, Users, FileText, Plus, Trash2 } from "lucide-react";
 import { GroupFields } from "./GroupFields";
 import { inputStyle, sectionBox, saveBtnStyle } from "./popup/popupStyles";
+import { getGroupColor } from "./popup/metricFields";
 
 interface GroupLogFormProps {
   draft: DailyLog;
@@ -66,8 +67,17 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
     return groups[idx] || { id: crypto.randomUUID(), groupName: "" };
   };
 
-  const GROUP_COLORS = ["#22c55e", "var(--color-info)", "var(--color-purple)", "#c084fc", "#fb923c"];
-  const getGroupColor = (idx: number) => GROUP_COLORS[(idx - 1) % GROUP_COLORS.length];
+  const headerStyle = (color: string): React.CSSProperties => ({
+    fontSize: "0.63rem",
+    fontWeight: 700,
+    color,
+    paddingBottom: "2px",
+    marginBottom: "4px",
+    borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: compact ? "6px" : "8px" }}>
@@ -124,15 +134,15 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
       )}
 
       {/* GRUPO 1 */}
-      <div style={{ ...sectionBox, background: "rgba(34, 197, 94, 0.04)", borderColor: "rgba(34, 197, 94, 0.2)" }}>
-        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: getGroupColor(1), paddingBottom: "2px", marginBottom: "2px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "4px" }}>
-          <Users size={10} /> Grupo 1
+      <div style={{ ...sectionBox, background: "rgba(56, 189, 248, 0.03)", borderColor: "rgba(56, 189, 248, 0.15)" }}>
+        <div style={headerStyle(getGroupColor(0))}>
+          <Users size={9} /> Grupo 1
         </div>
         <GroupFields
           groupIndex={0}
           group={groupAt(0)}
           onGroupFieldChange={handleGroupFieldChange}
-          colorVar={getGroupColor(1)}
+          colorVar={getGroupColor(0)}
           hideHeader
         />
       </div>
@@ -142,25 +152,57 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
         <button
           type="button"
           onClick={handleToggleGroup2}
-          style={{ background: "transparent", border: `1px dashed ${getGroupColor(2)}80`, borderRadius: "6px", color: getGroupColor(2), fontSize: "0.62rem", padding: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
+          style={{
+            background: "rgba(168, 85, 247, 0.12)",
+            border: "1px solid rgba(168, 85, 247, 0.4)",
+            borderRadius: "6px",
+            color: "#c084fc",
+            fontSize: "0.65rem",
+            fontWeight: 700,
+            fontFamily: "var(--font-sans)",
+            letterSpacing: "0.02em",
+            padding: "5px 10px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "5px",
+            transition: "all 0.2s ease",
+          }}
         >
-          <Plus size={10} /> Registrar Segundo Grupo
+          <Plus size={11} /> Registrar Segundo Grupo
         </button>
       ) : (
-        <div style={{ ...sectionBox, background: "rgba(56, 189, 248, 0.04)", borderColor: "rgba(56, 189, 248, 0.2)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", paddingBottom: "2px", marginBottom: "2px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-            <span style={{ fontSize: "0.62rem", fontWeight: 700, color: getGroupColor(2), display: "flex", alignItems: "center", gap: "4px" }}>
-              <Users size={9} /> Grupo 2 (Opcional)
-            </span>
-            <button type="button" onClick={handleToggleGroup2} style={{ marginLeft: "auto", background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "4px", color: "#f87171", fontSize: "0.52rem", fontWeight: 700, padding: "1px 5px", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }}>
-              <Trash2 size={8} /> Remover
+        <div style={{ ...sectionBox, background: "rgba(168, 85, 247, 0.03)", borderColor: "rgba(168, 85, 247, 0.15)" }}>
+          <div style={headerStyle(getGroupColor(1))}>
+            <Users size={9} /> Grupo 2
+            <button
+              type="button"
+              onClick={handleToggleGroup2}
+              style={{
+                marginLeft: "auto",
+                background: "transparent",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+                borderRadius: "4px",
+                color: "#f87171",
+                fontSize: "0.52rem",
+                fontWeight: 700,
+                padding: "1px 5px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "3px",
+              }}
+              title="Quitar Grupo 2"
+            >
+              <Trash2 size={8} /> Quitar
             </button>
           </div>
           <GroupFields
             groupIndex={1}
             group={groupAt(1)}
             onGroupFieldChange={handleGroupFieldChange}
-            colorVar={getGroupColor(2)}
+            colorVar={getGroupColor(1)}
             hideHeader
           />
         </div>
@@ -171,25 +213,57 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
         <button
           type="button"
           onClick={handleToggleGroup3}
-          style={{ background: "transparent", border: `1px dashed ${getGroupColor(3)}80`, borderRadius: "6px", color: getGroupColor(3), fontSize: "0.62rem", padding: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
+          style={{
+            background: "rgba(251, 146, 60, 0.12)",
+            border: "1px solid rgba(251, 146, 60, 0.4)",
+            borderRadius: "6px",
+            color: "#fb923c",
+            fontSize: "0.65rem",
+            fontWeight: 700,
+            fontFamily: "var(--font-sans)",
+            letterSpacing: "0.02em",
+            padding: "5px 10px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "5px",
+            transition: "all 0.2s ease",
+          }}
         >
-          <Plus size={10} /> Registrar Tercer Grupo
+          <Plus size={11} /> Registrar Tercer Grupo
         </button>
       ) : (
-        <div style={{ ...sectionBox, background: "rgba(168, 85, 247, 0.04)", borderColor: "rgba(168, 85, 247, 0.2)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", paddingBottom: "2px", marginBottom: "2px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-            <span style={{ fontSize: "0.62rem", fontWeight: 700, color: getGroupColor(3), display: "flex", alignItems: "center", gap: "4px" }}>
-              <Users size={9} /> Grupo 3 (Opcional)
-            </span>
-            <button type="button" onClick={handleToggleGroup3} style={{ marginLeft: "auto", background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "4px", color: "#f87171", fontSize: "0.52rem", fontWeight: 700, padding: "1px 5px", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }}>
-              <Trash2 size={8} /> Remover
+        <div style={{ ...sectionBox, background: "rgba(251, 146, 60, 0.03)", borderColor: "rgba(251, 146, 60, 0.15)" }}>
+          <div style={headerStyle(getGroupColor(2))}>
+            <Users size={9} /> Grupo 3
+            <button
+              type="button"
+              onClick={handleToggleGroup3}
+              style={{
+                marginLeft: "auto",
+                background: "transparent",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+                borderRadius: "4px",
+                color: "#f87171",
+                fontSize: "0.52rem",
+                fontWeight: 700,
+                padding: "1px 5px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "3px",
+              }}
+              title="Quitar Grupo 3"
+            >
+              <Trash2 size={8} /> Quitar
             </button>
           </div>
           <GroupFields
             groupIndex={2}
             group={groupAt(2)}
             onGroupFieldChange={handleGroupFieldChange}
-            colorVar={getGroupColor(3)}
+            colorVar={getGroupColor(2)}
             hideHeader
           />
         </div>
@@ -200,25 +274,57 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
         <button
           type="button"
           onClick={handleToggleGroup4}
-          style={{ background: "transparent", border: `1px dashed ${getGroupColor(4)}80`, borderRadius: "6px", color: getGroupColor(4), fontSize: "0.62rem", padding: "5px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", transition: "all 0.2s ease" }}
+          style={{
+            background: "rgba(52, 211, 153, 0.12)",
+            border: "1px solid rgba(52, 211, 153, 0.4)",
+            borderRadius: "6px",
+            color: "#34d399",
+            fontSize: "0.65rem",
+            fontWeight: 700,
+            fontFamily: "var(--font-sans)",
+            letterSpacing: "0.02em",
+            padding: "5px 10px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "5px",
+            transition: "all 0.2s ease",
+          }}
         >
-          <Plus size={10} /> Registrar Cuarto Grupo
+          <Plus size={11} /> Registrar Cuarto Grupo
         </button>
       ) : (
-        <div style={{ ...sectionBox, background: "rgba(251, 146, 60, 0.04)", borderColor: "rgba(251, 146, 60, 0.2)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", paddingBottom: "2px", marginBottom: "2px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-            <span style={{ fontSize: "0.62rem", fontWeight: 700, color: getGroupColor(4), display: "flex", alignItems: "center", gap: "4px" }}>
-              <Users size={9} /> Grupo 4 (Opcional)
-            </span>
-            <button type="button" onClick={handleToggleGroup4} style={{ marginLeft: "auto", background: "transparent", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "4px", color: "#f87171", fontSize: "0.52rem", fontWeight: 700, padding: "1px 5px", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }}>
-              <Trash2 size={8} /> Remover
+        <div style={{ ...sectionBox, background: "rgba(52, 211, 153, 0.03)", borderColor: "rgba(52, 211, 153, 0.15)" }}>
+          <div style={headerStyle(getGroupColor(3))}>
+            <Users size={9} /> Grupo 4
+            <button
+              type="button"
+              onClick={handleToggleGroup4}
+              style={{
+                marginLeft: "auto",
+                background: "transparent",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+                borderRadius: "4px",
+                color: "#f87171",
+                fontSize: "0.52rem",
+                fontWeight: 700,
+                padding: "1px 5px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "3px",
+              }}
+              title="Quitar Grupo 4"
+            >
+              <Trash2 size={8} /> Quitar
             </button>
           </div>
           <GroupFields
             groupIndex={3}
             group={groupAt(3)}
             onGroupFieldChange={handleGroupFieldChange}
-            colorVar={getGroupColor(4)}
+            colorVar={getGroupColor(3)}
             hideHeader
           />
         </div>
@@ -240,7 +346,11 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
       {/* Save button */}
       {onSave && (
         <div style={{ marginTop: "4px" }}>
-          {saved && <span style={{ fontSize: "0.62rem", color: "#22c55e", fontWeight: 700, display: "flex", alignItems: "center", gap: "3px", marginBottom: "4px" }}><Check size={11} /> Guardado</span>}
+          {saved && (
+            <span style={{ fontSize: "0.62rem", color: "#22c55e", fontWeight: 700, display: "flex", alignItems: "center", gap: "3px", marginBottom: "4px" }}>
+              <Check size={11} /> Guardado
+            </span>
+          )}
           <button type="button" onClick={onSave} disabled={saving} style={{ ...saveBtnStyle(saved), width: "100%", padding: "8px", fontSize: "0.72rem", fontWeight: 700 }}>
             <Save size={12} />
             {saving ? "Guardando…" : "Guardar registro"}
@@ -250,5 +360,3 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
     </div>
   );
 };
-
-export { inputStyle as INPUT_STYLE_CONST, labelStyle as LABEL_STYLE_CONST } from "./popup/popupStyles";

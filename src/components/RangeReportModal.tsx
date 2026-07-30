@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import type { DrawnFeature, DailyLog, DepartmentView, NovedadEntry, NovedadType } from "../types";
-import { Printer } from "lucide-react";
+
 import { ConfirmModal } from "./ConfirmModal";
 import { buildParentsMap } from "../utils/spatialUtils";
 import {
@@ -326,9 +326,6 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     await onSaveDailyLog(pt.id, updatedLog);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
 
   const handleSortToggle = (key: typeof statsSortKey) => {
     if (statsSortKey === key) setStatsSortDir((d) => (d === "desc" ? "asc" : "desc"));
@@ -510,18 +507,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
           />
         )}
 
-        {/* Footer */}
-        <div className="rr-footer">
-          <div className="rr-footer-left">
-            <button onClick={handlePrint} className="rr-print-btn">
-              <Printer size={12} />
-              Imprimir
-            </button>
-          </div>
-          <button onClick={onClose} className="sim-btn" style={{ padding: "5px 18px", fontSize: "0.72rem" }}>
-            Cerrar
-          </button>
-        </div>
+
       </div>
 
       {/* Confirm modal for novedad delete */}
