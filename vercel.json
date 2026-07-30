@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/consolidado", "destination": "/consolidado.html" }
+    { "source": "/consolidado", "destination": "/consolidado.html" },
+    { "source": "/login", "destination": "/login.html" }
   ]
 }

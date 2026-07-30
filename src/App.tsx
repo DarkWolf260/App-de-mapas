@@ -15,14 +15,13 @@ import { MobileBottomBar } from './components/MobileBottomBar';
 import { MobilePersonalSheet } from './components/MobilePersonalSheet';
 import { MobileSettingsSheet } from './components/MobileSettingsSheet';
 import { Sheet } from './components/Sheet';
-import { DashboardView } from './components/dashboard/DashboardView';
-import { Menu, ChevronLeft, LayoutDashboard, FileSpreadsheet } from 'lucide-react';
+import { Menu, ChevronLeft, LogOut, FileSpreadsheet } from 'lucide-react';
 import './App.css';
 
 function App() {
   const apiKey: string = import.meta.env.VITE_ARCGIS_API_KEY || '';
   const [activeCity] = ['venezuela'];
-  const { isAdmin, isOperador, isAuthenticated } = useAuth();
+  const { isAdmin, isOperador, isAuthenticated, user, logout, loading } = useAuth();
   const state = useAppState(isAdmin);
 
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
@@ -41,13 +40,37 @@ function App() {
     }
   }, [isMobile]);
 
+  if (loading) {
+    return (
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100vh",
+        background: "var(--bg-primary)",
+        color: "var(--text-muted)",
+        fontFamily: "var(--font-sans)",
+      }}>
+        <div style={{
+          width: "36px",
+          height: "36px",
+          border: "3px solid rgba(255,255,255,0.08)",
+          borderTopColor: "var(--accent-orange)",
+          borderRadius: "50%",
+          animation: "spin 0.8s linear infinite",
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       {!isMobile && (
       <div style={{ position: "absolute", top: "16px", right: "65px", zIndex: 130, pointerEvents: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
         <button
           onClick={() => window.open('/consolidado', '_blank')}
-          title="Ver Consolidado Operativo"
+          title="Panel de Informacion"
           style={{
             height: "34px",
             padding: "0 12px",
@@ -55,43 +78,73 @@ function App() {
             border: "1px solid rgba(56, 189, 248, 0.3)",
             background: "rgba(10, 15, 28, 0.9)",
             color: "#38bdf8",
-            fontSize: "0.76rem",
+            fontSize: "0.72rem",
             fontWeight: 700,
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
-            gap: "6px",
+            gap: "5px",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
           }}
         >
-          <FileSpreadsheet size={16} />
-          <span>Consolidado Operativo</span>
+          <FileSpreadsheet size={14} />
+          <span>Info</span>
         </button>
-        <button
-          onClick={() => state.setDashboardOpen(true)}
-          title="Abrir dashboard de situación"
-          style={{
-            width: "34px",
-            height: "34px",
-            borderRadius: "10px",
-            border: "1px solid rgba(255, 255, 255, 0.14)",
-            background: "rgba(10, 15, 28, 0.9)",
-            color: "var(--color-info)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
-            padding: 0,
-          }}
-        >
-          <LayoutDashboard size={17} />
-        </button>
-        <AuthModal />
+        {isAuthenticated ? (
+          <button
+            onClick={logout}
+            title="Cerrar sesion"
+            style={{
+              height: "34px",
+              padding: "0 12px",
+              borderRadius: "10px",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              background: "rgba(10, 15, 28, 0.9)",
+              color: "#ef4444",
+              fontSize: "0.72rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
+            }}
+          >
+            <LogOut size={14} />
+            <span style={{ fontSize: "0.68rem", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {user?.email?.split("@")[0]}
+            </span>
+          </button>
+        ) : (
+          <button
+            onClick={() => window.location.href = '/login'}
+            title="Iniciar sesion"
+            style={{
+              height: "34px",
+              padding: "0 14px",
+              borderRadius: "10px",
+              border: "1px solid rgba(249, 115, 22, 0.4)",
+              background: "rgba(10, 15, 28, 0.9)",
+              color: "#f97316",
+              fontSize: "0.76rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
+            }}
+          >
+            <LogOut size={14} style={{ transform: "rotate(180deg)" }} />
+            <span>Iniciar Sesion</span>
+          </button>
+        )}
       </div>
       )}
 
@@ -232,58 +285,6 @@ function App() {
       />
 
       <Toast />
-
-      {state.dashboardOpen && (
-        <DashboardView
-          drawnFeatures={state.drawnFeatures}
-          selectedDate={state.selectedDate}
-          onSelectedDateChange={state.setSelectedDate}
-          onClose={() => state.setDashboardOpen(false)}
-          canEdit={isAuthenticated}
-          dailyActivity={state.dailyActivity}
-          onFetchDailyActivity={state.fetchDailyActivity}
-          onSaveDailyActivity={state.saveDailyActivity}
-          map={
-            <MapComponent
-              bare
-              apiKey={apiKey}
-              activeCity={activeCity}
-              activeBasemap="hybrid"
-              layerVisibility={{ ...state.layerVisibility, sketch: false }}
-              drawnFeatures={state.drawnFeatures}
-              hiddenFeatures={state.hiddenFeatures}
-              zoomToFeature={null}
-              removeFeatureId={state.removeFeatureId}
-              importedFeatures={state.importedFeatures}
-              zoomToCoords={null}
-              actions={{
-                onFeatureAdded: state.handleFeatureAdded,
-                onFeatureDeleted: state.handleFeatureDeleted,
-                onSaveDailyLog: state.handleSaveDailyLog,
-                onToggleFeatureLock: state.handleToggleFeatureLock,
-                onRenameFeature: state.handleRenameFeature,
-                onUpdateFeatureDescription: state.handleUpdateFeatureDescription,
-                onUpdateFeatureColor: state.handleUpdateFeatureColor,
-                onUpdateFeatureCollapsed: state.handleUpdateFeatureCollapsed,
-                onRefreshFeatures: state.refreshFeatures,
-              }}
-              ui={{
-                selectedDate: state.selectedDate,
-                activeDepartment: state.activeDepartment,
-                showSidebar: false,
-                isAdmin: false,
-                isOperador,
-                isAuthenticated,
-                showAccumulated: state.showAccumulated,
-                showPoints: state.showPoints,
-                showAreas: state.showAreas,
-                sidebarOpen: false,
-                bitacoraOpen: false,
-              }}
-            />
-          }
-        />
-      )}
 
 
       {isMobile && (

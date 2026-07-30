@@ -402,6 +402,27 @@ export const PizarraOperacional: React.FC = () => {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button
+            onClick={() => window.location.href = '/'}
+            title="Ir al Mapa"
+            style={{
+              height: "32px",
+              padding: "0 12px",
+              borderRadius: "7px",
+              border: "1px solid rgba(249, 115, 22, 0.3)",
+              background: "rgba(249, 115, 22, 0.1)",
+              color: "var(--accent-orange)",
+              fontSize: "0.7rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              fontFamily: "var(--sans-font)",
+            }}
+          >
+            <MapIcon size={14} /> Mapa
+          </button>
           {/* SELECTOR DE FECHA */}
           <input
             type="date"
