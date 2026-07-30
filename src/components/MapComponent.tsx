@@ -97,6 +97,7 @@ interface MapComponentProps {
       mapPoint = new Point({ longitude: lng, latitude: lat });
     }
     if (!mapPoint) mapPoint = new Point({ longitude: -66.9331, latitude: 10.6000 });
+    ui.onFeatureClick?.();
     setCustomPopup({ mapPoint, feat });
     // Also fly the map to the feature's location
     if (viewRef.current) {
@@ -108,7 +109,7 @@ interface MapComponentProps {
       if (feat.type === "point") target.zoom = Math.max(viewRef.current.zoom, 18);
       viewRef.current.goTo(target, { duration: 400, padding } as any);
     }
-  }, [setCustomPopup, viewRef, ui.sidebarOpen, ui.bitacoraOpen]);
+  }, [setCustomPopup, viewRef, ui.sidebarOpen, ui.bitacoraOpen, ui.onFeatureClick]);
 
   const handlePopupDateChange = React.useCallback((date: string) => {
     setPopupEditDate(date);
@@ -287,6 +288,7 @@ interface MapComponentProps {
                 mapPoint = new Point({ longitude: lng, latitude: lat });
               }
               if (!mapPoint) mapPoint = new Point({ longitude: -66.9331, latitude: 10.6000 });
+              ui.onFeatureClick?.();
               setCustomPopup({ mapPoint, feat });
             }}
             selectedDate={ui.selectedDate}
@@ -319,6 +321,7 @@ interface MapComponentProps {
               mapPoint = new Point({ longitude: lng, latitude: lat });
             }
             if (!mapPoint) mapPoint = new Point({ longitude: -66.9331, latitude: 10.6000 });
+            ui.onFeatureClick?.();
             setCustomPopup({ mapPoint, feat });
           }
         }}
