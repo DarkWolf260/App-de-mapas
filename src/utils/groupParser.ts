@@ -38,6 +38,8 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
         managerName: g.managerName || "",
         managerPhone: g.managerPhone || "",
         unitOut: g.unitOut || "",
+        departureTime: g.departureTime || "",
+        arrivalTime: g.arrivalTime || "",
         officersCount: g.officersCount || "",
         rescuedCount: g.rescuedCount || "",
         recoveredCount: g.recoveredCount || "",
