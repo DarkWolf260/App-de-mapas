@@ -106,19 +106,21 @@ export function useMapInit(
       const compassWidget = new Compass({ view });
       view.ui.add([zoomWidget, compassWidget], "top-right");
 
-      const svm = new SketchViewModel({
-        view,
-        layer: sketchLayer,
-        updateOnGraphicClick: false,
-        defaultUpdateOptions: {
-          tool: "transform",
-          enableRotation: true,
-          enableScaling: true,
-          toggleToolOnClick: false,
-          multipleSelectionEnabled: true,
-        },
-      });
-      sketchVMRef.current = svm;
+      if (layerVisibility.sketch) {
+        const svm = new SketchViewModel({
+          view,
+          layer: sketchLayer,
+          updateOnGraphicClick: false,
+          defaultUpdateOptions: {
+            tool: "transform",
+            enableRotation: true,
+            enableScaling: true,
+            toggleToolOnClick: false,
+            multipleSelectionEnabled: true,
+          },
+        });
+        sketchVMRef.current = svm;
+      }
 
       runDeconflict();
 
@@ -132,7 +134,9 @@ export function useMapInit(
         if (point) setCoords({ lat: point.latitude ?? 0, lng: point.longitude ?? 0 });
       });
 
-      svm.on("create", (evt: any) => {
+      if (layerVisibility.sketch && sketchVMRef.current) {
+        const svm = sketchVMRef.current;
+        svm.on("create", (evt: any) => {
         if (evt.state === "complete") {
           const g = evt.graphic;
           const count = sketchLayer.graphics.filter((x) => !x.attributes?.isLabel && x.geometry?.type === g.geometry?.type).length + 1;
@@ -208,6 +212,7 @@ export function useMapInit(
         });
         runDeconflict();
       });
+      }
 
       view.on("click", async (evt: any) => {
         if (sketchVMRef.current?.activeTool) return;

@@ -1,0 +1,30 @@
+/* Print Styles for Bitácora & Reports */
+@media print {
+  .rr-backdrop {
+    position: static;
+    background: none;
+    backdrop-filter: none;
+    border-left: none;
+    box-shadow: none;
+    animation: none;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .rr-modal {
+    max-height: none;
+    width: 100%;
+    border: none;
+    background: #fff;
+    color: #000;
+  }
+
+  .rr-close-btn,
+  .rr-print-btn,
+  .rr-edit-btn,
+  .rr-icon-btn,
+  .rr-toolbar-search {
+    display: none;
+  }
+}

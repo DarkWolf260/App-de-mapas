@@ -15,7 +15,9 @@ import { MobileBottomBar } from './components/MobileBottomBar';
 import { MobilePersonalSheet } from './components/MobilePersonalSheet';
 import { MobileSettingsSheet } from './components/MobileSettingsSheet';
 import { Sheet } from './components/Sheet';
-import { Menu, ChevronLeft } from 'lucide-react';
+import { DashboardView } from './components/dashboard/DashboardView';
+import { MapInfoModal } from './components/MapInfoModal';
+import { Menu, ChevronLeft, LayoutDashboard, FileSpreadsheet } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -43,7 +45,53 @@ function App() {
   return (
     <div className="app-container">
       {!isMobile && (
-      <div style={{ position: "absolute", top: "16px", right: "65px", zIndex: 130, pointerEvents: "auto" }}>
+      <div style={{ position: "absolute", top: "16px", right: "65px", zIndex: 130, pointerEvents: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
+        <button
+          onClick={() => state.setMapInfoOpen(true)}
+          title="Información del Mapa y Exportar a Excel"
+          style={{
+            height: "34px",
+            padding: "0 12px",
+            borderRadius: "10px",
+            border: "1px solid rgba(56, 189, 248, 0.3)",
+            background: "rgba(10, 15, 28, 0.9)",
+            color: "#38bdf8",
+            fontSize: "0.76rem",
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
+          }}
+        >
+          <FileSpreadsheet size={16} />
+          <span>Equipos & Excel</span>
+        </button>
+        <button
+          onClick={() => state.setDashboardOpen(true)}
+          title="Abrir dashboard de situación"
+          style={{
+            width: "34px",
+            height: "34px",
+            borderRadius: "10px",
+            border: "1px solid rgba(255, 255, 255, 0.14)",
+            background: "rgba(10, 15, 28, 0.9)",
+            color: "var(--color-info)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
+            padding: 0,
+          }}
+        >
+          <LayoutDashboard size={17} />
+        </button>
         <AuthModal />
       </div>
       )}
@@ -185,6 +233,69 @@ function App() {
       />
 
       <Toast />
+
+      {state.dashboardOpen && (
+        <DashboardView
+          drawnFeatures={state.drawnFeatures}
+          selectedDate={state.selectedDate}
+          onSelectedDateChange={state.setSelectedDate}
+          onClose={() => state.setDashboardOpen(false)}
+          canEdit={isAuthenticated}
+          dailyActivity={state.dailyActivity}
+          onFetchDailyActivity={state.fetchDailyActivity}
+          onSaveDailyActivity={state.saveDailyActivity}
+          map={
+            <MapComponent
+              bare
+              apiKey={apiKey}
+              activeCity={activeCity}
+              activeBasemap="hybrid"
+              layerVisibility={{ ...state.layerVisibility, sketch: false }}
+              drawnFeatures={state.drawnFeatures}
+              hiddenFeatures={state.hiddenFeatures}
+              zoomToFeature={null}
+              removeFeatureId={state.removeFeatureId}
+              importedFeatures={state.importedFeatures}
+              zoomToCoords={null}
+              actions={{
+                onFeatureAdded: state.handleFeatureAdded,
+                onFeatureDeleted: state.handleFeatureDeleted,
+                onSaveDailyLog: state.handleSaveDailyLog,
+                onToggleFeatureLock: state.handleToggleFeatureLock,
+                onRenameFeature: state.handleRenameFeature,
+                onUpdateFeatureDescription: state.handleUpdateFeatureDescription,
+                onUpdateFeatureColor: state.handleUpdateFeatureColor,
+                onUpdateFeatureCollapsed: state.handleUpdateFeatureCollapsed,
+                onRefreshFeatures: state.refreshFeatures,
+              }}
+              ui={{
+                selectedDate: state.selectedDate,
+                activeDepartment: state.activeDepartment,
+                showSidebar: false,
+                isAdmin: false,
+                isOperador,
+                isAuthenticated,
+                showAccumulated: state.showAccumulated,
+                showPoints: state.showPoints,
+                showAreas: state.showAreas,
+                sidebarOpen: false,
+                bitacoraOpen: false,
+              }}
+            />
+          }
+        />
+      )}
+
+      {state.mapInfoOpen && (
+        <MapInfoModal
+          drawnFeatures={state.drawnFeatures}
+          selectedDate={state.selectedDate}
+          onSelectedDateChange={state.setSelectedDate}
+          onClose={() => state.setMapInfoOpen(false)}
+          activeDepartment={state.activeDepartment}
+          canEdit={isAuthenticated}
+        />
+      )}
 
       {isMobile && (
         <MobileBottomBar

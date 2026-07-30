@@ -1,0 +1,48 @@
+/* Base Layout & Animations */
+.app-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  background-color: var(--bg-primary);
+  font-family: var(--sans-font);
+}
+
+html, body {
+  touch-action: manipulation;
+  -ms-touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
+.map-viewport {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  touch-action: none;
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

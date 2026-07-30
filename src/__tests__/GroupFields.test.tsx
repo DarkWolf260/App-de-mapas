@@ -34,7 +34,6 @@ describe("GroupFields", () => {
     const onChange = vi.fn();
     render(<GroupFields groupIndex={0} group={defaultGroup} onGroupFieldChange={onChange} colorVar="#fff" />);
     const input = screen.getByPlaceholderText("Nombre Grupo");
-    const event = { target: { value: "A" } };
     input.dispatchEvent(new Event("input", { bubbles: true }) as any);
     // Simulate React change
     (input as HTMLInputElement).value = "A";

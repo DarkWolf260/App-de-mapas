@@ -16,7 +16,9 @@ export function syncDrawnFeaturesToGraphics(
   layer: GraphicsLayer,
   dateStr?: string,
   activeDepartment?: DepartmentView,
+  bare?: boolean,
 ): void {
+  const effectiveZoom = bare ? 999 : currentZoom;
   const { parentsMap, polygonAreas } = buildParentsMap(drawnFeatures);
 
   drawnFeatures.forEach((feat) => {
@@ -36,10 +38,10 @@ export function syncDrawnFeaturesToGraphics(
 
       const label = layer.graphics.find((x) => x.attributes?.isLabel && String(x.attributes?.parentId) === String(feat.id));
       if (label) {
-        syncExistingLabel(label, feat, g, parentsMap as any, currentZoom, layerVisibility, isHidden, shouldHideNested, dateStr, activeDepartment);
+        syncExistingLabel(label, feat, g, parentsMap as any, effectiveZoom, layerVisibility, isHidden, shouldHideNested, dateStr, activeDepartment);
       }
     } else {
-      addFeatureGraphic(feat, hiddenFeatures, layerVisibility, currentZoom, parentsMap as any, isHidden, shouldHideNested, layer, dateStr, activeDepartment);
+      addFeatureGraphic(feat, hiddenFeatures, layerVisibility, effectiveZoom, parentsMap as any, isHidden, shouldHideNested, layer, dateStr, activeDepartment);
     }
   });
 

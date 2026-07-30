@@ -1,16 +1,12 @@
-import Point from "@arcgis/core/geometry/Point";
 import { useEffect, useRef, useState, useCallback } from "react";
-import MapView from "@arcgis/core/views/MapView";
-import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Graphic from "@arcgis/core/Graphic";
-import SketchViewModel from "@arcgis/core/widgets/Sketch/SketchViewModel";
 import type { Color } from "../utils/colorUtils";
 import { PALETTE, hexToRgb } from "../utils/colorUtils";
 import { ToolId } from "./DrawingToolbar";
 import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapValue, makeSymbols } from "../utils/mapUtils";
 import { syncDrawnFeaturesToGraphics, syncImportedFeatures } from "../utils/graphicsSync";
 import { useMapInit } from "./useMapInit";
-import type { DrawnFeature, HtmlLabel, LayerVisibility, RemoveFeatureId, DepartmentView } from "../types";
+import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DepartmentView } from "../types";
 
 export interface UseMapSetupProps {
   apiKey: string;
@@ -33,6 +29,7 @@ export interface UseMapSetupProps {
   showAreas?: boolean;
   sidebarOpen?: boolean;
   bitacoraOpen?: boolean;
+  bare?: boolean;
 }
 
 export const useMapSetup = (props: UseMapSetupProps) => {
@@ -41,7 +38,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     onFeatureAdded, onFeatureDeleted, zoomToFeature, removeFeatureId,
     importedFeatures, hiddenFeatures, selectedDate, zoomToCoords,
     activeDepartment = "pc", onFeatureClick,
-    showAccumulated, sidebarOpen, bitacoraOpen,
+    showAccumulated, sidebarOpen, bitacoraOpen, bare,
   } = props;
 
   const [activeColor, setActiveColor] = useState<Color>(PALETTE[0]);
@@ -228,9 +225,9 @@ export const useMapSetup = (props: UseMapSetupProps) => {
   useEffect(() => {
     const layer = sketchLayerRef.current;
     if (!layer) return;
-    syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, init.currentZoom, layer, selectedDateRef.current, activeDepartmentRef.current);
+    syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, init.currentZoom, layer, selectedDateRef.current, activeDepartmentRef.current, bare);
     deconflictGraphicsRef.current?.();
-  }, [drawnFeatures, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.hideNestedAreas, init.mapReady, init.currentZoom, selectedDate, activeDepartment, sketchLayerRef, deconflictGraphicsRef]);
+  }, [drawnFeatures, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.hideNestedAreas, init.mapReady, init.currentZoom, selectedDate, activeDepartment, sketchLayerRef, deconflictGraphicsRef, bare]);
 
   useEffect(() => {
     const layer = sketchLayerRef.current;

@@ -30,7 +30,7 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
 
   log.groups.forEach((g) => {
     const hasData = !!(g.groupName?.trim() || g.officersCount || g.unitOut?.trim() || g.managerName?.trim() ||
-      g.rescuedCount || g.recoveredCount || g.prehospitalCareCount || g.transfersCount);
+      g.rescuedCount || g.recoveredCount || g.prehospitalCareCount || g.transfersCount || g.edanCount);
     if (hasData) {
       rawEntries.push({
         id: g.id || crypto.randomUUID(),
@@ -44,6 +44,7 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
         rescuedPetsCount: g.rescuedPetsCount || "",
         prehospitalCareCount: g.prehospitalCareCount || "",
         transfersCount: g.transfersCount || "",
+        edanCount: g.edanCount || "",
         hasArrived: !!g.hasArrived,
         commissionId: g.commissionId || "independiente",
         isVolunteer: !!g.isVolunteer,
@@ -151,6 +152,7 @@ export interface GroupData {
   rescuedPetsCount?: string;
   prehospitalCareCount: string;
   transfersCount: string;
+  edanCount?: string;
   hasArrived: boolean;
   commissionId?: string;
   isVolunteer?: boolean;
@@ -172,6 +174,7 @@ export function getGroupData(log: DailyLog, groupIndex: number): GroupData {
       rescuedPetsCount: item.rescuedPetsCount || "",
       prehospitalCareCount: item.prehospitalCareCount || "",
       transfersCount: item.transfersCount || "",
+      edanCount: item.edanCount || "",
       hasArrived: !!item.hasArrived,
       commissionId: item.commissionId || "independiente",
       isVolunteer: !!item.isVolunteer,
@@ -188,6 +191,7 @@ export function getGroupData(log: DailyLog, groupIndex: number): GroupData {
     rescuedPetsCount: "",
     prehospitalCareCount: "",
     transfersCount: "",
+    edanCount: "",
     hasArrived: false,
     commissionId: "independiente",
     isVolunteer: false,

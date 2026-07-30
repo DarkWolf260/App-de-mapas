@@ -189,7 +189,7 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
         console.error("Error cleaning up Swipe widget:", err);
       }
     };
-  }, [view, loadCog]);
+  }, [view, loadCog, isMobile]);
 
   return (
     <>

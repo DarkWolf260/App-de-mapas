@@ -1,6 +1,6 @@
 import React from "react";
 import "@arcgis/core/assets/esri/themes/dark/main.css";
-import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DailyLog, DepartmentView } from "../types";
+import type { DrawnFeature, LayerVisibility, RemoveFeatureId } from "../types";
 import { DrawingToolbar } from "./DrawingToolbar";
 import { CustomMapPopup } from "./CustomMapPopup";
 import { DeploymentSummaryCard } from "./DeploymentSummaryCard";
@@ -30,10 +30,12 @@ interface MapComponentProps {
   actions: MapFeatureActions;
   /** UI state: date, department, permissions, visibility toggles */
   ui: MapUIContext;
+  /** Dashboard mode: renders only the map, hiding all floating widgets/toolbars/popups */
+  bare?: boolean;
 }
   
   const MapComponent: React.FC<MapComponentProps> = (props) => {
-    const { layerVisibility, drawnFeatures, onZoomToFeature, actions, ui } = props;
+    const { layerVisibility, drawnFeatures, onZoomToFeature, actions, ui, bare = false } = props;
     const {
       onSaveDailyLog,
       onToggleFeatureLock,
@@ -111,7 +113,7 @@ interface MapComponentProps {
   const handlePopupDateChange = React.useCallback((date: string) => {
     setPopupEditDate(date);
     ui.onSelectedDateChange?.(date);
-  }, [setPopupEditDate, ui.onSelectedDateChange]);
+  }, [setPopupEditDate, ui]);
 
   const defaultX = typeof window !== "undefined" ? Math.floor(window.innerWidth / 2 - 180) : 400;
   const { position: toolbarPos, dragHandleProps, isDragging } = useDraggable(
@@ -130,7 +132,7 @@ interface MapComponentProps {
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
       <div className="map-view-container" ref={mapDiv} style={{ width: "100%", height: "100%" }} />
       {/* Floating Draggable Drawing Toolbar (Solo visible para Administradores) */}
-      {ui.isAdmin !== false && layerVisibility.sketch && (
+      {!bare && ui.isAdmin !== false && layerVisibility.sketch && (
         <div
           className="draw-toolbar-wrapper"
           style={{
@@ -157,6 +159,7 @@ interface MapComponentProps {
         </div>
       )}
 
+      {!bare && (
       <CustomMapPopup
         customPopup={customPopup}
         popupScreenPos={popupScreenPos}
@@ -180,9 +183,10 @@ interface MapComponentProps {
         isAdmin={ui.isAdmin}
         isOperador={ui.isOperador}
       />
+      )}
 
       {/* Floating hover tooltip for lines and polygons */}
-      {tooltip.visible && (
+      {!bare && tooltip.visible && (
         <div
           style={{
             position: "absolute",
@@ -210,6 +214,7 @@ interface MapComponentProps {
         </div>
       )}
       {/* Floating Bottom-Right Container (Map Settings Panel + Deployment Summary Card) */}
+      {!bare && (
       <div
         style={{
           position: "absolute",
@@ -289,14 +294,17 @@ interface MapComponentProps {
           />
         </div>
       </div>
+      )}
 
       {/* Barra de Estado / Coordenadas Flotante (Diseño COE) */}
+      {!bare && (
       <div className="status-bar-coordinates">
         <div><span>LAT:</span> {coords.lat.toFixed(6)}</div>
         <div><span>LNG:</span> {coords.lng.toFixed(6)}</div>
         <div><span>ZOOM:</span> {Math.round(currentZoom)}</div>
         {currentScale > 0 && <div><span>ESCALA:</span> 1:{currentScale.toLocaleString()}</div>}
       </div>
+      )}
 
       {/* HTML point labels with background (personnel info) */}
       <HtmlPointLabels
@@ -317,11 +325,12 @@ interface MapComponentProps {
       />
 
       {/* Satellite Swipe Comparison */}
-      {swipeActive && viewRef.current && (
+      {!bare && swipeActive && viewRef.current && (
         <SwipeComparison view={viewRef.current} onClose={deactivateSwipe} />
       )}
 
       {/* Floating comparison toggle button — bottom-left */}
+      {!bare && (
       <button
         className={`swipe-toggle-btn ${swipeActive ? "active" : ""}`}
         onClick={swipeActive ? deactivateSwipe : activateSwipe}
@@ -330,6 +339,7 @@ interface MapComponentProps {
         <Satellite size={16} />
         <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Después"}</span>
       </button>
+      )}
     </div>
   );
 };

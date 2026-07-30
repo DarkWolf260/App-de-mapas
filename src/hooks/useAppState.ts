@@ -39,6 +39,8 @@ export function useAppState(isAdmin: boolean) {
   const [showAccumulated, setShowAccumulated] = useState(false);
   const [showPoints, setShowPoints] = useState(true);
   const [showAreas, setShowAreas] = useState(true);
+  const [dashboardOpen, setDashboardOpen] = useState(true);
+  const [mapInfoOpen, setMapInfoOpen] = useState(false);
 
   const {
     drawnFeatures,
@@ -55,6 +57,9 @@ export function useAppState(isAdmin: boolean) {
     saveGlobalNovedad,
     deleteGlobalNovedad,
     updateGlobalNovedad,
+    dailyActivity,
+    fetchDailyActivity,
+    saveDailyActivity,
     refreshFeatures,
   } = useFeatureDB();
 
@@ -227,6 +232,10 @@ export function useAppState(isAdmin: boolean) {
     setShowPoints,
     showAreas,
     setShowAreas,
+    dashboardOpen,
+    setDashboardOpen,
+    mapInfoOpen,
+    setMapInfoOpen,
     drawnFeatures: sortedDrawnFeatures,
     hiddenFeatures,
     points,
@@ -244,6 +253,9 @@ export function useAppState(isAdmin: boolean) {
     saveGlobalNovedad,
     deleteGlobalNovedad,
     updateGlobalNovedad,
+    dailyActivity,
+    fetchDailyActivity,
+    saveDailyActivity,
     refreshFeatures,
     handleToggleFeatureVisibility,
     handleSelectItem,

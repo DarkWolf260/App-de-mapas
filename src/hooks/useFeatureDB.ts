@@ -16,6 +16,7 @@ import type {
   IRealtimeProvider,
 } from "../repositories/interfaces";
 import type { DailyLog, DrawnFeature, NovedadEntry } from "../types";
+import { fetchDailyActivity, saveDailyActivity, type DailyActivity } from "../services/activityService";
 
 interface UseFeatureDBOptions {
   featureRepo?: IFeatureRepository;
@@ -190,6 +191,24 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     }
   }, [novedadRepo]);
 
+  const [dailyActivity, setDailyActivity] = useState<DailyActivity>({ date: "", activities: "", description: "" });
+
+  const fetchDailyActivityState = useCallback(async (date: string) => {
+    const entry = await fetchDailyActivity(date);
+    setDailyActivity(entry);
+  }, []);
+
+  const saveDailyActivityState = useCallback(async (date: string, activities: string, description: string) => {
+    const previous = dailyActivity;
+    setDailyActivity({ date, activities, description });
+    try {
+      await saveDailyActivity(date, activities, description);
+    } catch {
+      setDailyActivity(previous);
+      showToast("Error al guardar actividades. Verifique su conexión.", "error");
+    }
+  }, [dailyActivity]);
+
   return {
     drawnFeatures,
     handleFeatureAdded,
@@ -205,6 +224,9 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     saveGlobalNovedad,
     deleteGlobalNovedad,
     updateGlobalNovedad,
+    dailyActivity,
+    fetchDailyActivity: fetchDailyActivityState,
+    saveDailyActivity: saveDailyActivityState,
     refreshFeatures: fetchFromSupabase,
   };
 }

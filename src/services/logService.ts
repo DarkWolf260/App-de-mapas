@@ -69,7 +69,7 @@ function dailyLogToRow(featureId: number, log: DailyLog): Record<string, unknown
   const groupsList = getNormalizedGroupList(log).filter((g) =>
     !!(g.groupName?.trim() || g.officersCount?.trim() || g.unitOut?.trim() || g.managerName?.trim() ||
        g.rescuedCount?.trim() || g.recoveredCount?.trim() || g.rescuedPetsCount?.trim() ||
-       g.prehospitalCareCount?.trim() || g.transfersCount?.trim())
+       g.prehospitalCareCount?.trim() || g.transfersCount?.trim() || g.edanCount?.trim())
   );
 
   return {

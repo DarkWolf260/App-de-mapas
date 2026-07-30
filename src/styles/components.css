@@ -1,0 +1,755 @@
+/* Estilos para Comparación "Antes y Después" (SwipeComparison) */
+.swipe-overlay {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 110;
+  pointer-events: none;
+}
+
+.swipe-label-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(10, 15, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 6px 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--text-main);
+  pointer-events: auto;
+}
+
+.swipe-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.swipe-label-before {
+  color: var(--color-info);
+}
+
+.swipe-label-divider {
+  color: rgba(255, 255, 255, 0.2);
+  font-weight: 300;
+}
+
+.swipe-label-after {
+  color: var(--accent-orange);
+}
+
+.swipe-layer-toggle {
+  position: absolute;
+  top: 70px;
+  z-index: 110;
+  background: rgba(10, 15, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: var(--text-main);
+  padding: 8px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.swipe-layer-toggle:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: var(--color-info);
+  color: var(--color-info);
+}
+
+.swipe-close-btn {
+  position: absolute;
+  bottom: 36px;
+  left: 16px;
+  z-index: 100;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(10, 15, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.swipe-close-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.swipe-layer-panel {
+  position: absolute;
+  top: 115px;
+  z-index: 110;
+  width: 220px;
+  background: rgba(10, 15, 28, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-main);
+}
+
+.swipe-layer-panel-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--accent-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 4px;
+}
+
+.swipe-layer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.swipe-layer-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.swipe-layer-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.swipe-warning-toast {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 120;
+  background: rgba(239, 68, 68, 0.95);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+}
+
+.swipe-toggle-btn {
+  position: absolute;
+  bottom: 36px;
+  left: 16px;
+  z-index: 100;
+  background: rgba(10, 15, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: var(--text-main);
+  padding: 8px 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.2s ease;
+  font-family: var(--font-sans);
+}
+
+.swipe-toggle-btn:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+}
+
+.swipe-toggle-btn.active {
+  background: rgba(249, 115, 22, 0.2);
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.3);
+}
+
+.swipe-toggle-label {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Date Timeline (Barra de tiempo inferior) */
+.date-timeline {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 120;
+  background: rgba(10, 15, 29, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.dt-nav-btn,
+.dt-calendar-btn,
+.dt-today-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.dt-nav-btn:hover:not(:disabled),
+.dt-calendar-btn:hover,
+.dt-today-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border-color: var(--accent-orange);
+}
+
+.dt-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.dt-today-btn {
+  background: var(--accent-orange);
+  color: white;
+  border-color: var(--accent-orange);
+}
+
+.dt-dates {
+  display: flex;
+  gap: 6px;
+}
+
+.dt-date-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 4px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dt-date-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.dt-date-btn.active {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+  font-weight: 700;
+}
+
+.dt-date-btn.today {
+  border-bottom: 2px solid var(--accent-orange);
+}
+
+.dt-date-day {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dt-date-month {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
+}
+
+.dt-calendar-wrapper {
+  position: relative;
+}
+
+.dt-calendar-popup {
+  position: absolute;
+  bottom: 54px;
+  right: 0;
+  z-index: 2000;
+  background: rgba(10, 15, 29, 0.98);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 14px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.85), 0 0 24px rgba(56, 189, 248, 0.15);
+  padding: 14px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: dtCalendarFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  isolation: isolate;
+}
+
+@keyframes dtCalendarFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Bitácora Calendar (bcal-* classes) */
+.bcal-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 252px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  user-select: none;
+  background: rgba(10, 15, 29, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.bcal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bcal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bcal-month-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--color-info, #38bdf8);
+  letter-spacing: 0.02em;
+}
+
+.bcal-month-title strong {
+  color: #f8fafc;
+  font-weight: 800;
+}
+
+.bcal-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bcal-today-btn {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: var(--color-info, #38bdf8);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bcal-today-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.bcal-nav-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.bcal-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.bcal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 32px);
+  gap: 4px;
+  justify-content: center;
+  text-align: center;
+}
+
+.bcal-weekday {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+}
+
+.bcal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 32px);
+  gap: 4px;
+  justify-content: center;
+}
+
+.bcal-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.02);
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.bcal-day-num {
+  line-height: 1;
+  display: block;
+}
+
+.bcal-cell:hover:not(.disabled):not(.empty) {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.bcal-cell.selected {
+  background: #38bdf8 !important;
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.6) !important;
+}
+
+.bcal-cell.today:not(.selected) {
+  border: 1px solid #f97316;
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.1);
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.3);
+}
+
+.bcal-cell.disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  background: transparent;
+  border-color: transparent;
+}
+
+.bcal-cell.empty {
+  opacity: 0.15;
+  cursor: default;
+  background: transparent;
+  border-color: transparent;
+}
+
+/* React DatePicker Dark Theme Overrides */
+.react-datepicker {
+  background-color: transparent !important;
+  border: none !important;
+  font-family: var(--font-sans, system-ui, sans-serif) !important;
+  color: #e2e8f0 !important;
+}
+
+.react-datepicker__header {
+  background-color: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding-top: 4px !important;
+}
+
+.react-datepicker__current-month {
+  color: var(--color-info, #38bdf8) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+}
+
+.react-datepicker__day-name {
+  color: #64748b !important;
+  font-size: 0.65rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  width: 28px !important;
+  line-height: 24px !important;
+  margin: 1px !important;
+}
+
+.react-datepicker__day {
+  color: #cbd5e1 !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  width: 28px !important;
+  line-height: 28px !important;
+  margin: 1px !important;
+  border-radius: 6px !important;
+  border: 1px solid transparent !important;
+  transition: all 0.15s ease !important;
+}
+
+.react-datepicker__day:hover:not(.react-datepicker__day--disabled) {
+  background-color: rgba(56, 189, 248, 0.18) !important;
+  color: #38bdf8 !important;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #38bdf8 !important;
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
+}
+
+.react-datepicker__day--today {
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  color: #38bdf8 !important;
+}
+
+.react-datepicker__day--disabled {
+  opacity: 0.2 !important;
+  color: #64748b !important;
+}
+
+/* Color Picker Popover */
+.color-picker-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.color-trigger-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.color-picker-popover {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 10px;
+  background: #111827;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 200;
+  animation: fadeIn 0.15s ease-out;
+  width: max-content;
+  max-width: 300px;
+}
+
+.color-picker-popover.opens-down {
+  bottom: auto;
+  top: 100%;
+  margin-bottom: 0;
+  margin-top: 10px;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 22px);
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.color-grid-cell {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  outline: none;
+}
+
+.color-grid-cell:hover {
+  transform: scale(1.15);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.color-grid-cell.selected {
+  border-color: #ffffff;
+  transform: scale(1.15);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+/* Date Row (DateRow component) */
+.rr-date-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.rr-date-card.has-data {
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.rr-date-card.expanded {
+  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.rr-date-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.rr-date-card-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rr-date-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.rr-date-card-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rr-date-card-preview {
+  padding: 0 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rr-preview-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.rr-group-label {
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.rr-meta-chip {
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+}
+
+.rr-preview-obs {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.64rem;
+  color: var(--color-info);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.rr-date-card-body {
+  padding: 10px 14px 14px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}

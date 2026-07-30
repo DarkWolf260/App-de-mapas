@@ -16,7 +16,7 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
   groupIndex,
   group,
   onGroupFieldChange,
-  _colorVar,
+  colorVar: _colorVar,
   hideHeader = false,
   style,
   inputStyle: _inputStyleProp,
@@ -49,9 +49,19 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
           <input type="number" min="0" className="rr-editor-input" placeholder="Cant. Funcs." value={group.officersCount || ""} onChange={(e) => gf("officersCount", e.target.value)} />
         </div>
       </div>
-      <div>
-        <span className="rr-editor-label">Telefono de Contacto</span>
-        <input type="text" className="rr-editor-input" placeholder={groupIndex === 0 ? "Telefono Encargado" : `Telefono Encargado ${groupIndex + 1}`} value={group.managerPhone || ""} onChange={(e) => gf("managerPhone", e.target.value)} />
+      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr 0.8fr", gap: "6px" }}>
+        <div>
+          <span className="rr-editor-label">Telefono de Contacto</span>
+          <input type="text" className="rr-editor-input" placeholder={groupIndex === 0 ? "Telefono Encargado" : `Telefono Encargado ${groupIndex + 1}`} value={group.managerPhone || ""} onChange={(e) => gf("managerPhone", e.target.value)} />
+        </div>
+        <div>
+          <span className="rr-editor-label">Hora Salida</span>
+          <input type="time" className="rr-editor-input" value={group.departureTime || ""} onChange={(e) => gf("departureTime", e.target.value)} />
+        </div>
+        <div>
+          <span className="rr-editor-label">Hora Llegada</span>
+          <input type="time" className="rr-editor-input" value={group.arrivalTime || ""} onChange={(e) => gf("arrivalTime", e.target.value)} />
+        </div>
       </div>
     </div>
   );

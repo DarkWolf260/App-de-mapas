@@ -41,12 +41,15 @@ export interface GroupLogEntry {
   managerName?: string;
   managerPhone?: string;
   unitOut?: string;
+  departureTime?: string;
+  arrivalTime?: string;
   officersCount?: string;
   rescuedCount?: string;
   recoveredCount?: string;
   rescuedPetsCount?: string;
   prehospitalCareCount?: string;
   transfersCount?: string;
+  edanCount?: string;
   hasArrived?: boolean;
   commissionId?: string;
   isVolunteer?: boolean;

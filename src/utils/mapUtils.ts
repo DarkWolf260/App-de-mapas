@@ -6,7 +6,7 @@ import { getNormalizedGroupList } from "./logUtils";
 import { getGeometryHandler } from "./geometryHandlers";
 
 export const DEFAULT_CENTER: [number, number] = [-66.9303, 10.6011];
-export const DEFAULT_ZOOM = 14;
+export const DEFAULT_ZOOM = 13;
 
 export const getBasemapValue = (key: string): string | Basemap => {
   if (key === "satellite-free") {

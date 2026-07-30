@@ -1,6 +1,5 @@
 import { supabase } from "../lib/supabaseClient";
 import { initDatabase } from "../db/database";
-import type { DrawnFeature } from "../types";
 
 export async function migrateRxDBToSupabase(onAfterMigration: () => Promise<void>): Promise<void> {
   try {
