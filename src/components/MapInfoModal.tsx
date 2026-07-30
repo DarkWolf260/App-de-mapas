@@ -47,6 +47,7 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
       locationTitle: string;
       isSector: boolean;
       department: string;
+      isVolunteer?: boolean;
       groupName: string;
       unitOut: string;
       departureTime: string;
@@ -78,6 +79,7 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
               locationTitle: feat.title || `Sitio ${feat.id}`,
               isSector: isSectorFeature(feat),
               department: logDept,
+              isVolunteer: !!g.isVolunteer,
               groupName: name || `Grupo ${i + 1}`,
               unitOut: g.unitOut || "-",
               departureTime: g.departureTime || "-",
@@ -133,7 +135,11 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
   const handleExportExcel = () => {
     const exportRows: WorkTeamExportRow[] = filteredRecords.map((r) => ({
       date: selectedDate,
-      department: r.department === "bomberos" ? "Bomberos" : "Protección Civil",
+      department: r.isVolunteer
+        ? "Voluntarios"
+        : r.department === "bomberos"
+        ? "Bomberos"
+        : "Protección Civil",
       locationTitle: r.locationTitle,
       groupName: r.groupName,
       unitOut: r.unitOut,
@@ -525,12 +531,26 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
                               fontWeight: 800,
                               padding: "1px 4px",
                               borderRadius: "3px",
-                              background: r.department === "bomberos" ? "rgba(239, 68, 68, 0.15)" : "rgba(56, 189, 248, 0.15)",
-                              color: r.department === "bomberos" ? "#ef4444" : "#38bdf8",
-                              border: `1px solid ${r.department === "bomberos" ? "rgba(239, 68, 68, 0.3)" : "rgba(56, 189, 248, 0.3)"}`,
+                              background: r.isVolunteer
+                                ? "rgba(168, 85, 247, 0.15)"
+                                : r.department === "bomberos"
+                                ? "rgba(239, 68, 68, 0.15)"
+                                : "rgba(56, 189, 248, 0.15)",
+                              color: r.isVolunteer
+                                ? "#c084fc"
+                                : r.department === "bomberos"
+                                ? "#ef4444"
+                                : "#38bdf8",
+                              border: `1px solid ${
+                                r.isVolunteer
+                                  ? "rgba(168, 85, 247, 0.35)"
+                                  : r.department === "bomberos"
+                                  ? "rgba(239, 68, 68, 0.3)"
+                                  : "rgba(56, 189, 248, 0.3)"
+                              }`,
                             }}
                           >
-                            {r.department === "bomberos" ? "BOM" : "PC"}
+                            {r.isVolunteer ? "VOL" : r.department === "bomberos" ? "BOM" : "PC"}
                           </span>
                           <span style={{ fontWeight: 400 }}>{r.groupName}</span>
                         </div>

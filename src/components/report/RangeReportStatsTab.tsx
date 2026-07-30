@@ -262,15 +262,10 @@ export const RangeReportStatsTab: React.FC<RangeReportStatsTabProps> = ({
                   <tr key={"indiv_" + gs.groupName + i} className={i % 2 === 0 ? "rr-tr-even" : ""}>
                     <td style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
                       <div className="rr-td-group" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span className="rr-td-dept" style={{ color: gs.department === "pc" ? "var(--color-info)" : "#ef4444" }}>
-                          {gs.department === "pc" ? "PC" : "B"}
+                        <span className="rr-td-dept" style={{ color: gs.isVolunteer ? "#c084fc" : gs.department === "pc" ? "var(--color-info)" : "#ef4444" }}>
+                          {gs.isVolunteer ? "VOL" : gs.department === "pc" ? "PC" : "B"}
                         </span>
                         <span style={{ fontWeight: 700 }}>{gs.groupName}</span>
-                        {gs.isVolunteer && (
-                          <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.52rem", fontWeight: 800 }}>
-                            VOLUNTARIO
-                          </span>
-                        )}
                       </div>
                     </td>
                     <td style={{ textAlign: "center", fontWeight: 700, borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>{gs.daysActive}</td>
