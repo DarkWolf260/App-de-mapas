@@ -146,6 +146,8 @@ export interface GroupData {
   managerName: string;
   managerPhone: string;
   unitOut: string;
+  departureTime?: string;
+  arrivalTime?: string;
   officersCount: string;
   rescuedCount: string;
   recoveredCount: string;
@@ -168,6 +170,8 @@ export function getGroupData(log: DailyLog, groupIndex: number): GroupData {
       managerName: item.managerName || "",
       managerPhone: item.managerPhone || "",
       unitOut: item.unitOut || "",
+      departureTime: item.departureTime || "",
+      arrivalTime: item.arrivalTime || "",
       officersCount: item.officersCount || "",
       rescuedCount: item.rescuedCount || "",
       recoveredCount: item.recoveredCount || "",
@@ -185,6 +189,8 @@ export function getGroupData(log: DailyLog, groupIndex: number): GroupData {
     managerName: "",
     managerPhone: "",
     unitOut: "",
+    departureTime: "",
+    arrivalTime: "",
     officersCount: "",
     rescuedCount: "",
     recoveredCount: "",

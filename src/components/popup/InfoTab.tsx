@@ -514,7 +514,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                       <>
                         <ReadRow label="Unidad" value={group.unitOut} />
                         <ReadRow label="Encargado" value={group.managerName} />
-                        <ReadRow label="Tel\u00e9fono" value={group.managerPhone} />
+                        <ReadRow label="Teléfono" value={group.managerPhone} />
                         {canEdit && onGroupFieldChange ? (
                           <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} />
                         ) : (
@@ -712,16 +712,18 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                 value={novText}
                 onChange={(e) => setNovText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && novText.trim()) { e.preventDefault(); onAddNovedad(novTime, novText.trim()).then(() => setNovText("")); } }}
-                placeholder="Novedad..."
+                placeholder="Ecribir novedad o reporte..."
                 rows={3}
-                style={{ fontSize: "0.6rem", padding: "6px 8px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(17, 24, 39, 0.5)", color: "var(--text-main)", outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.4 }}
+                className="rr-editor-input"
+                style={{ fontSize: "0.72rem", padding: "6px 9px", resize: "vertical", lineHeight: 1.4 }}
               />
-              <div style={{ display: "flex", gap: "6px", alignItems: "flex-end" }}>
+              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                 <input
                   type="time"
                   value={novTime}
                   onChange={(e) => setNovTime(e.target.value)}
-                  style={{ width: "72px", fontSize: "0.6rem", padding: "4px 5px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(17, 24, 39, 0.6)", color: "var(--text-main)", fontVariantNumeric: "tabular-nums", outline: "none" }}
+                  className="rr-editor-input"
+                  style={{ width: "95px", fontSize: "0.74rem", padding: "4px 8px" }}
                 />
                 <button
                   onClick={() => { if (novText.trim()) { onAddNovedad(novTime, novText.trim()).then(() => setNovText("")); } }}

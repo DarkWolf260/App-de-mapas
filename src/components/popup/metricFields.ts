@@ -2,10 +2,10 @@ import type { DailyLog, GroupLogEntry, FeatureType, DrawnFeature } from "../../t
 import { getGeometryHandler } from "../../utils/geometryHandlers";
 
 export const METRIC_FIELDS = [
-  { label: "Rescat.", field: "rescuedCount" as const, color: "var(--color-green)" },
-  { label: "Recup.", field: "recoveredCount" as const, color: "var(--color-info)" },
-  { label: "Masc.", field: "rescuedPetsCount" as const, color: "#a855f7" },
-  { label: "Atenc.", field: "prehospitalCareCount" as const, color: "#38bdf8" },
+  { label: "Rescat.", field: "rescuedCount" as const, color: "var(--color-info)" },
+  { label: "Recup.", field: "recoveredCount" as const, color: "#ef4444" },
+  { label: "Masc.", field: "rescuedPetsCount" as const, color: "var(--color-green)" },
+  { label: "Atenc.", field: "prehospitalCareCount" as const, color: "#0ea5e9" },
   { label: "Trasl.", field: "transfersCount" as const, color: "var(--color-purple)" },
 ];
 

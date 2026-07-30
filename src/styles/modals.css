@@ -731,3 +731,56 @@
   font-family: var(--font-sans);
   transition: all 0.15s ease;
 }
+
+/* InfoTab Form Inputs & Controls Styling */
+.rr-editor-label {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.rr-editor-input {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 6px;
+  color: #f8fafc;
+  font-size: 0.76rem;
+  font-family: var(--font-sans);
+  padding: 5px 9px;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  color-scheme: dark;
+}
+
+.rr-editor-input:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.rr-editor-input:focus {
+  border-color: #38bdf8;
+  background: rgba(10, 15, 29, 0.95);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+}
+
+.rr-editor-input::placeholder {
+  color: rgba(248, 250, 252, 0.35);
+  font-size: 0.72rem;
+}
+
+.rr-editor-input[type="number"] {
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+}
+
+.rr-editor-input[type="time"] {
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  padding-right: 4px;
+}

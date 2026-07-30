@@ -11,34 +11,42 @@ interface MetricInputsProps {
 
 export function MetricInputs({ group, groupIdx, onGroupFieldChange }: MetricInputsProps) {
   return (
-    <>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px", marginTop: "4px" }}>
-        {METRIC_FIELDS.map(({ label, field, color }) => (
-          <div key={field} style={{ textAlign: "center" }}>
-            <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block", marginBottom: "2px" }}>{label}</span>
-            <input
-              type="number"
-              min="0"
-              placeholder="0"
-              value={getMetricValue(group, field) || ""}
-              onChange={(e) => onGroupFieldChange(groupIdx, field, e.target.value)}
-              style={{ ...metricInputStyle, textAlign: "center", padding: "2px 2px", fontSize: "0.68rem", color }}
-            />
-          </div>
-        ))}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
-        <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", whiteSpace: "nowrap" }}>Inspecciones EDAN</span>
-        <input
-          type="number"
-          min="0"
-          placeholder="0"
-          value={group.edanCount || ""}
-          onChange={(e) => onGroupFieldChange(groupIdx, "edanCount", e.target.value)}
-          style={{ ...metricInputStyle, textAlign: "center", padding: "2px 2px", fontSize: "0.68rem", color: "#fb923c", width: "60px", flexShrink: 0 }}
-        />
-      </div>
-    </>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "5px", marginTop: "6px" }}>
+      {METRIC_FIELDS.map(({ label, field, color }) => (
+        <div key={field} style={{ textAlign: "center" }}>
+          <span
+            style={{
+              fontSize: "0.6rem",
+              fontWeight: 800,
+              color,
+              display: "block",
+              marginBottom: "3px",
+              letterSpacing: "0.03em",
+              textTransform: "uppercase",
+            }}
+          >
+            {label}
+          </span>
+          <input
+            type="number"
+            min="0"
+            placeholder="0"
+            value={getMetricValue(group, field) || ""}
+            onChange={(e) => onGroupFieldChange(groupIdx, field, e.target.value)}
+            style={{
+              ...metricInputStyle,
+              color,
+              borderColor: color.startsWith("var") ? "rgba(56, 189, 248, 0.35)" : `${color}50`,
+              fontSize: "0.76rem",
+              fontWeight: 700,
+              padding: "4px 4px",
+              textAlign: "center",
+              background: "rgba(0, 0, 0, 0.25)",
+            }}
+          />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -85,7 +93,7 @@ export function MetricDisplayGrid({ source, showZero = true, smallFont = false }
         if (!showZero && val === "0") return null;
         return (
           <div key={field} style={{ textAlign: "center" }}>
-            <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block" }}>{label}</span>
+            <span style={{ fontSize: "0.5rem", fontWeight: 700, color, display: "block" }}>{label}</span>
             <span style={{ fontSize, fontWeight: 800, color }}>{val}</span>
           </div>
         );

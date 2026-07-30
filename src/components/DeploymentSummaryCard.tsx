@@ -113,10 +113,10 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   const dayStats = useMemo(() => getDayStats(drawnFeatures, targetDateStr, activeDepartment), [drawnFeatures, targetDateStr, activeDepartment]);
 
   const metricBadges = [
-    { label: "Rescat.", value: dayStats.totalRescued, color: "var(--color-green)" },
-    { label: "Recup.", value: dayStats.totalRecovered, color: "var(--color-info)" },
-    { label: "Masc.", value: dayStats.totalPets, color: "#a855f7" },
-    { label: "Atenc.", value: dayStats.totalPrehospitalCare, color: "#38bdf8" },
+    { label: "Rescat.", value: dayStats.totalRescued, color: "var(--color-info)" },
+    { label: "Recup.", value: dayStats.totalRecovered, color: "#ef4444" },
+    { label: "Masc.", value: dayStats.totalPets, color: "var(--color-green)" },
+    { label: "Atenc.", value: dayStats.totalPrehospitalCare, color: "#0ea5e9" },
     { label: "Trasl.", value: dayStats.totalTransfers, color: "var(--color-purple)" },
   ];
   const hasMetrics = metricBadges.some((m) => m.value > 0);

@@ -133,6 +133,7 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
           group={groupAt(0)}
           onGroupFieldChange={handleGroupFieldChange}
           colorVar={getGroupColor(1)}
+          hideHeader
         />
       </div>
 

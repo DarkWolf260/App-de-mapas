@@ -39,7 +39,7 @@ export function useAppState(isAdmin: boolean) {
   const [showAccumulated, setShowAccumulated] = useState(false);
   const [showPoints, setShowPoints] = useState(true);
   const [showAreas, setShowAreas] = useState(true);
-  const [dashboardOpen, setDashboardOpen] = useState(true);
+  const [dashboardOpen, setDashboardOpen] = useState(false);
   const [mapInfoOpen, setMapInfoOpen] = useState(false);
 
   const {
