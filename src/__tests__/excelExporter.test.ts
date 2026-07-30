@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { exportWorkTeamsToCSV, type WorkTeamExportRow } from "../utils/excelExporter";
+import { exportWorkTeamsToExcel, type WorkTeamExportRow } from "../utils/excelExporter";
 
 describe("excelExporter", () => {
-  it("exports CSV formatted with UTF-8 BOM and triggers download link", () => {
+  it("exports native OpenXML Excel file (.xlsx) with styled headers and zero warnings", () => {
     const mockRows: WorkTeamExportRow[] = [
       {
         date: "2026-07-30",
@@ -15,27 +15,20 @@ describe("excelExporter", () => {
         managerName: "Juan Pérez",
         managerPhone: "0414-1234567",
         officersCount: "5",
-        hasArrived: "Llegó a sitio",
+        hasArrived: "En Sitio",
       },
     ];
 
-    let createdBlobContent = "";
     const originalCreateObjectURL = URL.createObjectURL;
     const originalRevokeObjectURL = URL.revokeObjectURL;
 
-    URL.createObjectURL = vi.fn((blob: Blob) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        createdBlobContent = reader.result as string;
-      };
-      reader.readAsText(blob);
-      return "blob:mock-url";
-    });
+    URL.createObjectURL = vi.fn(() => "blob:mock-url");
     URL.revokeObjectURL = vi.fn();
 
     const clickSpy = vi.fn();
+    const setAttributeSpy = vi.fn();
     const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue({
-      setAttribute: vi.fn(),
+      setAttribute: setAttributeSpy,
       click: clickSpy,
       style: {},
     } as unknown as HTMLAnchorElement);
@@ -43,9 +36,10 @@ describe("excelExporter", () => {
     const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => ({} as any));
     const removeChildSpy = vi.spyOn(document.body, "removeChild").mockImplementation(() => ({} as any));
 
-    exportWorkTeamsToCSV(mockRows, "2026-07-30");
+    exportWorkTeamsToExcel(mockRows, "2026-07-30");
 
     expect(clickSpy).toHaveBeenCalled();
+    expect(setAttributeSpy).toHaveBeenCalledWith("download", "Equipos_de_Trabajo_2026-07-30.xlsx");
     expect(appendChildSpy).toHaveBeenCalled();
     expect(removeChildSpy).toHaveBeenCalled();
 

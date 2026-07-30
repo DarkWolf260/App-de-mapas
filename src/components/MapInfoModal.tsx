@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import type { DrawnFeature, DepartmentView } from "../types";
-import { exportWorkTeamsToCSV, type WorkTeamExportRow } from "../utils/excelExporter";
+import { exportWorkTeamsToExcel, type WorkTeamExportRow } from "../utils/excelExporter";
 import { isSectorFeature } from "../utils/searchUtils";
 import {
   FileSpreadsheet,
@@ -142,10 +142,10 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
       managerName: r.managerName,
       managerPhone: r.managerPhone,
       officersCount: r.officersCount,
-      hasArrived: r.hasArrived ? "Llegó a sitio" : "Pendiente",
+      hasArrived: r.hasArrived ? "Regresó" : "Pendiente",
     }));
 
-    exportWorkTeamsToCSV(exportRows, selectedDate);
+    exportWorkTeamsToExcel(exportRows, selectedDate);
   };
 
   return (
@@ -170,59 +170,59 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "16px 24px",
+          padding: "12px 20px",
           borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
           background: "rgba(16, 24, 40, 0.8)",
           flexShrink: 0,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div
             style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "10px",
+              width: "36px",
+              height: "36px",
+              borderRadius: "8px",
               background: "linear-gradient(135deg, #0284c7, #0369a1)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 0 16px rgba(56, 189, 248, 0.3)",
+              boxShadow: "0 0 14px rgba(56, 189, 248, 0.3)",
               color: "#fff",
             }}
           >
-            <FileSpreadsheet size={22} />
+            <FileSpreadsheet size={20} />
           </div>
           <div>
-            <h2 style={{ fontSize: "1.15rem", fontWeight: 800, margin: 0, color: "#f8fafc" }}>
+            <h2 style={{ fontSize: "1.05rem", fontWeight: 800, margin: 0, color: "#f8fafc" }}>
               Información del Mapa y Equipos de Trabajo
             </h2>
-            <p style={{ fontSize: "0.75rem", margin: "2px 0 0", color: "var(--text-muted)" }}>
-              Consulta operativa de ubicaciones, encargados, horarios y exportación a Excel
+            <p style={{ fontSize: "0.72rem", margin: "1px 0 0", color: "var(--text-muted)" }}>
+              Consulta operativa de ubicaciones, encargados, horarios y exportación a Tabla Excel
             </p>
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <button
             onClick={handleExportExcel}
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "8px",
-              padding: "8px 16px",
-              borderRadius: "8px",
+              gap: "6px",
+              padding: "6px 14px",
+              borderRadius: "7px",
               border: "1px solid #16a34a",
               background: "linear-gradient(135deg, #15803d, #166534)",
               color: "#ffffff",
-              fontSize: "0.82rem",
+              fontSize: "0.78rem",
               fontWeight: 700,
               cursor: "pointer",
-              boxShadow: "0 4px 14px rgba(22, 163, 74, 0.35)",
+              boxShadow: "0 4px 12px rgba(22, 163, 74, 0.3)",
               transition: "all 0.2s ease",
             }}
-            title="Exportar archivo Excel (.csv con BOM UTF-8)"
+            title="Exportar archivo de Tabla Excel (.xlsx)"
           >
-            <FileSpreadsheet size={16} />
+            <FileSpreadsheet size={15} />
             <span>Exportar a Excel</span>
           </button>
 
@@ -231,10 +231,10 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
             style={{
               background: "rgba(255, 255, 255, 0.06)",
               border: "1px solid rgba(255, 255, 255, 0.12)",
-              borderRadius: "8px",
+              borderRadius: "7px",
               color: "var(--text-muted)",
               cursor: "pointer",
-              padding: "8px",
+              padding: "6px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -242,7 +242,7 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
             }}
             title="Cerrar subpágina"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
       </div>
@@ -252,10 +252,10 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: "20px 24px",
+          padding: "14px 20px",
           display: "flex",
           flexDirection: "column",
-          gap: "18px",
+          gap: "14px",
         }}
       >
         {/* Filter Controls Row */}
@@ -263,78 +263,92 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
           style={{
             display: "flex",
             flexWrap: "wrap",
-            gap: "12px",
+            gap: "10px",
             alignItems: "center",
             justifyContent: "space-between",
             background: "rgba(255, 255, 255, 0.02)",
             border: "1px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: "12px",
-            padding: "12px 16px",
+            borderRadius: "10px",
+            padding: "8px 14px",
           }}
         >
           {/* Date Selector */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Calendar size={16} style={{ color: "var(--color-info)" }} />
-            <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-muted)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <Calendar size={14} style={{ color: "var(--color-info)" }} />
+            <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>
               Fecha:
             </span>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => e.target.value && onSelectedDateChange(e.target.value)}
-              className="rr-editor-input"
-              style={{ width: "auto", padding: "4px 10px", fontSize: "0.78rem" }}
+              style={{
+                background: "rgba(15, 23, 42, 0.9)",
+                color: "#f8fafc",
+                border: "1px solid rgba(56, 189, 248, 0.35)",
+                borderRadius: "6px",
+                padding: "4px 10px",
+                fontSize: "0.76rem",
+                fontFamily: "var(--mono-font)",
+                colorScheme: "dark",
+                cursor: "pointer",
+                outline: "none",
+              }}
             />
           </div>
 
           {/* Department Filter Tabs */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-muted)" }}>
               Depto:
             </span>
             <button
               onClick={() => setDeptFilter("mixto")}
               className={`rr-filter-btn ${deptFilter === "mixto" ? "active" : ""}`}
+              style={{ padding: "3px 8px", fontSize: "0.72rem" }}
             >
               Todos
             </button>
             <button
               onClick={() => setDeptFilter("pc")}
               className={`rr-filter-btn ${deptFilter === "pc" ? "active" : ""}`}
-              style={{ display: "flex", alignItems: "center", gap: "4px" }}
+              style={{ display: "flex", alignItems: "center", gap: "4px", padding: "3px 8px", fontSize: "0.72rem" }}
             >
-              <Shield size={11} /> PC
+              <Shield size={10} /> PC
             </button>
             <button
               onClick={() => setDeptFilter("bomberos")}
               className={`rr-filter-btn ${deptFilter === "bomberos" ? "active" : ""}`}
-              style={{ display: "flex", alignItems: "center", gap: "4px" }}
+              style={{ display: "flex", alignItems: "center", gap: "4px", padding: "3px 8px", fontSize: "0.72rem" }}
             >
-              <Flame size={11} /> Bomberos
+              <Flame size={10} /> Bomberos
             </button>
           </div>
 
           {/* Status Filter */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Filter size={14} style={{ color: "var(--text-muted)" }} />
-            <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <Filter size={13} style={{ color: "var(--text-muted)" }} />
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-muted)" }}>
               Estado:
             </span>
             <button
               onClick={() => setStatusFilter("all")}
               className={`rr-filter-btn ${statusFilter === "all" ? "active" : ""}`}
+              style={{ padding: "3px 8px", fontSize: "0.72rem" }}
             >
               Todos
             </button>
             <button
               onClick={() => setStatusFilter("arrived")}
               className={`rr-filter-btn ${statusFilter === "arrived" ? "active" : ""}`}
+              style={{ padding: "3px 8px", fontSize: "0.72rem" }}
             >
-              Llegaron
+              Regresaron
             </button>
             <button
               onClick={() => setStatusFilter("pending")}
               className={`rr-filter-btn ${statusFilter === "pending" ? "active" : ""}`}
+              style={{ padding: "3px 8px", fontSize: "0.72rem" }}
             >
               Pendientes
             </button>
@@ -345,25 +359,25 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "8px",
+              gap: "6px",
               background: "rgba(0, 0, 0, 0.3)",
               border: "1px solid rgba(255, 255, 255, 0.1)",
-              borderRadius: "8px",
-              padding: "6px 12px",
-              minWidth: "240px",
+              borderRadius: "7px",
+              padding: "4px 10px",
+              minWidth: "220px",
             }}
           >
-            <Search size={15} style={{ color: "var(--text-muted)" }} />
+            <Search size={14} style={{ color: "var(--text-muted)" }} />
             <input
               type="text"
-              placeholder="Buscar equipo, ubicación, encargado..."
+              placeholder="Buscar equipo, ubicación..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 background: "transparent",
                 border: "none",
                 color: "#f8fafc",
-                fontSize: "0.78rem",
+                fontSize: "0.74rem",
                 width: "100%",
                 outline: "none",
               }}
@@ -373,58 +387,58 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
                 onClick={() => setSearchQuery("")}
                 style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: 0 }}
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             )}
           </div>
         </div>
 
         {/* KPI Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" }}>
-          <div className="rr-scard">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px" }}>
+          <div className="rr-scard" style={{ padding: "10px 14px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--color-info)" }}>
-              <Users size={16} />
-              <span className="rr-scard-label">Equipos Registrados</span>
+              <Users size={14} />
+              <span className="rr-scard-label" style={{ fontSize: "0.68rem" }}>Equipos Registrados</span>
             </div>
-            <span className="rr-scard-val">{stats.totalTeams}</span>
+            <span className="rr-scard-val" style={{ fontSize: "1.1rem" }}>{stats.totalTeams}</span>
           </div>
 
-          <div className="rr-scard">
+          <div className="rr-scard" style={{ padding: "10px 14px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--color-green)" }}>
-              <CheckCircle2 size={16} />
-              <span className="rr-scard-label">Equipos en Sitio</span>
+              <CheckCircle2 size={14} />
+              <span className="rr-scard-label" style={{ fontSize: "0.68rem" }}>Equipos que Regresaron</span>
             </div>
-            <span className="rr-scard-val" style={{ color: "var(--color-green)" }}>
+            <span className="rr-scard-val" style={{ color: "var(--color-green)", fontSize: "1.1rem" }}>
               {stats.arrivedTeams}
             </span>
           </div>
 
-          <div className="rr-scard">
+          <div className="rr-scard" style={{ padding: "10px 14px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#eab308" }}>
-              <AlertCircle size={16} />
-              <span className="rr-scard-label">Equipos Pendientes</span>
+              <AlertCircle size={14} />
+              <span className="rr-scard-label" style={{ fontSize: "0.68rem" }}>Equipos Pendientes</span>
             </div>
-            <span className="rr-scard-val" style={{ color: "#eab308" }}>
+            <span className="rr-scard-val" style={{ color: "#eab308", fontSize: "1.1rem" }}>
               {stats.pendingTeams}
             </span>
           </div>
 
-          <div className="rr-scard">
+          <div className="rr-scard" style={{ padding: "10px 14px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#a855f7" }}>
-              <UserCheck size={16} />
-              <span className="rr-scard-label">Funcionarios Totales</span>
+              <UserCheck size={14} />
+              <span className="rr-scard-label" style={{ fontSize: "0.68rem" }}>Funcionarios Totales</span>
             </div>
-            <span className="rr-scard-val" style={{ color: "#a855f7" }}>
+            <span className="rr-scard-val" style={{ color: "#a855f7", fontSize: "1.1rem" }}>
               {stats.totalOfficers}
             </span>
           </div>
 
-          <div className="rr-scard">
+          <div className="rr-scard" style={{ padding: "10px 14px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--accent-orange)" }}>
-              <MapPin size={16} />
-              <span className="rr-scard-label">Ubicaciones Activas</span>
+              <MapPin size={14} />
+              <span className="rr-scard-label" style={{ fontSize: "0.68rem" }}>Ubicaciones Activas</span>
             </div>
-            <span className="rr-scard-val" style={{ color: "var(--accent-orange)" }}>
+            <span className="rr-scard-val" style={{ color: "var(--accent-orange)", fontSize: "1.1rem" }}>
               {stats.uniqueLocations}
             </span>
           </div>
@@ -435,7 +449,7 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
           style={{
             background: "rgba(15, 23, 42, 0.7)",
             border: "1px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: "12px",
+            borderRadius: "10px",
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
@@ -443,55 +457,74 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
         >
           <div
             style={{
-              padding: "12px 16px",
+              padding: "10px 14px",
               borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-              background: "rgba(255, 255, 255, 0.02)",
+              background: "rgba(255, 255, 255, 0.03)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              gap: "12px",
             }}
           >
-            <div style={{ fontSize: "0.82rem", fontWeight: 800, color: "#f8fafc" }}>
-              Listado de Equipos y Puntos de Trabajo ({filteredRecords.length})
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Users size={15} style={{ color: "var(--color-info)" }} />
+              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#f8fafc" }}>
+                Equipos y Puntos de Trabajo
+              </span>
+              <span
+                style={{
+                  fontSize: "0.68rem",
+                  fontWeight: 600,
+                  padding: "1px 7px",
+                  borderRadius: "10px",
+                  background: "rgba(56, 189, 248, 0.15)",
+                  color: "#38bdf8",
+                  border: "1px solid rgba(56, 189, 248, 0.3)",
+                }}
+              >
+                {filteredRecords.length} {filteredRecords.length === 1 ? "registro" : "registros"}
+              </span>
             </div>
-            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-              Mostrando registros del {selectedDate}
+
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.72rem", color: "var(--text-muted)" }}>
+              <Calendar size={13} style={{ opacity: 0.8 }} />
+              <span>{selectedDate}</span>
             </div>
           </div>
 
           <div style={{ overflowX: "auto" }}>
-            <table className="rr-stats-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table className="rr-stats-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.7rem" }}>
               <thead>
-                <tr>
-                  <th style={{ textAlign: "left" }}>Equipo de Trabajo</th>
-                  <th style={{ textAlign: "left" }}>Ubicación de Trabajo</th>
-                  <th style={{ textAlign: "center" }}>Hora Salida</th>
-                  <th style={{ textAlign: "center" }}>Hora Llegada</th>
-                  <th style={{ textAlign: "left" }}>Encargado del Punto</th>
-                  <th style={{ textAlign: "left" }}>Teléfono de Contacto</th>
-                  <th style={{ textAlign: "center" }}>Unidad</th>
-                  <th style={{ textAlign: "center" }}>Funcs.</th>
-                  <th style={{ textAlign: "center" }}>Estado</th>
+                <tr style={{ background: "rgba(56, 189, 248, 0.08)", borderBottom: "1px solid rgba(56, 189, 248, 0.2)" }}>
+                  <th style={{ textAlign: "left", fontWeight: 800, color: "var(--color-info)", fontSize: "0.68rem", padding: "6px 10px" }}>Equipo de Trabajo</th>
+                  <th style={{ textAlign: "left", fontWeight: 800, color: "var(--color-info)", fontSize: "0.68rem", padding: "6px 10px" }}>Ubicación de Trabajo</th>
+                  <th style={{ textAlign: "center", fontWeight: 800, color: "var(--color-info)", fontSize: "0.68rem", padding: "6px 10px" }}>Hora Salida</th>
+                  <th style={{ textAlign: "center", fontWeight: 800, color: "var(--color-info)", fontSize: "0.68rem", padding: "6px 10px" }}>Hora Llegada</th>
+                  <th style={{ textAlign: "left", fontWeight: 800, color: "var(--color-info)", fontSize: "0.68rem", padding: "6px 10px" }}>Encargado del Punto</th>
+                  <th style={{ textAlign: "left", fontWeight: 800, color: "var(--color-info)", fontSize: "0.68rem", padding: "6px 10px" }}>Teléfono de Contacto</th>
+                  <th style={{ textAlign: "center", fontWeight: 800, color: "var(--color-info)", fontSize: "0.68rem", padding: "6px 10px" }}>Unidad</th>
+                  <th style={{ textAlign: "center", fontWeight: 800, color: "var(--color-info)", fontSize: "0.68rem", padding: "6px 10px" }}>Funcs.</th>
+                  <th style={{ textAlign: "center", fontWeight: 800, color: "var(--color-info)", fontSize: "0.68rem", padding: "6px 10px" }}>Estado</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={9} style={{ textAlign: "center", padding: "32px", color: "var(--text-muted)" }}>
+                    <td colSpan={9} style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)", fontWeight: 400, fontSize: "0.72rem" }}>
                       No hay equipos registrados que coincidan con los filtros seleccionados para esta fecha.
                     </td>
                   </tr>
                 ) : (
                   filteredRecords.map((r, idx) => (
                     <tr key={r.id} className={idx % 2 === 0 ? "rr-tr-even" : ""}>
-                      <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 700 }}>
+                      <td style={{ padding: "5px 10px", fontWeight: 400, fontSize: "0.7rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                           <span
                             style={{
-                              fontSize: "0.58rem",
+                              fontSize: "0.55rem",
                               fontWeight: 800,
-                              padding: "1px 5px",
-                              borderRadius: "4px",
+                              padding: "1px 4px",
+                              borderRadius: "3px",
                               background: r.department === "bomberos" ? "rgba(239, 68, 68, 0.15)" : "rgba(56, 189, 248, 0.15)",
                               color: r.department === "bomberos" ? "#ef4444" : "#38bdf8",
                               border: `1px solid ${r.department === "bomberos" ? "rgba(239, 68, 68, 0.3)" : "rgba(56, 189, 248, 0.3)"}`,
@@ -499,60 +532,60 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
                           >
                             {r.department === "bomberos" ? "BOM" : "PC"}
                           </span>
-                          <span>{r.groupName}</span>
+                          <span style={{ fontWeight: 400 }}>{r.groupName}</span>
                         </div>
                       </td>
 
-                      <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <MapPin size={12} style={{ color: "var(--accent-orange)", flexShrink: 0 }} />
-                          <span style={{ fontWeight: 600 }}>{r.locationTitle}</span>
+                      <td style={{ padding: "5px 10px", fontWeight: 400, fontSize: "0.7rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                          <MapPin size={11} style={{ color: "var(--accent-orange)", flexShrink: 0 }} />
+                          <span style={{ fontWeight: 400 }}>{r.locationTitle}</span>
                         </div>
                       </td>
 
-                      <td style={{ textAlign: "center", fontFamily: "var(--mono-font)" }}>
+                      <td style={{ textAlign: "center", fontFamily: "var(--mono-font)", fontWeight: 400, fontSize: "0.7rem", padding: "5px 10px" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", color: r.departureTime !== "-" ? "var(--text-main)" : "var(--text-muted)" }}>
-                          <Clock size={11} style={{ opacity: 0.7 }} />
-                          <span>{r.departureTime}</span>
+                          <Clock size={10} style={{ opacity: 0.7 }} />
+                          <span style={{ fontWeight: 400 }}>{r.departureTime}</span>
                         </div>
                       </td>
 
-                      <td style={{ textAlign: "center", fontFamily: "var(--mono-font)" }}>
+                      <td style={{ textAlign: "center", fontFamily: "var(--mono-font)", fontWeight: 400, fontSize: "0.7rem", padding: "5px 10px" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", color: r.arrivalTime !== "-" ? "var(--color-green)" : "var(--text-muted)" }}>
-                          <Clock size={11} style={{ opacity: 0.7 }} />
-                          <span>{r.arrivalTime}</span>
+                          <Clock size={10} style={{ opacity: 0.7 }} />
+                          <span style={{ fontWeight: 400 }}>{r.arrivalTime}</span>
                         </div>
                       </td>
 
-                      <td>
-                        <span style={{ fontWeight: r.managerName !== "-" ? 600 : 400, color: r.managerName !== "-" ? "#f8fafc" : "var(--text-muted)" }}>
+                      <td style={{ padding: "5px 10px", fontWeight: 400, fontSize: "0.7rem" }}>
+                        <span style={{ fontWeight: 400, color: r.managerName !== "-" ? "#f8fafc" : "var(--text-muted)" }}>
                           {r.managerName}
                         </span>
                       </td>
 
-                      <td>
+                      <td style={{ padding: "5px 10px", fontWeight: 400, fontSize: "0.7rem" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          {r.managerPhone !== "-" && <Phone size={11} style={{ color: "var(--color-info)" }} />}
-                          <span style={{ fontFamily: "var(--mono-font)", color: r.managerPhone !== "-" ? "#38bdf8" : "var(--text-muted)" }}>
+                          {r.managerPhone !== "-" && <Phone size={10} style={{ color: "var(--color-info)" }} />}
+                          <span style={{ fontFamily: "var(--mono-font)", fontWeight: 400, color: r.managerPhone !== "-" ? "#38bdf8" : "var(--text-muted)" }}>
                             {r.managerPhone}
                           </span>
                         </div>
                       </td>
 
-                      <td style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "0.65rem" }}>
+                      <td style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "0.65rem", fontWeight: 400, padding: "5px 10px" }}>
                         {r.unitOut}
                       </td>
 
-                      <td style={{ textAlign: "center", fontWeight: 700 }}>
+                      <td style={{ textAlign: "center", fontWeight: 400, fontSize: "0.7rem", padding: "5px 10px" }}>
                         {r.officersCount}
                       </td>
 
-                      <td style={{ textAlign: "center" }}>
+                      <td style={{ textAlign: "center", padding: "5px 10px" }}>
                         <span
                           className={`rr-status-pill ${r.hasArrived ? "arrived" : "pending"}`}
-                          style={{ fontSize: "0.62rem" }}
+                          style={{ fontSize: "0.58rem", padding: "1px 6px" }}
                         >
-                          {r.hasArrived ? "En Sitio" : "Pendiente"}
+                          {r.hasArrived ? "Regresó" : "Pendiente"}
                         </span>
                       </td>
                     </tr>
