@@ -26,6 +26,8 @@ interface MapInfoModalProps {
   onClose: () => void;
   activeDepartment: DepartmentView;
   canEdit?: boolean;
+  standalone?: boolean;
+  embedded?: boolean;
 }
 
 export const MapInfoModal: React.FC<MapInfoModalProps> = ({
@@ -34,6 +36,8 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
   onSelectedDateChange,
   onClose,
   activeDepartment,
+  standalone = false,
+  embedded = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [deptFilter, setDeptFilter] = useState<DepartmentView>(activeDepartment || "mixto");
@@ -154,113 +158,14 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
     exportWorkTeamsToExcel(exportRows, selectedDate);
   };
 
-  return (
+  const contentArea = (
     <div
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 200,
-        background: "rgba(10, 15, 29, 0.96)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+        flex: 1,
+        overflowY: "auto",
+        padding: "14px 20px",
         display: "flex",
         flexDirection: "column",
-        color: "var(--text-main)",
-        fontFamily: "var(--font-sans)",
-        animation: "fadeIn 0.2s ease-out",
-      }}
-    >
-      {/* Top Header Bar */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "12px 20px",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-          background: "rgba(16, 24, 40, 0.8)",
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "8px",
-              background: "linear-gradient(135deg, #0284c7, #0369a1)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 0 14px rgba(56, 189, 248, 0.3)",
-              color: "#fff",
-            }}
-          >
-            <FileSpreadsheet size={20} />
-          </div>
-          <div>
-            <h2 style={{ fontSize: "1.05rem", fontWeight: 800, margin: 0, color: "#f8fafc" }}>
-              Información del Mapa y Equipos de Trabajo
-            </h2>
-            <p style={{ fontSize: "0.72rem", margin: "1px 0 0", color: "var(--text-muted)" }}>
-              Consulta operativa de ubicaciones, encargados, horarios y exportación a Tabla Excel
-            </p>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <button
-            onClick={handleExportExcel}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 14px",
-              borderRadius: "7px",
-              border: "1px solid #16a34a",
-              background: "linear-gradient(135deg, #15803d, #166534)",
-              color: "#ffffff",
-              fontSize: "0.78rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(22, 163, 74, 0.3)",
-              transition: "all 0.2s ease",
-            }}
-            title="Exportar archivo de Tabla Excel (.xlsx)"
-          >
-            <FileSpreadsheet size={15} />
-            <span>Exportar a Excel</span>
-          </button>
-
-          <button
-            onClick={onClose}
-            style={{
-              background: "rgba(255, 255, 255, 0.06)",
-              border: "1px solid rgba(255, 255, 255, 0.12)",
-              borderRadius: "7px",
-              color: "var(--text-muted)",
-              cursor: "pointer",
-              padding: "6px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.2s ease",
-            }}
-            title="Cerrar subpágina"
-          >
-            <X size={18} />
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "14px 20px",
-          display: "flex",
-          flexDirection: "column",
           gap: "14px",
         }}
       >
@@ -616,6 +521,114 @@ export const MapInfoModal: React.FC<MapInfoModalProps> = ({
           </div>
         </div>
       </div>
+  );
+
+  if (embedded) {
+    return <>{contentArea}</>;
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        background: "rgba(10, 15, 29, 0.96)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        display: "flex",
+        flexDirection: "column",
+        color: "var(--text-main)",
+        fontFamily: "var(--font-sans)",
+        animation: "fadeIn 0.2s ease-out",
+      }}
+    >
+      {/* Top Header Bar */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "12px 20px",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+          background: "rgba(16, 24, 40, 0.8)",
+          flexShrink: 0,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "8px",
+              background: "linear-gradient(135deg, #0284c7, #0369a1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 0 14px rgba(56, 189, 248, 0.3)",
+              color: "#fff",
+            }}
+          >
+            <FileSpreadsheet size={20} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: "1.05rem", fontWeight: 800, margin: 0, color: "#f8fafc" }}>
+              Panel de Información
+            </h2>
+            <p style={{ fontSize: "0.72rem", margin: "1px 0 0", color: "var(--text-muted)" }}>
+              Consulta operativa de ubicaciones, encargados, horarios y exportación a Tabla Excel
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button
+            onClick={handleExportExcel}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 14px",
+              borderRadius: "7px",
+              border: "1px solid #16a34a",
+              background: "linear-gradient(135deg, #15803d, #166534)",
+              color: "#ffffff",
+              fontSize: "0.78rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(22, 163, 74, 0.3)",
+              transition: "all 0.2s ease",
+            }}
+            title="Exportar archivo de Tabla Excel (.xlsx)"
+          >
+            <FileSpreadsheet size={15} />
+            <span>Exportar a Excel</span>
+          </button>
+
+          {!standalone && (
+          <button
+            onClick={onClose}
+            style={{
+              background: "rgba(255, 255, 255, 0.06)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              borderRadius: "7px",
+              color: "var(--text-muted)",
+              cursor: "pointer",
+              padding: "6px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.2s ease",
+            }}
+            title="Cerrar subpágina"
+          >
+            <X size={18} />
+          </button>
+          )}
+        </div>
+      </div>
+
+      {contentArea}
     </div>
   );
 };

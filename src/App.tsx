@@ -16,7 +16,6 @@ import { MobilePersonalSheet } from './components/MobilePersonalSheet';
 import { MobileSettingsSheet } from './components/MobileSettingsSheet';
 import { Sheet } from './components/Sheet';
 import { DashboardView } from './components/dashboard/DashboardView';
-import { MapInfoModal } from './components/MapInfoModal';
 import { Menu, ChevronLeft, LayoutDashboard, FileSpreadsheet } from 'lucide-react';
 import './App.css';
 
@@ -47,8 +46,8 @@ function App() {
       {!isMobile && (
       <div style={{ position: "absolute", top: "16px", right: "65px", zIndex: 130, pointerEvents: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
         <button
-          onClick={() => state.setMapInfoOpen(true)}
-          title="Información del Mapa y Exportar a Excel"
+          onClick={() => window.open('/consolidado', '_blank')}
+          title="Ver Consolidado Operativo"
           style={{
             height: "34px",
             padding: "0 12px",
@@ -68,7 +67,7 @@ function App() {
           }}
         >
           <FileSpreadsheet size={16} />
-          <span>Equipos & Excel</span>
+          <span>Consolidado Operativo</span>
         </button>
         <button
           onClick={() => state.setDashboardOpen(true)}
@@ -286,16 +285,6 @@ function App() {
         />
       )}
 
-      {state.mapInfoOpen && (
-        <MapInfoModal
-          drawnFeatures={state.drawnFeatures}
-          selectedDate={state.selectedDate}
-          onSelectedDateChange={state.setSelectedDate}
-          onClose={() => state.setMapInfoOpen(false)}
-          activeDepartment={state.activeDepartment}
-          canEdit={isAuthenticated}
-        />
-      )}
 
       {isMobile && (
         <MobileBottomBar

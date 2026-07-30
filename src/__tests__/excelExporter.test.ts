@@ -39,7 +39,7 @@ describe("excelExporter", () => {
     exportWorkTeamsToExcel(mockRows, "2026-07-30");
 
     expect(clickSpy).toHaveBeenCalled();
-    expect(setAttributeSpy).toHaveBeenCalledWith("download", "Equipos_de_Trabajo_2026-07-30.xlsx");
+    expect(setAttributeSpy).toHaveBeenCalledWith("download", "Consolidado_Operativo_2026-07-30.xlsx");
     expect(appendChildSpy).toHaveBeenCalled();
     expect(removeChildSpy).toHaveBeenCalled();
 
