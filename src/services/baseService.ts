@@ -263,6 +263,64 @@ export async function saveCampamentos(dateStr: string, camps: CampamentoEntry[])
         .insert(payload);
     }
   }
+
+  // Sincronizar automáticamente en la tabla dedicada pizarra_operacional
+  await savePizarraOperacionalRecords(dateStr, camps);
+}
+
+/**
+ * Verifica si ya existe un registro guardado para una fecha dada en `pizarra_operacional`
+ */
+export async function checkPizarraRecordExists(dateStr: string): Promise<boolean> {
+  try {
+    const { data } = await supabase
+      .from("pizarra_operacional")
+      .select("id")
+      .eq("record_date", dateStr)
+      .maybeSingle();
+
+    return !!data?.id;
+  } catch (err) {
+    return false;
+  }
+}
+
+/**
+ * Sincroniza y comprime la Pizarra Operacional en 1 SOLA FILA POR DÍA en Supabase `pizarra_operacional`
+ */
+export async function savePizarraOperacionalRecords(dateStr: string, camps: CampamentoEntry[]): Promise<void> {
+  try {
+    let totalPersonnel = 0;
+    const campsSummary = (camps || []).map((c) => {
+      const activeStates = (c.statesDetail || []).filter((sd) => sd.officersCount > 0);
+      const campTotal = activeStates.reduce((sum, sd) => sum + (Number(sd.officersCount) || 0), 0);
+      totalPersonnel += campTotal;
+
+      return {
+        campId: c.id,
+        campName: c.campName,
+        personnelCount: campTotal,
+        states: activeStates.map((sd) => ({
+          stateName: sd.stateName,
+          officersCount: Number(sd.officersCount) || 0,
+        })),
+      };
+    });
+
+    await supabase
+      .from("pizarra_operacional")
+      .upsert(
+        {
+          record_date: dateStr,
+          total_personnel: totalPersonnel,
+          camps_summary: campsSummary,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "record_date" }
+      );
+  } catch (err) {
+    console.warn("Error syncing compressed record to pizarra_operacional table:", err);
+  }
 }
 
 /**

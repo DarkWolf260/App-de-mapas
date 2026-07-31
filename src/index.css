@@ -1,9 +1,9 @@
 @import '@arcgis/core/assets/esri/themes/dark/main.css';
 
 :root {
-  --bg-primary: #0a0e17;
-  --bg-secondary: rgba(16, 24, 40, 0.75);
-  --bg-tertiary: rgba(30, 41, 59, 0.5);
+  --bg-primary: #090d16;
+  --bg-secondary: rgba(13, 17, 24, 0.92);
+  --bg-tertiary: rgba(20, 26, 36, 0.7);
   --border-color: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(249, 115, 22, 0.5);
   --border-subtle: rgba(255, 255, 255, 0.07);

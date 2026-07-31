@@ -35,32 +35,58 @@ export const AuthModal: React.FC = () => {
 
   const isAuth = isAdmin || isOperador;
 
+  if (isAuth) {
+    return (
+      <button
+        onClick={handleLogout}
+        title={`Cerrar Sesión (${user?.email})`}
+        style={{
+          background: "rgba(239, 68, 68, 0.15)",
+          border: "1px solid rgba(239, 68, 68, 0.4)",
+          borderRadius: "6px",
+          color: "#ef4444",
+          fontSize: "0.72rem",
+          fontWeight: 700,
+          padding: "5px 12px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          fontFamily: "var(--sans-font)",
+          transition: "all 0.15s ease",
+        }}
+      >
+        <LogOut size={14} />
+        <span>Cerrar Sesión</span>
+      </button>
+    );
+  }
+
   return (
     <>
-      {/* Botón Discreto circular solo con el icono de Escudo */}
+      {/* Botón de Iniciar Sesión cuando no está autenticado */}
       <button
         onClick={() => setOpen(true)}
         className="admin-login-btn"
         style={{
-          width: "32px",
-          height: "32px",
-          borderRadius: "50%",
-          background: isAdmin ? "rgba(34, 197, 94, 0.2)" : isOperador ? "rgba(56, 189, 248, 0.2)" : "rgba(10, 15, 29, 0.85)",
-          border: isAdmin ? "1px solid rgba(34, 197, 94, 0.6)" : isOperador ? "1px solid rgba(56, 189, 248, 0.6)" : "1px solid rgba(255, 255, 255, 0.18)",
-          color: isAdmin ? "#4ade80" : isOperador ? "#38bdf8" : "#94a3b8",
+          background: "rgba(56, 189, 248, 0.12)",
+          border: "1px solid rgba(56, 189, 248, 0.3)",
+          borderRadius: "6px",
+          color: "#38bdf8",
+          fontSize: "0.72rem",
+          fontWeight: 700,
+          padding: "5px 12px",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-          boxShadow: isAdmin ? "0 0 12px rgba(34, 197, 94, 0.35)" : isOperador ? "0 0 12px rgba(56, 189, 248, 0.35)" : "0 4px 12px rgba(0, 0, 0, 0.4)",
-          transition: "all 0.2s ease",
-          padding: 0,
+          gap: "6px",
+          fontFamily: "var(--sans-font)",
+          transition: "all 0.15s ease",
         }}
-        title={isAuth ? `Sesión iniciada como ${user?.email} (${role})` : "Iniciar Sesión"}
+        title="Iniciar Sesión"
       >
-        <Shield size={16} style={{ color: isAdmin ? "#4ade80" : isOperador ? "#38bdf8" : "#94a3b8" }} />
+        <Lock size={14} />
+        <span>Iniciar Sesión</span>
       </button>
 
       {/* Modal Emergente Glassmorphism */}

@@ -15,7 +15,6 @@ export const AdminPanelPage: React.FC = () => {
   const [logsCount, setLogsCount] = useState(0);
   const [requests, setRequests] = useState<UserRegistrationRequest[]>([]);
   const [roleSelectionMap, setRoleSelectionMap] = useState<Record<string, "operador" | "admin">>({});
-  const [organismoSelectionMap, setOrganismoSelectionMap] = useState<Record<string, string>>({});
   const [refreshing, setRefreshing] = useState(false);
 
   const selectedDate = new Date().toISOString().split("T")[0];
@@ -35,13 +34,10 @@ export const AdminPanelPage: React.FC = () => {
       if (fetchedReqs) {
         setRequests(fetchedReqs);
         const rMap: Record<string, "operador" | "admin"> = {};
-        const oMap: Record<string, string> = {};
         fetchedReqs.forEach((r) => {
           rMap[r.id] = r.assignedRole || r.requestedRole || "operador";
-          oMap[r.id] = r.organismo && r.organismo !== "Por Asignar" ? r.organismo : "Protección Civil La Guaira";
         });
         setRoleSelectionMap(rMap);
-        setOrganismoSelectionMap(oMap);
       }
       
       let totalLogs = 0;
@@ -62,8 +58,7 @@ export const AdminPanelPage: React.FC = () => {
 
   const handleApprove = async (reqId: string) => {
     const roleToAssign = roleSelectionMap[reqId] || "operador";
-    const organismoToAssign = organismoSelectionMap[reqId] || "Protección Civil La Guaira";
-    await approveUserRequest(reqId, roleToAssign, organismoToAssign);
+    await approveUserRequest(reqId, roleToAssign);
     loadAdminData();
   };
 
@@ -190,53 +185,175 @@ export const AdminPanelPage: React.FC = () => {
         overflowX: "hidden",
       }}
     >
-      {/* HEADER PRINCIPAL DE ADMINISTRACIÓN */}
+      {/* HEADER PRINCIPAL DE ADMINISTRACIÓN CON PESTAÑAS INTEGRADAS */}
       <header
         style={{
-          height: "64px",
-          borderBottom: "1px solid var(--border-color)",
-          backgroundColor: "var(--bg-secondary)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
+          minHeight: "56px",
+          backgroundColor: "var(--bg-primary)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 24px",
+          padding: "8px 24px",
           position: "sticky",
           top: 0,
           zIndex: 50,
+          width: "100%",
+          boxSizing: "border-box",
           flexShrink: 0,
+          flexWrap: "wrap",
+          gap: "12px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <div
-            style={{
-              background: "rgba(249, 115, 22, 0.15)",
-              border: "1px solid rgba(249, 115, 22, 0.3)",
-              color: "var(--accent-orange)",
-              padding: "8px",
-              borderRadius: "8px",
-              display: "flex",
-            }}
-          >
-            <Shield size={20} />
+        {/* LOGO + MARCA + PESTAÑAS DE SECCIÓN INTEGRADAS */}
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "8px",
+                background: "linear-gradient(135deg, var(--accent-orange), #ea580c)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                boxShadow: "0 2px 10px rgba(249, 115, 22, 0.3)",
+                flexShrink: 0,
+              }}
+            >
+              <Shield size={17} />
+            </div>
+            <span style={{ color: "#f8fafc", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "-0.01em", fontFamily: "var(--sans-font)" }}>
+              COE La Guaira <span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Panel de Administración</span>
+            </span>
           </div>
-          <div>
-            <h1 style={{ color: "#f8fafc", fontWeight: 800, fontSize: "1.05rem", margin: 0, lineHeight: 1.2 }}>
-              COE La Guaira — Panel de Administración
-            </h1>
-            <p style={{ color: "var(--accent-orange)", fontSize: "0.62rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
-              Aprobación de Solicitudes, Roles y Gestión Central
-            </p>
+
+          <div style={{ height: "20px", width: "1px", background: "rgba(255, 255, 255, 0.12)" }} />
+
+          {/* PESTAÑAS INTEGRADAS DENTRO DEL HEADER */}
+          <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.4)", padding: "3px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)", flexWrap: "wrap", gap: "2px" }}>
+            <button
+              onClick={() => setActiveSection("solicitudes")}
+              style={{
+                background: activeSection === "solicitudes" ? "var(--accent-orange)" : "transparent",
+                color: activeSection === "solicitudes" ? "#fff" : "var(--text-muted)",
+                border: "none",
+                borderRadius: "6px",
+                padding: "5px 12px",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+                fontFamily: "var(--sans-font)",
+              }}
+            >
+              <UserCheck size={13} /> Solicitudes
+              {pendingCount > 0 && (
+                <span style={{ background: "#ef4444", color: "#fff", borderRadius: "10px", padding: "0 6px", fontSize: "0.6rem", fontWeight: 800 }}>
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveSection("usuarios")}
+              style={{
+                background: activeSection === "usuarios" ? "var(--accent-orange)" : "transparent",
+                color: activeSection === "usuarios" ? "#fff" : "var(--text-muted)",
+                border: "none",
+                borderRadius: "6px",
+                padding: "5px 12px",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+                fontFamily: "var(--sans-font)",
+              }}
+            >
+              <Users size={13} /> Usuarios y Roles
+            </button>
+
+            <button
+              onClick={() => setActiveSection("bases")}
+              style={{
+                background: activeSection === "bases" ? "var(--accent-orange)" : "transparent",
+                color: activeSection === "bases" ? "#fff" : "var(--text-muted)",
+                border: "none",
+                borderRadius: "6px",
+                padding: "5px 12px",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+                fontFamily: "var(--sans-font)",
+              }}
+            >
+              <Database size={13} /> Bases
+            </button>
+
+            <button
+              onClick={() => setActiveSection("capas")}
+              style={{
+                background: activeSection === "capas" ? "var(--accent-orange)" : "transparent",
+                color: activeSection === "capas" ? "#fff" : "var(--text-muted)",
+                border: "none",
+                borderRadius: "6px",
+                padding: "5px 12px",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+                fontFamily: "var(--sans-font)",
+              }}
+            >
+              <Layers size={13} /> Capas & Registros
+            </button>
           </div>
         </div>
 
+        {/* CONTROLES RÁPIDOS Y CERRAR SESIÓN */}
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button
+            onClick={loadAdminData}
+            disabled={refreshing}
+            title="Actualizar Datos"
+            style={{
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              borderRadius: "6px",
+              color: "var(--text-muted)",
+              fontSize: "0.72rem",
+              fontWeight: 600,
+              padding: "5px 10px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              fontFamily: "var(--sans-font)",
+            }}
+          >
+            <RefreshCw size={13} style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
+            <span>Actualizar</span>
+          </button>
+
           <button
             onClick={() => window.open("/", "_self")}
             style={{
-              background: "rgba(56, 189, 248, 0.15)",
-              border: "1px solid rgba(56, 189, 248, 0.4)",
+              background: "rgba(56, 189, 248, 0.12)",
+              border: "1px solid rgba(56, 189, 248, 0.3)",
               borderRadius: "6px",
               color: "#38bdf8",
               fontSize: "0.72rem",
@@ -250,14 +367,14 @@ export const AdminPanelPage: React.FC = () => {
             }}
           >
             <MapPin size={14} />
-            <span>Ver Mapa</span>
+            <span>Mapa</span>
           </button>
 
           <button
             onClick={() => window.open("/consolidado", "_blank")}
             style={{
-              background: "rgba(168, 85, 247, 0.15)",
-              border: "1px solid rgba(168, 85, 247, 0.4)",
+              background: "rgba(168, 85, 247, 0.12)",
+              border: "1px solid rgba(168, 85, 247, 0.3)",
               borderRadius: "6px",
               color: "#c084fc",
               fontSize: "0.72rem",
@@ -271,7 +388,7 @@ export const AdminPanelPage: React.FC = () => {
             }}
           >
             <FileSpreadsheet size={14} />
-            <span>Módulo de Información</span>
+            <span>Pizarra Operacional</span>
           </button>
 
           <button
@@ -346,117 +463,6 @@ export const AdminPanelPage: React.FC = () => {
           </div>
         </div>
 
-        {/* MENÚ DE SECCIONES ADMINISTRATIVAS */}
-        <div style={{ display: "flex", gap: "8px", borderBottom: "1px solid var(--border-color)", paddingBottom: "12px" }}>
-          <button
-            onClick={() => setActiveSection("solicitudes")}
-            style={{
-              background: activeSection === "solicitudes" ? "var(--accent-orange)" : "rgba(255, 255, 255, 0.04)",
-              color: activeSection === "solicitudes" ? "#fff" : "var(--text-muted)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "6px",
-              padding: "6px 14px",
-              fontSize: "0.74rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontFamily: "var(--sans-font)",
-            }}
-          >
-            <UserCheck size={14} /> Solicitudes de Registro
-            {pendingCount > 0 && (
-              <span style={{ background: "#ef4444", color: "#fff", borderRadius: "10px", padding: "1px 6px", fontSize: "0.6rem", fontWeight: 800 }}>
-                {pendingCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveSection("usuarios")}
-            style={{
-              background: activeSection === "usuarios" ? "var(--accent-orange)" : "rgba(255, 255, 255, 0.04)",
-              color: activeSection === "usuarios" ? "#fff" : "var(--text-muted)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "6px",
-              padding: "6px 14px",
-              fontSize: "0.74rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontFamily: "var(--sans-font)",
-            }}
-          >
-            <Users size={14} /> Usuarios y Roles
-          </button>
-
-          <button
-            onClick={() => setActiveSection("bases")}
-            style={{
-              background: activeSection === "bases" ? "var(--accent-orange)" : "rgba(255, 255, 255, 0.04)",
-              color: activeSection === "bases" ? "#fff" : "var(--text-muted)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "6px",
-              padding: "6px 14px",
-              fontSize: "0.74rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontFamily: "var(--sans-font)",
-            }}
-          >
-            <Database size={14} /> Bases y Campamentos
-          </button>
-
-          <button
-            onClick={() => setActiveSection("capas")}
-            style={{
-              background: activeSection === "capas" ? "var(--accent-orange)" : "rgba(255, 255, 255, 0.04)",
-              color: activeSection === "capas" ? "#fff" : "var(--text-muted)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "6px",
-              padding: "6px 14px",
-              fontSize: "0.74rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontFamily: "var(--sans-font)",
-            }}
-          >
-            <Layers size={14} /> Capas del Mapa ({featuresCount})
-          </button>
-
-          <button
-            onClick={loadAdminData}
-            disabled={refreshing}
-            style={{
-              marginLeft: "auto",
-              background: "transparent",
-              border: "1px solid var(--border-color)",
-              borderRadius: "6px",
-              color: "var(--text-muted)",
-              fontSize: "0.72rem",
-              fontWeight: 600,
-              padding: "6px 12px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontFamily: "var(--sans-font)",
-            }}
-          >
-            <RefreshCw size={13} style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
-            <span>Actualizar Datos</span>
-          </button>
-        </div>
-
         {/* CONTENIDO DE LA PESTAÑA SOLICITUDES DE REGISTRO */}
         {activeSection === "solicitudes" && (
           <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden" }}>
@@ -475,7 +481,6 @@ export const AdminPanelPage: React.FC = () => {
               <thead>
                 <tr style={{ background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-color)", color: "var(--text-muted)", textTransform: "uppercase", fontSize: "0.62rem", letterSpacing: "0.05em" }}>
                   <th style={{ padding: "10px 14px", fontWeight: 700 }}>Solicitante</th>
-                  <th style={{ padding: "10px 14px", fontWeight: 700 }}>Organismo</th>
                   <th style={{ padding: "10px 14px", fontWeight: 700 }}>Fecha Solicitud</th>
                   <th style={{ padding: "10px 14px", fontWeight: 700 }}>Rol a Asignar</th>
                   <th style={{ padding: "10px 14px", fontWeight: 700, textAlign: "center" }}>Estado</th>
@@ -485,7 +490,7 @@ export const AdminPanelPage: React.FC = () => {
               <tbody>
                 {requests.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ padding: "24px", textAlign: "center", color: "var(--text-muted)" }}>
+                    <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "var(--text-muted)" }}>
                       No hay solicitudes de registro registradas en el sistema.
                     </td>
                   </tr>
@@ -495,29 +500,6 @@ export const AdminPanelPage: React.FC = () => {
                       <td style={{ padding: "12px 14px" }}>
                         <div style={{ fontWeight: 700, color: "#f8fafc" }}>{req.fullName}</div>
                         <div style={{ fontSize: "0.64rem", color: "var(--text-muted)" }}>{req.email}</div>
-                      </td>
-                      <td style={{ padding: "12px 14px" }}>
-                        {req.status === "Pendiente" ? (
-                          <input
-                            type="text"
-                            value={organismoSelectionMap[req.id] ?? (req.organismo !== "Por Asignar" ? req.organismo : "Protección Civil La Guaira")}
-                            onChange={(e) => setOrganismoSelectionMap((prev) => ({ ...prev, [req.id]: e.target.value }))}
-                            placeholder="Ej: Protección Civil / Bomberos"
-                            style={{
-                              background: "rgba(0, 0, 0, 0.4)",
-                              border: "1px solid var(--border-color)",
-                              borderRadius: "6px",
-                              color: "#fff",
-                              fontSize: "0.72rem",
-                              padding: "4px 8px",
-                              outline: "none",
-                              fontFamily: "var(--sans-font)",
-                              width: "170px",
-                            }}
-                          />
-                        ) : (
-                          <span style={{ color: "var(--text-main)", fontWeight: 500 }}>🏢 {req.organismo}</span>
-                        )}
                       </td>
                       <td style={{ padding: "12px 14px", color: "var(--text-muted)", fontSize: "0.68rem" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
