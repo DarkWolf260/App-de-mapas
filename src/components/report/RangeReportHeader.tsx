@@ -64,12 +64,15 @@ export const RangeReportHeader: React.FC<RangeReportHeaderProps> = ({
         >
           <BarChart2 size={13} /> Estadísticas
         </button>
+        {/* Pestaña Novedades ocultada por solicitud de usuario */}
+        {/*
         <button
           className={`rr-tab ${activeTab === "novedades" ? "active" : ""}`}
           onClick={() => onTabChange("novedades")}
         >
           <FileText size={13} /> Novedades
         </button>
+        */}
       </div>
     </>
   );

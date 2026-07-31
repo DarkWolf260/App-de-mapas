@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { ShieldAlert, Lock } from "lucide-react";
-import { REDAN_REGIONS } from "../data/redanStructure";
+import { ShieldAlert } from "lucide-react";
 import {
   fetchCampamentos,
   saveCampamentos,
@@ -24,9 +23,11 @@ import { WorkTeamsTab } from "./pizarra/WorkTeamsTab";
 import { DeleteConfirmModal } from "./pizarra/DeleteConfirmModal";
 
 export const PizarraOperacional: React.FC = () => {
-  const { isAdmin, isOperador } = useAuth();
+  const { user, isAdmin, isOperador, isAuthenticated, loading } = useAuth();
+  const canAccess = isAuthenticated && (isAdmin || isOperador);
   const canEdit = isAdmin || isOperador;
 
+  // ALL STATES MUST BE DECLARED UNCONDITIONALLY AT TOP LEVEL
   const [activeTab, setActiveTab] = useState<"pizarra" | "equipos">("pizarra");
   const [selectedDate, setSelectedDate] = useState<string>(
     () => new Date().toISOString().split("T")[0]
@@ -39,19 +40,20 @@ export const PizarraOperacional: React.FC = () => {
   const [newBaseName, setNewBaseName] = useState("");
   const [showAddBase, setShowAddBase] = useState(false);
   const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
-
-  // Modal confirmation target
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
-  // Turn off edit mode if user lacks permission
+  // ALL HOOKS MUST BE DECLARED UNCONDITIONALLY BEFORE ANY EARLY RETURN
+
+  // 1. Turn off edit mode if user lacks permission
   useEffect(() => {
     if (!canEdit) {
       setIsEditMode(false);
     }
   }, [canEdit]);
 
-  // Load campamentos on date change
+  // 2. Load campamentos on date change
   useEffect(() => {
+    if (!canAccess) return;
     let isMounted = true;
     fetchCampamentos(selectedDate).then((fetchedCamps) => {
       if (isMounted && fetchedCamps) {
@@ -61,10 +63,11 @@ export const PizarraOperacional: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedDate]);
+  }, [selectedDate, canAccess]);
 
-  // Load active work teams for the selected date
+  // 3. Load active work teams for the selected date
   useEffect(() => {
+    if (!canAccess) return;
     let isMounted = true;
     Promise.all([fetchFeatures(), fetchLogs()]).then(([features, logsMap]) => {
       if (!isMounted) return;
@@ -100,7 +103,7 @@ export const PizarraOperacional: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedDate]);
+  }, [selectedDate, canAccess]);
 
   // Core save function
   const executeSaveAll = async () => {
@@ -123,7 +126,7 @@ export const PizarraOperacional: React.FC = () => {
     }
   };
 
-  // Handle save button trigger with overwrite warning prompt
+  // 4. Handle save button trigger with overwrite warning prompt
   const handleSaveAll = useCallback(async () => {
     if (!canEdit) return;
     const exists = await checkPizarraRecordExists(selectedDate);
@@ -133,6 +136,102 @@ export const PizarraOperacional: React.FC = () => {
       await executeSaveAll();
     }
   }, [selectedDate, camps, canEdit]);
+
+  // EARLY RETURNS AFTER ALL HOOKS HAVE BEEN EXECUTED UNCONDITIONALLY
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          height: "100vh",
+          width: "100vw",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--bg-primary)",
+          color: "var(--text-muted)",
+          fontFamily: "var(--sans-font)",
+        }}
+      >
+        Cargando Pizarra Operacional...
+      </div>
+    );
+  }
+
+  if (!canAccess) {
+    return (
+      <div
+        style={{
+          height: "100vh",
+          width: "100vw",
+          background: "var(--bg-primary)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "var(--sans-font)",
+          padding: "20px",
+          boxSizing: "border-box",
+        }}
+      >
+        <div
+          style={{
+            background: "var(--bg-secondary)",
+            border: "1px solid rgba(239, 68, 68, 0.4)",
+            borderRadius: "12px",
+            padding: "32px",
+            maxWidth: "440px",
+            width: "100%",
+            textAlign: "center",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.6)",
+          }}
+        >
+          <div
+            style={{
+              background: "rgba(239, 68, 68, 0.15)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              color: "#ef4444",
+              width: "56px",
+              height: "56px",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 16px auto",
+            }}
+          >
+            <ShieldAlert size={28} />
+          </div>
+
+          <h2 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#f8fafc", margin: "0 0 8px 0" }}>
+            Acceso Restringido
+          </h2>
+          <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.5, margin: "0 0 24px 0" }}>
+            La Pizarra Operacional es de acceso exclusivo para el personal autorizado (<strong>Administradores y Operadores</strong>). Inicia sesión con tus credenciales para acceder.
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <button
+              onClick={() => (window.location.href = "/")}
+              style={{
+                background: "var(--accent-orange)",
+                border: "none",
+                borderRadius: "8px",
+                color: "#fff",
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                padding: "10px 16px",
+                cursor: "pointer",
+                fontFamily: "var(--sans-font)",
+                boxShadow: "0 4px 14px rgba(249, 115, 22, 0.35)",
+              }}
+            >
+              Ir al Mapa Principal / Iniciar Sesión
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Export Work Teams to Excel
   const handleExportTeamsExcel = () => {
@@ -194,20 +293,19 @@ export const PizarraOperacional: React.FC = () => {
     });
   };
 
-  const confirmExecuteDelete = () => {
-    if (!canEdit || !deleteTarget) return;
+  const confirmExecuteDelete = async () => {
+    if (!deleteTarget || !canEdit) return;
 
     if (deleteTarget.type === "camp") {
-      deleteCampamento(deleteTarget.campId);
       setCamps((prev) => prev.filter((c) => c.id !== deleteTarget.campId));
+      await deleteCampamento(deleteTarget.campId);
     } else if (deleteTarget.type === "state" && deleteTarget.stateIdTarget) {
-      const { campId, stateIdTarget } = deleteTarget;
       setCamps((prev) =>
         prev.map((c) => {
-          if (c.id !== campId) return c;
+          if (c.id !== deleteTarget.campId) return c;
           return {
             ...c,
-            statesDetail: (c.statesDetail || []).filter((sd) => sd.id !== stateIdTarget),
+            statesDetail: (c.statesDetail || []).filter((sd) => sd.id !== deleteTarget.stateIdTarget),
           };
         })
       );
@@ -272,10 +370,12 @@ export const PizarraOperacional: React.FC = () => {
     return regionStates.reduce((sum, st) => sum + (stateTotalsMap.get(st) || 0), 0);
   };
 
-  const redanGrandTotal = REDAN_REGIONS.reduce(
-    (sum, r) => sum + getRegionTotalFromCamps(r.states),
-    0
-  );
+  const totalGeneralPersonnel = camps.reduce((sum, c) => {
+    return (
+      sum +
+      (c.statesDetail || []).reduce((sSum, sd) => sSum + (Number(sd.officersCount) || 0), 0)
+    );
+  }, 0);
 
   return (
     <div
@@ -367,51 +467,35 @@ export const PizarraOperacional: React.FC = () => {
           {/* BANNER NOTIFICACIÓN MODO EDICIÓN O ADVERTENCIA SIN PERMISOS */}
           {canEdit && isEditMode ? (
             <div style={{ background: "rgba(249, 115, 22, 0.1)", border: "1px solid rgba(249, 115, 22, 0.25)", borderRadius: "8px", padding: "8px 14px", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px", color: "var(--accent-orange)", fontSize: "0.72rem", fontWeight: 600, flexShrink: 0 }}>
-              <ShieldAlert size={15} />
-              <span><strong>Modo Edición Activado:</strong> Puedes modificar los nombres de las bases, cambiar o eliminar estados y crear nuevas bases.</span>
+              <span>✏️ <strong>Modo Edición Activo:</strong> Puedes editar nombres, modificar números de oficiales y agregar/eliminar bases u organismos.</span>
             </div>
           ) : !canEdit ? (
-            <div style={{ background: "rgba(30, 41, 59, 0.4)", border: "1px solid var(--border-color)", borderRadius: "8px", padding: "8px 14px", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)", fontSize: "0.72rem", fontWeight: 500, flexShrink: 0 }}>
-              <Lock size={15} />
-              <span><strong>Modo Lectura Protegido:</strong> Solo Administradores y Operadores autenticados pueden modificar datos.</span>
+            <div style={{ background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "8px", padding: "8px 14px", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)", fontSize: "0.72rem", flexShrink: 0 }}>
+              <span>🔒 <strong>Modo Solo Lectura:</strong> Tu usuario no posee permisos para modificar los registros.</span>
             </div>
           ) : null}
 
-          {/* PANEL SUPERIOR DE RESUMEN EJECUTIVO (TOTAL GENERAL + DESPLIEGUE REDAN) */}
+          {/* KPI RESUMEN EJECUTIVO EN CÁPSULAS DE IGUAL PROPORCIÓN */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
               gap: "16px",
               marginBottom: "20px",
               alignItems: "stretch",
             }}
           >
-            <TotalGeneralCard redanGrandTotal={redanGrandTotal} />
-            <RedanCard
-              getRegionTotalFromCamps={getRegionTotalFromCamps}
-              redanGrandTotal={redanGrandTotal}
-            />
+            <RedanCard getRegionTotalFromCamps={getRegionTotalFromCamps} />
+            <TotalGeneralCard totalGeneralPersonnel={totalGeneralPersonnel} totalBases={camps.length} />
           </div>
 
-          {/* ENCABEZADO DE SECCIÓN BASES OPERACIONALES */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", borderBottom: "1px solid var(--border-color)", paddingBottom: "8px" }}>
-            <h2 style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700, color: "#f8fafc", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "8px" }}>
-              <span>Bases Operacionales y Campamentos</span>
-              <span style={{ fontSize: "0.68rem", fontWeight: 800, color: "var(--accent-orange)", background: "rgba(249, 115, 22, 0.12)", border: "1px solid rgba(249, 115, 22, 0.3)", borderRadius: "10px", padding: "1px 8px" }}>
-                {camps.length}
-              </span>
-            </h2>
-          </div>
-
-          {/* MATRIZ REUTILIZABLE Y BALANCEADA DE BASES OPERACIONALES */}
+          {/* MATRIZ MASONRY/GRID DE BASES OPERACIONALES */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
               gap: "16px",
-              paddingBottom: "24px",
-              alignItems: "start",
+              width: "100%",
             }}
           >
             {camps.map((camp) => (

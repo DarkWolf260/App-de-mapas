@@ -521,13 +521,13 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                           <MetricBadges group={group} />
                         )}
                         {showArrivalCheckbox ? (
-                      <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
-                        <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { onToggleArrival?.(groupIdx, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
-                        <span>{group.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
-                      </label>
-                    ) : (
-                      group.hasArrived && <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}><Check size={9} /> Llegó del sitio</span>
-                    )}
+                          <label style={{ fontSize: "0.58rem", fontWeight: 700, color: group.hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
+                            <input type="checkbox" checked={!!group.hasArrived} onChange={(e) => { onToggleArrival?.(groupIdx, e.target.checked); }} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
+                            <span>{group.hasArrived ? "Llegó del sitio" : "¿Ya llegó del sitio?"}</span>
+                          </label>
+                        ) : (
+                          group.hasArrived && <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}><Check size={9} /> Llegó del sitio</span>
+                        )}
                       </>
                     )}
                   </div>
@@ -601,155 +601,14 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
-      {/* Novedades unificadas */}
-      {canEdit && onAddNovedad && (() => {
-        // Build unified list: polygon novedades + contained points novedades
-        type UnifiedEntry = { key: string; entryId: string; time: string; text: string; timestamp: string; origin: "zona" | "punto"; originLabel?: string; originFeatId?: number; isOwn: boolean };
-        const ownEntries: UnifiedEntry[] = novedades.map((n) => ({ key: `zone-${n.id}`, entryId: n.id, time: n.time, text: n.text, timestamp: n.timestamp, origin: "zona" as const, isOwn: true }));
-        const foreignEntries: UnifiedEntry[] = [];
-        for (const group of containedNovedades) {
-          for (const n of group.novedades) {
-            foreignEntries.push({ key: `pt-${group.originFeatId}-${n.id}`, entryId: n.id, time: n.time, text: n.text, timestamp: n.timestamp, origin: "punto" as const, originLabel: group.origin, originFeatId: group.originFeatId, isOwn: false });
-          }
-        }
-        const allEntries = [...ownEntries, ...foreignEntries].sort((a, b) => a.time.localeCompare(b.time));
-        const totalOwn = ownEntries.length;
-        const totalForeign = foreignEntries.length;
-
-        return (
-          <div style={sectionBox}>
-            <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "6px", display: "flex", alignItems: "center", gap: "4px" }}>
-              <FileText size={10} /> Novedades
-              <span style={{ marginLeft: "auto", fontSize: "0.52rem", fontWeight: 400, color: "var(--text-muted)" }}>
-                {totalOwn > 0 && `${totalOwn} zona`}
-                {totalOwn > 0 && totalForeign > 0 && " · "}
-                {totalForeign > 0 && `${totalForeign} punto${totalForeign > 1 ? "s" : ""}`}
-              </span>
-            </div>
-
-            {allEntries.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "8px" }}>
-                {allEntries.map((entry) => {
-                  const isForeign = entry.origin === "punto";
-                  const borderColor = isForeign ? "rgba(167,139,250,0.15)" : "rgba(56,189,248,0.12)";
-                  const bgColor = isForeign ? "rgba(167,139,250,0.04)" : "rgba(56,189,248,0.04)";
-                  const timeColor = isForeign ? "#a78bfa" : "var(--color-info)";
-                  const canNavigate = isForeign && onNavigateToFeature && entry.originFeatId;
-
-                  return (
-                    <div
-                      key={entry.key}
-                      style={{
-                        display: "flex", alignItems: "flex-start", gap: "6px",
-                        padding: "5px 8px", borderRadius: "6px",
-                        border: `1px solid ${borderColor}`, background: bgColor,
-                        cursor: canNavigate ? "pointer" : "default",
-                        transition: "background 0.15s ease",
-                      }}
-                      onClick={canNavigate ? () => {
-                        const feat = drawnFeatures.find((f) => f.id === entry.originFeatId);
-                        if (feat) onNavigateToFeature(feat);
-                      } : undefined}
-                      onMouseEnter={canNavigate ? (e) => (e.currentTarget.style.background = isForeign ? "rgba(167,139,250,0.1)" : bgColor) : undefined}
-                      onMouseLeave={canNavigate ? (e) => (e.currentTarget.style.background = bgColor) : undefined}
-                    >
-                      <span style={{ fontSize: "0.6rem", fontWeight: 700, color: timeColor, fontVariantNumeric: "tabular-nums", flexShrink: 0, minWidth: "36px" }}>{entry.time}</span>
-                      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "1px" }}>
-                        {editingEntryId === entry.entryId ? (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                            <input
-                              type="time"
-                              value={editingEntryTime}
-                              onChange={(e) => setEditingEntryTime(e.target.value)}
-                              style={{ width: "80px", fontSize: "0.58rem", padding: "3px 4px", borderRadius: "3px", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(17,24,39,0.7)", color: "var(--text-main)", fontFamily: "inherit", outline: "none" }}
-                            />
-                            <textarea
-                              value={editingEntryText}
-                              onChange={(e) => setEditingEntryText(e.target.value)}
-                              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEditEntry(entry.entryId); } }}
-                              autoFocus
-                              rows={2}
-                              style={{ fontSize: "0.58rem", padding: "3px 5px", borderRadius: "3px", border: "1px solid rgba(56,189,248,0.25)", background: "rgba(17,24,39,0.7)", color: "var(--text-main)", fontFamily: "inherit", resize: "vertical", outline: "none" }}
-                            />
-                            <div style={{ display: "flex", gap: "3px" }}>
-                              <button onClick={() => handleSaveEditEntry(entry.entryId)} disabled={!editingEntryText.trim()} style={{ fontSize: "0.5rem", padding: "1px 6px", borderRadius: "3px", border: "1px solid rgba(34,197,94,0.3)", background: editingEntryText.trim() ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.02)", color: editingEntryText.trim() ? "var(--color-green)" : "var(--text-muted)", cursor: editingEntryText.trim() ? "pointer" : "default" }}>
-                                Guardar
-                              </button>
-                              <button onClick={handleCancelEditEntry} style={{ fontSize: "0.5rem", padding: "1px 6px", borderRadius: "3px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)", color: "var(--text-muted)", cursor: "pointer" }}>
-                                Cancelar
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: "0.6rem", color: "var(--text-main)", lineHeight: 1.3 }}>{entry.text}</span>
-                        )}
-                      </div>
-                      {!isForeign && (onDeleteNovedad || onUpdateNovedad) && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "2px", flexShrink: 0 }}>
-                          {onUpdateNovedad && (
-                            <button onClick={(e) => { e.stopPropagation(); handleStartEditEntry(entry.entryId, entry.text, entry.time); }} title="Editar" style={{ padding: "1px", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-info)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
-                              <Pencil size={10} />
-                            </button>
-                          )}
-                          {onDeleteNovedad && (
-                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteNovedadId(entry.entryId); }} title="Eliminar" style={{ padding: "1px", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }} onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-high)")} onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
-                              <X size={10} />
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", padding: "4px 0 8px", fontStyle: "italic" }}>Sin novedades registradas.</div>
-            )}
-
-            {/* Add form */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <textarea
-                value={novText}
-                onChange={(e) => setNovText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && novText.trim()) { e.preventDefault(); onAddNovedad(novTime, novText.trim()).then(() => setNovText("")); } }}
-                placeholder="Ecribir novedad o reporte..."
-                rows={3}
-                className="rr-editor-input"
-                style={{ fontSize: "0.72rem", padding: "6px 9px", resize: "vertical", lineHeight: 1.4 }}
-              />
-              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                <input
-                  type="time"
-                  value={novTime}
-                  onChange={(e) => setNovTime(e.target.value)}
-                  className="rr-editor-input"
-                  style={{ width: "95px", fontSize: "0.74rem", padding: "4px 8px" }}
-                />
-                <button
-                  onClick={() => { if (novText.trim()) { onAddNovedad(novTime, novText.trim()).then(() => setNovText("")); } }}
-                  disabled={!novText.trim()}
-                  style={{ padding: "4px 10px", borderRadius: "5px", border: "1px solid rgba(34,197,94,0.3)", background: novText.trim() ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.02)", color: novText.trim() ? "var(--color-green)" : "var(--text-muted)", cursor: novText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", fontSize: "0.6rem", fontWeight: 700, flexShrink: 0 }}
-                >
-                  <Plus size={11} />
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {/* Novedades unificadas (Ocultas por requerimiento) */}
+      {/* canEdit && onAddNovedad && ... */}
 
       {/* Botón Guardar Estadísticas — puntos */}
       {canEdit && !isPolygon && onSaveStats && (
         <button type="button" onClick={onSaveStats} style={{ width: "100%", background: saveSuccess ? "rgba(34, 197, 94, 0.18)" : "rgba(56, 189, 248, 0.12)", border: `1px solid ${saveSuccess ? "rgba(34, 197, 94, 0.5)" : "rgba(56, 189, 248, 0.35)"}`, borderRadius: "7px", color: saveSuccess ? "#22c55e" : "#38bdf8", fontSize: "0.72rem", fontWeight: 700, padding: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "all 0.2s ease" }}>
           {saveSuccess ? <Check size={13} /> : <Save size={13} />}
-          {saveSuccess ? "\u00a1Estad\u00edsticas Guardadas!" : "Guardar Estad\u00edsticas"}
-        </button>
-      )}
-
-      {/* Boton Editar - solo administradores en puntos */}
-      {isAdmin && !isPolygon && (
-        <button type="button" onClick={onEdit} style={{ width: "100%", background: "var(--color-info)", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "all 0.2s ease", boxShadow: "0 0 10px rgba(56, 189, 248, 0.2)", marginTop: "4px" }}>
-          <Edit3 size={12} /> Editar Registro
+          {saveSuccess ? "¡Estadísticas Guardadas!" : "Guardar Estadísticas"}
         </button>
       )}
 
