@@ -619,8 +619,7 @@ export const PizarraOperacional: React.FC = () => {
             flex: 1,
             width: "100%",
             boxSizing: "border-box",
-            overflowX: "auto",
-            overflowY: "hidden",
+            overflow: "auto",
             display: "flex",
             flexDirection: "column",
           }}
@@ -716,7 +715,7 @@ export const PizarraOperacional: React.FC = () => {
                   </div>
 
                   {/* FILAS DE ESTADOS Y CONTEOS */}
-                  <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: "5px" }}>
+                  <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: "5px", maxHeight: "calc(100vh - 210px)", overflowY: "auto" }}>
                     {canEdit && isEditMode && (
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
                         <span style={{ fontSize: "0.6rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Estados en Base</span>

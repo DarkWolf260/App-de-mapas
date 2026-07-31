@@ -13,6 +13,9 @@ export default defineConfig({
           if (req.url === "/consolidado" || req.url === "/consolidado/") {
             req.url = "/consolidado.html";
           }
+          if (req.url === "/admin" || req.url === "/admin/") {
+            req.url = "/admin.html";
+          }
           if (req.url === "/login" || req.url === "/login/") {
             req.url = "/login.html";
           }
@@ -26,6 +29,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         consolidado: resolve(__dirname, "consolidado.html"),
+        admin: resolve(__dirname, "admin.html"),
         login: resolve(__dirname, "login.html"),
       },
     },
