@@ -52,7 +52,7 @@ export const TotalGeneralCard: React.FC<TotalGeneralCardProps> = ({ redanGrandTo
         </div>
         <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontWeight: 600, marginTop: "4px", display: "flex", alignItems: "center", gap: "4px", justifyContent: "flex-end" }}>
           <ShieldCheck size={12} style={{ color: "#4ade80" }} />
-          <span>Efectivos en Línea</span>
+          <span>Efectivos en La Guaira</span>
         </div>
       </div>
     </div>
