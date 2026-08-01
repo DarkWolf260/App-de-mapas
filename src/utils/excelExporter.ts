@@ -1,10 +1,5 @@
-import {
-  OperationalBase,
-  DEFAULT_OPERATIONAL_BASES,
-  DEFAULT_REDAN_REGIONS,
-  getBaseTotal,
-  getGrandTotal,
-} from "../services/baseService";
+import { CampamentoEntry, StatePersonnelCount } from "../services/baseService";
+import { REDAN_REGIONS } from "../data/redanStructure";
 
 export interface WorkTeamExportRow {
   date: string;
@@ -20,196 +15,111 @@ export interface WorkTeamExportRow {
   hasArrived: string;
 }
 
-// --- CRC32 Utility for uncompressed ZIP creation ---
+// --- CRC32 ---
 function crc32(buf: Uint8Array): number {
   let crc = -1;
   for (let i = 0; i < buf.length; i++) {
     crc ^= buf[i];
-    for (let j = 0; j < 8; j++) {
-      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
-    }
+    for (let j = 0; j < 8; j++) { crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0); }
   }
   return (crc ^ -1) >>> 0;
 }
 
-// --- Pure JS ZIP Packer for native multi-sheet .xlsx generation ---
+// --- ZIP packer ---
 function createZip(files: Array<{ name: string; content: string }>): Uint8Array {
-  const encoder = new TextEncoder();
-  const entries: Array<{
-    nameBytes: Uint8Array;
-    contentBytes: Uint8Array;
-    crc: number;
-    offset: number;
-  }> = [];
-
+  const enc = new TextEncoder();
+  const entries: Array<{ nb: Uint8Array; cb: Uint8Array; crc: number; off: number }> = [];
   let offset = 0;
-  const localChunks: Uint8Array[] = [];
-
+  const local: Uint8Array[] = [];
   for (const f of files) {
-    const nameBytes = encoder.encode(f.name);
-    const contentBytes = encoder.encode(f.content);
-    const crc = crc32(contentBytes);
-    const size = contentBytes.length;
-
-    // Local Header (30 bytes + filename)
-    const header = new Uint8Array(30 + nameBytes.length);
-    const view = new DataView(header.buffer);
-    view.setUint32(0, 0x04034b50, true);
-    view.setUint16(4, 20, true);
-    view.setUint16(6, 0x0800, true);
-    view.setUint16(8, 0, true);
-    view.setUint16(10, 0, true);
-    view.setUint16(12, 0, true);
-    view.setUint32(14, crc, true);
-    view.setUint32(18, size, true);
-    view.setUint32(22, size, true);
-    view.setUint16(26, nameBytes.length, true);
-    view.setUint16(28, 0, true);
-    header.set(nameBytes, 30);
-
-    entries.push({ nameBytes, contentBytes, crc, offset });
-    localChunks.push(header);
-    localChunks.push(contentBytes);
-
-    offset += header.length + size;
+    const nb = enc.encode(f.name);
+    const cb = enc.encode(f.content);
+    const crc = crc32(cb);
+    const hdr = new Uint8Array(30 + nb.length);
+    const v = new DataView(hdr.buffer);
+    v.setUint32(0, 0x04034b50, true); v.setUint16(4, 20, true); v.setUint16(6, 0x0800, true);
+    v.setUint32(14, crc, true); v.setUint32(18, cb.length, true); v.setUint32(22, cb.length, true);
+    v.setUint16(26, nb.length, true); hdr.set(nb, 30);
+    entries.push({ nb, cb, crc, off: offset });
+    local.push(hdr); local.push(cb);
+    offset += hdr.length + cb.length;
   }
-
-  const cdOffset = offset;
-  const cdChunks: Uint8Array[] = [];
-
+  const cdOff = offset;
+  const cd: Uint8Array[] = [];
   for (const e of entries) {
-    const header = new Uint8Array(46 + e.nameBytes.length);
-    const view = new DataView(header.buffer);
-    view.setUint32(0, 0x02014b50, true);
-    view.setUint16(4, 20, true);
-    view.setUint16(6, 20, true);
-    view.setUint16(8, 0x0800, true);
-    view.setUint16(10, 0, true);
-    view.setUint16(12, 0, true);
-    view.setUint16(14, 0, true);
-    view.setUint32(16, e.crc, true);
-    view.setUint32(20, e.contentBytes.length, true);
-    view.setUint32(24, e.contentBytes.length, true);
-    view.setUint16(28, e.nameBytes.length, true);
-    view.setUint16(30, 0, true);
-    view.setUint16(34, 0, true);
-    view.setUint16(36, 0, true);
-    view.setUint32(38, 0, true);
-    view.setUint32(42, e.offset, true);
-    header.set(e.nameBytes, 46);
-
-    cdChunks.push(header);
-    offset += header.length;
+    const hdr = new Uint8Array(46 + e.nb.length);
+    const v = new DataView(hdr.buffer);
+    v.setUint32(0, 0x02014b50, true); v.setUint16(4, 20, true); v.setUint16(6, 20, true);
+    v.setUint16(8, 0x0800, true); v.setUint32(16, e.crc, true);
+    v.setUint32(20, e.cb.length, true); v.setUint32(24, e.cb.length, true);
+    v.setUint16(28, e.nb.length, true); v.setUint32(42, e.off, true);
+    hdr.set(e.nb, 46); cd.push(hdr); offset += hdr.length;
   }
-
-  const cdSize = offset - cdOffset;
-
+  const cdSize = offset - cdOff;
   const eocd = new Uint8Array(22);
-  const eocdView = new DataView(eocd.buffer);
-  eocdView.setUint32(0, 0x06054b50, true);
-  eocdView.setUint16(4, 0, true);
-  eocdView.setUint16(6, 0, true);
-  eocdView.setUint16(8, entries.length, true);
-  eocdView.setUint16(10, entries.length, true);
-  eocdView.setUint32(12, cdSize, true);
-  eocdView.setUint32(16, cdOffset, true);
-  eocdView.setUint16(20, 0, true);
-
-  const totalLength = offset + 22;
-  const result = new Uint8Array(totalLength);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, entries.length, true);
+  ev.setUint16(10, entries.length, true); ev.setUint32(12, cdSize, true); ev.setUint32(16, cdOff, true);
+  const total = offset + 22;
+  const res = new Uint8Array(total);
   let pos = 0;
-  for (const chunk of localChunks) {
-    result.set(chunk, pos);
-    pos += chunk.length;
-  }
-  for (const chunk of cdChunks) {
-    result.set(chunk, pos);
-    pos += chunk.length;
-  }
-  result.set(eocd, pos);
-
-  return result;
+  for (const c of local) { res.set(c, pos); pos += c.length; }
+  for (const c of cd) { res.set(c, pos); pos += c.length; }
+  res.set(eocd, pos);
+  return res;
 }
 
-function escapeXML(str: string | undefined | null): string {
-  if (str === undefined || str === null) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+function escapeXML(s: string | undefined | null): string {
+  if (!s) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");
 }
 
 function colName(n: number): string {
   let s = "";
-  while (n >= 0) {
-    s = String.fromCharCode((n % 26) + 65) + s;
-    n = Math.floor(n / 26) - 1;
-  }
+  while (n >= 0) { s = String.fromCharCode((n % 26) + 65) + s; n = Math.floor(n / 26) - 1; }
   return s;
 }
 
+function C(ref: string, val: string, s: number): string {
+  return `<c r="${ref}" t="inlineStr" s="${s}"><is><t>${escapeXML(val)}</t></is></c>`;
+}
+
+function M(a: string, b: string): string { return `<mergeCell ref="${a}:${b}"/>`; }
+
 /**
- * Exports Operational Consolidado & Work Teams data as a REAL multi-sheet OpenXML Excel file (.xlsx).
- * Sheet 1: Consolidado Operativo (Matching the official operational board)
- * Sheet 2: Equipos de Trabajo (Detailed work teams list)
+ * Exports the full Consolidado Operativo report as a styled .xlsx
  */
 export function exportConsolidadoToExcel(
   rows: WorkTeamExportRow[],
   dateStr: string,
-  bases: OperationalBase[] = DEFAULT_OPERATIONAL_BASES
+  camps: CampamentoEntry[] = []
 ): void {
-  // 1. [Content_Types].xml
-  const contentTypesXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-</Types>`;
-
-  // 2. _rels/.rels
-  const relsXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
-</Relationships>`;
-
-  // 3. xl/workbook.xml (2 Worksheets: Consolidado Operativo & Equipos de Trabajo)
-  const workbookXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <sheets>
-    <sheet name="Consolidado Operativo" sheetId="1" r:id="rId1"/>
-    <sheet name="Equipos de Trabajo" sheetId="2" r:id="rId2"/>
-  </sheets>
-</workbook>`;
-
-  // 4. xl/_rels/workbook.xml.rels
-  const workbookRelsXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
-  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-</Relationships>`;
-
-  // 5. xl/styles.xml
+  // ------- styles -------
+  // s0=default, s1=title(navy/white/large), s2=subtitle(orange/white/centered),
+  // s3=section hdr(orange/white/left), s4=col hdr(navy/white/center/wrap),
+  // s5=data even(white/dark/left/wrap), s6=data odd(gray/dark/left/wrap),
+  // s7=total row(navy/white/left), s8=grand total(red/white/left),
+  // s9=num even(white/dark/center), s10=num odd(gray/dark/center),
+  // s11=num total(navy/white/center), s12=num grand(red/white/center),
+  // s13=bottom orange(orange/white/large/center), s14=bottom navy(navy/white/large/center)
   const stylesXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <fonts count="4">
+  <fonts count="5">
     <font><sz val="11"/><color rgb="FF0F172A"/><name val="Calibri"/></font>
-    <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
-    <font><b/><sz val="13"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
-    <font><b/><sz val="11"/><color rgb="FF0F172A"/><name val="Calibri"/></font>
+    <font><b/><sz val="14"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+    <font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+    <font><b/><sz val="10"/><color rgb="FF0F172A"/><name val="Calibri"/></font>
+    <font><b/><sz val="20"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
   </fonts>
-  <fills count="6">
+  <fills count="8">
     <fill><patternFill patternType="none"/></fill>
     <fill><patternFill patternType="gray125"/></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FF0B1F52"/><bgColor indexed="64"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFEA580C"/><bgColor indexed="64"/></patternFill></fill>
-    <fill><patternFill patternType="solid"><fgColor rgb="FF0284C7"/><bgColor indexed="64"/></patternFill></fill>
-    <fill><patternFill patternType="solid"><fgColor rgb="FFF8FAFC"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF1F5F9"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFC0392B"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFE2E8F0"/><bgColor indexed="64"/></patternFill></fill>
   </fills>
   <borders count="2">
     <border><left/><right/><top/><bottom/><diagonal/></border>
@@ -220,194 +130,374 @@ export function exportConsolidadoToExcel(
       <bottom style="thin"><color rgb="FFCBD5E1"/></bottom>
     </border>
   </borders>
-  <cellStyleXfs count="1">
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
-  </cellStyleXfs>
-  <cellXfs count="6">
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs count="15">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
     <xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="1" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
-    <xf numFmtId="0" fontId="3" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
   </cellXfs>
 </styleSheet>`;
 
-  // --- SHEET 1: Consolidado Operativo ---
-  const sheet1Rows: string[] = [];
+  // ------- data model -------
+  const sortedCamps = [...camps].sort((a, b) => a.campName.localeCompare(b.campName, "es"));
 
-  // Main Header Banners
-  sheet1Rows.push(`<row r="1" ht="28" customHeight="1"><c r="A1" t="inlineStr" s="1"><is><t>PROTECCIÓN CIVIL - CONSOLIDADO OPERATIVO Y UNIDADES (LA GUAIRA)</t></is></c></row>`);
-  sheet1Rows.push(`<row r="2" ht="22" customHeight="1"><c r="A2" t="inlineStr" s="2"><is><t>FECHA: ${escapeXML(dateStr)} | REPORTE UNIFICADO DE PERSONAL, REDAN, AMBULANCIAS Y GRUPOS</t></is></c></row>`);
-  sheet1Rows.push(`<row r="3" ht="12" customHeight="1"></row>`);
-
-  // Section 1 Header
-  sheet1Rows.push(`<row r="4" ht="22" customHeight="1"><c r="A4" t="inlineStr" s="3"><is><t>1. PERSONAL OPERATIVO Y UNIDADES / AMBULANCIAS POR BASE</t></is></c></row>`);
-
-  // Build Bases Grid Headers & Data
-  let curRow = 5;
-  const baseHeaders: string[] = [];
-  const baseSubtotals: { name: string; total: number }[] = [];
-
-  bases.forEach((base, bIdx) => {
-    const colA = colName(bIdx * 2);
-    const colB = colName(bIdx * 2 + 1);
-    baseHeaders.push(`<c r="${colA}${curRow}" t="inlineStr" s="3"><is><t>${escapeXML(base.baseName)}</t></is></c>`);
-    baseHeaders.push(`<c r="${colB}${curRow}" t="inlineStr" s="3"><is><t>Cant.</t></is></c>`);
-    baseSubtotals.push({ name: `Total ${base.baseName.replace("Base ", "")}`, total: getBaseTotal(base) });
+  const stateTotalsMap = new Map<string, number>();
+  sortedCamps.forEach(camp => {
+    (camp.statesDetail || []).forEach((sd: StatePersonnelCount) => {
+      stateTotalsMap.set(sd.stateName, (stateTotalsMap.get(sd.stateName) || 0) + (Number(sd.officersCount) || 0));
+    });
   });
 
-  sheet1Rows.push(`<row r="${curRow}" ht="24" customHeight="1">${baseHeaders.join("")}</row>`);
-  curRow++;
+  const grandTotal = sortedCamps.reduce(
+    (sum, c) => sum + (c.statesDetail || []).reduce((s, sd) => s + (Number(sd.officersCount) || 0), 0), 0
+  );
 
-  const maxItems = Math.max(...bases.map((b) => b.items.length), 1);
-  for (let itemIdx = 0; itemIdx < maxItems; itemIdx++) {
-    const itemCells: string[] = [];
-    bases.forEach((base, bIdx) => {
-      const colA = colName(bIdx * 2);
-      const colB = colName(bIdx * 2 + 1);
-      const item = base.items[itemIdx];
-      if (item) {
-        itemCells.push(`<c r="${colA}${curRow}" t="inlineStr" s="4"><is><t>${escapeXML(item.name)}</t></is></c>`);
-        itemCells.push(`<c r="${colB}${curRow}" t="inlineStr" s="4"><is><t>${escapeXML(String(item.count))}</t></is></c>`);
-      } else {
-        itemCells.push(`<c r="${colA}${curRow}" t="inlineStr" s="4"><is><t></t></is></c>`);
-        itemCells.push(`<c r="${colB}${curRow}" t="inlineStr" s="4"><is><t></t></is></c>`);
+  // Only states that have at least one officer across all camps
+  const activeStatesSet = new Set<string>();
+  sortedCamps.forEach(c => {
+    (c.statesDetail || []).forEach(sd => {
+      const cnt = parseInt(String(sd.officersCount ?? 0), 10);
+      if (sd.stateName && sd.stateName !== "-" && cnt > 0) {
+        activeStatesSet.add(sd.stateName);
       }
     });
-    sheet1Rows.push(`<row r="${curRow}" ht="20" customHeight="1">${itemCells.join("")}</row>`);
-    curRow++;
+  });
+  const activeStates = Array.from(activeStatesSet).sort((a, b) => a.localeCompare(b, "es"));
+
+  // REDAN totals
+  const redanRows = REDAN_REGIONS.map(r => ({
+    name: r.name,
+    components: r.states.map(st => `${st.replace("PC ", "")} (${stateTotalsMap.get(st) || 0})`).join(", "),
+    total: r.states.reduce((s, st) => s + (stateTotalsMap.get(st) || 0), 0),
+  }));
+  const redanGrandTotal = redanRows.reduce((s, r) => s + r.total, 0);
+
+  // ------- layout: columns -------
+  // Section 1: 2 cols per camp (name + cant), no shared state col
+  // Sections 2-4 + summary span the full width
+  const numCamps = sortedCamps.length;
+  // Total width: 2 cols per camp, min 10 total for other sections
+  const totalCols = Math.max(numCamps * 2, 10);
+  const LAST = colName(totalCols - 1);
+
+  const sheetRows: string[] = [];
+  const merges: string[] = [];
+  let r = 1;
+
+  function addMerge(a: string, b: string) { if (a !== b) merges.push(M(a, b)); }
+  function fullMerge(row: number) { addMerge(`A${row}`, `${LAST}${row}`); }
+
+  // ---- TITLE ----
+  fullMerge(r);
+  sheetRows.push(`<row r="${r}" ht="32" customHeight="1">${C(`A${r}`, "PROTECCIÓN CIVIL - CONSOLIDADO OPERATIVO Y UNIDADES (LA GUAIRA)", 1)}</row>`);
+  r++;
+
+  // ---- SUBTITLE ----
+  fullMerge(r);
+  sheetRows.push(`<row r="${r}" ht="20" customHeight="1">${C(`A${r}`, `FECHA: ${dateStr} | REPORTE UNIFICADO DE PERSONAL, REDAN, AMBULANCIAS Y GRUPOS`, 2)}</row>`);
+  r++;
+
+  // ---- SPACER ----
+  sheetRows.push(`<row r="${r}" ht="8" customHeight="1"></row>`); r++;
+
+  // ================================================================
+  // SECTION 1 — Personnel by base (states as rows, bases as cols)
+  // ================================================================
+  fullMerge(r);
+  sheetRows.push(`<row r="${r}" ht="22" customHeight="1">${C(`A${r}`, "1. PERSONAL OPERATIVO Y UNIDADES / AMBULANCIAS POR BASE", 3)}</row>`);
+  r++;
+
+  // Column headers: [Base1 Name | Cant.] [Base2 Name | Cant.] ...
+  // No shared "Estado" column — each base lists its own states independently
+  {
+    const hCells: string[] = [];
+    sortedCamps.forEach((camp, ci) => {
+      const bCol = colName(ci * 2);
+      const cCol = colName(ci * 2 + 1);
+      hCells.push(C(`${bCol}${r}`, camp.campName, 4));
+      hCells.push(C(`${cCol}${r}`, "Cant.", 4));
+    });
+    sheetRows.push(`<row r="${r}" ht="26" customHeight="1">${hCells.join("")}</row>`);
+    r++;
   }
 
-  // Base Subtotals Row
-  const subtotalCells: string[] = [];
-  baseSubtotals.forEach((st, bIdx) => {
-    const colA = colName(bIdx * 2);
-    const colB = colName(bIdx * 2 + 1);
-    subtotalCells.push(`<c r="${colA}${curRow}" t="inlineStr" s="5"><is><t>${escapeXML(st.name)}</t></is></c>`);
-    subtotalCells.push(`<c r="${colB}${curRow}" t="inlineStr" s="5"><is><t>${st.total}</t></is></c>`);
+  // Build per-base active state lists (only states with count > 0, sorted, no units)
+  const perCampStates = sortedCamps.map(camp =>
+    (camp.statesDetail || [])
+      .filter(sd => sd.stateName && sd.stateName !== "-" && parseInt(String(sd.officersCount ?? 0), 10) > 0)
+      .sort((a, b) => a.stateName.localeCompare(b.stateName, "es"))
+  );
+
+  const maxRows = Math.max(...perCampStates.map(s => s.length), 1);
+
+  for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
+    const alt = rowIdx % 2 === 1;
+    const sData = alt ? 6 : 5;
+    const sNum = alt ? 10 : 9;
+    const cells: string[] = [];
+    sortedCamps.forEach((_camp, ci) => {
+      const bCol = colName(ci * 2);
+      const cCol = colName(ci * 2 + 1);
+      const sd = perCampStates[ci][rowIdx];
+      if (sd) {
+        cells.push(C(`${bCol}${r}`, sd.stateName, sData));
+        cells.push(C(`${cCol}${r}`, String(parseInt(String(sd.officersCount ?? 0), 10)), sNum));
+      } else {
+        cells.push(C(`${bCol}${r}`, "", sData));
+        cells.push(C(`${cCol}${r}`, "", sNum));
+      }
+    });
+    sheetRows.push(`<row r="${r}" ht="20" customHeight="1">${cells.join("")}</row>`);
+    r++;
+  }
+
+  // Per-base totals row
+  {
+    const tCells: string[] = [];
+    sortedCamps.forEach((camp, ci) => {
+      const bCol = colName(ci * 2);
+      const cCol = colName(ci * 2 + 1);
+      const campTotal = (camp.statesDetail || []).reduce((s, sd) => s + (parseInt(String(sd.officersCount ?? 0), 10)), 0);
+      tCells.push(C(`${bCol}${r}`, `Total ${camp.campName.replace("Base ", "")}`, 7));
+      tCells.push(C(`${cCol}${r}`, String(campTotal), 11));
+    });
+    sheetRows.push(`<row r="${r}" ht="22" customHeight="1">${tCells.join("")}</row>`);
+    r++;
+  }
+
+  // Grand total row — span A to second-to-last col, value in last col
+  const grandLabelEnd = colName(totalCols - 2);
+  addMerge(`A${r}`, `${grandLabelEnd}${r}`);
+  sheetRows.push(
+    `<row r="${r}" ht="26" customHeight="1">` +
+    C(`A${r}`, "TOTAL GENERAL DE PERSONAL EN EL ESTADO LA GUAIRA", 8) +
+    C(`${LAST}${r}`, String(grandTotal), 12) +
+    `</row>`
+  );
+  r++;
+
+  sheetRows.push(`<row r="${r}" ht="8" customHeight="1"></row>`); r++;
+
+  // ================================================================
+  // SECTION 2 — REDAN
+  // ================================================================
+  fullMerge(r);
+  sheetRows.push(`<row r="${r}" ht="22" customHeight="1">${C(`A${r}`, "2. CONSOLIDADO Y DESGLOSE POR REDAN (REGIONES ESTRATÉGICAS)", 3)}</row>`);
+  r++;
+
+  // REDAN headers: col A = name, col B..penultimate = components, col LAST = total
+  const redanNameEnd = "A";
+  const redanCompStart = "B";
+  const redanCompEnd = grandLabelEnd;
+  addMerge(`${redanCompStart}${r}`, `${redanCompEnd}${r}`);
+  sheetRows.push(
+    `<row r="${r}" ht="22" customHeight="1">` +
+    C(`A${r}`, "REDAN / Región", 4) +
+    C(`${redanCompStart}${r}`, "Estados / Componentes Integrantes", 4) +
+    C(`${LAST}${r}`, "Total Personal", 4) +
+    `</row>`
+  );
+  r++;
+
+  redanRows.forEach((rr, ri) => {
+    const alt = ri % 2 === 1;
+    addMerge(`${redanCompStart}${r}`, `${redanCompEnd}${r}`);
+    sheetRows.push(
+      `<row r="${r}" ht="20" customHeight="1">` +
+      C(`A${r}`, rr.name, alt ? 6 : 5) +
+      C(`${redanCompStart}${r}`, rr.components, alt ? 6 : 5) +
+      C(`${LAST}${r}`, String(rr.total), alt ? 10 : 9) +
+      `</row>`
+    );
+    r++;
   });
-  sheet1Rows.push(`<row r="${curRow}" ht="22" customHeight="1">${subtotalCells.join("")}</row>`);
-  curRow++;
 
-  // Grand Total Row
-  const grandTotal = getGrandTotal(bases);
-  sheet1Rows.push(`<row r="${curRow}" ht="24" customHeight="1"><c r="A${curRow}" t="inlineStr" s="2"><is><t>TOTAL GENERAL DE PERSONAL EN EL ESTADO LA GUAIRA: ${grandTotal}</t></is></c></row>`);
-  curRow += 2;
+  addMerge(`A${r}`, `${redanCompEnd}${r}`);
+  sheetRows.push(
+    `<row r="${r}" ht="24" customHeight="1">` +
+    C(`A${r}`, "TOTAL GENERAL DE TODAS LAS REDAN", 8) +
+    C(`${LAST}${r}`, String(redanGrandTotal), 12) +
+    `</row>`
+  );
+  r++;
 
-  // Section 2: REDAN Consolidation Table
-  sheet1Rows.push(`<row r="${curRow}" ht="22" customHeight="1"><c r="A${curRow}" t="inlineStr" s="3"><is><t>2. CONSOLIDADO Y DESGLOSE POR REDAN (REGIONES ESTRATÉGICAS)</t></is></c></row>`);
-  curRow++;
+  sheetRows.push(`<row r="${r}" ht="8" customHeight="1"></row>`); r++;
 
-  sheet1Rows.push(`<row r="${curRow}" ht="22" customHeight="1">
-    <c r="A${curRow}" t="inlineStr" s="3"><is><t>REDAN / Región</t></is></c>
-    <c r="B${curRow}" t="inlineStr" s="3"><is><t>Estados / Componentes Integrantes</t></is></c>
-    <c r="C${curRow}" t="inlineStr" s="3"><is><t>Total Personal</t></is></c>
-  </row>`);
-  curRow++;
+  // ================================================================
+  // SECTION 3 — Work Teams
+  // ================================================================
+  fullMerge(r);
+  sheetRows.push(`<row r="${r}" ht="22" customHeight="1">${C(`A${r}`, "3. GRUPOS DE TRABAJO, OPP Y UNIDADES / AMBULANCIAS ASIGNADAS", 3)}</row>`);
+  r++;
 
-  let redanGrandTotal = 0;
-  DEFAULT_REDAN_REGIONS.forEach((r, idx) => {
-    const styleId = idx % 2 === 0 ? "4" : "5";
-    redanGrandTotal += r.totalPersonal;
-    sheet1Rows.push(`<row r="${curRow}" ht="20" customHeight="1">
-      <c r="A${curRow}" t="inlineStr" s="${styleId}"><is><t>${escapeXML(r.redan)}</t></is></c>
-      <c r="B${curRow}" t="inlineStr" s="${styleId}"><is><t>${escapeXML(r.components)}</t></is></c>
-      <c r="C${curRow}" t="inlineStr" s="${styleId}"><is><t>${r.totalPersonal}</t></is></c>
-    </row>`);
-    curRow++;
+  // Fixed columns: A=Grupo, B=Zona, C=H.Salida, D=H.Llegada, E=Lider, F=Tel,
+  //                G..penultimate-1=Unidades, penultimate=Funcionarios, LAST=Estado
+  const wt_A = "A", wt_B = "B", wt_C = "C", wt_D = "D", wt_E = "E", wt_F = "F";
+  const wt_G = "G";
+  const wt_FUNC = colName(totalCols - 2); // second-to-last col
+  const wt_Gend = colName(totalCols - 3); // end of merged "Unidades" span
+  addMerge(`${wt_G}${r}`, `${wt_Gend}${r}`);
+  sheetRows.push(
+    `<row r="${r}" ht="26" customHeight="1">` +
+    C(`${wt_A}${r}`, "Equipo de Trabajo", 4) +
+    C(`${wt_B}${r}`, "Ubicación / Punto", 4) +
+    C(`${wt_C}${r}`, "H. Salida", 4) +
+    C(`${wt_D}${r}`, "H. Llegada", 4) +
+    C(`${wt_E}${r}`, "Encargado del Punto", 4) +
+    C(`${wt_F}${r}`, "Teléfono", 4) +
+    C(`${wt_G}${r}`, "Unidades, Ambulancias Asignadas y Componentes", 4) +
+    C(`${wt_FUNC}${r}`, "Funcionarios", 4) +
+    C(`${LAST}${r}`, "Estado", 4) +
+    `</row>`
+  );
+  r++;
+
+  rows.forEach((t, ti) => {
+    const alt = ti % 2 === 1;
+    const s = alt ? 6 : 5;
+    const sn = alt ? 10 : 9;
+    addMerge(`${wt_G}${r}`, `${wt_Gend}${r}`);
+    sheetRows.push(
+      `<row r="${r}" ht="20" customHeight="1">` +
+      C(`${wt_A}${r}`, t.groupName, s) +
+      C(`${wt_B}${r}`, t.locationTitle, s) +
+      C(`${wt_C}${r}`, t.departureTime, s) +
+      C(`${wt_D}${r}`, t.arrivalTime, s) +
+      C(`${wt_E}${r}`, t.managerName, s) +
+      C(`${wt_F}${r}`, t.managerPhone, s) +
+      C(`${wt_G}${r}`, t.unitOut, s) +
+      C(`${wt_FUNC}${r}`, t.officersCount, sn) +
+      C(`${LAST}${r}`, t.hasArrived === "Sí" ? "En base" : "Desplegado", s) +
+      `</row>`
+    );
+    r++;
   });
 
-  sheet1Rows.push(`<row r="${curRow}" ht="24" customHeight="1">
-    <c r="A${curRow}" t="inlineStr" s="2"><is><t>TOTAL GENERAL DE TODAS LAS REDAN</t></is></c>
-    <c r="B${curRow}" t="inlineStr" s="2"><is><t></t></is></c>
-    <c r="C${curRow}" t="inlineStr" s="2"><is><t>${redanGrandTotal}</t></is></c>
-  </row>`);
+  sheetRows.push(`<row r="${r}" ht="8" customHeight="1"></row>`); r++;
 
-  const sheet1XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <cols>
-    <col min="1" max="1" width="30" customWidth="1"/>
-    <col min="2" max="2" width="50" customWidth="1"/>
-    <col min="3" max="3" width="20" customWidth="1"/>
-    <col min="4" max="10" width="22" customWidth="1"/>
-  </cols>
-  <sheetData>
-    ${sheet1Rows.join("\n    ")}
-  </sheetData>
-</worksheet>`;
+  // ================================================================
+  // SECTION 4 — Emergency Contacts
+  // ================================================================
+  fullMerge(r);
+  sheetRows.push(`<row r="${r}" ht="22" customHeight="1">${C(`A${r}`, "4. CONTACTOS DE EMERGENCIA Y APOYO INSTITUCIONAL", 3)}</row>`);
+  r++;
 
-  // --- SHEET 2: Equipos de Trabajo ---
-  const headers2 = [
-    "Fecha",
-    "Departamento",
-    "Ubicación de Trabajo",
-    "Equipo de Trabajo",
-    "Unidad / Vehículo",
-    "Hora de Salida",
-    "Hora de Llegada",
-    "Encargado del Punto",
-    "Teléfono de Contacto",
-    "Funcionarios",
-    "Estado",
+  const third = Math.floor(totalCols / 3);
+  const cA1 = "A", cA2 = colName(third - 1);
+  const cB1 = colName(third), cB2 = colName(third * 2 - 1);
+  const cC1 = colName(third * 2), cC2 = LAST;
+  addMerge(`${cA1}${r}`, `${cA2}${r}`);
+  addMerge(`${cB1}${r}`, `${cB2}${r}`);
+  addMerge(`${cC1}${r}`, `${cC2}${r}`);
+  sheetRows.push(
+    `<row r="${r}" ht="22" customHeight="1">` +
+    C(`${cA1}${r}`, "Dependencia / Institución", 4) +
+    C(`${cB1}${r}`, "Responsable / Encargado", 4) +
+    C(`${cC1}${r}`, "Teléfono de Contacto", 4) +
+    `</row>`
+  );
+  r++;
+
+  const contacts = [
+    ["SENAMECF", "Dr. Roberto González", "0414-2320808"],
+    ["Jefatura de Transporte", "Coordinación Operativa", "0424-2116866"],
+    ["Ambulancias Emergencia", "Central de Despacho", "0424-2637388"],
+    ["CPCII Juan Lagos", "Comisión Operativa", "0422-6318317"],
+    ["CPCII William Guacarán", "Comisión Operativa", "0426-5851085"],
   ];
+  contacts.forEach(([dep, resp, tel], ci) => {
+    const alt = ci % 2 === 1;
+    const s = alt ? 6 : 5;
+    addMerge(`${cA1}${r}`, `${cA2}${r}`);
+    addMerge(`${cB1}${r}`, `${cB2}${r}`);
+    addMerge(`${cC1}${r}`, `${cC2}${r}`);
+    sheetRows.push(
+      `<row r="${r}" ht="20" customHeight="1">` +
+      C(`${cA1}${r}`, dep, s) +
+      C(`${cB1}${r}`, resp, s) +
+      C(`${cC1}${r}`, tel, s) +
+      `</row>`
+    );
+    r++;
+  });
 
-  const colWidths2 = [14, 18, 26, 22, 18, 15, 15, 24, 20, 14, 15];
+  sheetRows.push(`<row r="${r}" ht="8" customHeight="1"></row>`); r++;
 
-  const cols2XML = colWidths2
-    .map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`)
-    .join("\n    ");
+  // ================================================================
+  // BOTTOM SUMMARY
+  // ================================================================
+  const half = Math.floor(totalCols / 2);
+  const leftEnd = colName(half - 1);
+  const rightStart = colName(half);
+  addMerge(`A${r}`, `${leftEnd}${r}`);
+  addMerge(`${rightStart}${r}`, `${LAST}${r}`);
+  sheetRows.push(
+    `<row r="${r}" ht="26" customHeight="1">` +
+    C(`A${r}`, "PERSONAL DIARIO - PC", 13) +
+    C(`${rightStart}${r}`, "PERSONAL DIARIO - BOMBEROS", 14) +
+    `</row>`
+  );
+  r++;
+  addMerge(`A${r}`, `${leftEnd}${r}`);
+  addMerge(`${rightStart}${r}`, `${LAST}${r}`);
+  sheetRows.push(
+    `<row r="${r}" ht="40" customHeight="1">` +
+    C(`A${r}`, String(grandTotal), 13) +
+    C(`${rightStart}${r}`, "", 14) +
+    `</row>`
+  );
 
-  const headerCells2XML = headers2
-    .map((h, i) => `<c r="${colName(i)}1" t="inlineStr" s="3"><is><t>${escapeXML(h)}</t></is></c>`)
-    .join("");
+  // ================================================================
+  // Column widths
+  // ================================================================
+  const colsXML: string[] = [];
+  colsXML.push(`<col min="1" max="1" width="30" customWidth="1"/>`);
+  for (let ci = 0; ci < numCamps; ci++) {
+    colsXML.push(`<col min="${2 + ci * 2}" max="${2 + ci * 2}" width="24" customWidth="1"/>`);
+    colsXML.push(`<col min="${3 + ci * 2}" max="${3 + ci * 2}" width="9" customWidth="1"/>`);
+  }
+  // Ensure we have at least 10 cols defined
+  if (1 + numCamps * 2 < 10) {
+    colsXML.push(`<col min="${2 + numCamps * 2}" max="10" width="12" customWidth="1"/>`);
+  }
 
-  const rows2XML = rows
-    .map((r, rIdx) => {
-      const rowNum = rIdx + 2;
-      const styleId = rIdx % 2 === 0 ? "4" : "5";
-      const cells = [
-        r.date,
-        r.department,
-        r.locationTitle,
-        r.groupName,
-        r.unitOut,
-        r.departureTime,
-        r.arrivalTime,
-        r.managerName,
-        r.managerPhone,
-        r.officersCount,
-        r.hasArrived,
-      ];
+  const mergesXML = merges.length > 0
+    ? `<mergeCells count="${merges.length}">${merges.join("")}</mergeCells>`
+    : "";
 
-      const cXML = cells
-        .map((val, cIdx) => `<c r="${colName(cIdx)}${rowNum}" t="inlineStr" s="${styleId}"><is><t>${escapeXML(val)}</t></is></c>`)
-        .join("");
-
-      return `<row r="${rowNum}" ht="20" customHeight="1">${cXML}</row>`;
-    })
-    .join("\n    ");
-
-  const sheet2XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  const sheetXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <cols>
-    ${cols2XML}
-  </cols>
+  <cols>${colsXML.join("")}</cols>
   <sheetData>
-    <row r="1" ht="26" customHeight="1">${headerCells2XML}</row>
-    ${rows2XML}
+    ${sheetRows.join("\n    ")}
   </sheetData>
+  ${mergesXML}
 </worksheet>`;
 
-  // Bundle into multi-sheet .xlsx zip Uint8Array
+  const contentTypesXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
+  const relsXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+  const workbookXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Consolidado Operativo" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+  const workbookRelsXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+
   const zipBytes = createZip([
     { name: "[Content_Types].xml", content: contentTypesXML },
     { name: "_rels/.rels", content: relsXML },
     { name: "xl/workbook.xml", content: workbookXML },
     { name: "xl/_rels/workbook.xml.rels", content: workbookRelsXML },
     { name: "xl/styles.xml", content: stylesXML },
-    { name: "xl/worksheets/sheet1.xml", content: sheet1XML },
-    { name: "xl/worksheets/sheet2.xml", content: sheet2XML },
+    { name: "xl/worksheets/sheet1.xml", content: sheetXML },
   ]);
 
   const blob = new Blob([zipBytes.buffer as ArrayBuffer], {
@@ -419,14 +509,15 @@ export function exportConsolidadoToExcel(
 
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", filename);
+  link.href = url;
+  link.download = filename;
+  link.style.display = "none";
   document.body.appendChild(link);
-  link.click();
+  link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  // Delay revocation so the browser has time to initiate the download
+  setTimeout(() => URL.revokeObjectURL(url), 250);
 }
 
-// Aliases for compatibility
 export const exportWorkTeamsToExcel = exportConsolidadoToExcel;
 export const exportWorkTeamsToCSV = exportConsolidadoToExcel;

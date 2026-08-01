@@ -224,7 +224,7 @@ export const WorkTeamsTab: React.FC<WorkTeamsTabProps> = ({ workTeams }) => {
                         display: "inline-block",
                       }}
                     >
-                      {team.hasArrived ? "En Sitio" : "Desplegado"}
+                      {team.hasArrived ? "En base" : "Desplegado"}
                     </span>
                   </td>
                 </tr>

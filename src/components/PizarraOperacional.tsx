@@ -254,7 +254,7 @@ export const PizarraOperacional: React.FC = () => {
       officersCount: String(t.officersCount),
       hasArrived: t.hasArrived ? "Sí" : "No",
     }));
-    exportWorkTeamsToExcel(exportRows, selectedDate);
+    exportWorkTeamsToExcel(exportRows, selectedDate, camps);
   };
 
   // Base handlers
