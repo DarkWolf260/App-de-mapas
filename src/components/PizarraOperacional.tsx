@@ -119,6 +119,12 @@ export const PizarraOperacional: React.FC = () => {
       await saveCampamentos(selectedDate, processedCamps);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);
+
+      // Re-fetch to update local state with real Supabase UUIDs
+      const refetchedCamps = await fetchCampamentos(selectedDate);
+      if (refetchedCamps && refetchedCamps.length > 0) {
+        setCamps(refetchedCamps);
+      }
     } catch (err) {
       console.error("Error saving campamentos:", err);
     } finally {
@@ -453,17 +459,23 @@ export const PizarraOperacional: React.FC = () => {
       {activeTab === "pizarra" ? (
         <main
           style={{
-            padding: "16px 24px 70px 24px",
             flex: 1,
             width: "100%",
             boxSizing: "border-box",
             overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-            maxWidth: "1600px",
-            margin: "0 auto",
           }}
         >
+          <div
+            style={{
+              padding: "16px 24px 70px 24px",
+              display: "flex",
+              flexDirection: "column",
+              maxWidth: "1600px",
+              margin: "0 auto",
+              boxSizing: "border-box",
+              width: "100%",
+            }}
+          >
           {/* BANNER NOTIFICACIÓN MODO EDICIÓN O ADVERTENCIA SIN PERMISOS */}
           {canEdit && isEditMode ? (
             <div style={{ background: "rgba(249, 115, 22, 0.1)", border: "1px solid rgba(249, 115, 22, 0.25)", borderRadius: "8px", padding: "8px 14px", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px", color: "var(--accent-orange)", fontSize: "0.72rem", fontWeight: 600, flexShrink: 0 }}>
@@ -486,7 +498,7 @@ export const PizarraOperacional: React.FC = () => {
             }}
           >
             <RedanCard getRegionTotalFromCamps={getRegionTotalFromCamps} />
-            <TotalGeneralCard totalGeneralPersonnel={totalGeneralPersonnel} totalBases={camps.length} />
+            <TotalGeneralCard redanGrandTotal={totalGeneralPersonnel} />
           </div>
 
           {/* MATRIZ MASONRY/GRID DE BASES OPERACIONALES */}
@@ -511,6 +523,7 @@ export const PizarraOperacional: React.FC = () => {
                 requestRemoveState={requestRemoveState}
               />
             ))}
+          </div>
           </div>
         </main>
       ) : (

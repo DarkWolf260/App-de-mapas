@@ -4,7 +4,6 @@ import { REDAN_REGIONS } from "../../data/redanStructure";
 
 export interface RedanCardProps {
   getRegionTotalFromCamps: (states: string[]) => number;
-  redanGrandTotal: number;
 }
 
 export const RedanCard: React.FC<RedanCardProps> = ({

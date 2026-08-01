@@ -180,29 +180,138 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
 
     if (!error && data && data.length > 0) {
       const dateFiltered = dateStr ? data.filter((row: any) => row.date === dateStr) : [];
-      const targetRows = dateFiltered.length > 0 ? dateFiltered : data;
+      let result: CampamentoEntry[] = [];
 
-      return targetRows.map((row: any) => ({
-        id: row.id,
-        date: row.date,
-        campName: row.camp_name,
-        location: row.location || "",
-        managerName: row.manager_name || "",
-        managerPhone: row.manager_phone || "",
-        capacity: row.capacity || 0,
-        personnelCount: row.personnel_count || 0,
-        status: row.status || "Activo",
-        statesDetail: (Array.isArray(row.states_detail)
-          ? row.states_detail
-          : typeof row.states_detail === "string" && row.states_detail.trim()
-          ? JSON.parse(row.states_detail)
-          : []
-        ).map((sd: any, idx: number) => ({
-          id: sd.id || `st_${row.id}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
-          stateName: sd.stateName || VENEZUELA_STATES[0],
-          officersCount: Number(sd.officersCount) || 0,
-        })),
-      }));
+      if (dateFiltered.length > 0) {
+        result = dateFiltered.map((row: any) => ({
+          id: row.id,
+          date: row.date,
+          campName: row.camp_name,
+          location: row.location || "",
+          managerName: row.manager_name || "",
+          managerPhone: row.manager_phone || "",
+          capacity: row.capacity || 0,
+          personnelCount: row.personnel_count || 0,
+          status: row.status || "Activo",
+          statesDetail: (Array.isArray(row.states_detail)
+            ? row.states_detail
+            : typeof row.states_detail === "string" && row.states_detail.trim()
+            ? JSON.parse(row.states_detail)
+            : []
+          ).map((sd: any, idx: number) => ({
+            id: sd.id || `st_${row.id}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
+            stateName: sd.stateName || VENEZUELA_STATES[0],
+            officersCount: Number(sd.officersCount) || 0,
+          })),
+        }));
+      }
+      // If we don't have records for the requested date in campamentos table,
+      // try to restore them from pizarra_operacional table if a record exists for this date.
+      else if (dateStr) {
+        try {
+          const { data: pizarraData, error: pizarraError } = await supabase
+            .from("pizarra_operacional")
+            .select("camps_summary")
+            .eq("record_date", dateStr)
+            .maybeSingle();
+
+          if (!pizarraError && pizarraData?.camps_summary && Array.isArray(pizarraData.camps_summary)) {
+            const summary = pizarraData.camps_summary as any[];
+            result = summary.map((c: any) => {
+              const activeStates: StatePersonnelCount[] = [];
+              if (Array.isArray(c.states)) {
+                c.states.forEach((s: any, idx: number) => {
+                  const count = Number(s.officersCount) || 0;
+                  if (count > 0) {
+                    activeStates.push({
+                      id: `st_${c.campId || 'camp'}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
+                      stateName: s.stateName,
+                      officersCount: count,
+                    });
+                  }
+                });
+              }
+
+              return {
+                id: c.campId || `camp_${Math.random().toString(36).substring(2, 9)}`,
+                date: dateStr,
+                campName: c.campName,
+                location: "",
+                managerName: "",
+                managerPhone: "",
+                capacity: 0,
+                personnelCount: c.personnelCount || 0,
+                status: "Activo",
+                statesDetail: activeStates,
+              };
+            });
+          }
+        } catch (err) {
+          console.warn("Error in fetchCampamentos fallback from pizarra_operacional:", err);
+        }
+      }
+
+      // If we don't have records for the requested date in EITHER table, find the most recent date's records
+      // to use as a template (but reset personnel and officers counts to 0, and clear IDs so they insert on save)
+      if (result.length === 0 && dateStr) {
+        const dates = Array.from(new Set(data.map((row: any) => row.date).filter(Boolean))) as string[];
+        if (dates.length > 0) {
+          dates.sort((a, b) => b.localeCompare(a));
+          const latestDate = dates[0];
+          const latestCamps = data.filter((row: any) => row.date === latestDate);
+
+          result = latestCamps.map((row: any) => ({
+            id: `temp_${Math.random().toString(36).substring(2, 9)}`,
+            date: dateStr,
+            campName: row.camp_name,
+            location: row.location || "",
+            managerName: row.manager_name || "",
+            managerPhone: row.manager_phone || "",
+            capacity: row.capacity || 0,
+            personnelCount: 0,
+            status: row.status || "Activo",
+            statesDetail: (Array.isArray(row.states_detail)
+              ? row.states_detail
+              : typeof row.states_detail === "string" && row.states_detail.trim()
+              ? JSON.parse(row.states_detail)
+              : []
+            ).map((sd: any, idx: number) => ({
+              id: `st_temp_${idx}_${Math.random().toString(36).substring(2, 7)}`,
+              stateName: sd.stateName || VENEZUELA_STATES[0],
+              officersCount: 0,
+            })),
+          }));
+        }
+      }
+
+      if (result.length === 0) {
+        // Fallback: map all rows if no specific date is matched/requested
+        result = data.map((row: any) => ({
+          id: row.id,
+          date: row.date,
+          campName: row.camp_name,
+          location: row.location || "",
+          managerName: row.manager_name || "",
+          managerPhone: row.manager_phone || "",
+          capacity: row.capacity || 0,
+          personnelCount: row.personnel_count || 0,
+          status: row.status || "Activo",
+          statesDetail: (Array.isArray(row.states_detail)
+            ? row.states_detail
+            : typeof row.states_detail === "string" && row.states_detail.trim()
+            ? JSON.parse(row.states_detail)
+            : []
+          ).map((sd: any, idx: number) => ({
+            id: sd.id || `st_${row.id}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
+            stateName: sd.stateName || VENEZUELA_STATES[0],
+            officersCount: Number(sd.officersCount) || 0,
+          })),
+        }));
+      }
+
+      // Sort alphabetically by campName
+      result.sort((a, b) => a.campName.localeCompare(b.campName, "es"));
+      return result;
     }
   } catch (err) {
     console.warn("Supabase fetch campamentos error:", err);

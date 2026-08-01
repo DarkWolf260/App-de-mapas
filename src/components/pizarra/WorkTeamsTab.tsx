@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { Search, Truck, Clock, Phone } from "lucide-react";
+import { Search, Truck, Clock, Phone, MapPin, ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import { WorkTeam } from "./types";
+
+type SortField = "groupName" | "pointTitle" | "unitOut" | "departureTime" | "arrivalTime" | "managerName" | "officersCount" | "hasArrived";
 
 export interface WorkTeamsTabProps {
   workTeams: WorkTeam[];
@@ -8,6 +10,17 @@ export interface WorkTeamsTabProps {
 
 export const WorkTeamsTab: React.FC<WorkTeamsTabProps> = ({ workTeams }) => {
   const [teamSearchQuery, setTeamSearchQuery] = useState("");
+  const [sortField, setSortField] = useState<SortField>("groupName");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
 
   const filteredTeams = workTeams.filter((t) =>
     t.groupName.toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
@@ -16,8 +29,73 @@ export const WorkTeamsTab: React.FC<WorkTeamsTabProps> = ({ workTeams }) => {
     (t.managerName || "").toLowerCase().includes(teamSearchQuery.toLowerCase())
   );
 
+  const sortedTeams = [...filteredTeams].sort((a, b) => {
+    let aVal: any = a[sortField];
+    let bVal: any = b[sortField];
+
+    if (aVal === undefined || aVal === null) aVal = "";
+    if (bVal === undefined || bVal === null) bVal = "";
+
+    if (typeof aVal === "boolean") {
+      return sortDirection === "asc"
+        ? (aVal === bVal ? 0 : aVal ? -1 : 1)
+        : (aVal === bVal ? 0 : aVal ? 1 : -1);
+    }
+
+    if (typeof aVal === "string") {
+      aVal = aVal.toLowerCase();
+      bVal = bVal.toLowerCase();
+    }
+
+    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const renderHeader = (label: string, field: SortField, textAlign: "left" | "center" = "left") => {
+    const isActive = sortField === field;
+    return (
+      <th
+        onClick={() => handleSort(field)}
+        style={{
+          position: "sticky",
+          top: 0,
+          background: "#131924",
+          zIndex: 1,
+          padding: "10px 14px",
+          fontWeight: 700,
+          borderBottom: "1px solid var(--border-color)",
+          cursor: "pointer",
+          userSelect: "none",
+          textAlign: textAlign,
+        }}
+      >
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: textAlign === "center" ? "center" : "flex-start",
+            gap: "6px",
+            width: textAlign === "center" ? "100%" : "auto",
+          }}
+        >
+          <span>{label}</span>
+          {isActive ? (
+            sortDirection === "asc" ? (
+              <ChevronUp size={12} style={{ color: "#38bdf8" }} />
+            ) : (
+              <ChevronDown size={12} style={{ color: "#38bdf8" }} />
+            )
+          ) : (
+            <ArrowUpDown size={11} style={{ color: "var(--text-muted)", opacity: 0.5 }} />
+          )}
+        </div>
+      </th>
+    );
+  };
+
   return (
-    <main style={{ padding: "16px 24px", flex: 1, width: "100%", boxSizing: "border-box", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px" }}>
+    <main style={{ padding: "16px 24px 80px 24px", flex: 1, minHeight: 0, width: "100%", boxSizing: "border-box", overflow: "hidden", display: "flex", flexDirection: "column", gap: "16px" }}>
       {/* BARRA DE BÚSQUEDA Y METRICAS */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, maxWidth: "360px" }}>
@@ -57,35 +135,38 @@ export const WorkTeamsTab: React.FC<WorkTeamsTabProps> = ({ workTeams }) => {
       </div>
 
       {/* TABLA COMPLETA DE EQUIPOS DE TRABAJO CON HORAS Y ENCARGADOS */}
-      <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden" }}>
+      <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "auto", flex: 1, minHeight: 0 }}>
         <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.74rem" }}>
           <thead>
-            <tr style={{ background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-color)", color: "var(--text-muted)", textTransform: "uppercase", fontSize: "0.62rem", letterSpacing: "0.05em" }}>
-              <th style={{ padding: "10px 14px", fontWeight: 700 }}>Equipo de Trabajo</th>
-              <th style={{ padding: "10px 14px", fontWeight: 700 }}>Ubicación / Punto</th>
-              <th style={{ padding: "10px 14px", fontWeight: 700 }}>Unidad / Vehículo</th>
-              <th style={{ padding: "10px 14px", fontWeight: 700, textAlign: "center" }}>Hora Salida</th>
-              <th style={{ padding: "10px 14px", fontWeight: 700, textAlign: "center" }}>Hora Llegada</th>
-              <th style={{ padding: "10px 14px", fontWeight: 700 }}>Encargado</th>
-              <th style={{ padding: "10px 14px", fontWeight: 700, textAlign: "center" }}>Efectivos</th>
-              <th style={{ padding: "10px 14px", fontWeight: 700, textAlign: "center" }}>Estado</th>
+            <tr style={{ color: "var(--text-muted)", textTransform: "uppercase", fontSize: "0.62rem", letterSpacing: "0.05em" }}>
+              {renderHeader("Equipo de Trabajo", "groupName")}
+              {renderHeader("Ubicación / Punto", "pointTitle")}
+              {renderHeader("Unidad / Vehículo", "unitOut")}
+              {renderHeader("Hora Salida", "departureTime", "center")}
+              {renderHeader("Hora Llegada", "arrivalTime", "center")}
+              {renderHeader("Encargado", "managerName")}
+              {renderHeader("Efectivos", "officersCount", "center")}
+              {renderHeader("Estado", "hasArrived", "center")}
             </tr>
           </thead>
           <tbody>
-            {filteredTeams.length === 0 ? (
+            {sortedTeams.length === 0 ? (
               <tr>
                 <td colSpan={8} style={{ padding: "24px", textAlign: "center", color: "var(--text-muted)" }}>
                   {teamSearchQuery ? "No se encontraron equipos que coincidan con la búsqueda." : "No hay equipos de trabajo registrados para la fecha seleccionada."}
                 </td>
               </tr>
             ) : (
-              filteredTeams.map((team) => (
+              sortedTeams.map((team) => (
                 <tr key={team.id} style={{ borderBottom: "1px solid var(--border-subtle)", transition: "background 0.15s" }}>
                   <td style={{ padding: "10px 14px", fontWeight: 700, color: "#f8fafc" }}>
                     {team.groupName}
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--text-main)" }}>
-                    📍 {team.pointTitle}
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <MapPin size={13} style={{ color: "#ef4444", flexShrink: 0 }} />
+                      <span>{team.pointTitle}</span>
+                    </div>
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--text-secondary)" }}>
                     {team.unitOut ? (
