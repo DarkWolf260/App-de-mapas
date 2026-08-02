@@ -23,6 +23,7 @@ export function useAppState(isAdmin: boolean) {
     basemapLabels: false,
     hideNestedAreas: true,
     allowLabelOverlap: true,
+    svgOverlay: false,
   });
 
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toLocaleDateString('en-CA'));

@@ -9,7 +9,7 @@ import { fetchUserRequests, approveUserRequest, rejectUserRequest, UserRegistrat
 export const AdminPanelPage: React.FC = () => {
   const { user, isAdmin, isOperador, isAuthenticated, logout, loading } = useAuth();
 
-  const [activeSection, setActiveSection] = useState<"solicitudes" | "usuarios" | "bases" | "capas">("solicitudes");
+  const [activeSection, setActiveSection] = useState<"usuarios" | "bases" | "capas">("usuarios");
   const [camps, setCamps] = useState<CampamentoEntry[]>([]);
   const [featuresCount, setFeaturesCount] = useState(0);
   const [logsCount, setLogsCount] = useState(0);
@@ -234,32 +234,6 @@ export const AdminPanelPage: React.FC = () => {
           {/* PESTAÑAS INTEGRADAS DENTRO DEL HEADER */}
           <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.4)", padding: "3px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)", flexWrap: "wrap", gap: "2px" }}>
             <button
-              onClick={() => setActiveSection("solicitudes")}
-              style={{
-                background: activeSection === "solicitudes" ? "var(--accent-orange)" : "transparent",
-                color: activeSection === "solicitudes" ? "#fff" : "var(--text-muted)",
-                border: "none",
-                borderRadius: "6px",
-                padding: "5px 12px",
-                fontSize: "0.72rem",
-                fontWeight: 700,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                transition: "all 0.15s ease",
-                fontFamily: "var(--sans-font)",
-              }}
-            >
-              <UserCheck size={13} /> Solicitudes
-              {pendingCount > 0 && (
-                <span style={{ background: "#ef4444", color: "#fff", borderRadius: "10px", padding: "0 6px", fontSize: "0.6rem", fontWeight: 800 }}>
-                  {pendingCount}
-                </span>
-              )}
-            </button>
-
-            <button
               onClick={() => setActiveSection("usuarios")}
               style={{
                 background: activeSection === "usuarios" ? "var(--accent-orange)" : "transparent",
@@ -277,7 +251,12 @@ export const AdminPanelPage: React.FC = () => {
                 fontFamily: "var(--sans-font)",
               }}
             >
-              <Users size={13} /> Usuarios y Roles
+              <Users size={13} /> Usuarios, Roles y Solicitudes
+              {pendingCount > 0 && (
+                <span style={{ background: "#ef4444", color: "#fff", borderRadius: "10px", padding: "0 6px", fontSize: "0.6rem", fontWeight: 800 }}>
+                  {pendingCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -463,239 +442,238 @@ export const AdminPanelPage: React.FC = () => {
           </div>
         </div>
 
-        {/* CONTENIDO DE LA PESTAÑA SOLICITUDES DE REGISTRO */}
-        {activeSection === "solicitudes" && (
-          <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden" }}>
-            <div style={{ padding: "12px 16px", background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700, color: "#f8fafc" }}>
-                  Aprobación de Solicitudes de Registro y Asignación de Roles
-                </h3>
-                <p style={{ margin: "2px 0 0 0", fontSize: "0.65rem", color: "var(--text-muted)" }}>
-                  Evalúa las solicitudes de registro institucional y asigna el rol correspondiente (Operador o Administrador).
-                </p>
+        {/* CONTENIDO DE USUARIOS, ROLES Y SOLICITUDES DE REGISTRO */}
+        {activeSection === "usuarios" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden" }}>
+              <div style={{ padding: "12px 16px", background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700, color: "#f8fafc" }}>
+                    Aprobación de Solicitudes de Registro y Asignación de Roles
+                  </h3>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "0.65rem", color: "var(--text-muted)" }}>
+                    Evalúa las solicitudes de registro institucional y asigna el rol correspondiente (Operador o Administrador).
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.74rem" }}>
-              <thead>
-                <tr style={{ background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-color)", color: "var(--text-muted)", textTransform: "uppercase", fontSize: "0.62rem", letterSpacing: "0.05em" }}>
-                  <th style={{ padding: "10px 14px", fontWeight: 700 }}>Solicitante</th>
-                  <th style={{ padding: "10px 14px", fontWeight: 700 }}>Fecha Solicitud</th>
-                  <th style={{ padding: "10px 14px", fontWeight: 700 }}>Rol a Asignar</th>
-                  <th style={{ padding: "10px 14px", fontWeight: 700, textAlign: "center" }}>Estado</th>
-                  <th style={{ padding: "10px 14px", fontWeight: 700, textAlign: "center" }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requests.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "var(--text-muted)" }}>
-                      No hay solicitudes de registro registradas en el sistema.
-                    </td>
+              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.74rem" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-color)", color: "var(--text-muted)", textTransform: "uppercase", fontSize: "0.62rem", letterSpacing: "0.05em" }}>
+                    <th style={{ padding: "10px 14px", fontWeight: 700 }}>Solicitante</th>
+                    <th style={{ padding: "10px 14px", fontWeight: 700 }}>Fecha Solicitud</th>
+                    <th style={{ padding: "10px 14px", fontWeight: 700 }}>Rol a Asignar</th>
+                    <th style={{ padding: "10px 14px", fontWeight: 700, textAlign: "center" }}>Estado</th>
+                    <th style={{ padding: "10px 14px", fontWeight: 700, textAlign: "center" }}>Acciones</th>
                   </tr>
-                ) : (
-                  requests.map((req) => (
-                    <tr key={req.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                      <td style={{ padding: "12px 14px" }}>
-                        <div style={{ fontWeight: 700, color: "#f8fafc" }}>{req.fullName}</div>
-                        <div style={{ fontSize: "0.64rem", color: "var(--text-muted)" }}>{req.email}</div>
+                </thead>
+                <tbody>
+                  {requests.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "var(--text-muted)" }}>
+                        No hay solicitudes de registro registradas en el sistema.
                       </td>
-                      <td style={{ padding: "12px 14px", color: "var(--text-muted)", fontSize: "0.68rem" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          <Clock size={12} />
-                          <span>{new Date(req.created_at).toLocaleDateString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: "12px 14px" }}>
-                        {req.status === "Pendiente" ? (
-                          <select
-                            value={roleSelectionMap[req.id] || req.requestedRole || "operador"}
-                            onChange={(e) =>
-                              setRoleSelectionMap((prev) => ({
-                                ...prev,
-                                [req.id]: e.target.value as "operador" | "admin",
-                              }))
-                            }
+                    </tr>
+                  ) : (
+                    requests.map((req) => (
+                      <tr key={req.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                        <td style={{ padding: "12px 14px" }}>
+                          <div style={{ fontWeight: 700, color: "#f8fafc" }}>{req.fullName}</div>
+                          <div style={{ fontSize: "0.64rem", color: "var(--text-muted)" }}>{req.email}</div>
+                        </td>
+                        <td style={{ padding: "12px 14px", color: "var(--text-muted)", fontSize: "0.68rem" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                            <Clock size={12} />
+                            <span>{new Date(req.created_at).toLocaleDateString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          {req.status === "Pendiente" ? (
+                            <select
+                              value={roleSelectionMap[req.id] || req.requestedRole || "operador"}
+                              onChange={(e) =>
+                                setRoleSelectionMap((prev) => ({
+                                  ...prev,
+                                  [req.id]: e.target.value as "operador" | "admin",
+                                }))
+                              }
+                              style={{
+                                background: "rgba(0, 0, 0, 0.4)",
+                                border: "1px solid var(--border-color)",
+                                borderRadius: "6px",
+                                color: "#fff",
+                                fontSize: "0.72rem",
+                                padding: "4px 8px",
+                                outline: "none",
+                                fontFamily: "var(--sans-font)",
+                              }}
+                            >
+                              <option value="operador">Operador (Carga de datos y reportes)</option>
+                              <option value="admin">Administrador (Control total)</option>
+                            </select>
+                          ) : (
+                            <span style={{ fontWeight: 700, color: req.assignedRole === "admin" ? "#c084fc" : "#38bdf8" }}>
+                              {req.assignedRole?.toUpperCase() || req.requestedRole.toUpperCase()}
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: "12px 14px", textAlign: "center" }}>
+                          <span
                             style={{
-                              background: "rgba(0, 0, 0, 0.4)",
-                              border: "1px solid var(--border-color)",
-                              borderRadius: "6px",
-                              color: "#fff",
-                              fontSize: "0.72rem",
-                              padding: "4px 8px",
-                              outline: "none",
-                              fontFamily: "var(--sans-font)",
+                              fontSize: "0.64rem",
+                              fontWeight: 800,
+                              padding: "3px 8px",
+                              borderRadius: "4px",
+                              color:
+                                req.status === "Aprobado"
+                                  ? "#4ade80"
+                                  : req.status === "Rechazado"
+                                  ? "#ef4444"
+                                  : "var(--accent-orange)",
+                              background:
+                                req.status === "Aprobado"
+                                  ? "rgba(34, 197, 94, 0.12)"
+                                  : req.status === "Rechazado"
+                                  ? "rgba(239, 68, 68, 0.12)"
+                                  : "rgba(249, 115, 22, 0.12)",
+                              border: `1px solid ${
+                                req.status === "Aprobado"
+                                  ? "rgba(34, 197, 94, 0.3)"
+                                  : req.status === "Rechazado"
+                                  ? "rgba(239, 68, 68, 0.3)"
+                                  : "rgba(249, 115, 22, 0.3)"
+                              }`,
                             }}
                           >
-                            <option value="operador">Operador (Carga de datos y reportes)</option>
-                            <option value="admin">Administrador (Control total)</option>
-                          </select>
-                        ) : (
-                          <span style={{ fontWeight: 700, color: req.assignedRole === "admin" ? "#c084fc" : "#38bdf8" }}>
-                            {req.assignedRole?.toUpperCase() || req.requestedRole.toUpperCase()}
+                            {req.status.toUpperCase()}
                           </span>
-                        )}
-                      </td>
-                      <td style={{ padding: "12px 14px", textAlign: "center" }}>
-                        <span
-                          style={{
-                            fontSize: "0.64rem",
-                            fontWeight: 800,
-                            padding: "3px 8px",
-                            borderRadius: "4px",
-                            color:
-                              req.status === "Aprobado"
-                                ? "#4ade80"
-                                : req.status === "Rechazado"
-                                ? "#ef4444"
-                                : "var(--accent-orange)",
-                            background:
-                              req.status === "Aprobado"
-                                ? "rgba(34, 197, 94, 0.12)"
-                                : req.status === "Rechazado"
-                                ? "rgba(239, 68, 68, 0.12)"
-                                : "rgba(249, 115, 22, 0.12)",
-                            border: `1px solid ${
-                              req.status === "Aprobado"
-                                ? "rgba(34, 197, 94, 0.3)"
-                                : req.status === "Rechazado"
-                                ? "rgba(239, 68, 68, 0.3)"
-                                : "rgba(249, 115, 22, 0.3)"
-                            }`,
-                          }}
-                        >
-                          {req.status.toUpperCase()}
-                        </span>
-                      </td>
-                      <td style={{ padding: "12px 14px", textAlign: "center" }}>
-                        {req.status === "Pendiente" ? (
-                          <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
-                            <button
-                              onClick={() => handleApprove(req.id)}
-                              title="Aprobar registro y asignar rol"
-                              style={{
-                                background: "rgba(34, 197, 94, 0.15)",
-                                border: "1px solid rgba(34, 197, 94, 0.4)",
-                                borderRadius: "6px",
-                                color: "#4ade80",
-                                fontSize: "0.68rem",
-                                fontWeight: 700,
-                                padding: "4px 10px",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                fontFamily: "var(--sans-font)",
-                              }}
-                            >
-                              <Check size={13} /> Aprobar
-                            </button>
-                            <button
-                              onClick={() => handleReject(req.id)}
-                              title="Rechazar solicitud"
-                              style={{
-                                background: "rgba(239, 68, 68, 0.15)",
-                                border: "1px solid rgba(239, 68, 68, 0.4)",
-                                borderRadius: "6px",
-                                color: "#ef4444",
-                                fontSize: "0.68rem",
-                                fontWeight: 700,
-                                padding: "4px 10px",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                fontFamily: "var(--sans-font)",
-                              }}
-                            >
-                              <XCircle size={13} /> Rechazar
-                            </button>
-                          </div>
-                        ) : (
-                          <span style={{ color: "var(--text-muted)", fontSize: "0.66rem" }}>Procesado</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* TABLA DE USUARIOS Y ROLES */}
-        {activeSection === "usuarios" && (
-          <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden" }}>
-            <div style={{ padding: "12px 16px", background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700, color: "#f8fafc" }}>
-                Personal Aprobado y Control de Acceso
-              </h3>
+                        </td>
+                        <td style={{ padding: "12px 14px", textAlign: "center" }}>
+                          {req.status === "Pendiente" ? (
+                            <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
+                              <button
+                                onClick={() => handleApprove(req.id)}
+                                title="Aprobar registro y asignar rol"
+                                style={{
+                                  background: "rgba(34, 197, 94, 0.15)",
+                                  border: "1px solid rgba(34, 197, 94, 0.4)",
+                                  borderRadius: "6px",
+                                  color: "#4ade80",
+                                  fontSize: "0.68rem",
+                                  fontWeight: 700,
+                                  padding: "4px 10px",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  fontFamily: "var(--sans-font)",
+                                }}
+                              >
+                                <Check size={13} /> Aprobar
+                              </button>
+                              <button
+                                onClick={() => handleReject(req.id)}
+                                title="Rechazar solicitud"
+                                style={{
+                                  background: "rgba(239, 68, 68, 0.15)",
+                                  border: "1px solid rgba(239, 68, 68, 0.4)",
+                                  borderRadius: "6px",
+                                  color: "#ef4444",
+                                  fontSize: "0.68rem",
+                                  fontWeight: 700,
+                                  padding: "4px 10px",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  fontFamily: "var(--sans-font)",
+                                }}
+                              >
+                                <XCircle size={13} /> Rechazar
+                              </button>
+                            </div>
+                          ) : (
+                            <span style={{ color: "var(--text-muted)", fontSize: "0.66rem" }}>Procesado</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.74rem" }}>
-              <thead>
-                <tr style={{ background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-color)", color: "var(--text-muted)", textTransform: "uppercase", fontSize: "0.62rem", letterSpacing: "0.05em" }}>
-                  <th style={{ padding: "10px 14px", fontWeight: 700 }}>Correo / Usuario</th>
-                  <th style={{ padding: "10px 14px", fontWeight: 700 }}>Rol Asignado</th>
-                  <th style={{ padding: "10px 14px", fontWeight: 700 }}>Permisos de Edición</th>
-                  <th style={{ padding: "10px 14px", fontWeight: 700, textAlign: "center" }}>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                  <td style={{ padding: "12px 14px", fontWeight: 700, color: "#f8fafc" }}>
-                    {user?.email || "admin@coelaguaira.gob.ve"}
-                  </td>
-                  <td style={{ padding: "12px 14px" }}>
-                    <span style={{ background: "rgba(34, 197, 94, 0.15)", border: "1px solid rgba(34, 197, 94, 0.3)", color: "#4ade80", borderRadius: "4px", padding: "2px 8px", fontSize: "0.65rem", fontWeight: 800 }}>
-                      ADMINISTRADOR
-                    </span>
-                  </td>
-                  <td style={{ padding: "12px 14px", color: "var(--text-main)" }}>
-                    Acceso Total (Crear, Editar, Eliminar, Guardar)
-                  </td>
-                  <td style={{ padding: "12px 14px", textAlign: "center" }}>
-                    <span style={{ color: "#4ade80", fontWeight: 700 }}>Activo (Sesión Actual)</span>
-                  </td>
-                </tr>
-                <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                  <td style={{ padding: "12px 14px", fontWeight: 700, color: "#f8fafc" }}>
-                    operador@coelaguaira.gob.ve
-                  </td>
-                  <td style={{ padding: "12px 14px" }}>
-                    <span style={{ background: "rgba(56, 189, 248, 0.15)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#38bdf8", borderRadius: "4px", padding: "2px 8px", fontSize: "0.65rem", fontWeight: 800 }}>
-                      OPERADOR
-                    </span>
-                  </td>
-                  <td style={{ padding: "12px 14px", color: "var(--text-main)" }}>
-                    Edición Operativa y Carga de Conteos
-                  </td>
-                  <td style={{ padding: "12px 14px", textAlign: "center" }}>
-                    <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>Registrado</span>
-                  </td>
-                </tr>
-                {requests
-                  .filter((r) => r.status === "Aprobado")
-                  .map((r) => (
-                    <tr key={r.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                      <td style={{ padding: "12px 14px", fontWeight: 700, color: "#f8fafc" }}>
-                        {r.email} ({r.fullName})
-                      </td>
-                      <td style={{ padding: "12px 14px" }}>
-                        <span style={{ background: r.assignedRole === "admin" ? "rgba(168, 85, 247, 0.15)" : "rgba(56, 189, 248, 0.15)", border: `1px solid ${r.assignedRole === "admin" ? "rgba(168, 85, 247, 0.3)" : "rgba(56, 189, 248, 0.3)"}`, color: r.assignedRole === "admin" ? "#c084fc" : "#38bdf8", borderRadius: "4px", padding: "2px 8px", fontSize: "0.65rem", fontWeight: 800 }}>
-                          {(r.assignedRole || r.requestedRole).toUpperCase()}
-                        </span>
-                      </td>
-                      <td style={{ padding: "12px 14px", color: "var(--text-main)" }}>
-                        {r.assignedRole === "admin" ? "Acceso Total (Crear, Editar, Eliminar)" : "Edición Operativa y Carga de Conteos"}
-                      </td>
-                      <td style={{ padding: "12px 14px", textAlign: "center" }}>
-                        <span style={{ color: "#4ade80", fontWeight: 700 }}>Aprobado</span>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+
+            <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden" }}>
+              <div style={{ padding: "12px 16px", background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h3 style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700, color: "#f8fafc" }}>
+                  Personal Aprobado y Control de Acceso
+                </h3>
+              </div>
+              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.74rem" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-color)", color: "var(--text-muted)", textTransform: "uppercase", fontSize: "0.62rem", letterSpacing: "0.05em" }}>
+                    <th style={{ padding: "10px 14px", fontWeight: 700 }}>Correo / Usuario</th>
+                    <th style={{ padding: "10px 14px", fontWeight: 700 }}>Rol Asignado</th>
+                    <th style={{ padding: "10px 14px", fontWeight: 700 }}>Permisos de Edición</th>
+                    <th style={{ padding: "10px 14px", fontWeight: 700, textAlign: "center" }}>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                    <td style={{ padding: "12px 14px", fontWeight: 700, color: "#f8fafc" }}>
+                      {user?.email || "admin@coelaguaira.gob.ve"}
+                    </td>
+                    <td style={{ padding: "12px 14px" }}>
+                      <span style={{ background: "rgba(34, 197, 94, 0.15)", border: "1px solid rgba(34, 197, 94, 0.3)", color: "#4ade80", borderRadius: "4px", padding: "2px 8px", fontSize: "0.65rem", fontWeight: 800 }}>
+                        ADMINISTRADOR
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 14px", color: "var(--text-main)" }}>
+                      Acceso Total (Crear, Editar, Eliminar, Guardar)
+                    </td>
+                    <td style={{ padding: "12px 14px", textAlign: "center" }}>
+                      <span style={{ color: "#4ade80", fontWeight: 700 }}>Activo (Sesión Actual)</span>
+                    </td>
+                  </tr>
+                  <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                    <td style={{ padding: "12px 14px", fontWeight: 700, color: "#f8fafc" }}>
+                      operador@coelaguaira.gob.ve
+                    </td>
+                    <td style={{ padding: "12px 14px" }}>
+                      <span style={{ background: "rgba(56, 189, 248, 0.15)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#38bdf8", borderRadius: "4px", padding: "2px 8px", fontSize: "0.65rem", fontWeight: 800 }}>
+                        OPERADOR
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 14px", color: "var(--text-main)" }}>
+                      Edición Operativa y Carga de Conteos
+                    </td>
+                    <td style={{ padding: "12px 14px", textAlign: "center" }}>
+                      <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>Registrado</span>
+                    </td>
+                  </tr>
+                  {requests
+                    .filter((r) => r.status === "Aprobado")
+                    .map((r) => (
+                      <tr key={r.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                        <td style={{ padding: "12px 14px", fontWeight: 700, color: "#f8fafc" }}>
+                          {r.email} ({r.fullName})
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <span style={{ background: r.assignedRole === "admin" ? "rgba(168, 85, 247, 0.15)" : "rgba(56, 189, 248, 0.15)", border: `1px solid ${r.assignedRole === "admin" ? "rgba(168, 85, 247, 0.3)" : "rgba(56, 189, 248, 0.3)"}`, color: r.assignedRole === "admin" ? "#c084fc" : "#38bdf8", borderRadius: "4px", padding: "2px 8px", fontSize: "0.65rem", fontWeight: 800 }}>
+                            {(r.assignedRole || r.requestedRole).toUpperCase()}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 14px", color: "var(--text-main)" }}>
+                          {r.assignedRole === "admin" ? "Acceso Total (Crear, Editar, Eliminar)" : "Edición Operativa y Carga de Conteos"}
+                        </td>
+                        <td style={{ padding: "12px 14px", textAlign: "center" }}>
+                          <span style={{ color: "#4ade80", fontWeight: 700 }}>Aprobado</span>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 

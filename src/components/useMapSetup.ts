@@ -139,14 +139,14 @@ export const useMapSetup = (props: UseMapSetupProps) => {
   }, [activeBasemap, init.mapReady, viewRef]);
 
   useEffect(() => {
-    if (sketchLayerRef.current) sketchLayerRef.current.visible = true;
+    if (sketchLayerRef.current) sketchLayerRef.current.visible = !layerVisibility.svgOverlay;
     if (!layerVisibility.sketch) {
       setActiveTool(null);
       setSelectedGraphic(null);
       if (sketchVMRef.current?.state === "active") sketchVMRef.current.cancel();
     }
     if (layerVisibility.sketch) setSwipeActive(false);
-  }, [layerVisibility.sketch, sketchLayerRef, sketchVMRef]);
+  }, [layerVisibility.sketch, layerVisibility.svgOverlay, sketchLayerRef, sketchVMRef]);
 
   const handleSelectTool = (toolId: ToolId) => {
     const svm = sketchVMRef.current;
@@ -176,6 +176,16 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     if (!svm || !selectedGraphic) return;
     svm.update([selectedGraphic], { tool: mode });
   };
+
+  const onSelectGraphicForEdit = useCallback((g: Graphic) => {
+    setActiveTool(null);
+    setSelectedGraphic(g);
+    setEditMode("transform");
+    const svm = sketchVMRef.current;
+    if (svm && svm.state !== "active") {
+      svm.update([g], { tool: "transform" });
+    }
+  }, [sketchVMRef]);
 
   const handleColorChange = (color: Color) => {
     setActiveColor(color);
@@ -275,6 +285,8 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     popupScreenPos,
     popupEditDate,
     sketchLayer: sketchLayerRef.current,
+    sketchVMRef,
+    onSelectGraphicForEdit,
     currentZoom: init.currentZoom,
     currentScale: init.currentScale,
     coords: init.coords,

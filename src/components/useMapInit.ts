@@ -101,7 +101,8 @@ export function useMapInit(
     map.add(sketchLayer);
     sketchLayerRef.current = sketchLayer;
 
-    view.when(() => {
+    view.when(
+      () => {
       const zoomWidget = new Zoom({ view });
       const compassWidget = new Compass({ view });
       view.ui.add([zoomWidget, compassWidget], "top-right");
@@ -216,6 +217,9 @@ export function useMapInit(
 
       view.on("click", async (evt: any) => {
         if (sketchVMRef.current?.activeTool) return;
+        // En modo SVG el overlay maneja los clics (hit-test propio); con la capa
+        // oculta hitTest() no encuentra nada y cerraría el popup recién abierto.
+        if (layerVisibilityRef.current.svgOverlay) return;
         const hit = await view.hitTest(evt);
         const result = hit.results.find(
           (r: any) => "graphic" in r && r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel
@@ -241,6 +245,10 @@ export function useMapInit(
         }
       });
 
+      setMapReady(true);
+    },
+    (err) => {
+      console.error("[map] view.when() failed:", err);
       setMapReady(true);
     });
 

@@ -321,7 +321,7 @@ function App() {
         <MapComponent
           apiKey={apiKey}
           activeCity={activeCity}
-          activeBasemap="hybrid"
+          activeBasemap="satellite-free"
           layerVisibility={state.layerVisibility}
           onToggleLayer={state.handleToggleLayer}
           onZoomToFeature={state.setZoomToFeature}

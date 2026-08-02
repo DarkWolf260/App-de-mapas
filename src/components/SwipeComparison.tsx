@@ -56,13 +56,7 @@ function getOrCreateCogLayer(id: string): ImageryTileLayer | null {
   return layer;
 }
 
-// Precargar metadatos del COG principal en segundo plano
-if (typeof window !== "undefined") {
-  setTimeout(() => {
-    getOrCreateCogLayer("cogB");
-  }, 500);
-}
-
+// Precargar metadatos del COG principal en segundo plano (se carga bajo demanda al abrir la comparación)
 type LayerStatus = "idle" | "loading" | "ok" | "error";
 
 interface SwipeComparisonProps {

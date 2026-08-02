@@ -16,6 +16,7 @@ const TOGGLES: Array<{ key: keyof LayerVisibility; label: string }> = [
   { key: "basemapLabels", label: "Etiquetas de Calles y Mapa Base" },
   { key: "hideNestedAreas", label: "Ocultar Áreas Anidadas" },
   { key: "allowLabelOverlap", label: "Permitir Solapamiento de Etiquetas" },
+  { key: "svgOverlay", label: "Dibujar con SVG (modo compatible)" },
 ];
 
 export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({

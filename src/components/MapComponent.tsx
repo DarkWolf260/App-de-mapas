@@ -7,6 +7,7 @@ import { DeploymentSummaryCard } from "./DeploymentSummaryCard";
 import { MapSettingsPanel } from "./MapSettingsPanel";
 import { HtmlPointLabels } from "./HtmlPointLabels";
 import { SwipeComparison } from "./SwipeComparison";
+import { FeatureSvgOverlay } from "./FeatureSvgOverlay";
 import { useMapSetup } from "./useMapSetup";
 import { useDraggable } from "../hooks/useDraggable";
 import type { MapFeatureActions, MapUIContext } from "./mapTypes";
@@ -61,6 +62,8 @@ interface MapComponentProps {
     popupScreenPos,
     popupEditDate,
     sketchLayer,
+    sketchVMRef,
+    onSelectGraphicForEdit,
     currentZoom,
     currentScale,
     coords,
@@ -129,9 +132,33 @@ interface MapComponentProps {
 
   const displayX = (ui.showSidebar && toolbarPos.x < 380) ? 396 : Math.max(16, toolbarPos.x);
 
+  const handleSvgFeatureClick = React.useCallback((featId: number | string, screenPt: { x: number; y: number }) => {
+    const feat = drawnFeatures.find((f) => String(f.id) === String(featId));
+    if (!feat || !viewRef.current) return;
+    const mapPoint = viewRef.current.toMap(screenPt);
+    ui.onFeatureClick?.();
+    setCustomPopup({ mapPoint, feat });
+    const g = sketchLayer?.graphics.find((gr) => {
+      const fid = gr.attributes?.id ?? (gr as any).uid;
+      return String(fid) === String(featId);
+    });
+    if (g && !feat.locked && onSelectGraphicForEdit) onSelectGraphicForEdit(g);
+  }, [drawnFeatures, viewRef, ui, setCustomPopup, sketchLayer, onSelectGraphicForEdit]);
+
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
       <div className="map-view-container" ref={mapDiv} style={{ width: "100%", height: "100%" }} />
+      {/* Capa de dibujo SVG alternativa (modo compatible con PCs antiguas) */}
+      <FeatureSvgOverlay
+        view={viewRef.current}
+        sketchLayer={sketchLayer}
+        sketchVMRef={sketchVMRef}
+        enabled={!!layerVisibility.svgOverlay}
+        drawnFeatures={drawnFeatures}
+        htmlLabels={htmlLabels}
+        interactive={!bare}
+        onFeatureClick={handleSvgFeatureClick}
+      />
       {/* Floating Draggable Drawing Toolbar (Solo visible para Administradores) */}
       {!bare && ui.isAdmin !== false && layerVisibility.sketch && (
         <div

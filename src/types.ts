@@ -104,6 +104,8 @@ export interface LayerVisibility {
   hideNestedAreas: boolean;
   allowLabelOverlap: boolean;
   basemapLabels?: boolean;
+  /** Dibujar los elementos como SVG (DOM) en vez del renderer WebGL. Útil en PCs antiguas. */
+  svgOverlay: boolean;
 }
 
 export interface RemoveFeatureId {
