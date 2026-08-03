@@ -25,6 +25,8 @@ export interface MapInitRefs {
   selectedDateRef: React.MutableRefObject<string>;
   activeDepartmentRef: React.MutableRefObject<DepartmentView>;
   showAccumulatedRef: React.MutableRefObject<boolean>;
+  /** Solo los administradores pueden entrar en modo edición/transformación. */
+  canEditRef: React.MutableRefObject<boolean>;
 }
 
 export interface MapInitCallbacks {
@@ -58,6 +60,7 @@ export function useMapInit(
   const selectedDateRef = useRef<string>("");
   const activeDepartmentRef = useRef<DepartmentView>("pc");
   const showAccumulatedRef = useRef<boolean>(false);
+  const canEditRef = useRef<boolean>(false);
 
   const [mapReady, setMapReady] = useState(false);
   const [customPopup, setCustomPopup] = useState<{ mapPoint: any; feat: DrawnFeature } | null>(null);
@@ -233,7 +236,13 @@ export function useMapInit(
             setCustomPopup({ mapPoint: view.toMap(evt), feat });
 
             const svm = sketchVMRef.current;
-            if (svm && svm.state !== "active" && callbacks.onGraphicSelected && !feat.locked) {
+            // Solo entrar en modo edición/transformación si las herramientas de
+            // dibujo están activas, el elemento NO está bloqueado y el usuario es admin.
+            const canEdit =
+              layerVisibilityRef.current.sketch &&
+              !feat.locked &&
+              canEditRef.current;
+            if (svm && svm.state !== "active" && callbacks.onGraphicSelected && canEdit) {
               callbacks.onGraphicSelected(g);
               svm.update([g], { tool: "transform" });
             }
@@ -269,6 +278,7 @@ export function useMapInit(
     selectedDateRef,
     activeDepartmentRef,
     showAccumulatedRef,
+    canEditRef,
     deconflictGraphicsRef,
     onFeatureAddedRef,
     onFeatureDeletedRef,

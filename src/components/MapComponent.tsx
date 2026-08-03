@@ -91,6 +91,7 @@ interface MapComponentProps {
     showAreas: ui.showAreas,
     sidebarOpen: ui.sidebarOpen,
     bitacoraOpen: ui.bitacoraOpen,
+    isAdmin: ui.isAdmin,
   });
 
   const handleNavigateToFeature = React.useCallback((feat: DrawnFeature) => {

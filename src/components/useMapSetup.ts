@@ -30,6 +30,7 @@ export interface UseMapSetupProps {
   sidebarOpen?: boolean;
   bitacoraOpen?: boolean;
   bare?: boolean;
+  isAdmin?: boolean;
 }
 
 export const useMapSetup = (props: UseMapSetupProps) => {
@@ -38,7 +39,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     onFeatureAdded, onFeatureDeleted, zoomToFeature, removeFeatureId,
     importedFeatures, hiddenFeatures, selectedDate, zoomToCoords,
     activeDepartment = "pc", onFeatureClick,
-    showAccumulated, sidebarOpen, bitacoraOpen, bare,
+    showAccumulated, sidebarOpen, bitacoraOpen, bare, isAdmin,
   } = props;
 
   const [activeColor, setActiveColor] = useState<Color>(PALETTE[0]);
@@ -63,6 +64,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
   useEffect(() => { init.selectedDateRef.current = selectedDate; }, [selectedDate, init]);
   useEffect(() => { init.activeDepartmentRef.current = activeDepartment; }, [activeDepartment, init]);
   useEffect(() => { init.showAccumulatedRef.current = showAccumulated ?? false; }, [showAccumulated, init]);
+  useEffect(() => { init.canEditRef.current = isAdmin === true; }, [isAdmin, init]);
 
   const { runDeconflict, deconflictGraphicsRef, viewRef, sketchLayerRef, sketchVMRef } = init;
   const onFeatureAddedRef = init.onFeatureAddedRef;
@@ -178,6 +180,8 @@ export const useMapSetup = (props: UseMapSetupProps) => {
   };
 
   const onSelectGraphicForEdit = useCallback((g: Graphic) => {
+    // Solo admins con herramientas de dibujo activas pueden editar.
+    if (isAdmin !== true || !layerVisibilityRef.current.sketch) return;
     setActiveTool(null);
     setSelectedGraphic(g);
     setEditMode("transform");
@@ -185,7 +189,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     if (svm && svm.state !== "active") {
       svm.update([g], { tool: "transform" });
     }
-  }, [sketchVMRef]);
+  }, [sketchVMRef, isAdmin, layerVisibilityRef]);
 
   const handleColorChange = (color: Color) => {
     setActiveColor(color);
