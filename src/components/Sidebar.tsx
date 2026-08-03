@@ -207,10 +207,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onChange={(e) => setCategoryFilter(e.target.value)}
               style={{
                 width: '100%',
-                background: '#111827',
+                backgroundColor: '#111827',
                 border: '1px solid var(--border-color)',
                 borderRadius: '6px',
-                padding: '8px',
+                padding: '8px 30px 8px 10px',
                 color: 'var(--text-primary)',
                 fontSize: '13px'
               }}

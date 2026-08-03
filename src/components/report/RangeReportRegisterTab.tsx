@@ -416,12 +416,12 @@ export const RangeReportRegisterTab: React.FC<RangeReportRegisterTabProps> = ({
                     }
                   }}
                   style={{
-                    background: "rgba(255, 255, 255, 0.03)",
+                    backgroundColor: "rgba(255, 255, 255, 0.03)",
                     border: "1px solid rgba(255, 255, 255, 0.1)",
                     borderRadius: "5px",
                     color: "var(--text-main)",
                     fontSize: "0.68rem",
-                    padding: "4px 8px",
+                    padding: "4px 30px 4px 8px",
                     outline: "none",
                     width: "100%",
                     cursor: "pointer",

@@ -555,12 +555,12 @@ export const AdminPanelPage: React.FC = () => {
                                 }))
                               }
                               style={{
-                                background: "rgba(0, 0, 0, 0.4)",
+                                backgroundColor: "rgba(0, 0, 0, 0.4)",
                                 border: "1px solid var(--border-color)",
                                 borderRadius: "6px",
                                 color: "#fff",
                                 fontSize: "0.72rem",
-                                padding: "4px 8px",
+                                padding: "4px 30px 4px 8px",
                                 outline: "none",
                                 fontFamily: "var(--sans-font)",
                               }}
@@ -942,13 +942,13 @@ export const AdminPanelPage: React.FC = () => {
                   disabled={editingUser.id === user?.id || usersBusy}
                   onChange={(e) => setDraftRole(e.target.value as "admin" | "operador")}
                   style={{
-                    background: "rgba(0, 0, 0, 0.4)",
+                    backgroundColor: "rgba(0, 0, 0, 0.4)",
                     border: "1px solid var(--border-color)",
                     borderRadius: "6px",
                     color: draftRole === "admin" ? "#c084fc" : "#38bdf8",
                     fontSize: "0.78rem",
                     fontWeight: 700,
-                    padding: "7px 10px",
+                    padding: "7px 30px 7px 10px",
                     outline: "none",
                     width: "100%",
                     cursor: editingUser.id === user?.id || usersBusy ? "not-allowed" : "pointer",

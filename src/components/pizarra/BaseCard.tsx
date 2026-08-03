@@ -204,12 +204,12 @@ export const BaseCard: React.FC<BaseCardProps> = ({
                     value={sd.stateName || "-"}
                     onChange={(e) => handleUpdateStateInCamp(camp.id, sd.id, "stateName", e.target.value)}
                     style={{
-                      background: "rgba(0, 0, 0, 0.4)",
+                      backgroundColor: "rgba(0, 0, 0, 0.4)",
                       border: "1px solid var(--border-color)",
                       borderRadius: "4px",
                       color: "#fff",
                       fontSize: "0.68rem",
-                      padding: "3px 6px",
+                      padding: "3px 26px 3px 6px",
                       outline: "none",
                       flex: 1,
                       fontFamily: "var(--sans-font)",
