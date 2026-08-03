@@ -51,6 +51,8 @@ interface MapComponentProps {
   });
   const [showMapSettings, setShowMapSettings] = React.useState(false);
 
+  const canEditMap = !!ui.permissions?.edit_map;
+
   const {
     mapDiv,
     activeTool,
@@ -91,7 +93,7 @@ interface MapComponentProps {
     showAreas: ui.showAreas,
     sidebarOpen: ui.sidebarOpen,
     bitacoraOpen: ui.bitacoraOpen,
-    isAdmin: ui.isAdmin,
+    canEditMap,
   });
 
   const handleNavigateToFeature = React.useCallback((feat: DrawnFeature) => {
@@ -160,8 +162,8 @@ interface MapComponentProps {
         interactive={!bare}
         onFeatureClick={handleSvgFeatureClick}
       />
-      {/* Floating Draggable Drawing Toolbar (Solo visible para Administradores) */}
-      {!bare && ui.isAdmin !== false && layerVisibility.sketch && (
+      {/* Floating Draggable Drawing Toolbar (Solo usuarios con permiso edit_map) */}
+      {!bare && canEditMap && layerVisibility.sketch && (
         <div
           className="draw-toolbar-wrapper"
           style={{
@@ -211,6 +213,8 @@ interface MapComponentProps {
         activeDepartment={ui.activeDepartment}
         isAdmin={ui.isAdmin}
         isOperador={ui.isOperador}
+        permissions={ui.permissions}
+        canEditMap={canEditMap}
       />
       )}
 

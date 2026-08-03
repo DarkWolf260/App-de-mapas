@@ -53,6 +53,7 @@ export interface GroupLogEntry {
   hasArrived?: boolean;
   commissionId?: string;
   isVolunteer?: boolean;
+  department?: string;
 }
 
 export type NovedadType = "novedad" | "incidencia" | "actualización";

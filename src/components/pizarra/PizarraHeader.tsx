@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Activity, Plus, Save, Check, Edit3, CheckSquare, Lock, Users, FileSpreadsheet, Map as MapIcon, Calendar as CalendarIcon } from "lucide-react";
-import { AuthModal } from "../AuthModal";
+import { Activity, Plus, Save, Check, Edit3, CheckSquare, Lock, Users, FileSpreadsheet, Calendar as CalendarIcon } from "lucide-react";
+import { UserNavMenu } from "../UserNavMenu";
 import { BitacoraCalendar } from "../BitacoraCalendar";
+import { getLocalDateStr } from "../../utils/dateUtils";
 
 export interface PizarraHeaderProps {
   activeTab: "pizarra" | "equipos";
@@ -154,7 +155,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
           </div>
         </div>
 
-        <AuthModal />
+        <UserNavMenu currentPage="consolidado" />
       </header>
 
       {/* BARRA FLOTANTE INFERIOR DE ACCIONES Y CALENDARIO CON CLASES CSS ESTÁNDAR (dt-calendar-wrapper & dt-calendar-popup) */}
@@ -180,31 +181,6 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
           justifyContent: "center",
         }}
       >
-        {/* BOTÓN IR AL MAPA */}
-        <button
-          onClick={() => (window.location.href = "/")}
-          title="Ir al Mapa"
-          style={{
-            height: "32px",
-            padding: "0 10px",
-            borderRadius: "8px",
-            border: "1px solid rgba(56, 189, 248, 0.3)",
-            background: "rgba(56, 189, 248, 0.1)",
-            color: "#38bdf8",
-            fontSize: "0.72rem",
-            fontWeight: 700,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "5px",
-            fontFamily: "var(--sans-font)",
-          }}
-        >
-          <MapIcon size={14} /> Mapa
-        </button>
-
-        <div style={{ height: "18px", width: "1px", background: "rgba(255, 255, 255, 0.12)" }} />
-
         {/* CALENDARIO CON EL CONTENEDOR Y POPUP CSS ESTÁNDAR (dt-calendar-wrapper & dt-calendar-popup) */}
         <div className="dt-calendar-wrapper" ref={calendarRef}>
           <button
@@ -237,7 +213,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
               <BitacoraCalendar
                 selectedDate={selectedDate}
                 minDate="2026-06-24"
-                maxDate={new Date().toISOString().split("T")[0]}
+                maxDate={getLocalDateStr()}
                 onSelectDate={(dateStr) => {
                   setSelectedDate(dateStr);
                   setShowCalendar(false);

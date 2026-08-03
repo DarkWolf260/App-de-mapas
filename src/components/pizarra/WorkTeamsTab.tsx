@@ -1,14 +1,20 @@
 import React, { useState } from "react";
-import { Search, Truck, Clock, Phone, MapPin, ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Truck, Clock, Phone, MapPin, ArrowUpDown, ChevronUp, ChevronDown, Shield, Flame, Users } from "lucide-react";
 import { WorkTeam } from "./types";
 
 type SortField = "groupName" | "pointTitle" | "unitOut" | "departureTime" | "arrivalTime" | "managerName" | "officersCount" | "hasArrived";
 
 export interface WorkTeamsTabProps {
   workTeams: WorkTeam[];
+  deptFilter: "all" | "pc" | "bomberos";
+  setDeptFilter: (filter: "all" | "pc" | "bomberos") => void;
 }
 
-export const WorkTeamsTab: React.FC<WorkTeamsTabProps> = ({ workTeams }) => {
+export const WorkTeamsTab: React.FC<WorkTeamsTabProps> = ({
+  workTeams,
+  deptFilter,
+  setDeptFilter,
+}) => {
   const [teamSearchQuery, setTeamSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>("groupName");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -22,12 +28,33 @@ export const WorkTeamsTab: React.FC<WorkTeamsTabProps> = ({ workTeams }) => {
     }
   };
 
-  const filteredTeams = workTeams.filter((t) =>
-    t.groupName.toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
-    t.pointTitle.toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
-    (t.unitOut || "").toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
-    (t.managerName || "").toLowerCase().includes(teamSearchQuery.toLowerCase())
-  );
+  const filteredTeams = workTeams.filter((t) => {
+    const matchesSearch =
+      t.groupName.toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
+      t.pointTitle.toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
+      (t.unitOut || "").toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
+      (t.managerName || "").toLowerCase().includes(teamSearchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    if (deptFilter === "pc") {
+      return (
+        !t.department ||
+        t.department === "pc" ||
+        t.department.toLowerCase().includes("protección civil") ||
+        t.department.toLowerCase().includes("proteccion civil")
+      );
+    }
+    if (deptFilter === "bomberos") {
+      return (
+        t.department &&
+        (t.department === "bomberos" ||
+          t.department.toLowerCase().includes("bombero"))
+      );
+    }
+
+    return true;
+  });
 
   const sortedTeams = [...filteredTeams].sort((a, b) => {
     let aVal: any = a[sortField];
@@ -95,10 +122,11 @@ export const WorkTeamsTab: React.FC<WorkTeamsTabProps> = ({ workTeams }) => {
   };
 
   return (
-    <main style={{ padding: "16px 24px 80px 24px", flex: 1, minHeight: 0, width: "100%", boxSizing: "border-box", overflow: "hidden", display: "flex", flexDirection: "column", gap: "16px" }}>
+    <main style={{ padding: "16px 24px 80px 24px", flex: 1, minHeight: 0, width: "100%", maxWidth: "1600px", margin: "0 auto", boxSizing: "border-box", overflow: "hidden", display: "flex", flexDirection: "column", gap: "16px" }}>
       {/* BARRA DE BÚSQUEDA Y METRICAS */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-        <div style={{ position: "relative", flex: 1, maxWidth: "360px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", width: "100%" }}>
+        {/* Buscador */}
+        <div style={{ position: "relative", flex: 1, maxWidth: "360px", minWidth: "240px" }}>
           <Search size={15} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
           <input
             type="text"
@@ -119,16 +147,86 @@ export const WorkTeamsTab: React.FC<WorkTeamsTabProps> = ({ workTeams }) => {
           />
         </div>
 
+        {/* Filtro de Departamentos Centrado */}
+        <div style={{ display: "flex", justifyContent: "center", flex: 1, minWidth: "280px" }}>
+          <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.4)", padding: "3px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+            <button
+              type="button"
+              onClick={() => setDeptFilter("pc")}
+              style={{
+                background: deptFilter === "pc" ? "var(--accent-orange)" : "transparent",
+                color: deptFilter === "pc" ? "#fff" : "var(--text-muted)",
+                border: "none",
+                borderRadius: "6px",
+                padding: "5px 12px",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+                fontFamily: "var(--sans-font)",
+              }}
+            >
+              <Shield size={13} /> Protección Civil
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeptFilter("bomberos")}
+              style={{
+                background: deptFilter === "bomberos" ? "#ef4444" : "transparent",
+                color: deptFilter === "bomberos" ? "#fff" : "var(--text-muted)",
+                border: "none",
+                borderRadius: "6px",
+                padding: "5px 12px",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+                fontFamily: "var(--sans-font)",
+              }}
+            >
+              <Flame size={13} /> Bomberos
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeptFilter("all")}
+              style={{
+                background: deptFilter === "all" ? "#a855f7" : "transparent",
+                color: deptFilter === "all" ? "#fff" : "var(--text-muted)",
+                border: "none",
+                borderRadius: "6px",
+                padding: "5px 12px",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+                fontFamily: "var(--sans-font)",
+              }}
+            >
+              <Users size={13} /> Ambos
+            </button>
+          </div>
+        </div>
+
+        {/* Métricas */}
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "6px", padding: "6px 12px", display: "flex", gap: "8px", alignItems: "center" }}>
             <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Equipos Registrados</span>
-            <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#c084fc", fontFamily: "var(--sans-font)" }}>{workTeams.length}</span>
+            <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#c084fc", fontFamily: "var(--sans-font)" }}>{filteredTeams.length}</span>
           </div>
 
           <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "6px", padding: "6px 12px", display: "flex", gap: "8px", alignItems: "center" }}>
             <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Efectivos Totales</span>
             <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "var(--accent-orange)", fontFamily: "var(--sans-font)" }}>
-              {workTeams.reduce((sum, t) => sum + t.officersCount, 0)}
+              {filteredTeams.reduce((sum, t) => sum + t.officersCount, 0)}
             </span>
           </div>
         </div>

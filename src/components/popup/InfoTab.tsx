@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Copy, Check, Edit3, Users, Activity, Link2, Unlink, Save, FileText, Plus, X, Pencil } from "lucide-react";
-import type { DrawnFeature, DailyLog, GroupLogEntry, NovedadEntry, DepartmentView } from "../../types";
+import type { DrawnFeature, DailyLog, GroupLogEntry, NovedadEntry, DepartmentView, Department } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
 import { getNormalizedGroupList, mergeLogs } from "../../utils/logUtils";
 import { labelStyle, sectionBox, readRowStyle, readLabelStyle, readValueStyle } from "./popupStyles";
@@ -32,6 +32,8 @@ interface InfoTabProps {
   containedNovedades?: Array<{ origin: string; originFeatId?: number; novedades: NovedadEntry[] }>;
   onNavigateToFeature?: (feat: DrawnFeature) => void;
   activeDepartment?: DepartmentView;
+  selectedDept?: Department;
+  onDepartmentSelect?: (dept: Department) => void;
 }
 
 function ReadRow({ label, value }: { label: string; value?: string }) {
@@ -76,6 +78,8 @@ export const InfoTab: React.FC<InfoTabProps> = ({
   onGroupFieldChange, onGeneralFieldChange, onSaveStats, saveSuccess,
   novedades = [], onAddNovedad, onDeleteNovedad, onUpdateNovedad, containedNovedades = [], onNavigateToFeature,
   activeDepartment = "pc",
+  selectedDept = "pc",
+  onDepartmentSelect,
 }) => {
   const showArrivalCheckbox = isAdmin || canToggleArrival;
   const canViewDetails = isAdmin || canEdit || canToggleArrival;
@@ -161,12 +165,28 @@ export const InfoTab: React.FC<InfoTabProps> = ({
   };
 
   const onGroupEdit = useCallback((displayIdx: number, field: string, value: string | boolean) => {
-    onGroupFieldChange?.(translateGroupIdx(displayIdx), field, value);
-  }, [onGroupFieldChange, editGroups, activeGroups]);
+    const displayGroup = activeGroups[displayIdx];
+    if (displayGroup && displayGroup.department && displayGroup.department !== selectedDept) {
+      onDepartmentSelect?.(displayGroup.department as Department);
+      setTimeout(() => {
+        onGroupFieldChange?.(translateGroupIdx(displayIdx), field, value);
+      }, 0);
+    } else {
+      onGroupFieldChange?.(translateGroupIdx(displayIdx), field, value);
+    }
+  }, [onGroupFieldChange, editGroups, activeGroups, selectedDept, onDepartmentSelect]);
 
   const onToggleArrival = useCallback((displayIdx: number, hasArrived: boolean) => {
-    onToggleArrivalGroup?.((translateGroupIdx(displayIdx) + 1) as 1 | 2 | 3 | 4, hasArrived);
-  }, [onToggleArrivalGroup, editGroups, activeGroups]);
+    const displayGroup = activeGroups[displayIdx];
+    if (displayGroup && displayGroup.department && displayGroup.department !== selectedDept) {
+      onDepartmentSelect?.(displayGroup.department as Department);
+      setTimeout(() => {
+        onToggleArrivalGroup?.((translateGroupIdx(displayIdx) + 1) as 1 | 2 | 3 | 4, hasArrived);
+      }, 0);
+    } else {
+      onToggleArrivalGroup?.((translateGroupIdx(displayIdx) + 1) as 1 | 2 | 3 | 4, hasArrived);
+    }
+  }, [onToggleArrivalGroup, editGroups, activeGroups, selectedDept, onDepartmentSelect]);
 
   // --- Grouping logic (works for both points and polygons) ---
   const { groupingMode, setGroupingMode, selectedIndices, handleGroupSelected, handleUngroup, toggleSelect, exitGroupingMode } = useGrouping({
@@ -304,6 +324,24 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                             <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(groupIdx)} style={{ cursor: "pointer", width: "12px", height: "12px", flexShrink: 0, accentColor: "#38bdf8" }} title="Seleccionar para agrupar" />
                           )}
                           <span style={{ fontSize: "0.63rem", fontWeight: 700, color }}>{group.groupName || `Equipo ${groupIdx + 1}`}</span>
+                          {group.department && activeDepartment === "mixto" && (
+                            <span
+                              style={{
+                                fontSize: "0.52rem",
+                                fontWeight: 800,
+                                padding: "1px 4px",
+                                borderRadius: "3px",
+                                textTransform: "uppercase",
+                                background: group.department === "bomberos" ? "rgba(239, 68, 68, 0.15)" : "rgba(56, 189, 248, 0.15)",
+                                color: group.department === "bomberos" ? "#ef4444" : "var(--color-info)",
+                                border: `1px solid ${group.department === "bomberos" ? "rgba(239, 68, 68, 0.3)" : "rgba(56, 189, 248, 0.3)"}`,
+                                display: "inline-block",
+                                marginLeft: "4px"
+                              }}
+                            >
+                              {group.department === "bomberos" ? "Bomberos" : "PC"}
+                            </span>
+                          )}
                           {canEdit && onGroupFieldChange && (
                             <label style={{ fontSize: "0.5rem", fontWeight: 700, color: group.isVolunteer ? "#c084fc" : "var(--text-muted)", display: "flex", alignItems: "center", gap: "3px", cursor: "pointer", background: group.isVolunteer ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.03)", border: `1px solid ${group.isVolunteer ? "rgba(168,85,247,0.4)" : "rgba(255,255,255,0.08)"}`, borderRadius: "3px", padding: "1px 4px", flexShrink: 0 }}>
                               <input type="checkbox" checked={!!group.isVolunteer} onChange={(e) => onGroupEdit(groupIdx, "isVolunteer", e.target.checked)} style={{ cursor: "pointer", width: "10px", height: "10px", margin: 0 }} />
@@ -318,7 +356,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                         {canViewDetails && (
                           <>
                             {canEdit && onGroupFieldChange ? (
-                              <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} />
+                              <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} onDepartmentSelect={onDepartmentSelect} />
                             ) : (
                               <MetricBadges group={group} />
                             )}
@@ -364,7 +402,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                       {canViewDetails && (
                         <>
                           {canEdit && onGroupFieldChange ? (
-                            <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} />
+                            <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} onDepartmentSelect={onDepartmentSelect} />
                           ) : (
                             <MetricBadges group={primaryGroup} />
                           )}
@@ -499,6 +537,24 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                         <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(groupIdx)} style={{ cursor: "pointer", width: "12px", height: "12px", flexShrink: 0, accentColor: "#38bdf8" }} title="Seleccionar para agrupar" />
                       )}
                       <span style={{ fontSize: "0.63rem", fontWeight: 700, color }}>{group.groupName || `Equipo ${groupIdx + 1}`}</span>
+                      {group.department && activeDepartment === "mixto" && (
+                        <span
+                          style={{
+                            fontSize: "0.52rem",
+                            fontWeight: 800,
+                            padding: "1px 4px",
+                            borderRadius: "3px",
+                            textTransform: "uppercase",
+                            background: group.department === "bomberos" ? "rgba(239, 68, 68, 0.15)" : "rgba(56, 189, 248, 0.15)",
+                            color: group.department === "bomberos" ? "#ef4444" : "var(--color-info)",
+                            border: `1px solid ${group.department === "bomberos" ? "rgba(239, 68, 68, 0.3)" : "rgba(56, 189, 248, 0.3)"}`,
+                            display: "inline-block",
+                            marginLeft: "4px"
+                          }}
+                        >
+                          {group.department === "bomberos" ? "Bomberos" : "PC"}
+                        </span>
+                      )}
                       {canEdit && onGroupFieldChange && (
                         <label style={{ fontSize: "0.5rem", fontWeight: 700, color: group.isVolunteer ? "#c084fc" : "var(--text-muted)", display: "flex", alignItems: "center", gap: "3px", cursor: "pointer", background: group.isVolunteer ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.03)", border: `1px solid ${group.isVolunteer ? "rgba(168,85,247,0.4)" : "rgba(255,255,255,0.08)"}`, borderRadius: "3px", padding: "1px 4px", flexShrink: 0 }}>
                           <input type="checkbox" checked={!!group.isVolunteer} onChange={(e) => onGroupEdit(groupIdx, "isVolunteer", e.target.checked)} style={{ cursor: "pointer", width: "10px", height: "10px", margin: 0 }} />
@@ -516,7 +572,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                         <ReadRow label="Encargado" value={group.managerName} />
                         <ReadRow label="Teléfono" value={group.managerPhone} />
                         {canEdit && onGroupFieldChange ? (
-                          <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} />
+                          <MetricInputs group={group} groupIdx={groupIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} onDepartmentSelect={onDepartmentSelect} />
                         ) : (
                           <MetricBadges group={group} />
                         )}
@@ -563,12 +619,32 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                     <>
                       {groups.map((g, i) => (
                         <div key={i} style={{ padding: "2px 0", borderBottom: i < groups.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "var(--text-secondary)" }}>{g.groupName || `Equipo ${groupIndices[i] + 1}`}</span>
+                            {g.department && activeDepartment === "mixto" && (
+                              <span
+                                style={{
+                                  fontSize: "0.46rem",
+                                  fontWeight: 800,
+                                  padding: "0px 3px",
+                                  borderRadius: "2px",
+                                  textTransform: "uppercase",
+                                  background: g.department === "bomberos" ? "rgba(239, 68, 68, 0.12)" : "rgba(56, 189, 248, 0.12)",
+                                  color: g.department === "bomberos" ? "#ef4444" : "var(--color-info)",
+                                  border: `1px solid ${g.department === "bomberos" ? "rgba(239, 68, 68, 0.25)" : "rgba(56, 189, 248, 0.25)"}`,
+                                  display: "inline-block"
+                                }}
+                              >
+                                {g.department === "bomberos" ? "Bomberos" : "PC"}
+                              </span>
+                            )}
+                          </div>
                           <ReadRow label="Unidad" value={g.unitOut} />
                           <ReadRow label="Encargado" value={g.managerName} />
                         </div>
                       ))}
                       {canEdit && onGroupFieldChange ? (
-                        <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} />
+                        <MetricInputs group={primaryGroup} groupIdx={primaryIdx} onGroupFieldChange={(idx: number, field: string, value: string) => onGroupEdit(idx, field, value)} onDepartmentSelect={onDepartmentSelect} />
                       ) : (
                         <MetricBadges group={primaryGroup} />
                       )}

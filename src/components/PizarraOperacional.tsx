@@ -10,7 +10,7 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { fetchFeatures } from "../services/featureService";
 import { fetchLogs } from "../services/logService";
-import { getNormalizedGroupList, mergeLogs } from "../utils/logUtils";
+import { getNormalizedGroupList, mergeLogs, getLocalDateStr } from "../utils/logUtils";
 import { exportWorkTeamsToExcel, type WorkTeamExportRow } from "../utils/excelExporter";
 
 // SOLID Sub-components
@@ -23,14 +23,14 @@ import { WorkTeamsTab } from "./pizarra/WorkTeamsTab";
 import { DeleteConfirmModal } from "./pizarra/DeleteConfirmModal";
 
 export const PizarraOperacional: React.FC = () => {
-  const { user, isAdmin, isOperador, isAuthenticated, loading } = useAuth();
+  const { user, isAdmin, isOperador, isAuthenticated, permissions, loading } = useAuth();
   const canAccess = isAuthenticated && (isAdmin || isOperador);
-  const canEdit = isAdmin || isOperador;
+  const canEdit = isAdmin || (isOperador && !!permissions.manage_campamentos);
 
   // ALL STATES MUST BE DECLARED UNCONDITIONALLY AT TOP LEVEL
   const [activeTab, setActiveTab] = useState<"pizarra" | "equipos">("pizarra");
   const [selectedDate, setSelectedDate] = useState<string>(
-    () => new Date().toISOString().split("T")[0]
+    () => getLocalDateStr()
   );
   const [camps, setCamps] = useState<CampamentoEntry[]>([]);
   const [workTeams, setWorkTeams] = useState<WorkTeam[]>([]);
@@ -41,6 +41,7 @@ export const PizarraOperacional: React.FC = () => {
   const [showAddBase, setShowAddBase] = useState(false);
   const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [deptFilter, setDeptFilter] = useState<"all" | "pc" | "bomberos">("all");
 
   // ALL HOOKS MUST BE DECLARED UNCONDITIONALLY BEFORE ANY EARLY RETURN
 
@@ -76,26 +77,26 @@ export const PizarraOperacional: React.FC = () => {
         const fidStr = String(f.id);
         const featureLogs = logsMap.get(fidStr) || [];
         const dateLogs = featureLogs.filter((l) => l.date === selectedDate);
-        const merged = mergeLogs(dateLogs);
-        if (!merged) return;
-
-        const groupList = getNormalizedGroupList(merged);
-        groupList.forEach((g, idx) => {
-          if (g.groupName?.trim()) {
-            teams.push({
-              id: `${f.id}-gt-${idx}`,
-              groupName: g.groupName.trim(),
-              pointTitle: f.title || "Sitio no especificado",
-              officersCount: parseInt(g.officersCount || "0", 10) || 0,
-              hasArrived: !!g.hasArrived,
-              department: merged.department || "Protección Civil",
-              unitOut: g.unitOut || "",
-              departureTime: g.departureTime || "",
-              arrivalTime: g.arrivalTime || "",
-              managerName: g.managerName || "",
-              managerPhone: g.managerPhone || "",
-            });
-          }
+        
+        dateLogs.forEach((log) => {
+          const groupList = getNormalizedGroupList(log);
+          groupList.forEach((g, idx) => {
+            if (g.groupName?.trim()) {
+              teams.push({
+                id: `${f.id}-gt-${log.department || "pc"}-${idx}`,
+                groupName: g.groupName.trim(),
+                pointTitle: f.title || "Sitio no especificado",
+                officersCount: parseInt(g.officersCount || "0", 10) || 0,
+                hasArrived: !!g.hasArrived,
+                department: log.department || "Protección Civil",
+                unitOut: g.unitOut || "",
+                departureTime: g.departureTime || "",
+                arrivalTime: g.arrivalTime || "",
+                managerName: g.managerName || "",
+                managerPhone: g.managerPhone || "",
+              });
+            }
+          });
         });
       });
       setWorkTeams(teams);
@@ -241,7 +242,23 @@ export const PizarraOperacional: React.FC = () => {
 
   // Export Work Teams to Excel
   const handleExportTeamsExcel = () => {
-    const exportRows: WorkTeamExportRow[] = workTeams.map((t) => ({
+    let filtered = workTeams;
+    if (deptFilter === "pc") {
+      filtered = workTeams.filter((t) =>
+        !t.department ||
+        t.department === "pc" ||
+        t.department.toLowerCase().includes("protección") ||
+        t.department.toLowerCase().includes("proteccion")
+      );
+    } else if (deptFilter === "bomberos") {
+      filtered = workTeams.filter((t) =>
+        t.department &&
+        (t.department === "bomberos" ||
+          t.department.toLowerCase().includes("bombero"))
+      );
+    }
+
+    const exportRows: WorkTeamExportRow[] = filtered.map((t) => ({
       date: selectedDate,
       department: t.department || "Protección Civil",
       locationTitle: t.pointTitle,
@@ -528,7 +545,11 @@ export const PizarraOperacional: React.FC = () => {
         </main>
       ) : (
         /* PESTAÑA DEDICADA DE EQUIPOS DE TRABAJO */
-        <WorkTeamsTab workTeams={workTeams} />
+        <WorkTeamsTab
+          workTeams={workTeams}
+          deptFilter={deptFilter}
+          setDeptFilter={setDeptFilter}
+        />
       )}
 
       {/* MODAL DIÁLOGO PERSONALIZADO DE CONFIRMACIÓN DE ELIMINACIÓN */}

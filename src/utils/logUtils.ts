@@ -1,4 +1,4 @@
-export { formatDateFriendly, getDatesRange, REPORT_START_DATE } from "./dateUtils";
+export { formatDateFriendly, getDatesRange, getLocalDateStr, REPORT_START_DATE } from "./dateUtils";
 
 export {
   splitGroupNames,

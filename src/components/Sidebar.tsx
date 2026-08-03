@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DepartmentTabs } from './DepartmentTabs';
 import type { DepartmentView } from '../types';
+import { getLocalDateStr } from '../utils/dateUtils';
 import { 
   MapPin, 
   Trash2, 
@@ -116,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
     
-    const date = new Date().toISOString().slice(0,10);
+    const date = getLocalDateStr();
     downloadAnchor.setAttribute("download", `sig_la_guaira_${date}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();

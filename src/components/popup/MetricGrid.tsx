@@ -7,9 +7,10 @@ interface MetricInputsProps {
   group: GroupLogEntry;
   groupIdx: number;
   onGroupFieldChange: (idx: number, field: string, value: string) => void;
+  onDepartmentSelect?: (dept: any) => void;
 }
 
-export function MetricInputs({ group, groupIdx, onGroupFieldChange }: MetricInputsProps) {
+export function MetricInputs({ group, groupIdx, onGroupFieldChange, onDepartmentSelect }: MetricInputsProps) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "5px", marginTop: "6px" }}>
       {METRIC_FIELDS.map(({ label, field, color }) => (
@@ -33,6 +34,11 @@ export function MetricInputs({ group, groupIdx, onGroupFieldChange }: MetricInpu
             placeholder="0"
             value={getMetricValue(group, field) || ""}
             onChange={(e) => onGroupFieldChange(groupIdx, field, e.target.value)}
+            onFocus={() => {
+              if (group.department && onDepartmentSelect) {
+                onDepartmentSelect(group.department);
+              }
+            }}
             style={{
               ...metricInputStyle,
               color,

@@ -50,6 +50,7 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
         hasArrived: !!g.hasArrived,
         commissionId: g.commissionId || "independiente",
         isVolunteer: !!g.isVolunteer,
+        department: g.department || log.department,
       });
     }
   });

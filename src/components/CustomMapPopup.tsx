@@ -3,6 +3,7 @@ import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, Departmen
 import { computeContainedItems } from "../utils/spatialUtils";
 import { getNormalizedGroupList } from "../utils/logUtils";
 import { Lock, Unlock, FileText, Settings, History, Info, X } from "lucide-react";
+import type { UserPermissions } from "../services/adminUsersService";
 import { TAB_BTN_BASE } from "./popup/popupStyles";
 import { GeneralTab } from "./popup/GeneralTab";
 import { OperationTab } from "./popup/OperationTab";
@@ -36,6 +37,9 @@ interface CustomMapPopupProps {
   activeDepartment?: DepartmentView;
   isAdmin?: boolean;
   isOperador?: boolean;
+  isSuspended?: boolean;
+  permissions?: UserPermissions;
+  canEditMap?: boolean;
 }
 
 type TabId = "info" | "general" | "operation" | "history" | "contained";
@@ -95,6 +99,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   activeDepartment = "pc",
   isAdmin = false,
   isOperador = false,
+  permissions,
+  canEditMap = false,
 }) => {
   const activeFeat = customPopup
     ? drawnFeatures.find((f) => String(f.id) === String(customPopup.feat.id)) || customPopup.feat
@@ -102,10 +108,10 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
   const todayStr = new Date().toLocaleDateString("en-CA");
   const isEditingToday = popupEditDate === todayStr;
-  const canEditLog = isAdmin || (isOperador && isEditingToday);
-  const canToggleArrival = isAdmin || (isOperador && isEditingToday);
+  const canEditLog = isAdmin || (isOperador && (isEditingToday || !!permissions?.edit_historical_logs));
+  const canToggleArrival = isAdmin || (isOperador && (isEditingToday || !!permissions?.edit_historical_logs));
 
-  const [activeTab, setActiveTab] = useState<TabId>(isAdmin ? "general" : "info");
+  const [activeTab, setActiveTab] = useState<TabId>(canEditMap ? "general" : "info");
   const [localTitle, setLocalTitle] = useState("");
   const [localDescription, setLocalDescription] = useState("");
   const [localColor, setLocalColor] = useState("#3b82f6");
@@ -139,13 +145,13 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   }, [activeFeat?.id, popupEditDate, activeDepartment, selectedDept]);
 
   useEffect(() => {
-    setActiveTab(isAdmin && layerVisibility.sketch ? "general" : "info");
-  }, [activeFeat?.id, activeFeat?.type, layerVisibility.sketch, isAdmin]);
+    setActiveTab(canEditMap && layerVisibility.sketch ? "general" : "info");
+  }, [activeFeat?.id, activeFeat?.type, layerVisibility.sketch, canEditMap]);
 
   if (!customPopup || !activeFeat) return null;
 
   const handleGeneralSave = async () => {
-    if (!isAdmin) return;
+    if (!canEditMap) return;
     try {
       if (onRenameFeature) await onRenameFeature(activeFeat.id, localTitle);
       if (onUpdateFeatureDescription) await onUpdateFeatureDescription(activeFeat.id, localDescription);
@@ -277,7 +283,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         })
         .filter(Boolean) as Array<{ origin: string; originFeatId: number; novedades: Array<{ id: string; timestamp: string; time: string; text: string; type: string }> }>;
 
-  const showSketchTabs = layerVisibility.sketch && isAdmin;
+  const showSketchTabs = layerVisibility.sketch && canEditMap;
 
   return (
     <div
@@ -290,7 +296,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           <span style={{ fontWeight: 800, fontSize: "0.9rem", color: localColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             {activeFeat.title}
           </span>
-          {isAdmin && (
+          {canEditMap && (
             <button
               onClick={() => onToggleFeatureLock?.(activeFeat.id, !activeFeat.locked)}
               style={{ background: "transparent", border: "none", color: activeFeat.locked ? "var(--color-high)" : "var(--text-muted)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}
@@ -305,8 +311,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         </button>
       </div>
 
-      {/* Tab Selector — for non-admins and operators */}
-      {!isAdmin && (
+      {/* Tab Selector — read-only (visitantes/operadores sin permiso de mapa) */}
+      {!canEditMap && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
           {canEditLog && (
@@ -320,8 +326,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         </div>
       )}
 
-      {/* Tab Selector — for admin (sketch off) */}
-      {isAdmin && !layerVisibility.sketch && (
+      {/* Tab Selector — con permiso de mapa (sketch off) */}
+      {canEditMap && !layerVisibility.sketch && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={12} /> General</button>
           <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
@@ -334,8 +340,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         </div>
       )}
 
-      {/* Tab Selector — point admin (sketch on) */}
-      {isAdmin && isPoint && layerVisibility.sketch && (
+      {/* Tab Selector — punto con permiso de mapa (sketch on) */}
+      {canEditMap && isPoint && layerVisibility.sketch && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={12} /> General</button>
           <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
@@ -344,8 +350,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         </div>
       )}
 
-      {/* Tab Selector — polygon admin (sketch on) */}
-      {isAdmin && isPolygon && layerVisibility.sketch && (
+      {/* Tab Selector — polígono con permiso de mapa (sketch on) */}
+      {canEditMap && isPolygon && layerVisibility.sketch && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}><Settings size={12} /> General</button>
           <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}><Info size={12} /> Información</button>
@@ -384,6 +390,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           containedNovedades={containedNovedades}
           onNavigateToFeature={onNavigateToFeature}
           activeDepartment={activeDepartment}
+          selectedDept={selectedDept}
+          onDepartmentSelect={setSelectedDept}
         />
       )}
 

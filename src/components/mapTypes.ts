@@ -1,4 +1,5 @@
 import type { DrawnFeature, DailyLog, DepartmentView } from "../types";
+import type { UserPermissions } from "../services/adminUsersService";
 
 export interface MapFeatureActions {
   onFeatureAdded: (feat: DrawnFeature) => void;
@@ -20,6 +21,8 @@ export interface MapUIContext {
   isAdmin?: boolean;
   isOperador?: boolean;
   isAuthenticated?: boolean;
+  isSuspended?: boolean;
+  permissions?: UserPermissions;
   showAccumulated?: boolean;
   showPoints?: boolean;
   showAreas?: boolean;
