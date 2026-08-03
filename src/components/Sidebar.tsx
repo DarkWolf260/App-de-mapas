@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
+import Select from './ui/Select';
 
 export interface MapPoint {
   id: string;
@@ -202,25 +203,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Search size={14} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
             </div>
 
-            <select
+            <Select
+              options={categories.map(cat => {
+                const Icon = cat.icon;
+                return { value: cat.value, label: cat.label, color: cat.color, icon: <Icon size={13} color={cat.color} /> };
+              })}
               value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              style={{
-                width: '100%',
-                backgroundColor: '#111827',
-                border: '1px solid var(--border-color)',
-                borderRadius: '6px',
-                padding: '8px 30px 8px 10px',
-                color: 'var(--text-primary)',
-                fontSize: '13px'
-              }}
-            >
-              {categories.map(cat => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
+              onChange={setCategoryFilter}
+            />
           </div>
         </div>
 

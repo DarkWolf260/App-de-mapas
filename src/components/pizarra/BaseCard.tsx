@@ -1,6 +1,7 @@
 import React from "react";
 import { Plus, Trash2, Shield, MapPin } from "lucide-react";
 import { CampamentoEntry, VENEZUELA_STATES } from "../../services/baseService";
+import Select from "../ui/Select";
 
 export interface BaseCardProps {
   camp: CampamentoEntry;
@@ -200,28 +201,13 @@ export const BaseCard: React.FC<BaseCardProps> = ({
                 }}
               >
                 {canEdit && isEditMode ? (
-                  <select
+                  <Select
+                    compact
+                    options={[{ value: "-", label: "-" }, ...VENEZUELA_STATES.map((st) => ({ value: st, label: st }))]}
                     value={sd.stateName || "-"}
-                    onChange={(e) => handleUpdateStateInCamp(camp.id, sd.id, "stateName", e.target.value)}
-                    style={{
-                      backgroundColor: "rgba(0, 0, 0, 0.4)",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: "4px",
-                      color: "#fff",
-                      fontSize: "0.68rem",
-                      padding: "3px 26px 3px 6px",
-                      outline: "none",
-                      flex: 1,
-                      fontFamily: "var(--sans-font)",
-                    }}
-                  >
-                    <option value="-">-</option>
-                    {VENEZUELA_STATES.map((st) => (
-                      <option key={st} value={st}>
-                        {st}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => handleUpdateStateInCamp(camp.id, sd.id, "stateName", v)}
+                    style={{ flex: 1 }}
+                  />
                 ) : (
                   <span style={{ fontSize: "0.72rem", color: "#e2e8f0", fontWeight: 600, flex: 1 }}>
                     {sd.stateName}

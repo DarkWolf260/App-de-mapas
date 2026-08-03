@@ -16,6 +16,7 @@ import { BitacoraCalendar } from "../BitacoraCalendar";
 import { GroupDisplay } from "../GroupDisplay";
 import { InlineRowEditor } from "../InlineRowEditor";
 import { DateRow } from "../DateRow";
+import Select from "../ui/Select";
 import {
   formatDateFriendly,
   isSectorFeature,
@@ -406,43 +407,32 @@ export const RangeReportRegisterTab: React.FC<RangeReportRegisterTabProps> = ({
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em" }}>
                   + REGISTRAR EN OTRO SITIO O SECTOR
                 </div>
-                <select
-                  defaultValue=""
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val) {
-                      setActiveEditFeatureId(parseInt(val, 10));
-                      e.target.value = "";
-                    }
+                <Select
+                  placeholder="-- Seleccionar Sitio o Sector --"
+                  options={[
+                    ...(inactivePoints.some((pt) => isSectorFeature(pt))
+                      ? inactivePoints.filter((pt) => isSectorFeature(pt)).map((pt) => ({
+                          value: String(pt.id),
+                          label: pt.title,
+                          group: "🗺️ Sectores",
+                          groupColor: "#38bdf8",
+                        }))
+                      : []),
+                    ...(inactivePoints.some((pt) => !isSectorFeature(pt))
+                      ? inactivePoints.filter((pt) => !isSectorFeature(pt)).map((pt) => ({
+                          value: String(pt.id),
+                          label: pt.title,
+                          group: "📍 Sitios de Trabajo",
+                          groupColor: "#fb923c",
+                        }))
+                      : []),
+                  ]}
+                  value=""
+                  onChange={(val) => {
+                    if (val) setActiveEditFeatureId(parseInt(val, 10));
                   }}
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    borderRadius: "5px",
-                    color: "var(--text-main)",
-                    fontSize: "0.68rem",
-                    padding: "4px 30px 4px 8px",
-                    outline: "none",
-                    width: "100%",
-                    cursor: "pointer",
-                  }}
-                >
-                  <option value="" disabled style={{ background: "#1e293b" }}>-- Seleccionar Sitio o Sector --</option>
-                  {inactivePoints.some((pt) => isSectorFeature(pt)) && (
-                    <optgroup label="🗺️ Sectores" style={{ background: "#1e293b", color: "#38bdf8" }}>
-                      {inactivePoints.filter((pt) => isSectorFeature(pt)).map((pt) => (
-                        <option key={pt.id} value={pt.id} style={{ background: "#1e293b", color: "#e2e8f0" }}>{pt.title}</option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {inactivePoints.some((pt) => !isSectorFeature(pt)) && (
-                    <optgroup label="📍 Sitios de Trabajo" style={{ background: "#1e293b", color: "#fb923c" }}>
-                      {inactivePoints.filter((pt) => !isSectorFeature(pt)).map((pt) => (
-                        <option key={pt.id} value={pt.id} style={{ background: "#1e293b", color: "#e2e8f0" }}>{pt.title}</option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
+                  style={{ width: "100%" }}
+                />
               </div>
             )}
           </>

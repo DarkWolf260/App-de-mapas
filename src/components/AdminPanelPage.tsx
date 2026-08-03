@@ -3,6 +3,7 @@ import { Shield, ShieldAlert, Users, Layers, Database, Lock, CheckCircle, Refres
 import { useAuth } from "../hooks/useAuth";
 import { getLocalDateStr } from "../utils/dateUtils";
 import { UserNavMenu } from "./UserNavMenu";
+import Select from "./ui/Select";
 import { fetchCampamentos, CampamentoEntry } from "../services/baseService";
 import { fetchFeatures } from "../services/featureService";
 import { fetchLogs } from "../services/logService";
@@ -546,28 +547,19 @@ export const AdminPanelPage: React.FC = () => {
                         </td>
                         <td style={{ padding: "12px 14px" }}>
                           {req.status === "Pendiente" ? (
-                            <select
+                            <Select
+                              options={[
+                                { value: "operador", label: "Operador (Carga de datos y reportes)" },
+                                { value: "admin", label: "Administrador (Control total)" },
+                              ]}
                               value={roleSelectionMap[req.id] || req.requestedRole || "operador"}
-                              onChange={(e) =>
+                              onChange={(v) =>
                                 setRoleSelectionMap((prev) => ({
                                   ...prev,
-                                  [req.id]: e.target.value as "operador" | "admin",
+                                  [req.id]: v as "operador" | "admin",
                                 }))
                               }
-                              style={{
-                                backgroundColor: "rgba(0, 0, 0, 0.4)",
-                                border: "1px solid var(--border-color)",
-                                borderRadius: "6px",
-                                color: "#fff",
-                                fontSize: "0.72rem",
-                                padding: "4px 30px 4px 8px",
-                                outline: "none",
-                                fontFamily: "var(--sans-font)",
-                              }}
-                            >
-                              <option value="operador">Operador (Carga de datos y reportes)</option>
-                              <option value="admin">Administrador (Control total)</option>
-                            </select>
+                            />
                           ) : (
                             <span style={{ fontWeight: 700, color: req.assignedRole === "admin" ? "#c084fc" : "#38bdf8" }}>
                               {req.assignedRole?.toUpperCase() || req.requestedRole.toUpperCase()}
@@ -937,27 +929,16 @@ export const AdminPanelPage: React.FC = () => {
                 <label style={{ display: "block", fontSize: "0.68rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "6px" }}>
                   Rol del usuario
                 </label>
-                <select
+                <Select
+                  options={[
+                    { value: "operador", label: "Operador — carga de datos y reportes", color: "#38bdf8" },
+                    { value: "admin", label: "Administrador — control total", color: "#c084fc" },
+                  ]}
                   value={draftRole}
                   disabled={editingUser.id === user?.id || usersBusy}
-                  onChange={(e) => setDraftRole(e.target.value as "admin" | "operador")}
-                  style={{
-                    backgroundColor: "rgba(0, 0, 0, 0.4)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "6px",
-                    color: draftRole === "admin" ? "#c084fc" : "#38bdf8",
-                    fontSize: "0.78rem",
-                    fontWeight: 700,
-                    padding: "7px 30px 7px 10px",
-                    outline: "none",
-                    width: "100%",
-                    cursor: editingUser.id === user?.id || usersBusy ? "not-allowed" : "pointer",
-                    fontFamily: "var(--sans-font)",
-                  }}
-                >
-                  <option value="operador">Operador — carga de datos y reportes</option>
-                  <option value="admin">Administrador — control total</option>
-                </select>
+                  onChange={(v) => setDraftRole(v as "admin" | "operador")}
+                  style={{ width: "100%" }}
+                />
                 {editingUser.id === user?.id && (
                   <p style={{ margin: "4px 0 0 0", fontSize: "0.62rem", color: "var(--text-muted)" }}>No puedes cambiar tu propio rol.</p>
                 )}
