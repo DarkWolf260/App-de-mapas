@@ -38,7 +38,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         style={{
           background: "rgba(10, 15, 29, 0.96)",
-          border: "1px solid rgba(239, 68, 68, 0.4)",
+          border: "none",
           borderRadius: "12px",
           padding: "20px 24px",
           width: "400px",

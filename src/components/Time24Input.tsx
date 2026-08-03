@@ -86,11 +86,11 @@ export const Time24Input: React.FC<Time24InputProps> = ({
         className={className}
         maxLength={5}
         style={{
-          paddingRight: inputValue ? "42px" : "26px",
           fontFamily: "var(--font-mono, monospace)",
           fontWeight: 700,
           letterSpacing: "0.05em",
           ...style,
+          paddingRight: inputValue ? "42px" : "26px",
         }}
       />
 

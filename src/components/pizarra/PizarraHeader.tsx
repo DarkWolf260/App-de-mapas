@@ -18,6 +18,7 @@ export interface PizarraHeaderProps {
   handleAddCamp: () => void;
   handleExportTeamsExcel: () => void;
   workTeamsCount: number;
+  onAddTeam?: () => void;
 }
 
 export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
@@ -34,6 +35,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
   handleAddCamp,
   handleExportTeamsExcel,
   workTeamsCount,
+  onAddTeam,
 }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
@@ -72,33 +74,31 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
           gap: "12px",
         }}
       >
-        {/* LOGO + MARCA + PESTAÑAS DE NAVEGACIÓN */}
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div
-              style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "8px",
-                background: "linear-gradient(135deg, var(--accent-orange), #ea580c)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                boxShadow: "0 2px 10px rgba(249, 115, 22, 0.3)",
-                flexShrink: 0,
-              }}
-            >
-              <Activity size={17} />
-            </div>
-            <span style={{ color: "#f8fafc", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "-0.01em", fontFamily: "var(--sans-font)" }}>
-              COE La Guaira <span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Pizarra Operacional</span>
-            </span>
+        {/* LOGO + MARCA */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "8px",
+              background: "linear-gradient(135deg, var(--accent-orange), #ea580c)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              boxShadow: "0 2px 10px rgba(249, 115, 22, 0.3)",
+              flexShrink: 0,
+            }}
+          >
+            <Activity size={17} />
           </div>
+          <span style={{ color: "#f8fafc", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "-0.01em", fontFamily: "var(--sans-font)" }}>
+            COE La Guaira <span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Pizarra Operacional</span>
+          </span>
+        </div>
 
-          <div style={{ height: "20px", width: "1px", background: "rgba(255, 255, 255, 0.12)" }} />
-
-          {/* PESTAÑAS DE NAVEGACIÓN DENTRO DEL HEADER */}
+        {/* PESTAÑAS DE NAVEGACIÓN DENTRO DEL HEADER (CENTRADAS ABSOLUTAMENTE) */}
+        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", justifyContent: "center", zIndex: 10 }}>
           <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.4)", padding: "3px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
             <button
               onClick={() => setActiveTab("pizarra")}
@@ -307,27 +307,53 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
         )}
 
         {activeTab === "equipos" && (
-          <button
-            onClick={handleExportTeamsExcel}
-            style={{
-              height: "32px",
-              background: "rgba(34, 197, 94, 0.15)",
-              border: "1px solid rgba(34, 197, 94, 0.4)",
-              borderRadius: "6px",
-              color: "#4ade80",
-              fontSize: "0.72rem",
-              fontWeight: 700,
-              padding: "0 10px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-              fontFamily: "var(--sans-font)",
-            }}
-          >
-            <FileSpreadsheet size={14} />
-            <span>Excel</span>
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              onClick={handleExportTeamsExcel}
+              style={{
+                height: "32px",
+                background: "rgba(34, 197, 94, 0.15)",
+                border: "1px solid rgba(34, 197, 94, 0.4)",
+                borderRadius: "6px",
+                color: "#4ade80",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                padding: "0 10px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "5px",
+                fontFamily: "var(--sans-font)",
+              }}
+            >
+              <FileSpreadsheet size={14} />
+              <span>Excel</span>
+            </button>
+
+            {canEdit && onAddTeam && (
+              <button
+                onClick={onAddTeam}
+                style={{
+                  height: "32px",
+                  background: "rgba(168, 85, 247, 0.15)",
+                  border: "1px solid rgba(168, 85, 247, 0.4)",
+                  borderRadius: "6px",
+                  color: "#c084fc",
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  padding: "0 10px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  fontFamily: "var(--sans-font)",
+                }}
+              >
+                <Plus size={14} />
+                <span>Agregar Equipo</span>
+              </button>
+            )}
+          </div>
         )}
 
         {!canEdit && (

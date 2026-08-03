@@ -1,15 +1,18 @@
 import { CampamentoEntry } from "../../services/baseService";
 
 export interface DeleteTarget {
-  type: "camp" | "state";
-  campId: string;
+  type: "camp" | "state" | "team";
+  campId?: string;
   stateIdTarget?: string;
+  teamTarget?: WorkTeam;
   title: string;
   subtitle: string;
 }
 
 export interface WorkTeam {
   id: string;
+  featureId: number;
+  groupIndex: number;
   groupName: string;
   pointTitle: string;
   officersCount: number;
@@ -20,4 +23,9 @@ export interface WorkTeam {
   arrivalTime?: string;
   managerName?: string;
   managerPhone?: string;
+  rescuedCount?: string;
+  recoveredCount?: string;
+  rescuedPetsCount?: string;
+  prehospitalCareCount?: string;
+  transfersCount?: string;
 }

@@ -9,7 +9,7 @@ import {
 } from "../services/baseService";
 import { useAuth } from "../hooks/useAuth";
 import { fetchFeatures } from "../services/featureService";
-import { fetchLogs } from "../services/logService";
+import { fetchLogs, saveDailyLog } from "../services/logService";
 import { getNormalizedGroupList, mergeLogs, getLocalDateStr } from "../utils/logUtils";
 import { exportWorkTeamsToExcel, type WorkTeamExportRow } from "../utils/excelExporter";
 
@@ -21,6 +21,8 @@ import { RedanCard } from "./pizarra/RedanCard";
 import { TotalGeneralCard } from "./pizarra/TotalGeneralCard";
 import { WorkTeamsTab } from "./pizarra/WorkTeamsTab";
 import { DeleteConfirmModal } from "./pizarra/DeleteConfirmModal";
+import { EditWorkTeamModal } from "./pizarra/EditWorkTeamModal";
+import { CreateWorkTeamModal } from "./pizarra/CreateWorkTeamModal";
 
 export const PizarraOperacional: React.FC = () => {
   const { user, isAdmin, isOperador, isAuthenticated, permissions, loading } = useAuth();
@@ -42,6 +44,9 @@ export const PizarraOperacional: React.FC = () => {
   const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deptFilter, setDeptFilter] = useState<"all" | "pc" | "bomberos">("all");
+  const [refreshTeamsCounter, setRefreshTeamsCounter] = useState(0);
+  const [editingTeam, setEditingTeam] = useState<WorkTeam | null>(null);
+  const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
 
   // ALL HOOKS MUST BE DECLARED UNCONDITIONALLY BEFORE ANY EARLY RETURN
 
@@ -84,6 +89,8 @@ export const PizarraOperacional: React.FC = () => {
             if (g.groupName?.trim()) {
               teams.push({
                 id: `${f.id}-gt-${log.department || "pc"}-${idx}`,
+                featureId: f.id,
+                groupIndex: idx,
                 groupName: g.groupName.trim(),
                 pointTitle: f.title || "Sitio no especificado",
                 officersCount: parseInt(g.officersCount || "0", 10) || 0,
@@ -94,6 +101,11 @@ export const PizarraOperacional: React.FC = () => {
                 arrivalTime: g.arrivalTime || "",
                 managerName: g.managerName || "",
                 managerPhone: g.managerPhone || "",
+                rescuedCount: g.rescuedCount || "",
+                recoveredCount: g.recoveredCount || "",
+                rescuedPetsCount: g.rescuedPetsCount || "",
+                prehospitalCareCount: g.prehospitalCareCount || "",
+                transfersCount: g.transfersCount || "",
               });
             }
           });
@@ -104,7 +116,7 @@ export const PizarraOperacional: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedDate, canAccess]);
+  }, [selectedDate, canAccess, refreshTeamsCounter]);
 
   // Core save function
   const executeSaveAll = async () => {
@@ -143,6 +155,108 @@ export const PizarraOperacional: React.FC = () => {
       await executeSaveAll();
     }
   }, [selectedDate, camps, canEdit]);
+
+  const handleSaveTeam = async (updatedTeam: WorkTeam) => {
+    try {
+      const logsMap = await fetchLogs();
+      const fidStr = String(updatedTeam.featureId);
+      const featureLogs = logsMap.get(fidStr) || [];
+      const deptToUse = updatedTeam.department?.toLowerCase().includes("bombero") ? "bomberos" : "pc";
+      
+      let log = featureLogs.find(
+        (l) => l.date === selectedDate && (l.department === deptToUse || (!l.department && deptToUse === "pc"))
+      );
+      
+      if (!log) {
+        log = {
+          date: selectedDate,
+          department: deptToUse,
+          groups: [],
+          observations: "",
+          novedades: [],
+        };
+      }
+      
+      const groups = Array.isArray(log.groups) ? [...log.groups] : [];
+      const groupIdx = updatedTeam.groupIndex;
+      
+      while (groups.length <= groupIdx) {
+        groups.push({ id: crypto.randomUUID(), groupName: "" });
+      }
+      
+      groups[groupIdx] = {
+        ...groups[groupIdx],
+        groupName: updatedTeam.groupName,
+        unitOut: updatedTeam.unitOut,
+        managerName: updatedTeam.managerName,
+        managerPhone: updatedTeam.managerPhone,
+        officersCount: String(updatedTeam.officersCount),
+        departureTime: updatedTeam.departureTime,
+        arrivalTime: updatedTeam.arrivalTime,
+        hasArrived: updatedTeam.hasArrived,
+        rescuedCount: updatedTeam.rescuedCount,
+        recoveredCount: updatedTeam.recoveredCount,
+        rescuedPetsCount: updatedTeam.rescuedPetsCount,
+        prehospitalCareCount: updatedTeam.prehospitalCareCount,
+        transfersCount: updatedTeam.transfersCount,
+      };
+      
+      log.groups = groups;
+      
+      await saveDailyLog(updatedTeam.featureId, log as any);
+      setRefreshTeamsCounter((prev) => prev + 1);
+    } catch (err) {
+      console.error("Error saving work team log from pizarra:", err);
+    }
+  };
+
+  const handleCreateTeam = async (newTeam: Omit<WorkTeam, "id" | "groupIndex">) => {
+    try {
+      const logsMap = await fetchLogs();
+      const fidStr = String(newTeam.featureId);
+      const featureLogs = logsMap.get(fidStr) || [];
+      const deptToUse = newTeam.department?.toLowerCase().includes("bombero") ? "bomberos" : "pc";
+
+      let log = featureLogs.find(
+        (l) => l.date === selectedDate && (l.department === deptToUse || (!l.department && deptToUse === "pc"))
+      );
+
+      if (!log) {
+        log = {
+          date: selectedDate,
+          department: deptToUse,
+          groups: [],
+          observations: "",
+          novedades: [],
+        };
+      }
+
+      const groups = Array.isArray(log.groups) ? [...log.groups] : [];
+      groups.push({
+        id: crypto.randomUUID(),
+        groupName: newTeam.groupName,
+        unitOut: newTeam.unitOut,
+        managerName: newTeam.managerName,
+        managerPhone: newTeam.managerPhone,
+        officersCount: String(newTeam.officersCount),
+        departureTime: newTeam.departureTime,
+        arrivalTime: newTeam.arrivalTime,
+        hasArrived: newTeam.hasArrived,
+        rescuedCount: newTeam.rescuedCount,
+        recoveredCount: newTeam.recoveredCount,
+        rescuedPetsCount: newTeam.rescuedPetsCount,
+        prehospitalCareCount: newTeam.prehospitalCareCount,
+        transfersCount: newTeam.transfersCount,
+      });
+
+      log.groups = groups;
+
+      await saveDailyLog(newTeam.featureId, log as any);
+      setRefreshTeamsCounter((prev) => prev + 1);
+    } catch (err) {
+      console.error("Error creating work team from pizarra:", err);
+    }
+  };
 
   // EARLY RETURNS AFTER ALL HOOKS HAVE BEEN EXECUTED UNCONDITIONALLY
 
@@ -316,10 +430,49 @@ export const PizarraOperacional: React.FC = () => {
     });
   };
 
+  const requestDeleteTeam = (team: WorkTeam) => {
+    if (!canEdit) return;
+    setDeleteTarget({
+      type: "team",
+      teamTarget: team,
+      title: "Eliminar Equipo de Trabajo",
+      subtitle: `¿Estás seguro de que deseas eliminar permanentemente el equipo "${team.groupName}"? Esta acción no se puede deshacer.`,
+    });
+  };
+
+  const handleDeleteTeam = async (teamToDelete: WorkTeam) => {
+    try {
+      const logsMap = await fetchLogs();
+      const fidStr = String(teamToDelete.featureId);
+      const featureLogs = logsMap.get(fidStr) || [];
+      const deptToUse = teamToDelete.department?.toLowerCase().includes("bombero") ? "bomberos" : "pc";
+      
+      let log = featureLogs.find(
+        (l) => l.date === selectedDate && (l.department === deptToUse || (!l.department && deptToUse === "pc"))
+      );
+      
+      if (!log) return;
+      
+      const groups = Array.isArray(log.groups) ? [...log.groups] : [];
+      const groupIdx = teamToDelete.groupIndex;
+      
+      if (groupIdx >= 0 && groupIdx < groups.length) {
+        groups.splice(groupIdx, 1);
+      }
+      
+      log.groups = groups;
+      
+      await saveDailyLog(teamToDelete.featureId, log as any);
+      setRefreshTeamsCounter((prev) => prev + 1);
+    } catch (err) {
+      console.error("Error deleting work team log from pizarra:", err);
+    }
+  };
+
   const confirmExecuteDelete = async () => {
     if (!deleteTarget || !canEdit) return;
 
-    if (deleteTarget.type === "camp") {
+    if (deleteTarget.type === "camp" && deleteTarget.campId) {
       setCamps((prev) => prev.filter((c) => c.id !== deleteTarget.campId));
       await deleteCampamento(deleteTarget.campId);
     } else if (deleteTarget.type === "state" && deleteTarget.stateIdTarget) {
@@ -332,6 +485,8 @@ export const PizarraOperacional: React.FC = () => {
           };
         })
       );
+    } else if (deleteTarget.type === "team" && deleteTarget.teamTarget) {
+      await handleDeleteTeam(deleteTarget.teamTarget);
     }
 
     setDeleteTarget(null);
@@ -430,6 +585,7 @@ export const PizarraOperacional: React.FC = () => {
         handleAddCamp={handleAddCamp}
         handleExportTeamsExcel={handleExportTeamsExcel}
         workTeamsCount={workTeams.length}
+        onAddTeam={() => setIsCreateTeamOpen(true)}
       />
 
       {/* BANNER SECUNDARIO NUEVA BASE */}
@@ -549,6 +705,8 @@ export const PizarraOperacional: React.FC = () => {
           workTeams={workTeams}
           deptFilter={deptFilter}
           setDeptFilter={setDeptFilter}
+          onEditTeam={setEditingTeam}
+          onDeleteTeam={canEdit ? requestDeleteTeam : undefined}
         />
       )}
 
@@ -558,6 +716,23 @@ export const PizarraOperacional: React.FC = () => {
         onClose={() => setDeleteTarget(null)}
         onConfirm={confirmExecuteDelete}
       />
+
+      {/* MODAL DE EDICIÓN DE EQUIPO DE TRABAJO */}
+      {editingTeam && (
+        <EditWorkTeamModal
+          team={editingTeam}
+          onClose={() => setEditingTeam(null)}
+          onSave={handleSaveTeam}
+        />
+      )}
+
+      {/* MODAL DE CREACIÓN DE EQUIPO DE TRABAJO */}
+      {isCreateTeamOpen && (
+        <CreateWorkTeamModal
+          onClose={() => setIsCreateTeamOpen(false)}
+          onSave={handleCreateTeam}
+        />
+      )}
 
       {/* MODAL DIÁLOGO DE ADVERTENCIA DE SOBREESCRITURA AL GUARDAR */}
       {showOverwriteWarning && (

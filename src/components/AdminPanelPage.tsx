@@ -303,15 +303,16 @@ export const AdminPanelPage: React.FC = () => {
         overflowX: "hidden",
       }}
     >
-      {/* HEADER PRINCIPAL DE ADMINISTRACIÓN CON PESTAÑAS INTEGRADAS */}
+      {/* HEADER PRINCIPAL DE ADMINISTRACIÓN CON PESTAÑAS CENTRADAS */}
       <header
         style={{
           minHeight: "56px",
           backgroundColor: "var(--bg-primary)",
           borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns: "1fr auto 1fr",
           alignItems: "center",
-          justifyContent: "space-between",
+          gap: "12px",
           padding: "8px 24px",
           position: "sticky",
           top: 0,
@@ -319,38 +320,33 @@ export const AdminPanelPage: React.FC = () => {
           width: "100%",
           boxSizing: "border-box",
           flexShrink: 0,
-          flexWrap: "wrap",
-          gap: "12px",
         }}
       >
-        {/* LOGO + MARCA + PESTAÑAS DE SECCIÓN INTEGRADAS */}
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div
-              style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "8px",
-                background: "linear-gradient(135deg, var(--accent-orange), #ea580c)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                boxShadow: "0 2px 10px rgba(249, 115, 22, 0.3)",
-                flexShrink: 0,
-              }}
-            >
-              <Shield size={17} />
-            </div>
-            <span style={{ color: "#f8fafc", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "-0.01em", fontFamily: "var(--sans-font)" }}>
-              COE La Guaira <span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Panel de Administración</span>
-            </span>
+        {/* LOGO + MARCA */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", justifySelf: "start", minWidth: 0 }}>
+          <div
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "8px",
+              background: "linear-gradient(135deg, var(--accent-orange), #ea580c)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              boxShadow: "0 2px 10px rgba(249, 115, 22, 0.3)",
+              flexShrink: 0,
+            }}
+          >
+            <Shield size={17} />
           </div>
+          <span style={{ color: "#f8fafc", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "-0.01em", fontFamily: "var(--sans-font)", whiteSpace: "nowrap" }}>
+            COE La Guaira <span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Panel de Administración</span>
+          </span>
+        </div>
 
-          <div style={{ height: "20px", width: "1px", background: "rgba(255, 255, 255, 0.12)" }} />
-
-          {/* PESTAÑAS INTEGRADAS DENTRO DEL HEADER */}
-          <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.4)", padding: "3px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)", flexWrap: "wrap", gap: "2px" }}>
+        {/* PESTAÑAS CENTRADAS */}
+        <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.4)", padding: "3px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)", flexWrap: "wrap", gap: "2px", justifySelf: "center" }}>
             <button
               onClick={() => setActiveSection("usuarios")}
               style={{
@@ -419,10 +415,9 @@ export const AdminPanelPage: React.FC = () => {
               <Layers size={13} /> Capas & Registros
             </button>
           </div>
-        </div>
 
         {/* CONTROLES RÁPIDOS Y MENÚ DE USUARIO */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", justifySelf: "end" }}>
           <button
             onClick={loadAdminData}
             disabled={refreshing}
@@ -451,7 +446,7 @@ export const AdminPanelPage: React.FC = () => {
       </header>
 
       {/* CONTENIDO PRINCIPAL DEL PANEL */}
-      <main style={{ padding: "20px 24px", flex: 1, display: "flex", flexDirection: "column", gap: "20px" }}>
+      <main style={{ padding: "20px 24px", flex: 1, display: "flex", flexDirection: "column", gap: "20px", width: "100%", maxWidth: "1600px", margin: "0 auto", boxSizing: "border-box" }}>
         {/* RESUMEN MÉTRICO PRINCIPAL */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
           <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "10px", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}>
@@ -737,43 +732,22 @@ export const AdminPanelPage: React.FC = () => {
                               )}
                             </td>
                             <td style={{ padding: "12px 14px", textAlign: "center" }}>
-                              <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+                              <div style={{ display: "flex", gap: "2px", justifyContent: "center" }}>
                                 <button
+                                  className="user-action-icon edit"
                                   onClick={() => openEdit(u)}
                                   disabled={usersBusy}
                                   title="Editar usuario"
-                                  style={{
-                                    background: "rgba(56, 189, 248, 0.1)",
-                                    border: "1px solid rgba(56, 189, 248, 0.3)",
-                                    borderRadius: "6px",
-                                    color: "#38bdf8",
-                                    padding: "6px",
-                                    cursor: usersBusy ? "not-allowed" : "pointer",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontFamily: "var(--sans-font)",
-                                  }}
+                                  style={{ cursor: usersBusy ? "not-allowed" : "pointer" }}
                                 >
                                   <Pencil size={15} />
                                 </button>
                                 <button
+                                  className="user-action-icon delete"
                                   onClick={() => setConfirmDeleteUser(u)}
                                   disabled={isSelf || usersBusy}
                                   title={isSelf ? "No puedes eliminarte a ti mismo" : "Eliminar usuario definitivamente"}
-                                  style={{
-                                    background: "rgba(239, 68, 68, 0.12)",
-                                    border: "1px solid rgba(239, 68, 68, 0.35)",
-                                    borderRadius: "6px",
-                                    color: "#ef4444",
-                                    padding: "6px",
-                                    cursor: isSelf || usersBusy ? "not-allowed" : "pointer",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    opacity: isSelf ? 0.4 : 1,
-                                    fontFamily: "var(--sans-font)",
-                                  }}
+                                  style={{ cursor: isSelf || usersBusy ? "not-allowed" : "pointer" }}
                                 >
                                   <Trash2 size={15} />
                                 </button>

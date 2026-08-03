@@ -7,12 +7,17 @@
   --border-color: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(249, 115, 22, 0.5);
   --border-subtle: rgba(255, 255, 255, 0.07);
-  
-  --accent-orange: #f97316;    /* Protección Civil / Alertas */
-  --accent-blue: #3b82f6;      /* Operaciones / Hidrología / Puntos */
-  --accent-red: #ef4444;       /* Zonas de Riesgo / Deslizamientos */
-  --accent-green: #10b981;     /* Refugios / Zonas Seguras */
-  --accent-yellow: #f59e0b;    /* Monitoreo / Precaución */
+
+  --accent-orange: #f97316;
+  /* Protección Civil / Alertas */
+  --accent-blue: #3b82f6;
+  /* Operaciones / Hidrología / Puntos */
+  --accent-red: #ef4444;
+  /* Zonas de Riesgo / Deslizamientos */
+  --accent-green: #10b981;
+  /* Refugios / Zonas Seguras */
+  --accent-yellow: #f59e0b;
+  /* Monitoreo / Precaución */
 
   /* Semantic color tokens used throughout components */
   --color-green: #22c55e;
@@ -25,12 +30,12 @@
   --text-main: #e2e8f0;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  
+
   /* Font */
   --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   --sans-font: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   --mono-font: 'JetBrains Mono', 'Fira Code', monospace;
-  
+
   --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 15px rgba(249, 115, 22, 0.15);
 }
@@ -121,4 +126,72 @@ body {
 .esri-popup__button:hover {
   color: var(--accent-orange) !important;
   background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.user-action-icon {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 5px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sans-font);
+  transition: color 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.user-action-icon:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8fafc;
+}
+
+.user-action-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.user-action-icon.edit:hover:not(:disabled) {
+  color: #38bdf8;
+}
+
+.user-action-icon.delete:hover:not(:disabled) {
+  color: #ef4444;
+}
+
+/* Estilo premium general para listas de detalles/información */
+.info-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.72rem;
+}
+
+.info-details-list .info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-details-list .info-row.align-start {
+  align-items: flex-start;
+}
+
+.info-details-list .info-label {
+  color: var(--text-muted);
+  width: 75px;
+  flex-shrink: 0;
+}
+
+.info-details-list .info-value {
+  color: #f8fafc;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.info-details-list .info-value-meta {
+  font-size: 0.65rem;
+  color: #cbd5e1;
 }
