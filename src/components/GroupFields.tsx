@@ -123,7 +123,13 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
           <span className="rr-editor-label">Hora Llegada (24h)</span>
           <Time24Input
             value={group.arrivalTime || ""}
-            onChange={(val) => gf("arrivalTime", val)}
+            onChange={(val) => {
+              gf("arrivalTime", val);
+              // Al registrar hora de llegada, marcar automáticamente como llegado
+              if (val && val.trim()) {
+                gf("hasArrived", true);
+              }
+            }}
             placeholder="17:30"
           />
         </div>

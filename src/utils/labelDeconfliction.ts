@@ -264,7 +264,11 @@ function buildHtmlLabels(
         });
 
         const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0 || rescuedPetsCount > 0;
-        const activeGroupsList = refFeatLog ? getNormalizedGroupList(refFeatLog) : [];
+        // En modo mixto un punto puede tener logs de múltiples departamentos (pc + bomberos).
+        // Debemos recolectar los grupos de TODOS los logs del día para que:
+        //   1. hasArrived sea correcto (no marca verde si hay grupos de otro dept. aún desplegados)
+        //   2. Las etiquetas de equipos muestren todos los grupos, no solo el primer log.
+        const activeGroupsList = statLogs.flatMap((l) => getNormalizedGroupList(l));
         const hasActiveGroups = activeGroupsList.length > 0;
         const hasArrived = hasActiveGroups ? activeGroupsList.every((g) => !!g.hasArrived) : true;
 

@@ -240,7 +240,10 @@ export const EditWorkTeamModal: React.FC<EditWorkTeamModalProps> = ({
               <span style={labelStyle}>Hora Llegada (24h)</span>
               <Time24Input
                 value={arrivalTime}
-                onChange={setArrivalTime}
+                onChange={(val) => {
+                  setArrivalTime(val);
+                  if (val && val.trim()) setHasArrived(true);
+                }}
                 placeholder="17:00"
                 style={inputStyle}
               />
@@ -258,12 +261,25 @@ export const EditWorkTeamModal: React.FC<EditWorkTeamModalProps> = ({
           </div>
 
           <div style={{ marginTop: "4px" }}>
-            <label style={{ fontSize: "0.72rem", fontWeight: 700, color: hasArrived ? "var(--color-green)" : "var(--accent-orange)", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", userSelect: "none" }}>
+            <label
+              style={{
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                color: hasArrived ? "var(--color-green)" : "var(--accent-orange)",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                cursor: hasArrived ? "not-allowed" : "pointer",
+                userSelect: "none",
+              }}
+              title={hasArrived ? "Ya llegó del sitio — no se puede desmarcar" : ""}
+            >
               <input
                 type="checkbox"
                 checked={hasArrived}
-                onChange={(e) => setHasArrived(e.target.checked)}
-                style={{ cursor: "pointer", width: "13px", height: "13px" }}
+                disabled={hasArrived}
+                onChange={(e) => { if (!hasArrived) setHasArrived(e.target.checked); }}
+                style={{ cursor: hasArrived ? "not-allowed" : "pointer", width: "13px", height: "13px" }}
               />
               <span>{hasArrived ? "El equipo ya regresó a la base" : "El equipo sigue desplegado"}</span>
             </label>

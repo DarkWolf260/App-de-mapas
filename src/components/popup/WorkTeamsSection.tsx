@@ -91,12 +91,38 @@ const ArrivalCheckbox: React.FC<{
   hasArrived?: boolean;
   label: string;
   onChange: (value: boolean) => void;
-}> = ({ hasArrived, label, onChange }) => (
-  <label style={{ fontSize: "0.58rem", fontWeight: 700, color: hasArrived ? "var(--color-green)" : "#f97316", display: "flex", alignItems: "center", gap: "5px", marginTop: "4px", cursor: "pointer" }}>
-    <input type="checkbox" checked={!!hasArrived} onChange={(e) => onChange(e.target.checked)} style={{ cursor: "pointer", width: "12px", height: "12px" }} />
-    <span>{label}</span>
-  </label>
-);
+}> = ({ hasArrived, label, onChange }) => {
+  // Si ya llegó, el checkbox se bloquea: no se puede desmarcar
+  const locked = !!hasArrived;
+  return (
+    <label
+      style={{
+        fontSize: "0.58rem",
+        fontWeight: 700,
+        color: locked ? "var(--color-green)" : "#f97316",
+        display: "flex",
+        alignItems: "center",
+        gap: "5px",
+        marginTop: "4px",
+        cursor: locked ? "not-allowed" : "pointer",
+        opacity: 1,
+        userSelect: "none",
+      }}
+      title={locked ? "Ya llegó del sitio — no se puede desmarcar" : ""}
+    >
+      <input
+        type="checkbox"
+        checked={!!hasArrived}
+        disabled={locked}
+        onChange={(e) => {
+          if (!locked) onChange(e.target.checked);
+        }}
+        style={{ cursor: locked ? "not-allowed" : "pointer", width: "12px", height: "12px" }}
+      />
+      <span>{label}</span>
+    </label>
+  );
+};
 
 const ArrivedReadonly: React.FC = () => (
   <span style={{ fontSize: "0.58rem", color: "var(--color-green)", fontWeight: 600, display: "flex", alignItems: "center", gap: "2px", marginTop: "3px" }}>
