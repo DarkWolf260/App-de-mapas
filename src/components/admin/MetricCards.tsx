@@ -1,9 +1,10 @@
 import React from "react";
-import { UserCheck, Users, Database, Server, CheckCircle } from "lucide-react";
+import { UserCheck, Users, Database, Server, CheckCircle, WifiOff } from "lucide-react";
 
 interface MetricCardsProps {
   pendingCount: number;
   campsCount: number;
+  supabaseOk: boolean;
 }
 
 interface MetricCardProps {
@@ -24,7 +25,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ icon, iconBg, iconColor, label,
   </div>
 );
 
-export const MetricCards: React.FC<MetricCardsProps> = ({ pendingCount, campsCount }) => (
+export const MetricCards: React.FC<MetricCardsProps> = ({ pendingCount, campsCount, supabaseOk }) => (
   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
     <MetricCard
       icon={<UserCheck size={20} />}
@@ -49,10 +50,14 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ pendingCount, campsCou
     />
     <MetricCard
       icon={<Server size={20} />}
-      iconBg="rgba(168, 85, 247, 0.15)"
-      iconColor="#c084fc"
+      iconBg={supabaseOk ? "rgba(168, 85, 247, 0.15)" : "rgba(239, 68, 68, 0.15)"}
+      iconColor={supabaseOk ? "#c084fc" : "#ef4444"}
       label="Base de Datos Supabase"
-      value={<span style={{ color: "#4ade80", display: "flex", alignItems: "center", gap: "4px" }}><CheckCircle size={14} /> Conectado</span>}
+      value={
+        supabaseOk
+          ? <span style={{ color: "#4ade80", display: "flex", alignItems: "center", gap: "4px" }}><CheckCircle size={14} /> Conectado</span>
+          : <span style={{ color: "#ef4444", display: "flex", alignItems: "center", gap: "4px" }}><WifiOff size={14} /> Sin conexión</span>
+      }
     />
   </div>
 );

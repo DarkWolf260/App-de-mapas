@@ -21,13 +21,17 @@ export function useAuth() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      if (!session?.user) {
+        setLoading(false);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      if (!session?.user) {
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -38,6 +42,8 @@ export function useAuth() {
       setProfile(null);
       return;
     }
+    
+    setLoading(true);
     let mounted = true;
     const loadProfile = async () => {
       try {
@@ -46,9 +52,15 @@ export function useAuth() {
           .select("role, is_suspended, permissions")
           .eq("id", user.id)
           .maybeSingle();
-        if (mounted) setProfile(data ?? null);
+        if (mounted) {
+          setProfile(data ?? null);
+          setLoading(false);
+        }
       } catch {
-        if (mounted) setProfile(null);
+        if (mounted) {
+          setProfile(null);
+          setLoading(false);
+        }
       }
     };
     loadProfile();
@@ -57,13 +69,9 @@ export function useAuth() {
     };
   }, [user?.id]);
 
-  const jwtRole: UserRole = user
-    ? (user.user_metadata?.role === "admin" || user.app_metadata?.role === "admin" ? "admin" : "operador")
-    : null;
-
   const role: UserRole = profile
     ? (profile.role === "admin" ? "admin" : "operador")
-    : jwtRole;
+    : null;
 
   const isAdmin = role === "admin";
   const isOperador = role === "operador";

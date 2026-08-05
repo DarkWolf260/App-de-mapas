@@ -45,20 +45,41 @@ async function callAdminFunction(payload: unknown): Promise<any> {
 }
 
 export async function fetchManagedUsers(): Promise<ManagedUser[]> {
-  const body = await callAdminFunction({ action: "list" });
-  const users = body?.users ?? [];
-  return (users as any[]).map((p) => ({
-    id: p.id,
-    email: p.email ?? "",
-    full_name: p.full_name ?? "",
-    role: p.role === "admin" ? "admin" : "operador",
-    is_suspended: !!p.is_suspended,
-    permissions: {
-      ...DEFAULT_OPERATOR_PERMISSIONS,
-      ...(p.permissions || {}),
-    } as UserPermissions,
-    created_at: p.created_at ?? new Date().toISOString(),
-  }));
+  try {
+    const body = await callAdminFunction({ action: "list" });
+    const users = body?.users ?? [];
+    return (users as any[]).map((p) => ({
+      id: p.id,
+      email: p.email ?? "",
+      full_name: p.full_name ?? "",
+      role: p.role === "admin" ? "admin" : "operador",
+      is_suspended: !!p.is_suspended,
+      permissions: {
+        ...DEFAULT_OPERATOR_PERMISSIONS,
+        ...(p.permissions || {}),
+      } as UserPermissions,
+      created_at: p.created_at ?? new Date().toISOString(),
+    }));
+  } catch (err) {
+    console.warn("admin-users fallback a lectura directa de user_profiles:", err);
+    const { data, error } = await supabase
+      .from("user_profiles")
+      .select("id, email, full_name, role, is_suspended, permissions, created_at")
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((p: any) => ({
+      id: p.id,
+      email: p.email ?? "",
+      full_name: p.full_name ?? "",
+      role: p.role === "admin" ? "admin" : "operador",
+      is_suspended: !!p.is_suspended,
+      permissions: {
+        ...DEFAULT_OPERATOR_PERMISSIONS,
+        ...(p.permissions || {}),
+      } as UserPermissions,
+      created_at: p.created_at ?? new Date().toISOString(),
+    }));
+  }
 }
 
 export async function updateUserRole(id: string, role: "admin" | "operador"): Promise<void> {

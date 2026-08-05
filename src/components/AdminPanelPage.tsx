@@ -41,6 +41,7 @@ export const AdminPanelPage: React.FC = () => {
   const [userActionMsg, setUserActionMsg] = useState<string | null>(null);
   const [confirmDeleteUser, setConfirmDeleteUser] = useState<ManagedUser | null>(null);
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
+  const [supabaseOk, setSupabaseOk] = useState(true);
 
   const selectedDate = getLocalDateStr();
 
@@ -76,8 +77,10 @@ export const AdminPanelPage: React.FC = () => {
         totalLogs += logs.length;
       });
       setLogsCount(totalLogs);
+      setSupabaseOk(true);
     } catch (err) {
       console.error("Error al cargar datos administrativos:", err);
+      setSupabaseOk(false);
     } finally {
       setRefreshing(false);
     }
@@ -89,12 +92,22 @@ export const AdminPanelPage: React.FC = () => {
 
   const handleApprove = async (reqId: string) => {
     const roleToAssign = roleSelectionMap[reqId] || "operador";
-    await approveUserRequest(reqId, roleToAssign);
+    try {
+      await approveUserRequest(reqId, roleToAssign);
+      flash("Solicitud aprobada y rol asignado correctamente.");
+    } catch (err: any) {
+      flash(err?.message || "Error al aprobar la solicitud.");
+    }
     loadAdminData();
   };
 
   const handleReject = async (reqId: string) => {
-    await rejectUserRequest(reqId);
+    try {
+      await rejectUserRequest(reqId);
+      flash("Solicitud rechazada.");
+    } catch (err: any) {
+      flash(err?.message || "Error al rechazar la solicitud.");
+    }
     loadAdminData();
   };
 
@@ -110,7 +123,8 @@ export const AdminPanelPage: React.FC = () => {
   const handleSaveUser = async (role: "admin" | "operador", permissions: UserPermissions) => {
     if (!editingUser) return;
     const roleChanged = role !== editingUser.role;
-    const permsChanged = JSON.stringify(permissions) !== JSON.stringify(editingUser.permissions);
+    const permKeys = Object.keys(editingUser.permissions) as (keyof UserPermissions)[];
+    const permsChanged = permKeys.some((k) => permissions[k] !== editingUser.permissions[k]);
     if (editingUser.id === user?.id && roleChanged) {
       flash("No puedes cambiar tu propio rol.");
       return;
@@ -306,7 +320,7 @@ export const AdminPanelPage: React.FC = () => {
       />
 
       <main style={{ padding: "20px 24px", flex: 1, display: "flex", flexDirection: "column", gap: "20px", width: "100%", maxWidth: "1600px", margin: "0 auto", boxSizing: "border-box" }}>
-        <MetricCards pendingCount={pendingCount} campsCount={camps.length} />
+        <MetricCards pendingCount={pendingCount} campsCount={camps.length} supabaseOk={supabaseOk} />
 
         {activeSection === "usuarios" && (
           <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden" }}>

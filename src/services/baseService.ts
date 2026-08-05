@@ -148,8 +148,6 @@ export async function fetchOperationalBases(dateStr: string): Promise<Operationa
  * Saves operational bases directly to dedicated Supabase table `operational_bases`
  */
 export async function saveOperationalBases(dateStr: string, bases: OperationalBase[]): Promise<void> {
-  localStorage.setItem(`op_bases_${dateStr}`, JSON.stringify(bases));
-
   const { data: existing } = await supabase
     .from("operational_bases")
     .select("id")
@@ -224,7 +222,7 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
                   const count = Number(s.officersCount) || 0;
                   if (count > 0) {
                     activeStates.push({
-                      id: `st_${c.campId || 'camp'}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
+                      id: crypto.randomUUID(),
                       stateName: s.stateName,
                       officersCount: count,
                     });
@@ -233,7 +231,7 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
               }
 
               return {
-                id: c.campId || `camp_${Math.random().toString(36).substring(2, 9)}`,
+                id: (c.campId && c.campId.length === 36 && c.campId.includes("-")) ? c.campId : crypto.randomUUID(),
                 date: dateStr,
                 campName: c.campName,
                 location: "",
@@ -261,7 +259,8 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
           const latestCamps = data.filter((row: any) => row.date === latestDate);
 
           result = latestCamps.map((row: any) => ({
-            id: `temp_${Math.random().toString(36).substring(2, 9)}`,
+            // UUID real desde el inicio: upsert lo insertará como nuevo registro del día actual
+            id: crypto.randomUUID(),
             date: dateStr,
             campName: row.camp_name,
             location: row.location || "",
@@ -275,8 +274,8 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
               : typeof row.states_detail === "string" && row.states_detail.trim()
               ? JSON.parse(row.states_detail)
               : []
-            ).map((sd: any, idx: number) => ({
-              id: `st_temp_${idx}_${Math.random().toString(36).substring(2, 7)}`,
+            ).map((sd: any) => ({
+              id: crypto.randomUUID(),
               stateName: sd.stateName || VENEZUELA_STATES[0],
               officersCount: 0,
             })),
@@ -324,12 +323,9 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
  * Saves Campamentos entries directly to dedicated Supabase table `campamentos`
  */
 export async function saveCampamentos(dateStr: string, camps: CampamentoEntry[]): Promise<void> {
-  localStorage.setItem(`camps_${dateStr}`, JSON.stringify(camps));
-
+  // --- Eliminar registros del día que ya no existen en la lista local ---
   try {
-    const validUuids = camps
-      .map((c) => c.id)
-      .filter((id): id is string => !!(id && id.length === 36 && id.includes("-")));
+    const currentIds = camps.map((c) => c.id).filter(Boolean);
 
     const { data: existingRows } = await supabase
       .from("campamentos")
@@ -339,18 +335,23 @@ export async function saveCampamentos(dateStr: string, camps: CampamentoEntry[])
     if (existingRows && existingRows.length > 0) {
       const toDelete = existingRows
         .map((r: any) => r.id)
-        .filter((id: string) => !validUuids.includes(id));
+        .filter((id: string) => !currentIds.includes(id));
 
-      for (const idToDelete of toDelete) {
-        await supabase.from("campamentos").delete().eq("id", idToDelete);
+      if (toDelete.length > 0) {
+        await supabase.from("campamentos").delete().in("id", toDelete);
       }
     }
   } catch (err) {
     console.warn("Error cleaning up deleted campamentos:", err);
   }
 
+  // --- Upsert de todos los campamentos del día ---
+  // INSERT si el id no existe aún, UPDATE si ya existe.
+  // Todos los registros tienen UUIDs reales (nunca temp_), por lo que
+  // el historial de días anteriores no se ve afectado.
   for (const c of camps) {
     const payload = {
+      id: c.id,
       date: dateStr,
       camp_name: c.campName,
       location: c.location || "",
@@ -363,14 +364,9 @@ export async function saveCampamentos(dateStr: string, camps: CampamentoEntry[])
       updated_at: new Date().toISOString(),
     };
 
-    const isUuid = c.id && c.id.length === 36 && c.id.includes("-");
-    if (isUuid) {
-      await supabase.from("campamentos").update(payload).eq("id", c.id);
-    } else {
-      await supabase
-        .from("campamentos")
-        .insert(payload);
-    }
+    await supabase
+      .from("campamentos")
+      .upsert(payload, { onConflict: "id" });
   }
 
   // Sincronizar automáticamente en la tabla dedicada pizarra_operacional
