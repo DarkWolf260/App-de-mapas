@@ -57,8 +57,8 @@ function syncExistingLabel(
   layerVisibility: LayerVisibility,
   isHidden: boolean,
   shouldHideNested: boolean,
-  dateStr?: string,
-  activeDepartment?: DepartmentView,
+  _dateStr?: string,
+  _activeDepartment?: DepartmentView,
 ): void {
   const isPolygonLabel = label.attributes?.isPolygonLabel;
   const isSubpolygon = isPolygonLabel && parentsMap[feat.id] !== undefined;
@@ -106,8 +106,8 @@ function addFeatureGraphic(
   isHidden: boolean,
   shouldHideNested: boolean,
   layer: GraphicsLayer,
-  dateStr?: string,
-  activeDepartment?: DepartmentView,
+  _dateStr?: string,
+  _activeDepartment?: DepartmentView,
 ): void {
   const geomCfg = convertGeoJSONGeometry(feat);
   if (!geomCfg) return;
