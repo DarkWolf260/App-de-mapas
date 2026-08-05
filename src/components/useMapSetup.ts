@@ -9,7 +9,6 @@ import { useMapInit } from "./useMapInit";
 import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DepartmentView } from "../types";
 
 export interface UseMapSetupProps {
-  apiKey: string;
   activeBasemap: string;
   activeCity: string;
   layerVisibility: LayerVisibility;

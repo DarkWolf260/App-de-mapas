@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Shield, LogOut, KeyRound, X, Check, Lock } from "lucide-react";
+import { LogOut, KeyRound, X, Check, Lock } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
 export const AuthModal: React.FC = () => {
-  const { user, isAdmin, isOperador, role, login, logout } = useAuth();
+  const { user, isAdmin, isOperador, login, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

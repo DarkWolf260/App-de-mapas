@@ -26,12 +26,13 @@ describe("excelExporter", () => {
     URL.revokeObjectURL = vi.fn();
 
     const clickSpy = vi.fn();
-    const setAttributeSpy = vi.fn();
-    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue({
-      setAttribute: setAttributeSpy,
+    const linkMock = {
       click: clickSpy,
       style: {},
-    } as unknown as HTMLAnchorElement);
+      href: "",
+      download: "",
+    } as unknown as HTMLAnchorElement;
+    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(linkMock);
 
     const appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => ({} as any));
     const removeChildSpy = vi.spyOn(document.body, "removeChild").mockImplementation(() => ({} as any));
@@ -39,7 +40,7 @@ describe("excelExporter", () => {
     exportWorkTeamsToExcel(mockRows, "2026-07-30");
 
     expect(clickSpy).toHaveBeenCalled();
-    expect(setAttributeSpy).toHaveBeenCalledWith("download", "Consolidado_Operativo_2026-07-30.xlsx");
+    expect(linkMock.download).toBe("Consolidado_Operativo_2026-07-30.xlsx");
     expect(appendChildSpy).toHaveBeenCalled();
     expect(removeChildSpy).toHaveBeenCalled();
 

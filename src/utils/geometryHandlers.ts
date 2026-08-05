@@ -103,12 +103,6 @@ const polylineHandler: GeometryHandler = {
   coordinateLabel: "Punto inicial",
 };
 
-const handlers: Record<FeatureType, GeometryHandler> = {
-  point: pointHandler,
-  polygon: polygonHandler,
-  polyline: polylineHandler,
-};
-
 /** Returns the GeometryHandler for a given feature type string. */
 export function getGeometryHandler(type: string): GeometryHandler {
   if (type === "point" || type === "Point") return pointHandler;

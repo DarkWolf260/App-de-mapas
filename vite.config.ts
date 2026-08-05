@@ -32,6 +32,14 @@ export default defineConfig({
         admin: resolve(__dirname, "admin.html"),
         login: resolve(__dirname, "login.html"),
       },
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/@arcgis")) return "arcgis";
+          if (id.includes("node_modules/@supabase") || id.includes("node_modules/@supabase-js")) return "supabase";
+          if (id.includes("node_modules/rxdb") || id.includes("node_modules/rxjs")) return "rxdb";
+          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom") || id.includes("node_modules/scheduler")) return "react-vendor";
+        },
+      },
     },
   },
 });

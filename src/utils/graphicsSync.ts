@@ -4,7 +4,7 @@ import Graphic from "@arcgis/core/Graphic";
 import TextSymbol from "@arcgis/core/symbols/TextSymbol";
 import { execute as centroidExecute } from "@arcgis/core/geometry/operators/centroidOperator";
 import { buildParentsMap } from "./spatialUtils";
-import { symbolForType, getLabelText } from "./mapUtils";
+import { symbolForType } from "./mapUtils";
 import { PALETTE } from "./colorUtils";
 import type { DrawnFeature, LayerVisibility, DepartmentView } from "../types";
 

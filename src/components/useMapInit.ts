@@ -66,7 +66,7 @@ export function useMapInit(
   const [customPopup, setCustomPopup] = useState<{ mapPoint: any; feat: DrawnFeature } | null>(null);
   const [currentZoom, setCurrentZoom] = useState<number>(DEFAULT_ZOOM);
   const [currentScale, setCurrentScale] = useState<number>(0);
-  const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: 10.6000, lng: -66.9331 });
+  const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: DEFAULT_CENTER[1], lng: DEFAULT_CENTER[0] });
   const [htmlLabels, setHtmlLabels] = useState<HtmlLabel[]>([]);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number; visible: boolean }>({
     text: "", x: 0, y: 0, visible: false,

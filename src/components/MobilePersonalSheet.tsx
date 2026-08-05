@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import type { DrawnFeature, DepartmentView } from "../types";
 import { getDayStats, getTotalPersonnel, getNormalizedGroupList, mergeLogs } from "../utils/logUtils";
-import { Users, Tag, MapPin, Activity } from "lucide-react";
+import { Users, Tag, MapPin } from "lucide-react";
 
 interface MobilePersonalSheetProps {
   drawnFeatures: DrawnFeature[];

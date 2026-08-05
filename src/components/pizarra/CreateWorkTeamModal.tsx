@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Save, Clock, Truck, Shield, Flame, Users, Activity, Search, MapPin, ChevronDown, Check } from "lucide-react";
+import { X, Save, Shield, Flame, Users, Activity, Search, MapPin, ChevronDown, Check } from "lucide-react";
 import { WorkTeam } from "./types";
 import { Time24Input } from "../Time24Input";
 import { formatPhone } from "../../utils/phoneFormatter";
@@ -133,13 +133,6 @@ export const CreateWorkTeamModal: React.FC<CreateWorkTeamModalProps> = ({
     outline: "none",
     boxSizing: "border-box",
     fontFamily: "'Outfit', sans-serif",
-  };
-
-  const selectStyle: React.CSSProperties = {
-    ...inputStyle,
-    background: "rgba(10, 15, 29, 0.95)",
-    color: "#fff",
-    cursor: "pointer",
   };
 
   const statFieldStyle = (color: string): React.CSSProperties => ({

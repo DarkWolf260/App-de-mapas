@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Save, Clock, Truck, Shield, Flame, Users, Activity } from "lucide-react";
+import { X, Save, Shield, Flame, Users, Activity } from "lucide-react";
 import { WorkTeam } from "./types";
 import { Time24Input } from "../Time24Input";
 import { formatPhone } from "../../utils/phoneFormatter";

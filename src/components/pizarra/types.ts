@@ -1,5 +1,3 @@
-import { CampamentoEntry } from "../../services/baseService";
-
 export interface DeleteTarget {
   type: "camp" | "state" | "team";
   campId?: string;

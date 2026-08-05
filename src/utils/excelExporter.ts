@@ -174,7 +174,6 @@ export function exportConsolidadoToExcel(
       }
     });
   });
-  const activeStates = Array.from(activeStatesSet).sort((a, b) => a.localeCompare(b, "es"));
 
   // REDAN totals
   const redanRows = REDAN_REGIONS.map(r => ({
@@ -298,7 +297,6 @@ export function exportConsolidadoToExcel(
   r++;
 
   // REDAN headers: col A = name, col B..penultimate = components, col LAST = total
-  const redanNameEnd = "A";
   const redanCompStart = "B";
   const redanCompEnd = grandLabelEnd;
   addMerge(`${redanCompStart}${r}`, `${redanCompEnd}${r}`);
@@ -512,8 +510,8 @@ export function exportConsolidadoToExcel(
   link.href = url;
   link.download = filename;
   link.style.display = "none";
-  document.body.appendChild(link);
-  link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+document.body.appendChild(link);
+  link.click();
   document.body.removeChild(link);
   // Delay revocation so the browser has time to initiate the download
   setTimeout(() => URL.revokeObjectURL(url), 250);

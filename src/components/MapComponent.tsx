@@ -12,10 +12,10 @@ import { useMapSetup } from "./useMapSetup";
 import { useDraggable } from "../hooks/useDraggable";
 import type { MapFeatureActions, MapUIContext } from "./mapTypes";
 import Point from "@arcgis/core/geometry/Point";
+import { DEFAULT_CENTER } from "../utils/mapUtils";
 import { Satellite, Calendar } from "lucide-react";
 
 interface MapComponentProps {
-  apiKey: string;
   activeBasemap: string;
   activeCity: string;
   layerVisibility: LayerVisibility;
@@ -102,7 +102,7 @@ interface MapComponentProps {
       const [lng, lat] = feat.geojsonGeometry.coordinates as number[];
       mapPoint = new Point({ longitude: lng, latitude: lat });
     }
-    if (!mapPoint) mapPoint = new Point({ longitude: -66.9331, latitude: 10.6000 });
+    if (!mapPoint) mapPoint = new Point({ longitude: DEFAULT_CENTER[0], latitude: DEFAULT_CENTER[1] });
     ui.onFeatureClick?.();
     setCustomPopup({ mapPoint, feat });
     // Also fly the map to the feature's location
@@ -319,7 +319,7 @@ interface MapComponentProps {
                 const [lng, lat] = feat.geojsonGeometry.coordinates as number[];
                 mapPoint = new Point({ longitude: lng, latitude: lat });
               }
-              if (!mapPoint) mapPoint = new Point({ longitude: -66.9331, latitude: 10.6000 });
+              if (!mapPoint) mapPoint = new Point({ longitude: DEFAULT_CENTER[0], latitude: DEFAULT_CENTER[1] });
               ui.onFeatureClick?.();
               setCustomPopup({ mapPoint, feat });
             }}
@@ -352,7 +352,7 @@ interface MapComponentProps {
               const [lng, lat] = feat.geojsonGeometry.coordinates as number[];
               mapPoint = new Point({ longitude: lng, latitude: lat });
             }
-            if (!mapPoint) mapPoint = new Point({ longitude: -66.9331, latitude: 10.6000 });
+            if (!mapPoint) mapPoint = new Point({ longitude: DEFAULT_CENTER[0], latitude: DEFAULT_CENTER[1] });
             ui.onFeatureClick?.();
             setCustomPopup({ mapPoint, feat });
           }

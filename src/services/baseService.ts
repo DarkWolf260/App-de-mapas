@@ -389,7 +389,7 @@ export async function checkPizarraRecordExists(dateStr: string): Promise<boolean
       .maybeSingle();
 
     return !!data?.id;
-  } catch (err) {
+  } catch {
     return false;
   }
 }

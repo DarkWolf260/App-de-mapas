@@ -19,8 +19,7 @@ import { Menu, ChevronLeft } from 'lucide-react';
 import './App.css';
 
 function App() {
-  const apiKey: string = import.meta.env.VITE_ARCGIS_API_KEY || '';
-  const [activeCity] = ['venezuela'];
+  const activeCity = 'venezuela';
   const { isAdmin, isOperador, isAuthenticated, isSuspended, permissions, loading } = useAuth();
   const state = useAppState(isAdmin);
 
@@ -128,7 +127,6 @@ function App() {
 
       <div className="map-viewport">
         <MapComponent
-          apiKey={apiKey}
           activeCity={activeCity}
           activeBasemap="satellite-free"
           layerVisibility={state.layerVisibility}

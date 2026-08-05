@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar, BarChart2, FileText, X } from "lucide-react";
+import { Calendar, BarChart2, X } from "lucide-react";
 import type { DrawnFeature } from "../../types";
 
 interface RangeReportHeaderProps {

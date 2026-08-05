@@ -10,7 +10,7 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { fetchFeatures } from "../services/featureService";
 import { fetchLogs, saveDailyLog } from "../services/logService";
-import { getNormalizedGroupList, mergeLogs, getLocalDateStr } from "../utils/logUtils";
+import { getNormalizedGroupList, getLocalDateStr } from "../utils/logUtils";
 import { exportWorkTeamsToExcel, type WorkTeamExportRow } from "../utils/excelExporter";
 
 // SOLID Sub-components

@@ -45,12 +45,9 @@ async function callAdminFunction(payload: unknown): Promise<any> {
 }
 
 export async function fetchManagedUsers(): Promise<ManagedUser[]> {
-  const { data, error } = await supabase
-    .from("user_profiles")
-    .select("id, email, full_name, role, is_suspended, permissions, created_at")
-    .order("created_at", { ascending: true });
-  if (error) throw error;
-  return (data ?? []).map((p: any) => ({
+  const body = await callAdminFunction({ action: "list" });
+  const users = body?.users ?? [];
+  return (users as any[]).map((p) => ({
     id: p.id,
     email: p.email ?? "",
     full_name: p.full_name ?? "",
@@ -65,13 +62,11 @@ export async function fetchManagedUsers(): Promise<ManagedUser[]> {
 }
 
 export async function updateUserRole(id: string, role: "admin" | "operador"): Promise<void> {
-  const { error } = await supabase.from("user_profiles").update({ role }).eq("id", id);
-  if (error) throw error;
+  await callAdminFunction({ action: "set_role", userId: id, role });
 }
 
 export async function updateUserPermissions(id: string, permissions: UserPermissions): Promise<void> {
-  const { error } = await supabase.from("user_profiles").update({ permissions }).eq("id", id);
-  if (error) throw error;
+  await callAdminFunction({ action: "set_permissions", userId: id, permissions });
 }
 
 export async function suspendUser(id: string): Promise<void> {

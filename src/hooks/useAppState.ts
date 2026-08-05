@@ -5,6 +5,7 @@ import { useFeatureOrder } from "../hooks/useFeatureOrder";
 import { useGeoJSONIO, ParsedFeature } from "../hooks/useGeoJSONIO";
 import { useLocalStorageState } from "../hooks/useLocalStorageState";
 import type { DepartmentView, DrawnFeature, LayerVisibility, RemoveFeatureId } from "../types";
+import { DEFAULT_CENTER } from "../utils/mapUtils";
 import type { MapPoint, MapArea } from "../components/Sidebar";
 
 const CATEGORY_COLORS = {
@@ -82,8 +83,8 @@ export function useAppState(isAdmin: boolean) {
           isCollapsed: !!f.isCollapsed,
           collapsedCount: f.collapsedCount,
           coordinates: {
-            longitude: coords ? coords[0] : -66.9331,
-            latitude: coords ? coords[1] : 10.6000,
+            longitude: coords ? coords[0] : DEFAULT_CENTER[0],
+            latitude: coords ? coords[1] : DEFAULT_CENTER[1],
           },
           createdAt: Number(f.id) || Date.now(),
         };
