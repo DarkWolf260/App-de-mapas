@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, Shield, Flame, HelpCircle } from "lucide-react";
 import {
   fetchCampamentos,
   saveCampamentos,
@@ -734,9 +734,12 @@ export const PizarraOperacional: React.FC = () => {
                       fontWeight: 700,
                       cursor: "pointer",
                       fontFamily: "var(--sans-font)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
                     }}
                   >
-                    🟧 PC ({pcTotal})
+                    <Shield size={12} /> PC ({pcTotal})
                   </button>
                   <button
                     onClick={() => setCampDeptFilter("bomberos")}
@@ -750,9 +753,12 @@ export const PizarraOperacional: React.FC = () => {
                       fontWeight: 700,
                       cursor: "pointer",
                       fontFamily: "var(--sans-font)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
                     }}
                   >
-                    🟥 Bomberos ({bomberosTotal})
+                    <Flame size={12} /> Bomberos ({bomberosTotal})
                   </button>
                   <button
                     onClick={() => setCampDeptFilter("otros")}
@@ -766,9 +772,12 @@ export const PizarraOperacional: React.FC = () => {
                       fontWeight: 700,
                       cursor: "pointer",
                       fontFamily: "var(--sans-font)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
                     }}
                   >
-                    🟦 Otros ({otrosTotal})
+                    <HelpCircle size={12} /> Otros ({otrosTotal})
                   </button>
                 </div>
               </div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Plus, X, Shield, Flame, HelpCircle, Edit3, Users, Check } from "lucide-react";
+import React, { useState } from "react";
+import { Plus, X, Shield, Flame, HelpCircle, Edit3, Users, Check, List } from "lucide-react";
 import {
   PC_STATES,
   BOMBEROS_ENTITIES,
@@ -27,6 +27,7 @@ function getInitialValues(entryToEdit?: StatePersonnelCount | null) {
       category: "pc" as const,
       selectedName: PC_STATES[0] || "",
       customName: "",
+      isCustomText: false,
       officersCount: "",
     };
   }
@@ -41,6 +42,7 @@ function getInitialValues(entryToEdit?: StatePersonnelCount | null) {
       category: "pc" as const,
       selectedName: name,
       customName: "",
+      isCustomText: false,
       officersCount: entryToEdit.officersCount ? String(entryToEdit.officersCount) : "",
     };
   }
@@ -49,6 +51,7 @@ function getInitialValues(entryToEdit?: StatePersonnelCount | null) {
       category: "bomberos" as const,
       selectedName: name,
       customName: "",
+      isCustomText: false,
       officersCount: entryToEdit.officersCount ? String(entryToEdit.officersCount) : "",
     };
   }
@@ -57,14 +60,19 @@ function getInitialValues(entryToEdit?: StatePersonnelCount | null) {
       category: "otros" as const,
       selectedName: name,
       customName: "",
+      isCustomText: false,
       officersCount: entryToEdit.officersCount ? String(entryToEdit.officersCount) : "",
     };
   }
 
+  const explicitType = entryToEdit.type || getEntryType(name);
   return {
-    category: "custom" as const,
+    category: (explicitType === "pc" || explicitType === "bomberos" || explicitType === "otros"
+      ? explicitType
+      : "custom") as "pc" | "bomberos" | "otros" | "custom",
     selectedName: "",
     customName: name,
+    isCustomText: true,
     officersCount: entryToEdit.officersCount ? String(entryToEdit.officersCount) : "",
   };
 }
@@ -84,6 +92,7 @@ export const AddCampEntryModal: React.FC<AddCampEntryModalProps> = ({
   const [category, setCategory] = useState<"pc" | "bomberos" | "otros" | "custom">(initial.category);
   const [selectedName, setSelectedName] = useState<string>(initial.selectedName);
   const [customName, setCustomName] = useState<string>(initial.customName);
+  const [isCustomText, setIsCustomText] = useState<boolean>(initial.isCustomText);
   const [officersCount, setOfficersCount] = useState<string>(initial.officersCount);
 
   if (entryToEdit !== prevEntry || isOpen !== prevIsOpen) {
@@ -93,6 +102,7 @@ export const AddCampEntryModal: React.FC<AddCampEntryModalProps> = ({
     setCategory(updated.category);
     setSelectedName(updated.selectedName);
     setCustomName(updated.customName);
+    setIsCustomText(updated.isCustomText);
     setOfficersCount(updated.officersCount);
   }
 
@@ -100,6 +110,7 @@ export const AddCampEntryModal: React.FC<AddCampEntryModalProps> = ({
 
   const handleCategoryChange = (cat: "pc" | "bomberos" | "otros" | "custom") => {
     setCategory(cat);
+    setIsCustomText(cat === "custom");
     if (cat === "pc") {
       setSelectedName(PC_STATES[0] || "");
     } else if (cat === "bomberos") {
@@ -112,7 +123,7 @@ export const AddCampEntryModal: React.FC<AddCampEntryModalProps> = ({
   };
 
   const getFinalStateName = (): string => {
-    if (category === "custom") return customName.trim();
+    if (category === "custom" || isCustomText) return customName.trim();
     return selectedName.trim();
   };
 
@@ -123,7 +134,14 @@ export const AddCampEntryModal: React.FC<AddCampEntryModalProps> = ({
 
     const parsedCount = parseInt(officersCount, 10);
     const finalCount = isNaN(parsedCount) ? 0 : parsedCount;
-    const finalType = category === "custom" ? getEntryType(finalName) : category;
+    const finalType: "pc" | "bomberos" | "otros" =
+      category === "pc"
+        ? "pc"
+        : category === "bomberos"
+        ? "bomberos"
+        : category === "otros"
+        ? "otros"
+        : getEntryType(finalName);
 
     onConfirm(campId, {
       id: entryToEdit?.id,
@@ -134,14 +152,28 @@ export const AddCampEntryModal: React.FC<AddCampEntryModalProps> = ({
     onClose();
   };
 
-  const currentOptions =
+  const catalogList =
     category === "pc"
-      ? PC_STATES.map((s) => ({ value: s, label: s }))
+      ? PC_STATES
       : category === "bomberos"
-      ? BOMBEROS_ENTITIES.map((s) => ({ value: s, label: s }))
+      ? BOMBEROS_ENTITIES
       : category === "otros"
-      ? OTROS_ORGANISMOS.map((s) => ({ value: s, label: s }))
+      ? OTROS_ORGANISMOS
       : [];
+
+  const currentOptions = [
+    { value: "__custom__", label: "Escribir entrada personalizada..." },
+    ...catalogList.map((s) => ({ value: s, label: s })),
+  ];
+
+  const placeholderText =
+    category === "pc"
+      ? "Ej. PC Municipal Caruao..."
+      : category === "bomberos"
+      ? "Ej. Bomberos Voluntarios..."
+      : category === "otros"
+      ? "Ej. Cruz Roja Seccional..."
+      : "Ej. Grupo Rescate Humboldt...";
 
   const isValid = !!getFinalStateName();
   const isEditing = !!entryToEdit;
@@ -172,7 +204,7 @@ export const AddCampEntryModal: React.FC<AddCampEntryModalProps> = ({
           border: "1px solid rgba(255, 255, 255, 0.12)",
           borderRadius: "14px",
           padding: "22px 24px",
-          width: "440px",
+          width: "450px",
           maxWidth: "92vw",
           boxShadow: "0 25px 60px rgba(0, 0, 0, 0.75)",
           display: "flex",
@@ -323,14 +355,38 @@ export const AddCampEntryModal: React.FC<AddCampEntryModalProps> = ({
 
           {/* PASO 2: NOMBRE DE LA ENTRADA */}
           <div>
-            <label style={{ display: "block", fontSize: "0.66rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" }}>
-              2. Nombre de la Entrada u Organismo
-            </label>
-            {category === "custom" ? (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+              <label style={{ fontSize: "0.66rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                2. Nombre de la Entrada u Organismo
+              </label>
+
+              {category !== "custom" && (
+                <button
+                  type="button"
+                  onClick={() => setIsCustomText(!isCustomText)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: isCustomText ? "#a855f7" : "var(--text-muted)",
+                    fontSize: "0.64rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  {isCustomText ? <List size={11} /> : <Edit3 size={11} />}
+                  <span>{isCustomText ? "Ver Catálogo" : "Escribir Personalizado"}</span>
+                </button>
+              )}
+            </div>
+
+            {category === "custom" || isCustomText ? (
               <input
                 type="text"
                 autoFocus
-                placeholder="Ej. Cruz Roja Seccional, Grupo Rescate Humboldt..."
+                placeholder={placeholderText}
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 style={{
@@ -350,7 +406,14 @@ export const AddCampEntryModal: React.FC<AddCampEntryModalProps> = ({
               <Select
                 options={currentOptions}
                 value={selectedName}
-                onChange={setSelectedName}
+                onChange={(val) => {
+                  if (val === "__custom__") {
+                    setIsCustomText(true);
+                    setCustomName("");
+                  } else {
+                    setSelectedName(val);
+                  }
+                }}
                 menuMaxHeight={200}
                 style={{ width: "100%" }}
               />

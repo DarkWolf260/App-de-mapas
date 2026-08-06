@@ -47,6 +47,7 @@ export interface CampamentoEntry {
 }
 
 export const PC_STATES: string[] = [
+  "PC",
   "PC Amazonas",
   "PC Anzoátegui",
   "PC Apure",
@@ -71,9 +72,10 @@ export const PC_STATES: string[] = [
   "PC Trujillo",
   "PC Yaracuy",
   "PC Zulia",
-].sort((a, b) => a.localeCompare(b, "es"));
+];
 
 export const BOMBEROS_ENTITIES: string[] = [
+  "Bomberos",
   "Bomberos Amazonas",
   "Bomberos Anzoátegui",
   "Bomberos Apure",
@@ -101,7 +103,7 @@ export const BOMBEROS_ENTITIES: string[] = [
   "Bomberos Universitarios",
   "Bomberos Aeronáuticos",
   "Bomberos Marinos",
-].sort((a, b) => a.localeCompare(b, "es"));
+];
 
 export const OTROS_ORGANISMOS: string[] = [
   "Guardia Nacional Bolivariana (GNB)",
