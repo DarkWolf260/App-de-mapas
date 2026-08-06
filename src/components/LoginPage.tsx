@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Activity, MapPin } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-import { createRegistrationRequest } from "../services/userService";
+import { registerUserAccount } from "../services/userService";
 import { C } from "./login/loginConstants";
 import { LoginForm } from "./login/LoginForm";
 import { RegisterForm } from "./login/RegisterForm";
@@ -48,8 +48,8 @@ const LoginPage: React.FC = () => {
     setError(null);
     setSuccessMsg(null);
     try {
-      await createRegistrationRequest({ fullName, email });
-      setSuccessMsg("¡Solicitud enviada con éxito! Un administrador evaluará tu registro para asignarte el acceso y rol.");
+      await registerUserAccount({ fullName, email, password });
+      setSuccessMsg("¡Registro completado con éxito! Tu usuario ha sido registrado y requiere la activación de un Administrador en la tabla de usuarios.");
       setFullName("");
       setEmail("");
       setPassword("");

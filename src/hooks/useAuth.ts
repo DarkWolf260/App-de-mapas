@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import type { User, Session } from "@supabase/supabase-js";
+import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
 import { DEFAULT_OPERATOR_PERMISSIONS, UserPermissions } from "../services/adminUsersService";
 
 export type UserRole = "admin" | "operador" | null;
 
-interface UserProfile {
-  role: string;
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  role: "admin" | "operador";
   is_suspended: boolean;
   permissions: Partial<UserPermissions>;
 }
@@ -21,7 +24,9 @@ export function useAuth() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (!session?.user) {
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
         setLoading(false);
       }
     });
@@ -29,7 +34,10 @@ export function useAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (!session?.user) {
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
         setLoading(false);
       }
     });
@@ -37,37 +45,27 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!user) {
-      setProfile(null);
-      return;
-    }
-    
-    setLoading(true);
-    let mounted = true;
-    const loadProfile = async () => {
-      try {
-        const { data } = await supabase
-          .from("user_profiles")
-          .select("role, is_suspended, permissions")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (mounted) {
-          setProfile(data ?? null);
-          setLoading(false);
-        }
-      } catch {
-        if (mounted) {
-          setProfile(null);
-          setLoading(false);
-        }
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("user_profiles")
+        .select("role, is_suspended, permissions")
+        .eq("id", userId)
+        .single();
+
+      if (error) {
+        console.warn("No profile found or error fetching profile:", error.message);
+        setProfile(null);
+      } else {
+        setProfile(data as UserProfile);
       }
-    };
-    loadProfile();
-    return () => {
-      mounted = false;
-    };
-  }, [user?.id]);
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const role: UserRole = profile
     ? (profile.role === "admin" ? "admin" : "operador")
@@ -79,9 +77,9 @@ export function useAuth() {
   const isSuspended = profile?.is_suspended ?? false;
 
   const permissions: UserPermissions = isSuspended
-    ? { ...DEFAULT_OPERATOR_PERMISSIONS, edit_logs: false, manage_campamentos: false }
+    ? { ...DEFAULT_OPERATOR_PERMISSIONS, edit_logs: false, manage_campamentos: false, manage_camp_entries: false }
     : isAdmin
-    ? { edit_logs: true, edit_historical_logs: true, edit_map: true, manage_campamentos: true }
+    ? { edit_logs: true, edit_historical_logs: true, edit_map: true, manage_campamentos: true, manage_camp_entries: true }
     : { ...DEFAULT_OPERATOR_PERMISSIONS, ...(profile?.permissions ?? {}) };
 
   const login = async (email: string, pass: string) => {
@@ -90,6 +88,22 @@ export function useAuth() {
       password: pass,
     });
     if (error) throw error;
+
+    if (data.user) {
+      const { data: prof } = await supabase
+        .from("user_profiles")
+        .select("is_suspended")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (prof?.is_suspended) {
+        await supabase.auth.signOut();
+        throw new Error(
+          "Tu cuenta está registrada pero se encuentra pendiente de activación por un Administrador. Solicita la activación para poder ingresar."
+        );
+      }
+    }
+
     return data;
   };
 

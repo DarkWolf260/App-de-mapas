@@ -5,7 +5,6 @@ import { getLocalDateStr } from "../utils/dateUtils";
 import { fetchCampamentos, CampamentoEntry } from "../services/baseService";
 import { fetchFeatures } from "../services/featureService";
 import { fetchLogs } from "../services/logService";
-import { fetchUserRequests, approveUserRequest, rejectUserRequest, UserRegistrationRequest } from "../services/userService";
 import {
   fetchManagedUsers,
   updateUserRole,
@@ -18,7 +17,6 @@ import {
 } from "../services/adminUsersService";
 import { AdminHeader, AdminSection } from "./admin/AdminHeader";
 import { MetricCards } from "./admin/MetricCards";
-import { RequestsSection, RequestsSectionTitle } from "./admin/RequestsSection";
 import { UsersTable } from "./admin/UsersTable";
 import { CampsSection } from "./admin/CampsSection";
 import { LayersSection } from "./admin/LayersSection";
@@ -32,8 +30,6 @@ export const AdminPanelPage: React.FC = () => {
   const [camps, setCamps] = useState<CampamentoEntry[]>([]);
   const [featuresCount, setFeaturesCount] = useState(0);
   const [logsCount, setLogsCount] = useState(0);
-  const [requests, setRequests] = useState<UserRegistrationRequest[]>([]);
-  const [roleSelectionMap, setRoleSelectionMap] = useState<Record<string, "operador" | "admin">>({});
   const [refreshing, setRefreshing] = useState(false);
 
   const [users, setUsers] = useState<ManagedUser[]>([]);
@@ -48,23 +44,14 @@ export const AdminPanelPage: React.FC = () => {
   const loadAdminData = async () => {
     setRefreshing(true);
     try {
-      const [fetchedCamps, fetchedFeats, fetchedLogsMap, fetchedReqs] = await Promise.all([
+      const [fetchedCamps, fetchedFeats, fetchedLogsMap] = await Promise.all([
         fetchCampamentos(selectedDate),
         fetchFeatures(),
         fetchLogs(),
-        fetchUserRequests(),
       ]);
 
       if (fetchedCamps) setCamps(fetchedCamps);
       if (fetchedFeats) setFeaturesCount(fetchedFeats.length);
-      if (fetchedReqs) {
-        setRequests(fetchedReqs);
-        const rMap: Record<string, "operador" | "admin"> = {};
-        fetchedReqs.forEach((r) => {
-          rMap[r.id] = r.assignedRole || r.requestedRole || "operador";
-        });
-        setRoleSelectionMap(rMap);
-      }
 
       try {
         setUsers(await fetchManagedUsers());
@@ -89,27 +76,6 @@ export const AdminPanelPage: React.FC = () => {
   useEffect(() => {
     loadAdminData();
   }, []);
-
-  const handleApprove = async (reqId: string) => {
-    const roleToAssign = roleSelectionMap[reqId] || "operador";
-    try {
-      await approveUserRequest(reqId, roleToAssign);
-      flash("Solicitud aprobada y rol asignado correctamente.");
-    } catch (err: any) {
-      flash(err?.message || "Error al aprobar la solicitud.");
-    }
-    loadAdminData();
-  };
-
-  const handleReject = async (reqId: string) => {
-    try {
-      await rejectUserRequest(reqId);
-      flash("Solicitud rechazada.");
-    } catch (err: any) {
-      flash(err?.message || "Error al rechazar la solicitud.");
-    }
-    loadAdminData();
-  };
 
   const flash = (msg: string) => {
     setUserActionMsg(msg);
@@ -159,10 +125,10 @@ export const AdminPanelPage: React.FC = () => {
     try {
       if (u.is_suspended) {
         await unsuspendUser(u.id);
-        flash("Usuario reactivado.");
+        flash(`Usuario ${u.full_name || u.email} activado correctamente.`);
       } else {
         await suspendUser(u.id);
-        flash("Usuario suspendido.");
+        flash(`Usuario ${u.full_name || u.email} suspendido.`);
       }
       setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, is_suspended: !u.is_suspended } : x)));
       setEditingUser((prev) => (prev && prev.id === u.id ? { ...prev, is_suspended: !u.is_suspended } : prev));
@@ -176,25 +142,22 @@ export const AdminPanelPage: React.FC = () => {
   const handleDeleteUser = async () => {
     if (!confirmDeleteUser) return;
     if (confirmDeleteUser.id === user?.id) {
-      flash("No puedes eliminarte a ti mismo.");
+      flash("No puedes eliminar tu propia cuenta.");
       setConfirmDeleteUser(null);
       return;
     }
     setUsersBusy(true);
     try {
       await deleteUser(confirmDeleteUser.id);
-      setUsers((prev) => prev.filter((x) => x.id !== confirmDeleteUser.id));
-      setConfirmDeleteUser(null);
-      flash("Usuario eliminado.");
+      setUsers((prev) => prev.filter((u) => u.id !== confirmDeleteUser.id));
+      flash(`Usuario ${confirmDeleteUser.email} eliminado correctamente.`);
     } catch (err: any) {
       flash(err?.message || "Error al eliminar el usuario.");
-      setConfirmDeleteUser(null);
     } finally {
       setUsersBusy(false);
+      setConfirmDeleteUser(null);
     }
   };
-
-  const pendingCount = requests.filter((r) => r.status === "Pendiente").length;
 
   if (loading) {
     return (
@@ -297,6 +260,8 @@ export const AdminPanelPage: React.FC = () => {
     );
   }
 
+  const pendingCount = users.filter((u) => u.is_suspended).length;
+
   return (
     <div
       style={{
@@ -324,14 +289,6 @@ export const AdminPanelPage: React.FC = () => {
 
         {activeSection === "usuarios" && (
           <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden" }}>
-            <RequestsSectionTitle />
-            <RequestsSection
-              requests={requests}
-              roleSelectionMap={roleSelectionMap}
-              onRoleChange={(id, role) => setRoleSelectionMap((prev) => ({ ...prev, [id]: role }))}
-              onApprove={handleApprove}
-              onReject={handleReject}
-            />
             <UsersTable
               users={users}
               currentUserId={user?.id}
@@ -339,6 +296,7 @@ export const AdminPanelPage: React.FC = () => {
               actionMsg={userActionMsg}
               onEdit={openEdit}
               onDelete={setConfirmDeleteUser}
+              onToggleSuspend={handleSuspendToggle}
             />
           </div>
         )}

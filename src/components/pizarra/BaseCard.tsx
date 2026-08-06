@@ -6,23 +6,32 @@ export interface BaseCardProps {
   camp: CampamentoEntry;
   canEdit: boolean;
   isEditMode: boolean;
+  canManageBases?: boolean;
+  canManageEntries?: boolean;
   handleUpdateCampName: (campId: string, name: string) => void;
   requestDeleteCamp: (campId: string, campName?: string) => void;
   handleAddStateToCamp: (campId: string) => void;
   handleEditStateInCamp: (campId: string, entry: StatePersonnelCount) => void;
   requestRemoveState: (campId: string, stateId: string, stateName?: string) => void;
+  handleUpdateOfficersCount?: (campId: string, stateId: string, newCount: number) => void;
 }
 
 export const BaseCard: React.FC<BaseCardProps> = ({
   camp,
   canEdit,
   isEditMode,
+  canManageBases,
+  canManageEntries,
   handleUpdateCampName,
   requestDeleteCamp,
   handleAddStateToCamp,
   handleEditStateInCamp,
   requestRemoveState,
+  handleUpdateOfficersCount,
 }) => {
+  const allowManageBases = canEdit && (canManageBases ?? true);
+  const allowManageEntries = canEdit && (canManageEntries ?? true);
+
   const campTotal = (camp.statesDetail || []).reduce(
     (s, sd) => s + (Number(sd.officersCount) || 0),
     0
@@ -74,7 +83,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({
             <MapPin size={13} />
           </div>
 
-          {canEdit && isEditMode ? (
+          {allowManageBases && isEditMode ? (
             <input
               type="text"
               value={camp.campName}
@@ -110,7 +119,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({
           )}
         </div>
 
-        {canEdit && isEditMode && (
+        {allowManageBases && isEditMode && (
           <button
             onClick={() => requestDeleteCamp(camp.id, camp.campName)}
             title="Eliminar esta base"
@@ -145,7 +154,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({
           boxSizing: "border-box",
         }}
       >
-        {canEdit && isEditMode && (
+        {allowManageEntries && isEditMode && (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
             <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Entradas Asignadas
@@ -241,24 +250,55 @@ export const BaseCard: React.FC<BaseCardProps> = ({
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-                    <span
-                      style={{
-                        minWidth: "32px",
-                        textAlign: "center",
-                        background: "rgba(0, 0, 0, 0.4)",
-                        border: "1px solid rgba(249, 115, 22, 0.3)",
-                        borderRadius: "6px",
-                        color: "#ffffff",
-                        fontSize: "0.76rem",
-                        fontFamily: "var(--sans-font)",
-                        fontWeight: 800,
-                        padding: "2px 6px",
-                      }}
-                    >
-                      {sd.officersCount || 0}
-                    </span>
+                    {allowManageEntries ? (
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={sd.officersCount ?? 0}
+                        onChange={(e) => {
+                          const sanitized = e.target.value.replace(/[^0-9]/g, "");
+                          const val = parseInt(sanitized, 10) || 0;
+                          if (handleUpdateOfficersCount) {
+                            handleUpdateOfficersCount(camp.id, sd.id, val);
+                          }
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          width: "44px",
+                          textAlign: "center",
+                          background: "rgba(0, 0, 0, 0.6)",
+                          border: "1px solid rgba(249, 115, 22, 0.5)",
+                          borderRadius: "6px",
+                          color: "#ffffff",
+                          fontSize: "0.76rem",
+                          fontFamily: "var(--sans-font)",
+                          fontWeight: 800,
+                          padding: "3px 4px",
+                          outline: "none",
+                          boxShadow: "0 0 8px rgba(249, 115, 22, 0.15)",
+                        }}
+                      />
+                    ) : (
+                      <span
+                        style={{
+                          minWidth: "32px",
+                          textAlign: "center",
+                          background: "rgba(0, 0, 0, 0.4)",
+                          border: "1px solid rgba(249, 115, 22, 0.3)",
+                          borderRadius: "6px",
+                          color: "#ffffff",
+                          fontSize: "0.76rem",
+                          fontFamily: "var(--sans-font)",
+                          fontWeight: 800,
+                          padding: "2px 6px",
+                        }}
+                      >
+                        {sd.officersCount || 0}
+                      </span>
+                    )}
 
-                    {canEdit && isEditMode && (
+                    {allowManageEntries && isEditMode && (
                       <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
                         <button
                           onClick={() => handleEditStateInCamp(camp.id, sd)}
@@ -287,6 +327,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({
                             cursor: "pointer",
                             padding: "3px 5px",
                             display: "inline-flex",
+                            alignItems: "center",
                           }}
                         >
                           <Trash2 size={12} />

@@ -10,6 +10,8 @@ export interface PizarraHeaderProps {
   selectedDate: string;
   setSelectedDate: (date: string) => void;
   canEdit: boolean;
+  canManageBases?: boolean;
+  canManageEntries?: boolean;
   isEditMode: boolean;
   setIsEditMode: (val: boolean) => void;
   saving: boolean;
@@ -27,6 +29,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
   selectedDate,
   setSelectedDate,
   canEdit,
+  canManageBases = true,
   isEditMode,
   setIsEditMode,
   saving,
@@ -97,7 +100,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
           </span>
         </div>
 
-        {/* PESTAÑAS DE NAVEGACIÓN DENTRO DEL HEADER (CENTRADAS ABSOLUTAMENTE) */}
+        {/* PESTAÑAS DE NAVEGACIÓN DENTRO DEL HEADER */}
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", justifyContent: "center", zIndex: 10 }}>
           <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.4)", padding: "3px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
             <button
@@ -158,7 +161,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
         <UserNavMenu currentPage="consolidado" />
       </header>
 
-      {/* BARRA FLOTANTE INFERIOR DE ACCIONES Y CALENDARIO CON CLASES CSS ESTÁNDAR (dt-calendar-wrapper & dt-calendar-popup) */}
+      {/* BARRA FLOTANTE INFERIOR DE ACCIONES Y CALENDARIO */}
       <div
         style={{
           position: "fixed",
@@ -181,7 +184,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
           justifyContent: "center",
         }}
       >
-        {/* CALENDARIO CON EL CONTENEDOR Y POPUP CSS ESTÁNDAR (dt-calendar-wrapper & dt-calendar-popup) */}
+        {/* CALENDARIO */}
         <div className="dt-calendar-wrapper" ref={calendarRef}>
           <button
             type="button"
@@ -255,7 +258,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
               <span>{isEditMode ? "Modo Edición" : "Editar"}</span>
             </button>
 
-            {isEditMode && (
+            {isEditMode && canManageBases && (
               <button
                 onClick={handleAddCamp}
                 style={{

@@ -5,13 +5,15 @@ export interface UserPermissions {
   edit_historical_logs: boolean;
   edit_map: boolean;
   manage_campamentos: boolean;
+  manage_camp_entries: boolean;
 }
 
 export const DEFAULT_OPERATOR_PERMISSIONS: UserPermissions = {
   edit_logs: true,
   edit_historical_logs: false,
   edit_map: false,
-  manage_campamentos: true,
+  manage_campamentos: false,
+  manage_camp_entries: true,
 };
 
 export interface ManagedUser {
@@ -99,5 +101,11 @@ export async function unsuspendUser(id: string): Promise<void> {
 }
 
 export async function deleteUser(id: string): Promise<void> {
-  await callAdminFunction({ action: "delete", userId: id });
+  try {
+    await callAdminFunction({ action: "delete", userId: id });
+  } catch (err: any) {
+    console.warn("admin-users delete fallback executed:", err);
+    const { error } = await supabase.from("user_profiles").delete().eq("id", id);
+    if (error) throw new Error(err?.message || error.message || "Error al eliminar usuario");
+  }
 }

@@ -33,10 +33,20 @@ import { AddCampEntryModal } from "./pizarra/AddCampEntryModal";
 export const PizarraOperacional: React.FC = () => {
   const { isAdmin, isOperador, isAuthenticated, permissions, loading } = useAuth();
   const canAccess = isAuthenticated && (isAdmin || isOperador);
-  const canEdit = isAdmin || (isOperador && !!permissions.manage_campamentos);
 
   const [activeTab, setActiveTab] = useState<"pizarra" | "equipos">("pizarra");
   const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateStr());
+
+  const isToday = selectedDate === getLocalDateStr();
+  const canEditHistorical = isAdmin || (isOperador && !!permissions?.edit_historical_logs);
+
+  const canManageBases = isAdmin || (isOperador && !!permissions?.manage_campamentos && (isToday || canEditHistorical));
+  const canManageEntries = isAdmin || (isOperador && !!permissions?.manage_camp_entries && (isToday || canEditHistorical));
+
+  // Edición de registros/equipos: admins siempre, operadores solo en la fecha actual (o histórica si tienen el permiso)
+  const canEditLogs = isAdmin || (isOperador && !!permissions?.edit_logs && (isToday || canEditHistorical));
+
+  const canEdit = canManageBases || canManageEntries;
   const [camps, setCamps] = useState<CampamentoEntry[]>([]);
   const [workTeams, setWorkTeams] = useState<WorkTeam[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -486,12 +496,12 @@ export const PizarraOperacional: React.FC = () => {
   };
 
   const handleUpdateCampName = (campId: string, name: string) => {
-    if (!canEdit) return;
+    if (!canManageBases) return;
     setCamps((prev) => prev.map((c) => (c.id === campId ? { ...c, campName: name } : c)));
   };
 
   const handleAddStateToCamp = (campId: string) => {
-    if (!canEdit) return;
+    if (!canManageEntries) return;
     const targetCamp = camps.find((c) => c.id === campId);
     if (targetCamp) {
       setAddEntryTarget({ campId: targetCamp.id, campName: targetCamp.campName, entryToEdit: null });
@@ -499,7 +509,7 @@ export const PizarraOperacional: React.FC = () => {
   };
 
   const handleEditStateInCamp = (campId: string, entry: StatePersonnelCount) => {
-    if (!canEdit) return;
+    if (!canManageEntries) return;
     const targetCamp = camps.find((c) => c.id === campId);
     if (targetCamp) {
       setAddEntryTarget({ campId: targetCamp.id, campName: targetCamp.campName, entryToEdit: entry });
@@ -510,7 +520,7 @@ export const PizarraOperacional: React.FC = () => {
     campId: string,
     entry: { id?: string; stateName: string; officersCount: number; type: "pc" | "bomberos" | "otros" }
   ) => {
-    if (!canEdit) return;
+    if (!canManageEntries) return;
     setCamps((prev) =>
       prev.map((c) => {
         if (c.id !== campId) return c;
@@ -627,6 +637,8 @@ export const PizarraOperacional: React.FC = () => {
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
         canEdit={canEdit}
+        canManageBases={canManageBases}
+        canManageEntries={canManageEntries}
         isEditMode={isEditMode}
         setIsEditMode={setIsEditMode}
         saving={saving}
@@ -638,7 +650,7 @@ export const PizarraOperacional: React.FC = () => {
         onAddTeam={() => setIsCreateTeamOpen(true)}
       />
 
-      {activeTab === "pizarra" && canEdit && isEditMode && showAddBase && (
+      {activeTab === "pizarra" && canEdit && isEditMode && canManageBases && showAddBase && (
         <AddBaseBanner
           value={newBaseName}
           onChange={setNewBaseName}
@@ -666,7 +678,12 @@ export const PizarraOperacional: React.FC = () => {
               width: "100%",
             }}
           >
-            <EditModeBanner canEdit={canEdit} isEditMode={isEditMode} />
+            <EditModeBanner
+              canEdit={canEdit}
+              isEditMode={isEditMode}
+              isToday={isToday}
+              canEditHistorical={canEditHistorical}
+            />
 
             <div
               style={{
@@ -797,11 +814,14 @@ export const PizarraOperacional: React.FC = () => {
                   camp={camp}
                   canEdit={canEdit}
                   isEditMode={isEditMode}
+                  canManageBases={canManageBases}
+                  canManageEntries={canManageEntries}
                   handleUpdateCampName={handleUpdateCampName}
                   requestDeleteCamp={requestDeleteCamp}
                   handleAddStateToCamp={handleAddStateToCamp}
                   handleEditStateInCamp={handleEditStateInCamp}
                   requestRemoveState={requestRemoveState}
+                  handleUpdateOfficersCount={(campId, stateId, newCount) => handleUpdateStateInCamp(campId, stateId, "officersCount", newCount)}
                 />
               ))}
             </div>
@@ -812,8 +832,8 @@ export const PizarraOperacional: React.FC = () => {
           workTeams={workTeams}
           deptFilter={deptFilter}
           setDeptFilter={setDeptFilter}
-          onEditTeam={setEditingTeam}
-          onDeleteTeam={canEdit ? requestDeleteTeam : undefined}
+          onEditTeam={canEditLogs ? setEditingTeam : undefined}
+          onDeleteTeam={canEditLogs ? requestDeleteTeam : undefined}
         />
       )}
 

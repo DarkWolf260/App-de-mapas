@@ -31,8 +31,8 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ pendingCount, campsCou
       icon={<UserCheck size={20} />}
       iconBg="rgba(249, 115, 22, 0.15)"
       iconColor="var(--accent-orange)"
-      label="Solicitudes Pendientes"
-      value={<span style={{ color: pendingCount > 0 ? "var(--accent-orange)" : "#4ade80" }}>{pendingCount} Por Aprobar</span>}
+      label="Usuarios Pendientes / Inactivos"
+      value={<span style={{ color: pendingCount > 0 ? "var(--accent-orange)" : "#4ade80" }}>{pendingCount} Por Activar</span>}
     />
     <MetricCard
       icon={<Users size={20} />}

@@ -6,3 +6,18 @@
 @import './styles/components.css';
 @import './styles/responsive.css';
 @import './styles/print.css';
+
+/* Ocultar flechas/spinners (botones de añadir/quitar) de los inputs numéricos */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  display: none !important;
+  margin: 0 !important;
+}
+
+input[type=number] {
+  -webkit-appearance: textfield !important;
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}

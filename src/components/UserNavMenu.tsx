@@ -7,7 +7,7 @@ export interface UserNavMenuProps {
 }
 
 export const UserNavMenu: React.FC<UserNavMenuProps> = ({ currentPage = "mapa" }) => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, isAdmin, logout } = useAuth();
   const [open, setOpen] = useState(false);
 
   if (!isAuthenticated) {
@@ -172,7 +172,7 @@ export const UserNavMenu: React.FC<UserNavMenuProps> = ({ currentPage = "mapa" }
               </button>
             )}
 
-            {currentPage !== "admin" && (
+            {isAdmin && currentPage !== "admin" && (
               <button
                 onClick={() => {
                   window.open('/admin', '_blank');

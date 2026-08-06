@@ -1,108 +1,63 @@
 import { supabase } from "../lib/supabaseClient";
 
-export interface UserRegistrationRequest {
-  id: string;
+export async function registerUserAccount(data: {
   fullName: string;
   email: string;
-  status: "Pendiente" | "Aprobado" | "Rechazado";
-  requestedRole: "operador" | "admin";
-  assignedRole?: "operador" | "admin";
-  created_at: string;
-}
-
-export async function fetchUserRequests(): Promise<UserRegistrationRequest[]> {
-  const { data, error } = await supabase
-    .from("user_requests")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(`Error al cargar solicitudes: ${error.message}`);
-
-  return (data ?? []).map((r: any) => ({
-    id: String(r.id),
-    fullName: r.full_name || r.fullName || "Usuario",
-    email: r.email,
-    status: r.status || "Pendiente",
-    requestedRole: r.requested_role || "operador",
-    assignedRole: r.assigned_role || undefined,
-    created_at: r.created_at || new Date().toISOString(),
-  }));
-}
-
-export async function createRegistrationRequest(data: {
-  fullName: string;
-  email: string;
+  password: string;
 }): Promise<void> {
-  const { error } = await supabase.from("user_requests").insert({
-    id: crypto.randomUUID(),
-    full_name: data.fullName.trim(),
-    email: data.email.trim().toLowerCase(),
-    status: "Pendiente",
-    requested_role: "operador",
-    created_at: new Date().toISOString(),
-  });
+  const cleanEmail = data.email.trim().toLowerCase();
+  const cleanName = data.fullName.trim();
 
-  if (error) throw new Error(`Error al enviar solicitud: ${error.message}`);
-}
-
-
-export async function approveUserRequest(
-  requestId: string,
-  assignedRole: "operador" | "admin"
-): Promise<void> {
-  // 1. Obtener la solicitud para conocer el email del solicitante
-  const { data: request, error: reqErr } = await supabase
-    .from("user_requests")
-    .select("email")
-    .eq("id", requestId)
+  // 1. Verificación previa: ¿El correo ya existe en user_profiles?
+  const { data: existingProfile } = await supabase
+    .from("user_profiles")
+    .select("id")
+    .eq("email", cleanEmail)
     .maybeSingle();
 
-  if (reqErr) throw new Error(`Error al obtener la solicitud: ${reqErr.message}`);
-
-  // 2. Activar el perfil del usuario: buscar por email y actualizar el rol
-  if (request?.email) {
-    const { data: profile, error: profileErr } = await supabase
-      .from("user_profiles")
-      .select("id")
-      .eq("email", request.email)
-      .maybeSingle();
-
-    if (profileErr) {
-      console.warn("No se pudo buscar el perfil del usuario:", profileErr.message);
-    } else if (profile?.id) {
-      // Usuario encontrado: actualizar su rol
-      const { error: updateErr } = await supabase
-        .from("user_profiles")
-        .update({ role: assignedRole, updated_at: new Date().toISOString() })
-        .eq("id", profile.id);
-
-      if (updateErr) throw new Error(`Error al actualizar el rol: ${updateErr.message}`);
-    } else {
-      // El usuario aún no ha creado su cuenta — la aprobación queda registrada
-      // y el rol correcto se asignará cuando se registre (via handle_new_user trigger
-      // + el campo assigned_role en user_requests puede consultarse en ese momento)
-      console.warn("El usuario aún no tiene cuenta registrada. La solicitud queda aprobada para cuando se registre.");
-    }
+  if (existingProfile) {
+    throw new Error(
+      "Este correo electrónico ya se encuentra registrado en el sistema. Puedes iniciar sesión directamente con tu contraseña o solicitar la recuperación a un administrador."
+    );
   }
 
-  // 3. Marcar la solicitud como Aprobada en la tabla
-  const { error: statusErr } = await supabase
-    .from("user_requests")
-    .update({
-      status: "Aprobado",
-      assigned_role: assignedRole,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", requestId);
+  // 2. Crear la cuenta de Auth en Supabase
+  const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+    email: cleanEmail,
+    password: data.password,
+    options: {
+      data: {
+        full_name: cleanName,
+      },
+    },
+  });
 
-  if (statusErr) throw new Error(`Error al actualizar estado de solicitud: ${statusErr.message}`);
-}
+  if (signUpErr) {
+    const msg = signUpErr.message || "";
+    if (msg.toLowerCase().includes("rate limit")) {
+      throw new Error(
+        "Se ha alcanzado el límite temporal de registros de Supabase (email rate limit). Por favor espera unos minutos antes de intentar de nuevo o solicita al Administrador que te cree la cuenta directamente."
+      );
+    }
+    if (msg.includes("User already registered") || signUpErr.status === 422) {
+      throw new Error(
+        "Este correo electrónico ya está registrado en el sistema. Intenta iniciar sesión con tus credenciales."
+      );
+    }
+    throw new Error(`Error al registrar la cuenta: ${msg}`);
+  }
 
-export async function rejectUserRequest(requestId: string): Promise<void> {
-  const { error } = await supabase
-    .from("user_requests")
-    .update({ status: "Rechazado", updated_at: new Date().toISOString() })
-    .eq("id", requestId);
+  const authUserId = signUpData?.user?.id ?? null;
 
-  if (error) throw new Error(`Error al rechazar la solicitud: ${error.message}`);
+  // 3. Establecer la cuenta como suspendida por defecto hasta que el admin la active en la tabla de usuarios
+  if (authUserId) {
+    try {
+      await supabase
+        .from("user_profiles")
+        .update({ is_suspended: true, full_name: cleanName })
+        .eq("id", authUserId);
+    } catch {
+      // Ignorar si el perfil está siendo procesado por el trigger handle_new_user
+    }
+  }
 }

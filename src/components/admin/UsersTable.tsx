@@ -1,5 +1,5 @@
 import React from "react";
-import { UserCog, Pencil, Trash2 } from "lucide-react";
+import { UserCog, Pencil, Trash2, CheckCircle2, Ban } from "lucide-react";
 import type { ManagedUser } from "../../services/adminUsersService";
 import { PERM_DEFS } from "./permissions";
 
@@ -10,6 +10,7 @@ interface UsersTableProps {
   actionMsg: string | null;
   onEdit: (user: ManagedUser) => void;
   onDelete: (user: ManagedUser) => void;
+  onToggleSuspend: (user: ManagedUser) => void;
 }
 
 const RoleBadge: React.FC<{ role: string }> = ({ role }) => (
@@ -31,29 +32,68 @@ const RoleBadge: React.FC<{ role: string }> = ({ role }) => (
 const StatusBadge: React.FC<{ suspended: boolean }> = ({ suspended }) => (
   <span
     style={{
-      background: suspended ? "rgba(239, 68, 68, 0.12)" : "rgba(34, 197, 94, 0.12)",
-      border: `1px solid ${suspended ? "rgba(239, 68, 68, 0.3)" : "rgba(34, 197, 94, 0.3)"}`,
-      color: suspended ? "#ef4444" : "#4ade80",
+      background: suspended ? "rgba(249, 115, 22, 0.15)" : "rgba(34, 197, 94, 0.12)",
+      border: `1px solid ${suspended ? "rgba(249, 115, 22, 0.4)" : "rgba(34, 197, 94, 0.3)"}`,
+      color: suspended ? "var(--accent-orange)" : "#4ade80",
       borderRadius: "4px",
       padding: "2px 8px",
       fontSize: "0.65rem",
       fontWeight: 800,
     }}
   >
-    {suspended ? "Suspendido" : "Activo"}
+    {suspended ? "Pendiente / Suspendido" : "Activo"}
   </span>
 );
 
-export const UsersTable: React.FC<UsersTableProps> = ({ users, currentUserId, busy, actionMsg, onEdit, onDelete }) => {
+export const UsersTable: React.FC<UsersTableProps> = ({
+  users,
+  currentUserId,
+  busy,
+  actionMsg,
+  onEdit,
+  onDelete,
+  onToggleSuspend,
+}) => {
   return (
     <>
-      <div style={{ padding: "10px 16px", background: "rgba(56, 189, 248, 0.08)", borderTop: "1px solid var(--border-color)", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-        <h4 style={{ margin: 0, fontSize: "0.7rem", fontWeight: 800, color: "#38bdf8", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+      <div
+        style={{
+          padding: "10px 16px",
+          background: "rgba(56, 189, 248, 0.08)",
+          borderTop: "1px solid var(--border-color)",
+          borderBottom: "1px solid var(--border-color)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "10px",
+          flexWrap: "wrap",
+        }}
+      >
+        <h4
+          style={{
+            margin: 0,
+            fontSize: "0.7rem",
+            fontWeight: 800,
+            color: "#38bdf8",
+            textTransform: "uppercase",
+            letterSpacing: "0.04em",
+          }}
+        >
           <UserCog size={13} style={{ verticalAlign: "middle", marginRight: "6px" }} />
           Usuarios del Sistema ({users.length})
         </h4>
         {actionMsg && (
-          <span style={{ background: "rgba(56, 189, 248, 0.12)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#38bdf8", borderRadius: "6px", padding: "4px 10px", fontSize: "0.68rem", fontWeight: 700 }}>
+          <span
+            style={{
+              background: "rgba(56, 189, 248, 0.12)",
+              border: "1px solid rgba(56, 189, 248, 0.3)",
+              color: "#38bdf8",
+              borderRadius: "6px",
+              padding: "4px 10px",
+              fontSize: "0.68rem",
+              fontWeight: 700,
+            }}
+          >
             {actionMsg}
           </span>
         )}
@@ -61,13 +101,22 @@ export const UsersTable: React.FC<UsersTableProps> = ({ users, currentUserId, bu
 
       {users.length === 0 ? (
         <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)", fontSize: "0.76rem" }}>
-          No hay usuarios registrados.
+          No hay usuarios registrados en el sistema.
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.74rem", minWidth: "900px" }}>
             <thead>
-              <tr style={{ background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-color)", color: "var(--text-muted)", textTransform: "uppercase", fontSize: "0.62rem", letterSpacing: "0.05em" }}>
+              <tr
+                style={{
+                  background: "var(--bg-tertiary)",
+                  borderBottom: "1px solid var(--border-color)",
+                  color: "var(--text-muted)",
+                  textTransform: "uppercase",
+                  fontSize: "0.62rem",
+                  letterSpacing: "0.05em",
+                }}
+              >
                 <th style={{ padding: "10px 14px", fontWeight: 700 }}>Usuario</th>
                 <th style={{ padding: "10px 14px", fontWeight: 700 }}>Rol</th>
                 <th style={{ padding: "10px 14px", fontWeight: 700 }}>Estado</th>
@@ -80,7 +129,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({ users, currentUserId, bu
                 const isSelf = u.id === currentUserId;
                 const enabledPerms = PERM_DEFS.filter((p) => u.role !== "admin" && !!u.permissions[p.key]);
                 return (
-                  <tr key={u.id} style={{ borderBottom: "1px solid var(--border-subtle)", opacity: u.is_suspended ? 0.55 : 1 }}>
+                  <tr key={u.id} style={{ borderBottom: "1px solid var(--border-subtle)", background: u.is_suspended ? "rgba(249, 115, 22, 0.04)" : "transparent" }}>
                     <td style={{ padding: "12px 14px" }}>
                       <div style={{ fontWeight: 700, color: "#f8fafc" }}>
                         {u.full_name || u.email || "Sin nombre"}
@@ -102,7 +151,18 @@ export const UsersTable: React.FC<UsersTableProps> = ({ users, currentUserId, bu
                       ) : (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                           {enabledPerms.map((p) => (
-                            <span key={p.key} style={{ background: "rgba(56, 189, 248, 0.1)", border: "1px solid rgba(56, 189, 248, 0.25)", color: "#7dd3fc", borderRadius: "4px", padding: "2px 7px", fontSize: "0.62rem", fontWeight: 700 }}>
+                            <span
+                              key={p.key}
+                              style={{
+                                background: "rgba(56, 189, 248, 0.1)",
+                                border: "1px solid rgba(56, 189, 248, 0.25)",
+                                color: "#7dd3fc",
+                                borderRadius: "4px",
+                                padding: "2px 7px",
+                                fontSize: "0.62rem",
+                                fontWeight: 700,
+                              }}
+                            >
                               {p.label}
                             </span>
                           ))}
@@ -110,12 +170,58 @@ export const UsersTable: React.FC<UsersTableProps> = ({ users, currentUserId, bu
                       )}
                     </td>
                     <td style={{ padding: "12px 14px", textAlign: "center" }}>
-                      <div style={{ display: "flex", gap: "2px", justifyContent: "center" }}>
+                      <div style={{ display: "flex", gap: "6px", justifyContent: "center", alignItems: "center" }}>
+                        {u.is_suspended && !isSelf && (
+                          <button
+                            onClick={() => onToggleSuspend(u)}
+                            disabled={busy}
+                            title="Activar cuenta de usuario"
+                            style={{
+                              background: "rgba(34, 197, 94, 0.15)",
+                              border: "1px solid rgba(34, 197, 94, 0.4)",
+                              borderRadius: "6px",
+                              color: "#4ade80",
+                              fontSize: "0.68rem",
+                              fontWeight: 700,
+                              padding: "4px 10px",
+                              cursor: busy ? "not-allowed" : "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              fontFamily: "var(--sans-font)",
+                            }}
+                          >
+                            <CheckCircle2 size={13} /> Activar
+                          </button>
+                        )}
+                        {!u.is_suspended && !isSelf && (
+                          <button
+                            onClick={() => onToggleSuspend(u)}
+                            disabled={busy}
+                            title="Suspender cuenta de usuario"
+                            style={{
+                              background: "rgba(239, 68, 68, 0.12)",
+                              border: "1px solid rgba(239, 68, 68, 0.3)",
+                              borderRadius: "6px",
+                              color: "#ef4444",
+                              fontSize: "0.66rem",
+                              fontWeight: 700,
+                              padding: "4px 8px",
+                              cursor: busy ? "not-allowed" : "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              fontFamily: "var(--sans-font)",
+                            }}
+                          >
+                            <Ban size={12} /> Suspender
+                          </button>
+                        )}
                         <button
                           className="user-action-icon edit"
                           onClick={() => onEdit(u)}
                           disabled={busy}
-                          title="Editar usuario"
+                          title="Editar rol y permisos de usuario"
                           style={{ cursor: busy ? "not-allowed" : "pointer" }}
                         >
                           <Pencil size={15} />
