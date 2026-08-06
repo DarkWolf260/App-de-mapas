@@ -1,7 +1,6 @@
 import React from "react";
-import { Plus, Trash2, Shield, MapPin } from "lucide-react";
-import { CampamentoEntry, VENEZUELA_STATES } from "../../services/baseService";
-import Select from "../ui/Select";
+import { Plus, Trash2, Shield, MapPin, Edit3 } from "lucide-react";
+import { CampamentoEntry, StatePersonnelCount, getEntryType } from "../../services/baseService";
 
 export interface BaseCardProps {
   camp: CampamentoEntry;
@@ -10,12 +9,7 @@ export interface BaseCardProps {
   handleUpdateCampName: (campId: string, name: string) => void;
   requestDeleteCamp: (campId: string, campName?: string) => void;
   handleAddStateToCamp: (campId: string) => void;
-  handleUpdateStateInCamp: (
-    campId: string,
-    stateIdTarget: string,
-    field: "stateName" | "officersCount",
-    val: string | number
-  ) => void;
+  handleEditStateInCamp: (campId: string, entry: StatePersonnelCount) => void;
   requestRemoveState: (campId: string, stateId: string, stateName?: string) => void;
 }
 
@@ -26,7 +20,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({
   handleUpdateCampName,
   requestDeleteCamp,
   handleAddStateToCamp,
-  handleUpdateStateInCamp,
+  handleEditStateInCamp,
   requestRemoveState,
 }) => {
   const campTotal = (camp.statesDetail || []).reduce(
@@ -139,7 +133,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({
         )}
       </div>
 
-      {/* FILAS DE ESTADOS Y CONTEOS CON SCROLL INTERNO COMPACTO */}
+      {/* FILAS DE ENTRADAS CON SCROLL INTERNO */}
       <div
         style={{
           padding: "10px 12px",
@@ -154,7 +148,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({
         {canEdit && isEditMode && (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
             <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Estados Asignados
+              Entradas Asignadas
             </span>
             <button
               onClick={() => handleAddStateToCamp(camp.id)}
@@ -180,81 +174,129 @@ export const BaseCard: React.FC<BaseCardProps> = ({
 
         {(camp.statesDetail || []).length === 0 ? (
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "0.7rem", fontStyle: "italic" }}>
-            Sin estados agregados
+            Sin entradas agregadas
           </div>
         ) : (
           (camp.statesDetail || [])
             .slice()
             .sort((a, b) => a.stateName.localeCompare(b.stateName, "es"))
-            .map((sd) => (
-              <div
-                key={sd.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "8px",
-                  background: "rgba(0, 0, 0, 0.25)",
-                  border: "1px solid rgba(255, 255, 255, 0.05)",
-                  borderRadius: "6px",
-                  padding: "5px 10px",
-                }}
-              >
-                {canEdit && isEditMode ? (
-                  <Select
-                    compact
-                    options={[{ value: "-", label: "-" }, ...VENEZUELA_STATES.map((st) => ({ value: st, label: st }))]}
-                    value={sd.stateName || "-"}
-                    onChange={(v) => handleUpdateStateInCamp(camp.id, sd.id, "stateName", v)}
-                    style={{ flex: 1 }}
-                  />
-                ) : (
-                  <span style={{ fontSize: "0.72rem", color: "#e2e8f0", fontWeight: 600, flex: 1 }}>
-                    {sd.stateName}
-                  </span>
-                )}
+            .map((sd) => {
+              const entryType = getEntryType(sd.stateName, sd.type);
+              const typeBadgeColor =
+                entryType === "pc"
+                  ? "#f97316"
+                  : entryType === "bomberos"
+                  ? "#ef4444"
+                  : "#38bdf8";
 
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    placeholder="0"
-                    readOnly={!canEdit}
-                    value={sd.officersCount === 0 || !sd.officersCount ? "" : String(sd.officersCount)}
-                    onChange={(e) => {
-                      if (!canEdit) return;
-                      const val = e.target.value.replace(/[^0-9]/g, "");
-                      handleUpdateStateInCamp(camp.id, sd.id, "officersCount", val);
-                    }}
-                    style={{
-                      width: "52px",
-                      background: "rgba(0, 0, 0, 0.5)",
-                      border: "1px solid rgba(249, 115, 22, 0.3)",
-                      borderRadius: "6px",
-                      color: "#ffffff",
-                      fontSize: "0.76rem",
-                      fontFamily: "var(--sans-font)",
-                      fontWeight: 800,
-                      textAlign: "center",
-                      padding: "3px 4px",
-                      outline: "none",
-                      cursor: canEdit ? "text" : "default",
-                    }}
-                  />
+              const typeBadgeBg =
+                entryType === "pc"
+                  ? "rgba(249, 115, 22, 0.15)"
+                  : entryType === "bomberos"
+                  ? "rgba(239, 68, 68, 0.15)"
+                  : "rgba(56, 189, 248, 0.15)";
 
-                  {canEdit && isEditMode && (
-                    <button
-                      onClick={() => requestRemoveState(camp.id, sd.id, sd.stateName)}
-                      title="Eliminar este estado"
-                      style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: "1px", display: "inline-flex" }}
+              return (
+                <div
+                  key={sd.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    background: "rgba(0, 0, 0, 0.25)",
+                    border: "1px solid rgba(255, 255, 255, 0.05)",
+                    borderRadius: "6px",
+                    padding: "6px 10px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, minWidth: 0 }}>
+                    <span
+                      style={{
+                        fontSize: "0.56rem",
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        padding: "1px 5px",
+                        borderRadius: "4px",
+                        color: typeBadgeColor,
+                        background: typeBadgeBg,
+                        border: `1px solid ${typeBadgeColor}33`,
+                        flexShrink: 0,
+                      }}
                     >
-                      <Trash2 size={12} />
-                    </button>
-                  )}
+                      {entryType === "pc" ? "PC" : entryType === "bomberos" ? "BOM" : "OTR"}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "0.74rem",
+                        color: "#e2e8f0",
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {sd.stateName}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+                    <span
+                      style={{
+                        minWidth: "32px",
+                        textAlign: "center",
+                        background: "rgba(0, 0, 0, 0.4)",
+                        border: "1px solid rgba(249, 115, 22, 0.3)",
+                        borderRadius: "6px",
+                        color: "#ffffff",
+                        fontSize: "0.76rem",
+                        fontFamily: "var(--sans-font)",
+                        fontWeight: 800,
+                        padding: "2px 6px",
+                      }}
+                    >
+                      {sd.officersCount || 0}
+                    </span>
+
+                    {canEdit && isEditMode && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+                        <button
+                          onClick={() => handleEditStateInCamp(camp.id, sd)}
+                          title="Editar esta entrada en ventana flotante"
+                          style={{
+                            background: "rgba(56, 189, 248, 0.1)",
+                            border: "1px solid rgba(56, 189, 248, 0.3)",
+                            borderRadius: "5px",
+                            color: "#38bdf8",
+                            cursor: "pointer",
+                            padding: "3px 5px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Edit3 size={12} />
+                        </button>
+                        <button
+                          onClick={() => requestRemoveState(camp.id, sd.id, sd.stateName)}
+                          title="Eliminar esta entrada"
+                          style={{
+                            background: "rgba(239, 68, 68, 0.1)",
+                            border: "1px solid rgba(239, 68, 68, 0.3)",
+                            borderRadius: "5px",
+                            color: "#ef4444",
+                            cursor: "pointer",
+                            padding: "3px 5px",
+                            display: "inline-flex",
+                          }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
         )}
       </div>
 

@@ -6,6 +6,8 @@ import {
   deleteCampamento,
   checkPizarraRecordExists,
   CampamentoEntry,
+  StatePersonnelCount,
+  getEntryType,
 } from "../services/baseService";
 import { useAuth } from "../hooks/useAuth";
 import { fetchFeatures } from "../services/featureService";
@@ -26,6 +28,7 @@ import { CreateWorkTeamModal } from "./pizarra/CreateWorkTeamModal";
 import { OverwriteWarningModal } from "./pizarra/OverwriteWarningModal";
 import { AddBaseBanner } from "./pizarra/AddBaseBanner";
 import { EditModeBanner } from "./pizarra/EditModeBanner";
+import { AddCampEntryModal } from "./pizarra/AddCampEntryModal";
 
 export const PizarraOperacional: React.FC = () => {
   const { isAdmin, isOperador, isAuthenticated, permissions, loading } = useAuth();
@@ -43,7 +46,9 @@ export const PizarraOperacional: React.FC = () => {
   const [showAddBase, setShowAddBase] = useState(false);
   const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [addEntryTarget, setAddEntryTarget] = useState<{ campId: string; campName: string; entryToEdit?: StatePersonnelCount | null } | null>(null);
   const [deptFilter, setDeptFilter] = useState<"all" | "pc" | "bomberos">("all");
+  const [campDeptFilter, setCampDeptFilter] = useState<"all" | "pc" | "bomberos" | "otros">("all");
   const [refreshTeamsCounter, setRefreshTeamsCounter] = useState(0);
   const [editingTeam, setEditingTeam] = useState<WorkTeam | null>(null);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
@@ -487,14 +492,50 @@ export const PizarraOperacional: React.FC = () => {
 
   const handleAddStateToCamp = (campId: string) => {
     if (!canEdit) return;
+    const targetCamp = camps.find((c) => c.id === campId);
+    if (targetCamp) {
+      setAddEntryTarget({ campId: targetCamp.id, campName: targetCamp.campName, entryToEdit: null });
+    }
+  };
+
+  const handleEditStateInCamp = (campId: string, entry: StatePersonnelCount) => {
+    if (!canEdit) return;
+    const targetCamp = camps.find((c) => c.id === campId);
+    if (targetCamp) {
+      setAddEntryTarget({ campId: targetCamp.id, campName: targetCamp.campName, entryToEdit: entry });
+    }
+  };
+
+  const handleConfirmSaveEntry = (
+    campId: string,
+    entry: { id?: string; stateName: string; officersCount: number; type: "pc" | "bomberos" | "otros" }
+  ) => {
+    if (!canEdit) return;
     setCamps((prev) =>
       prev.map((c) => {
         if (c.id !== campId) return c;
         const currentDetails = c.statesDetail || [];
-        return {
-          ...c,
-          statesDetail: [...currentDetails, { id: crypto.randomUUID(), stateName: "-", officersCount: 0 }],
-        };
+        if (entry.id) {
+          const updated = currentDetails.map((sd) =>
+            sd.id === entry.id
+              ? { ...sd, stateName: entry.stateName, officersCount: entry.officersCount, type: entry.type }
+              : sd
+          );
+          return { ...c, statesDetail: updated };
+        } else {
+          return {
+            ...c,
+            statesDetail: [
+              ...currentDetails,
+              {
+                id: crypto.randomUUID(),
+                stateName: entry.stateName,
+                officersCount: entry.officersCount,
+                type: entry.type,
+              },
+            ],
+          };
+        }
       })
     );
   };
@@ -523,24 +564,47 @@ export const PizarraOperacional: React.FC = () => {
     );
   };
 
+  let pcTotal = 0;
+  let bomberosTotal = 0;
+  let otrosTotal = 0;
+
   const stateTotalsMap = new Map<string, number>();
   camps.forEach((c) => {
     (c.statesDetail || []).forEach((sd) => {
+      const cnt = Number(sd.officersCount) || 0;
       const current = stateTotalsMap.get(sd.stateName) || 0;
-      stateTotalsMap.set(sd.stateName, current + (Number(sd.officersCount) || 0));
+      stateTotalsMap.set(sd.stateName, current + cnt);
+
+      const entryType = getEntryType(sd.stateName, sd.type);
+      if (entryType === "pc") pcTotal += cnt;
+      else if (entryType === "bomberos") bomberosTotal += cnt;
+      else otrosTotal += cnt;
     });
   });
 
   const getRegionTotalFromCamps = (regionStates: string[]): number => {
-    return regionStates.reduce((sum, st) => sum + (stateTotalsMap.get(st) || 0), 0);
+    return regionStates.reduce((sum, st) => {
+      const exact = stateTotalsMap.get(st) || 0;
+      const cleanState = st.replace(/^PC\s+/i, "").toLowerCase();
+      let aliasSum = 0;
+      stateTotalsMap.forEach((cnt, sName) => {
+        if (sName !== st && sName.toLowerCase().includes(cleanState)) {
+          aliasSum += cnt;
+        }
+      });
+      return sum + exact + aliasSum;
+    }, 0);
   };
 
-  const totalGeneralPersonnel = camps.reduce((sum, c) => {
-    return (
-      sum +
-      (c.statesDetail || []).reduce((sSum, sd) => sSum + (Number(sd.officersCount) || 0), 0)
+  const totalGeneralPersonnel = pcTotal + bomberosTotal + otrosTotal;
+
+  const displayedCamps = camps.map((c) => {
+    if (campDeptFilter === "all") return c;
+    const filteredStates = (c.statesDetail || []).filter(
+      (sd) => getEntryType(sd.stateName, sd.type) === campDeptFilter
     );
-  }, 0);
+    return { ...c, statesDetail: filteredStates };
+  });
 
   return (
     <div
@@ -609,12 +673,105 @@ export const PizarraOperacional: React.FC = () => {
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
                 gap: "16px",
-                marginBottom: "20px",
+                marginBottom: "16px",
                 alignItems: "stretch",
               }}
             >
               <RedanCard getRegionTotalFromCamps={getRegionTotalFromCamps} />
-              <TotalGeneralCard redanGrandTotal={totalGeneralPersonnel} />
+              <TotalGeneralCard
+                redanGrandTotal={totalGeneralPersonnel}
+                pcCount={pcTotal}
+                bomberosCount={bomberosTotal}
+                otrosCount={otrosTotal}
+              />
+            </div>
+
+            {/* BARRA DE FILTRO POR INSTITUCIÓN / ENTE */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                marginBottom: "16px",
+                flexWrap: "wrap",
+                background: "rgba(15, 23, 42, 0.6)",
+                border: "1px solid rgba(255, 255, 255, 0.07)",
+                borderRadius: "10px",
+                padding: "8px 14px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Filtrar Entradas por Ente:
+                </span>
+                <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.3)", padding: "3px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                  <button
+                    onClick={() => setCampDeptFilter("all")}
+                    style={{
+                      background: campDeptFilter === "all" ? "var(--accent-orange)" : "transparent",
+                      color: campDeptFilter === "all" ? "#fff" : "var(--text-muted)",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "4px 10px",
+                      fontSize: "0.68rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "var(--sans-font)",
+                    }}
+                  >
+                    Todos ({totalGeneralPersonnel})
+                  </button>
+                  <button
+                    onClick={() => setCampDeptFilter("pc")}
+                    style={{
+                      background: campDeptFilter === "pc" ? "rgba(249, 115, 22, 0.25)" : "transparent",
+                      color: campDeptFilter === "pc" ? "#f97316" : "var(--text-muted)",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "4px 10px",
+                      fontSize: "0.68rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "var(--sans-font)",
+                    }}
+                  >
+                    🟧 PC ({pcTotal})
+                  </button>
+                  <button
+                    onClick={() => setCampDeptFilter("bomberos")}
+                    style={{
+                      background: campDeptFilter === "bomberos" ? "rgba(239, 68, 68, 0.25)" : "transparent",
+                      color: campDeptFilter === "bomberos" ? "#ef4444" : "var(--text-muted)",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "4px 10px",
+                      fontSize: "0.68rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "var(--sans-font)",
+                    }}
+                  >
+                    🟥 Bomberos ({bomberosTotal})
+                  </button>
+                  <button
+                    onClick={() => setCampDeptFilter("otros")}
+                    style={{
+                      background: campDeptFilter === "otros" ? "rgba(56, 189, 248, 0.25)" : "transparent",
+                      color: campDeptFilter === "otros" ? "#38bdf8" : "var(--text-muted)",
+                      border: "none",
+                      borderRadius: "6px",
+                      padding: "4px 10px",
+                      fontSize: "0.68rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "var(--sans-font)",
+                    }}
+                  >
+                    🟦 Otros ({otrosTotal})
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div
@@ -625,7 +782,7 @@ export const PizarraOperacional: React.FC = () => {
                 width: "100%",
               }}
             >
-              {camps.map((camp) => (
+              {displayedCamps.map((camp) => (
                 <BaseCard
                   key={camp.id}
                   camp={camp}
@@ -634,7 +791,7 @@ export const PizarraOperacional: React.FC = () => {
                   handleUpdateCampName={handleUpdateCampName}
                   requestDeleteCamp={requestDeleteCamp}
                   handleAddStateToCamp={handleAddStateToCamp}
-                  handleUpdateStateInCamp={handleUpdateStateInCamp}
+                  handleEditStateInCamp={handleEditStateInCamp}
                   requestRemoveState={requestRemoveState}
                 />
               ))}
@@ -678,6 +835,16 @@ export const PizarraOperacional: React.FC = () => {
         date={selectedDate}
         onCancel={() => setShowOverwriteWarning(false)}
         onConfirm={executeSaveAll}
+      />
+
+      <AddCampEntryModal
+        key={addEntryTarget ? `${addEntryTarget.campId}-${addEntryTarget.entryToEdit?.id || 'new'}` : 'closed'}
+        isOpen={!!addEntryTarget}
+        campId={addEntryTarget?.campId || ""}
+        campName={addEntryTarget?.campName || ""}
+        entryToEdit={addEntryTarget?.entryToEdit}
+        onClose={() => setAddEntryTarget(null)}
+        onConfirm={handleConfirmSaveEntry}
       />
     </div>
   );

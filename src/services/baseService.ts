@@ -30,6 +30,7 @@ export interface StatePersonnelCount {
   id: string;
   stateName: string;
   officersCount: number;
+  type?: "pc" | "bomberos" | "otros";
 }
 
 export interface CampamentoEntry {
@@ -45,7 +46,7 @@ export interface CampamentoEntry {
   statesDetail?: StatePersonnelCount[];
 }
 
-export const VENEZUELA_STATES: string[] = [
+export const PC_STATES: string[] = [
   "PC Amazonas",
   "PC Anzoátegui",
   "PC Apure",
@@ -71,6 +72,59 @@ export const VENEZUELA_STATES: string[] = [
   "PC Yaracuy",
   "PC Zulia",
 ].sort((a, b) => a.localeCompare(b, "es"));
+
+export const BOMBEROS_ENTITIES: string[] = [
+  "Bomberos Amazonas",
+  "Bomberos Anzoátegui",
+  "Bomberos Apure",
+  "Bomberos Aragua",
+  "Bomberos Barinas",
+  "Bomberos Bolívar",
+  "Bomberos Carabobo",
+  "Bomberos Cojedes",
+  "Bomberos Delta Amacuro",
+  "Bomberos Falcón",
+  "Bomberos Guárico",
+  "Bomberos La Guaira",
+  "Bomberos Lara",
+  "Bomberos Mérida",
+  "Bomberos Miranda",
+  "Bomberos Monagas",
+  "Bomberos Nacional",
+  "Bomberos Nueva Esparta",
+  "Bomberos Portuguesa",
+  "Bomberos Sucre",
+  "Bomberos Táchira",
+  "Bomberos Trujillo",
+  "Bomberos Yaracuy",
+  "Bomberos Zulia",
+  "Bomberos Universitarios",
+  "Bomberos Aeronáuticos",
+  "Bomberos Marinos",
+].sort((a, b) => a.localeCompare(b, "es"));
+
+export const OTROS_ORGANISMOS: string[] = [
+  "Guardia Nacional Bolivariana (GNB)",
+  "Policía Nacional Bolivariana (PNB)",
+  "Fuerza Armada Nacional Bolivariana (FANB)",
+  "Cruz Roja",
+  "Grupo de Rescate",
+  "VEN 911",
+  "Inparques",
+  "Ministerio de Salud (MPPS)",
+].sort((a, b) => a.localeCompare(b, "es"));
+
+export function getEntryType(stateName: string, explicitType?: string): "pc" | "bomberos" | "otros" {
+  if (explicitType === "pc" || explicitType === "bomberos" || explicitType === "otros") {
+    return explicitType;
+  }
+  const lower = (stateName || "").toLowerCase();
+  if (lower.startsWith("pc ") || lower === "pc") return "pc";
+  if (lower.startsWith("bomberos ") || lower.includes("bomberos")) return "bomberos";
+  return "otros";
+}
+
+export const VENEZUELA_STATES: string[] = PC_STATES;
 
 export const EMPTY_CAMPAMENTOS: CampamentoEntry[] = [];
 
@@ -200,6 +254,7 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
             id: sd.id || `st_${row.id}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
             stateName: sd.stateName || VENEZUELA_STATES[0],
             officersCount: Number(sd.officersCount) || 0,
+            type: getEntryType(sd.stateName || VENEZUELA_STATES[0], sd.type),
           })),
         }));
       }
@@ -225,6 +280,7 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
                       id: crypto.randomUUID(),
                       stateName: s.stateName,
                       officersCount: count,
+                      type: getEntryType(s.stateName, s.type),
                     });
                   }
                 });
@@ -278,6 +334,7 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
               id: crypto.randomUUID(),
               stateName: sd.stateName || VENEZUELA_STATES[0],
               officersCount: 0,
+              type: getEntryType(sd.stateName || VENEZUELA_STATES[0], sd.type),
             })),
           }));
         }
@@ -304,6 +361,7 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
             id: sd.id || `st_${row.id}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
             stateName: sd.stateName || VENEZUELA_STATES[0],
             officersCount: Number(sd.officersCount) || 0,
+            type: getEntryType(sd.stateName || VENEZUELA_STATES[0], sd.type),
           })),
         }));
       }
@@ -408,6 +466,7 @@ export async function savePizarraOperacionalRecords(dateStr: string, camps: Camp
         states: activeStates.map((sd) => ({
           stateName: sd.stateName,
           officersCount: Number(sd.officersCount) || 0,
+          type: sd.type || getEntryType(sd.stateName),
         })),
       };
     });
