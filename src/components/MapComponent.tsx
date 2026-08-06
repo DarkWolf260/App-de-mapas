@@ -13,7 +13,7 @@ import { useDraggable } from "../hooks/useDraggable";
 import type { MapFeatureActions, MapUIContext } from "./mapTypes";
 import Point from "@arcgis/core/geometry/Point";
 import { DEFAULT_CENTER } from "../utils/mapUtils";
-import { Satellite, Calendar } from "lucide-react";
+import { Satellite, Calendar, MapPin, ExternalLink, Copy, Link2, Check } from "lucide-react";
 
 interface MapComponentProps {
   activeBasemap: string;
@@ -34,17 +34,17 @@ interface MapComponentProps {
   /** Dashboard mode: renders only the map, hiding all floating widgets/toolbars/popups */
   bare?: boolean;
 }
-  
-  const MapComponent: React.FC<MapComponentProps> = (props) => {
-    const { layerVisibility, drawnFeatures, onZoomToFeature, actions, ui, bare = false } = props;
-    const {
-      onSaveDailyLog,
-      onToggleFeatureLock,
-      onRenameFeature,
-      onUpdateFeatureDescription,
-      onUpdateFeatureColor,
-      onUpdateFeatureCollapsed,
-    } = actions;
+
+const MapComponent: React.FC<MapComponentProps> = (props) => {
+  const { layerVisibility, drawnFeatures, onZoomToFeature, actions, ui, bare = false } = props;
+  const {
+    onSaveDailyLog,
+    onToggleFeatureLock,
+    onRenameFeature,
+    onUpdateFeatureDescription,
+    onUpdateFeatureColor,
+    onUpdateFeatureCollapsed,
+  } = actions;
 
   const [widgetCollapsed, setWidgetCollapsed] = React.useState(() => {
     return localStorage.getItem("pc_widget_collapsed") === "true";
@@ -95,6 +95,104 @@ interface MapComponentProps {
     bitacoraOpen: ui.bitacoraOpen,
     canEditMap,
   });
+
+  const [contextMenu, setContextMenu] = React.useState<{
+    x: number;
+    y: number;
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [copiedType, setCopiedType] = React.useState<"link" | "coords" | null>(null);
+
+  const handleCopyLink = React.useCallback((lat: number, lng: number) => {
+    const url = `https://www.google.com/maps?q=${lat},${lng}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).catch(() => { });
+    } else {
+      const input = document.createElement("input");
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+    }
+    setCopiedType("link");
+    setTimeout(() => {
+      setCopiedType(null);
+      setContextMenu(null);
+    }, 600);
+  }, []);
+
+  const handleCopyCoords = React.useCallback((lat: number, lng: number) => {
+    const coordsStr = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(coordsStr).catch(() => { });
+    } else {
+      const input = document.createElement("input");
+      input.value = coordsStr;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+    }
+    setCopiedType("coords");
+    setTimeout(() => {
+      setCopiedType(null);
+      setContextMenu(null);
+    }, 600);
+  }, []);
+
+  React.useEffect(() => {
+    const container = mapDiv.current;
+    if (!container) return;
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      const view = viewRef.current;
+      if (!view) return;
+
+      const rect = container.getBoundingClientRect();
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      const mapPoint = view.toMap({ x: screenX, y: screenY });
+
+      if (mapPoint && typeof mapPoint.latitude === "number" && typeof mapPoint.longitude === "number") {
+        const menuWidth = 190;
+        const menuHeight = 120;
+        const posX = Math.min(e.clientX, window.innerWidth - menuWidth - 10);
+        const posY = Math.min(e.clientY, window.innerHeight - menuHeight - 10);
+
+        setContextMenu({
+          x: Math.max(10, posX),
+          y: Math.max(10, posY),
+          lat: mapPoint.latitude,
+          lng: mapPoint.longitude,
+        });
+        setCopiedType(null);
+      }
+    };
+
+    container.addEventListener("contextmenu", handleContextMenu, true);
+    return () => {
+      container.removeEventListener("contextmenu", handleContextMenu, true);
+    };
+  }, [mapDiv, viewRef]);
+
+  React.useEffect(() => {
+    if (!contextMenu) return;
+    const handleClose = () => setContextMenu(null);
+    window.addEventListener("click", handleClose);
+    window.addEventListener("scroll", handleClose, true);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setContextMenu(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("click", handleClose);
+      window.removeEventListener("scroll", handleClose, true);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [contextMenu]);
 
   const handleNavigateToFeature = React.useCallback((feat: DrawnFeature) => {
     let mapPoint: Point | null = null;
@@ -191,31 +289,31 @@ interface MapComponentProps {
       )}
 
       {!bare && (
-      <CustomMapPopup
-        customPopup={customPopup}
-        popupScreenPos={popupScreenPos}
-        drawnFeatures={drawnFeatures}
-        layerVisibility={layerVisibility}
-        popupEditDate={popupEditDate}
-        setPopupEditDate={handlePopupDateChange}
-        onSaveDailyLog={onSaveDailyLog}
-        onRefreshFeatures={actions.onRefreshFeatures}
-        featureActions={{
-          onToggleFeatureLock,
-          onRenameFeature,
-          onUpdateFeatureDescription,
-          onUpdateFeatureColor,
-          onUpdateFeatureCollapsed,
-        }}
-        sketchLayer={sketchLayer}
-        onClose={() => setCustomPopup(null)}
-        onNavigateToFeature={handleNavigateToFeature}
-        activeDepartment={ui.activeDepartment}
-        isAdmin={ui.isAdmin}
-        isOperador={ui.isOperador}
-        permissions={ui.permissions}
-        canEditMap={canEditMap}
-      />
+        <CustomMapPopup
+          customPopup={customPopup}
+          popupScreenPos={popupScreenPos}
+          drawnFeatures={drawnFeatures}
+          layerVisibility={layerVisibility}
+          popupEditDate={popupEditDate}
+          setPopupEditDate={handlePopupDateChange}
+          onSaveDailyLog={onSaveDailyLog}
+          onRefreshFeatures={actions.onRefreshFeatures}
+          featureActions={{
+            onToggleFeatureLock,
+            onRenameFeature,
+            onUpdateFeatureDescription,
+            onUpdateFeatureColor,
+            onUpdateFeatureCollapsed,
+          }}
+          sketchLayer={sketchLayer}
+          onClose={() => setCustomPopup(null)}
+          onNavigateToFeature={handleNavigateToFeature}
+          activeDepartment={ui.activeDepartment}
+          isAdmin={ui.isAdmin}
+          isOperador={ui.isOperador}
+          permissions={ui.permissions}
+          canEditMap={canEditMap}
+        />
       )}
 
       {/* Floating hover tooltip for lines and polygons */}
@@ -248,96 +346,96 @@ interface MapComponentProps {
       )}
       {/* Floating Bottom-Right Container (Map Settings Panel + Deployment Summary Card) */}
       {!bare && (
-      <div
-        style={{
-          position: "absolute",
-          bottom: "52px",
-          right: "16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-          alignItems: "flex-end",
-          zIndex: 100,
-          pointerEvents: "none",
-        }}
-      >
-        {/* Botón Flotante Discreto de Bitácora General (Verde Neón) */}
-        {actions.onOpenRangeReport && (
-          <button
-            className="bitacora-floating-btn"
-            onClick={() => actions.onOpenRangeReport && actions.onOpenRangeReport("all")}
-            style={{
-              width: "32px",
-              height: "32px",
-              borderRadius: "50%",
-              background: "rgba(10, 15, 29, 0.85)",
-              border: "1px solid rgba(34, 197, 94, 0.45)",
-              color: "#4ade80",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-              boxShadow: "0 4px 12px rgba(34, 197, 94, 0.25)",
-              transition: "all 0.2s ease",
-              padding: 0,
-              pointerEvents: "auto",
-            }}
-            title="Abrir Bitácora General de Novedades"
-          >
-            <Calendar size={16} style={{ color: "#4ade80" }} />
-          </button>
-        )}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "52px",
+            right: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            alignItems: "flex-end",
+            zIndex: 100,
+            pointerEvents: "none",
+          }}
+        >
+          {/* Botón Flotante Discreto de Bitácora General (Verde Neón) */}
+          {actions.onOpenRangeReport && (
+            <button
+              className="bitacora-floating-btn"
+              onClick={() => actions.onOpenRangeReport && actions.onOpenRangeReport("all")}
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                background: "rgba(10, 15, 29, 0.85)",
+                border: "1px solid rgba(34, 197, 94, 0.45)",
+                color: "#4ade80",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
+                boxShadow: "0 4px 12px rgba(34, 197, 94, 0.25)",
+                transition: "all 0.2s ease",
+                padding: 0,
+                pointerEvents: "auto",
+              }}
+              title="Abrir Bitácora General de Novedades"
+            >
+              <Calendar size={16} style={{ color: "#4ade80" }} />
+            </button>
+          )}
 
-        {/* Botón Flotante Grupos de Trabajo */}
-        {/* Map Settings & Layer Visibility Panel */}
-        {props.onToggleLayer && (
-          <div style={{ pointerEvents: "auto" }} className="map-settings-wrapper">
-            <MapSettingsPanel
-              layerVisibility={layerVisibility}
-              onToggleLayer={props.onToggleLayer}
-              expanded={showMapSettings}
-              onToggle={() => setShowMapSettings((v) => !v)}
+          {/* Botón Flotante Grupos de Trabajo */}
+          {/* Map Settings & Layer Visibility Panel */}
+          {props.onToggleLayer && (
+            <div style={{ pointerEvents: "auto" }} className="map-settings-wrapper">
+              <MapSettingsPanel
+                layerVisibility={layerVisibility}
+                onToggleLayer={props.onToggleLayer}
+                expanded={showMapSettings}
+                onToggle={() => setShowMapSettings((v) => !v)}
+              />
+            </div>
+          )}
+
+          {/* Floating Active Deployment Summary Card */}
+          <div style={{ pointerEvents: "auto" }}>
+            <DeploymentSummaryCard
+              drawnFeatures={drawnFeatures}
+              widgetCollapsed={widgetCollapsed}
+              onToggleCollapse={(collapsed) => {
+                setWidgetCollapsed(collapsed);
+                localStorage.setItem("pc_widget_collapsed", String(collapsed));
+              }}
+              onZoomToFeature={onZoomToFeature}
+              onOpenEditFeature={(feat) => {
+                let mapPoint: Point | null = null;
+                if (feat.geojsonGeometry && feat.type === "point" && Array.isArray(feat.geojsonGeometry.coordinates)) {
+                  const [lng, lat] = feat.geojsonGeometry.coordinates as number[];
+                  mapPoint = new Point({ longitude: lng, latitude: lat });
+                }
+                if (!mapPoint) mapPoint = new Point({ longitude: DEFAULT_CENTER[0], latitude: DEFAULT_CENTER[1] });
+                ui.onFeatureClick?.();
+                setCustomPopup({ mapPoint, feat });
+              }}
+              selectedDate={ui.selectedDate}
+              activeDepartment={ui.activeDepartment}
             />
           </div>
-        )}
-
-        {/* Floating Active Deployment Summary Card */}
-        <div style={{ pointerEvents: "auto" }}>
-          <DeploymentSummaryCard
-            drawnFeatures={drawnFeatures}
-            widgetCollapsed={widgetCollapsed}
-            onToggleCollapse={(collapsed) => {
-              setWidgetCollapsed(collapsed);
-              localStorage.setItem("pc_widget_collapsed", String(collapsed));
-            }}
-            onZoomToFeature={onZoomToFeature}
-            onOpenEditFeature={(feat) => {
-              let mapPoint: Point | null = null;
-              if (feat.geojsonGeometry && feat.type === "point" && Array.isArray(feat.geojsonGeometry.coordinates)) {
-                const [lng, lat] = feat.geojsonGeometry.coordinates as number[];
-                mapPoint = new Point({ longitude: lng, latitude: lat });
-              }
-              if (!mapPoint) mapPoint = new Point({ longitude: DEFAULT_CENTER[0], latitude: DEFAULT_CENTER[1] });
-              ui.onFeatureClick?.();
-              setCustomPopup({ mapPoint, feat });
-            }}
-            selectedDate={ui.selectedDate}
-            activeDepartment={ui.activeDepartment}
-          />
         </div>
-      </div>
       )}
 
       {/* Barra de Estado / Coordenadas Flotante (Diseño COE) */}
       {!bare && (
-      <div className="status-bar-coordinates">
-        <div><span>LAT:</span> {coords.lat.toFixed(6)}</div>
-        <div><span>LNG:</span> {coords.lng.toFixed(6)}</div>
-        <div><span>ZOOM:</span> {Math.round(currentZoom)}</div>
-        {currentScale > 0 && <div><span>ESCALA:</span> 1:{currentScale.toLocaleString()}</div>}
-      </div>
+        <div className="status-bar-coordinates">
+          <div><span>LAT:</span> {coords.lat.toFixed(6)}</div>
+          <div><span>LNG:</span> {coords.lng.toFixed(6)}</div>
+          <div><span>ZOOM:</span> {Math.round(currentZoom)}</div>
+          {currentScale > 0 && <div><span>ESCALA:</span> 1:{currentScale.toLocaleString()}</div>}
+        </div>
       )}
 
       {/* HTML point labels with background (personnel info) */}
@@ -366,14 +464,122 @@ interface MapComponentProps {
 
       {/* Floating comparison toggle button — bottom-left */}
       {!bare && (
-      <button
-        className={`swipe-toggle-btn ${swipeActive ? "active" : ""}`}
-        onClick={swipeActive ? deactivateSwipe : activateSwipe}
-        title={swipeActive ? "Cerrar comparación" : "Comparar antes/después"}
-      >
-        <Satellite size={16} />
-        <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Después"}</span>
-      </button>
+        <button
+          className={`swipe-toggle-btn ${swipeActive ? "active" : ""}`}
+          onClick={swipeActive ? deactivateSwipe : activateSwipe}
+          title={swipeActive ? "Cerrar comparación" : "Comparar antes/después"}
+        >
+          <Satellite size={16} />
+          <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Después"}</span>
+        </button>
+      )}
+      {/* Floating Right-Click Context Menu (Discreto: Buscar en Maps, Copiar enlace y Copiar coordenadas) */}
+      {contextMenu && (
+        <div
+          style={{
+            position: "fixed",
+            left: `${contextMenu.x}px`,
+            top: `${contextMenu.y}px`,
+            zIndex: 999999,
+            background: "rgba(10, 15, 29, 0.96)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            borderRadius: "8px",
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.6)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            padding: "4px",
+            minWidth: "185px",
+            animation: "fadeIn 0.1s ease-out",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            onClick={() => handleCopyCoords(contextMenu.lat, contextMenu.lng)}
+            title="Copiar coordenadas"
+            style={{
+              padding: "5px 8px",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+              marginBottom: "4px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              cursor: "pointer",
+              borderRadius: "4px",
+              transition: "background 0.12s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <span style={{ fontSize: "0.64rem", color: copiedType === "coords" ? "#4ade80" : "var(--text-muted)", fontFamily: "monospace", fontWeight: 600 }}>
+              {copiedType === "coords" ? "¡Coordenadas copiadas!" : `${contextMenu.lat.toFixed(5)}, ${contextMenu.lng.toFixed(5)}`}
+            </span>
+            {copiedType === "coords" ? (
+              <Check size={12} style={{ color: "#4ade80", flexShrink: 0, marginLeft: "6px" }} />
+            ) : (
+              <Copy size={12} style={{ color: "var(--text-muted)", flexShrink: 0, marginLeft: "6px" }} />
+            )}
+          </div>
+
+          <button
+            onClick={() => {
+              const url = `https://www.google.com/maps?q=${contextMenu.lat},${contextMenu.lng}`;
+              window.open(url, "_blank", "noopener,noreferrer");
+              setContextMenu(null);
+            }}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "6px 8px",
+              background: "transparent",
+              border: "none",
+              borderRadius: "5px",
+              color: "#f8fafc",
+              fontSize: "0.72rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              textAlign: "left",
+              fontFamily: "var(--sans-font)",
+              transition: "background 0.12s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <ExternalLink size={13} style={{ color: "#38bdf8", flexShrink: 0 }} />
+            <span>Ver en Maps</span>
+          </button>
+
+          <button
+            onClick={() => handleCopyLink(contextMenu.lat, contextMenu.lng)}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "6px 8px",
+              background: "transparent",
+              border: "none",
+              borderRadius: "5px",
+              color: copiedType === "link" ? "#4ade80" : "#f8fafc",
+              fontSize: "0.72rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              textAlign: "left",
+              fontFamily: "var(--sans-font)",
+              transition: "background 0.12s ease, color 0.12s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            {copiedType === "link" ? (
+              <Check size={13} style={{ color: "#4ade80", flexShrink: 0 }} />
+            ) : (
+              <Link2 size={13} style={{ color: "var(--accent-orange)", flexShrink: 0 }} />
+            )}
+            <span>{copiedType === "link" ? "¡Enlace copiado!" : "Copiar enlace de Maps"}</span>
+          </button>
+        </div>
       )}
     </div>
   );
