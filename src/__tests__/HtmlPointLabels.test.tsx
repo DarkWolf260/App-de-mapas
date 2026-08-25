@@ -106,4 +106,24 @@ describe("HtmlPointLabels", () => {
     labelEl.click();
     expect(onSelect).toHaveBeenCalledWith(baseLabel.id);
   });
+
+  it("truncates teamNames at 3 badges and displays '... X más'", () => {
+    render(
+      <HtmlPointLabels
+        labels={[
+          {
+            ...baseLabel,
+            teamNames: ["Grupo 1", "Grupo 2", "Grupo 3", "Grupo 4", "Grupo 5"],
+          },
+        ]}
+        isAuthenticated={true}
+      />
+    );
+    expect(screen.getByText("Grupo 1")).toBeInTheDocument();
+    expect(screen.getByText("Grupo 2")).toBeInTheDocument();
+    expect(screen.getByText("Grupo 3")).toBeInTheDocument();
+    expect(screen.queryByText("Grupo 4")).toBeNull();
+    expect(screen.queryByText("Grupo 5")).toBeNull();
+    expect(screen.getByText("... 2 más")).toBeInTheDocument();
+  });
 });

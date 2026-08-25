@@ -9,6 +9,8 @@ import type {
   INovedadRepository,
   IMigrationRepository,
   IRealtimeProvider,
+  RealtimePayload,
+  RealtimeChannelStatus,
 } from "./interfaces";
 
 export const supabaseFeatureRepo: IFeatureRepository = {
@@ -39,13 +41,33 @@ export const supabaseMigrationRepo: IMigrationRepository = {
 };
 
 export const supabaseRealtime: IRealtimeProvider = {
-  subscribeToChanges(callback: () => void) {
+  subscribeToChanges(
+    callback: (payload?: RealtimePayload) => void,
+    onStatusChange?: (status: RealtimeChannelStatus) => void
+  ) {
+    const handlePostgresChange = (payload: any) => {
+      callback({
+        table: payload.table,
+        eventType: payload.eventType,
+        new: payload.new || {},
+        old: payload.old || {},
+      });
+    };
+
     const channel = supabase
       .channel("supabase-realtime-coe")
-      .on("postgres_changes", { event: "*", schema: "public", table: "drawn_features" }, callback)
-      .on("postgres_changes", { event: "*", schema: "public", table: "daily_logs" }, callback)
-      .on("postgres_changes", { event: "*", schema: "public", table: "novedades" }, callback)
-      .subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "drawn_features" }, handlePostgresChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_logs" }, handlePostgresChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "novedades" }, handlePostgresChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "campamentos" }, handlePostgresChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "pizarra_operacional" }, handlePostgresChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_activities" }, handlePostgresChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_profiles" }, handlePostgresChange)
+      .subscribe((status) => {
+        if (onStatusChange) {
+          onStatusChange(status as RealtimeChannelStatus);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

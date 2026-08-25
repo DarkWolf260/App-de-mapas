@@ -123,6 +123,7 @@ function App() {
         hiddenFeatures={state.hiddenFeatures}
         onToggleFeatureVisibility={state.handleToggleFeatureVisibility}
         onImportData={state.handleImportData}
+        realtimeStatus={state.realtimeStatus}
       />
 
       <div className="map-viewport">

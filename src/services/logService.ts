@@ -2,8 +2,12 @@ import { supabase } from "../lib/supabaseClient";
 import { getNormalizedGroupList } from "../utils/logUtils";
 import type { DailyLog } from "../types";
 
-export async function fetchLogs(): Promise<Map<string, DailyLog[]>> {
-  const { data, error } = await supabase.from("daily_logs").select("*");
+export async function fetchLogs(date?: string): Promise<Map<string, DailyLog[]>> {
+  let query = supabase.from("daily_logs").select("*");
+  if (date) {
+    query = query.eq("date", date);
+  }
+  const { data, error } = await query;
   if (error) {
     console.error("[logService] fetch error:", error);
     return new Map();
@@ -21,6 +25,10 @@ export async function fetchLogs(): Promise<Map<string, DailyLog[]>> {
 
 export async function saveDailyLog(featureId: number, log: DailyLog): Promise<void> {
   const fidStr = String(featureId);
+  if (!fidStr || fidStr === "NaN" || fidStr === "undefined") {
+    console.warn("[logService] Ignorando guardado con featureId inválido:", featureId);
+    return;
+  }
   const deptToUse = log.department || "pc";
 
   const { data: existingRecord } = await supabase

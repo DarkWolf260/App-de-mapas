@@ -218,11 +218,11 @@ function buildHtmlLabels(
 
     const hasPersonnel = accMode
       ? (!!feat && (feat.dailyLogs?.some((l) =>
-          (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
-        ) || false))
+        (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
+      ) || false))
       : (!!feat && (feat.dailyLogs?.some((l) =>
-          l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
-        ) || false));
+        l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
+      ) || false));
 
     if (hasPersonnel) {
       // Etiqueta HTML con datos de personal (fondo negro con stats y badges)
@@ -231,11 +231,11 @@ function buildHtmlLabels(
       if (item.visible && item.x !== null && item.y !== null) {
         const statLogs = accMode
           ? (feat?.dailyLogs?.filter((l) =>
-              activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department
-            ) || [])
+            activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department
+          ) || [])
           : (feat?.dailyLogs?.filter((l) =>
-              l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
-            ) || []);
+            l.date === todayStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
+          ) || []);
 
         const refFeatLog = accMode && statLogs.length > 0
           ? [...statLogs].sort((a, b) => b.date.localeCompare(a.date))[0]

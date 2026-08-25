@@ -63,7 +63,9 @@ export function useAppState(isAdmin: boolean) {
     fetchDailyActivity,
     saveDailyActivity,
     refreshFeatures,
-  } = useFeatureDB();
+    realtimeStatus,
+    isRealtimeConnected,
+  } = useFeatureDB({ selectedDate });
 
   const { hiddenFeatures, handleToggleFeatureVisibility } = useFeatureVisibility();
   const { sortedDrawnFeatures } = useFeatureOrder(drawnFeatures);
@@ -268,5 +270,7 @@ export function useAppState(isAdmin: boolean) {
     handleGoToCoords,
     handleCreatePointAtCoords,
     handleImportData,
+    realtimeStatus,
+    isRealtimeConnected,
   };
 }

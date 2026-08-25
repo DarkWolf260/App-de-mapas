@@ -19,6 +19,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import Select from './ui/Select';
+import { RealtimeStatusBadge } from './RealtimeStatusBadge';
+import type { RealtimeChannelStatus } from '../repositories/interfaces';
 
 export interface MapPoint {
   id: string;
@@ -63,6 +65,7 @@ interface SidebarProps {
   onToggleShowAreas?: () => void;
   hiddenFeatures?: Record<string, boolean>;
   onToggleFeatureVisibility?: (id: string | number) => void;
+  realtimeStatus?: RealtimeChannelStatus;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -82,6 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleShowAreas,
   hiddenFeatures = {},
   onToggleFeatureVisibility,
+  realtimeStatus,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -160,14 +164,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside className={`sidebar ${className}`}>
       {/* Encabezado */}
       <div className="sidebar-header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div className="sidebar-logo">
-            <Activity size={24} color="#ffffff" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="sidebar-logo">
+              <Activity size={24} color="#ffffff" />
+            </div>
+            <div className="sidebar-title">
+              <h1>COE La Guaira</h1>
+              <p>{activeDepartment === 'bomberos' ? 'Cuerpo de Bomberos' : activeDepartment === 'mixto' ? 'Mando Mixto' : 'Protección Civil'}</p>
+            </div>
           </div>
-          <div className="sidebar-title">
-            <h1>COE La Guaira</h1>
-            <p>{activeDepartment === 'bomberos' ? 'Cuerpo de Bomberos' : activeDepartment === 'mixto' ? 'Mando Mixto' : 'Protección Civil'}</p>
-          </div>
+          {realtimeStatus && <RealtimeStatusBadge status={realtimeStatus} />}
         </div>
         {onDepartmentChange && (
           <DepartmentTabs activeDepartment={activeDepartment} onDepartmentChange={onDepartmentChange} />

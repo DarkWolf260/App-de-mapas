@@ -119,7 +119,7 @@ describe("IStorage", () => {
 
 describe("IRealtimeProvider", () => {
   it("can be implemented with a mock", () => {
-    let cb: (() => void) | null = null;
+    let cb: ((payload?: any) => void) | null = null;
     let authCb: ((event: string) => void) | null = null;
 
     const realtime: IRealtimeProvider = {
@@ -133,8 +133,13 @@ describe("IRealtimeProvider", () => {
       },
     };
 
-    const unsub1 = realtime.subscribeToChanges(() => {});
+    let receivedPayload: any = null;
+    const unsub1 = realtime.subscribeToChanges((payload) => {
+      receivedPayload = payload;
+    });
     expect(typeof unsub1).toBe("function");
+    if (cb) (cb as any)({ table: "novedades", eventType: "INSERT", new: { id: "n1" }, old: {} });
+    expect(receivedPayload).toEqual({ table: "novedades", eventType: "INSERT", new: { id: "n1" }, old: {} });
     unsub1();
 
     const unsub2 = realtime.subscribeToAuthChanges(() => {});

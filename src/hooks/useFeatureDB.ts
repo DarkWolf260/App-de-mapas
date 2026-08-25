@@ -14,6 +14,7 @@ import type {
   INovedadRepository,
   IMigrationRepository,
   IRealtimeProvider,
+  RealtimeChannelStatus,
 } from "../repositories/interfaces";
 import type { DailyLog, DrawnFeature, NovedadEntry } from "../types";
 import { fetchDailyActivity, saveDailyActivity, type DailyActivity } from "../services/activityService";
@@ -24,6 +25,7 @@ interface UseFeatureDBOptions {
   novedadRepo?: INovedadRepository;
   migrationRepo?: IMigrationRepository;
   realtime?: IRealtimeProvider;
+  selectedDate?: string;
 }
 
 export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
@@ -34,6 +36,7 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
   const realtime = opts.realtime ?? supabaseRealtime;
 
   const [drawnFeatures, setDrawnFeatures] = useState<DrawnFeature[]>([]);
+  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeChannelStatus>("CONNECTING");
 
   const fetchFromSupabase = useCallback(async () => {
     try {
@@ -74,7 +77,7 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     } catch (err) {
       console.error("[fetch] exception:", err);
     }
-  }, [featureRepo, logRepo]);
+  }, [featureRepo, logRepo, opts.selectedDate]);
 
   const syncLocalRxDBToSupabase = useCallback(async () => {
     await migrationRepo.run(fetchFromSupabase);
@@ -91,9 +94,45 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
       }
     });
 
-    const unsubRealtime = realtime.subscribeToChanges(() => {
-      fetchFromSupabase();
-    });
+    const unsubRealtime = realtime.subscribeToChanges(
+      (payload) => {
+        if (!payload || !payload.table) {
+          fetchFromSupabase();
+          return;
+        }
+
+        if (payload.table === "drawn_features" || payload.table === "daily_logs") {
+          fetchFromSupabase();
+        } else if (payload.table === "novedades") {
+          if (payload.eventType === "INSERT" && payload.new && payload.new.id) {
+            setGlobalNovedades((prev) => {
+              if (prev.some((n) => n.id === payload.new.id)) return prev;
+              const entry: NovedadEntry = {
+                id: payload.new.id,
+                timestamp: payload.new.timestamp || payload.new.created_at || "",
+                time: payload.new.time || "",
+                text: payload.new.text || "",
+                type: payload.new.type || "novedad",
+              };
+              return [...prev, entry];
+            });
+          } else if (payload.eventType === "UPDATE" && payload.new && payload.new.id) {
+            setGlobalNovedades((prev) =>
+              prev.map((n) =>
+                n.id === payload.new.id
+                  ? { ...n, text: payload.new.text ?? n.text, time: payload.new.time ?? n.time }
+                  : n
+              )
+            );
+          } else if (payload.eventType === "DELETE" && payload.old && payload.old.id) {
+            setGlobalNovedades((prev) => prev.filter((n) => n.id !== payload.old.id));
+          }
+        }
+      },
+      (status) => {
+        setRealtimeStatus(status);
+      }
+    );
 
     return () => {
       unsubAuth();
@@ -102,33 +141,39 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
   }, [fetchFromSupabase, syncLocalRxDBToSupabase, realtime]);
 
   const handleFeatureAdded = async (feat: DrawnFeature) => {
+    setDrawnFeatures((prev) => [...prev.filter((f) => String(f.id) !== String(feat.id)), feat]);
     await featureRepo.upsert(feat);
-    fetchFromSupabase();
   };
 
   const handleRenameFeature = async (id: number, title: string) => {
+    setDrawnFeatures((prev) => prev.map((f) => (Number(f.id) === Number(id) ? { ...f, title } : f)));
     await featureRepo.updateTitle(id, title);
-    fetchFromSupabase();
   };
 
   const handleUpdateFeatureDescription = async (id: number, desc: string) => {
+    setDrawnFeatures((prev) => prev.map((f) => (Number(f.id) === Number(id) ? { ...f, description: desc } : f)));
     await featureRepo.updateDescription(id, desc);
-    fetchFromSupabase();
   };
 
   const handleUpdateFeatureColor = async (id: number, color: string) => {
+    setDrawnFeatures((prev) => prev.map((f) => (Number(f.id) === Number(id) ? { ...f, color } : f)));
     await featureRepo.updateColor(id, color);
-    fetchFromSupabase();
   };
 
   const handleToggleFeatureLock = async (id: number, locked: boolean) => {
+    setDrawnFeatures((prev) => prev.map((f) => (Number(f.id) === Number(id) ? { ...f, locked } : f)));
     await featureRepo.updateLock(id, locked);
-    fetchFromSupabase();
   };
 
   const handleUpdateFeatureCollapsed = async (id: number, isCollapsed: boolean, collapsedCount: string | number) => {
+    setDrawnFeatures((prev) =>
+      prev.map((f) =>
+        Number(f.id) === Number(id)
+          ? { ...f, isCollapsed, collapsedCount: String(collapsedCount || "") }
+          : f
+      )
+    );
     await featureRepo.updateCollapsed(id, isCollapsed, collapsedCount);
-    fetchFromSupabase();
   };
 
   const handleSaveDailyLog = async (featureId: number, log: DailyLog) => {
@@ -136,8 +181,8 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
   };
 
   const handleFeatureDeleted = async (id: number) => {
+    setDrawnFeatures((prev) => prev.filter((f) => Number(f.id) !== Number(id)));
     await featureRepo.delete(id);
-    fetchFromSupabase();
   };
 
   const [globalNovedades, setGlobalNovedades] = useState<NovedadEntry[]>([]);
@@ -228,5 +273,7 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     fetchDailyActivity: fetchDailyActivityState,
     saveDailyActivity: saveDailyActivityState,
     refreshFeatures: fetchFromSupabase,
+    realtimeStatus,
+    isRealtimeConnected: realtimeStatus === "SUBSCRIBED",
   };
 }

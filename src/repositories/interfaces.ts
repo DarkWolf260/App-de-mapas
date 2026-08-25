@@ -12,7 +12,7 @@ export interface IFeatureRepository {
 }
 
 export interface ILogRepository {
-  fetchAll(): Promise<Map<string, DailyLog[]>>;
+  fetchAll(date?: string): Promise<Map<string, DailyLog[]>>;
   save(featureId: number, log: DailyLog): Promise<void>;
 }
 
@@ -33,7 +33,20 @@ export interface IStorage {
   removeItem(key: string): void;
 }
 
+export type RealtimeChannelStatus = "SUBSCRIBED" | "TIMED_OUT" | "CLOSED" | "CHANNEL_ERROR" | "CONNECTING";
+
+export interface RealtimePayload {
+  table: string;
+  eventType: "INSERT" | "UPDATE" | "DELETE" | string;
+  new: Record<string, any>;
+  old: Record<string, any>;
+}
+
 export interface IRealtimeProvider {
-  subscribeToChanges(callback: () => void): () => void;
+  subscribeToChanges(
+    callback: (payload?: RealtimePayload) => void,
+    onStatusChange?: (status: RealtimeChannelStatus) => void
+  ): () => void;
   subscribeToAuthChanges(callback: (event: string) => void): () => void;
 }
+

@@ -133,7 +133,7 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, isAuth
             {/* Insignias de equipos desplegados — solo visible para personal autenticado */}
             {isAuthenticated && lbl.teamNames && lbl.teamNames.length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: "3px", marginTop: "4px", fontSize: "8px", fontWeight: 700 }}>
-                {lbl.teamNames.map((name, i) => (
+                {lbl.teamNames.slice(0, 3).map((name, i) => (
                   <span
                     key={i}
                     style={{
@@ -147,6 +147,19 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, isAuth
                     {name}
                   </span>
                 ))}
+                {lbl.teamNames.length > 3 && (
+                  <span
+                    style={{
+                      color: "#cbd5e1",
+                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                      padding: "1px 5px",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    ... {lbl.teamNames.length - 3} más
+                  </span>
+                )}
               </div>
             )}
 

@@ -56,8 +56,17 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   onNavigateToFeature,
   canEdit = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<"registro" | "estadisticas" | "novedades">("registro");
+  const isAllMode = feat === "all";
+  const [activeTab, setActiveTab] = useState<"registro" | "estadisticas" | "novedades">(() =>
+    isAllMode ? "estadisticas" : "registro"
+  );
   const [activeEditFeatureId, setActiveEditFeatureId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isAllMode) {
+      setActiveTab("estadisticas");
+    }
+  }, [isAllMode]);
   const [arrivalFilter, setArrivalFilter] = useState<"all" | "arrived" | "not_arrived">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [statsSortKey, setStatsSortKey] = useState<
@@ -85,7 +94,6 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     return 0;
   });
 
-  const isAllMode = feat === "all";
   const activeDate = dates[activeDateIndex];
   const { parentsMap } = useMemo(() => buildParentsMap(allFeatures || []), [allFeatures]);
 

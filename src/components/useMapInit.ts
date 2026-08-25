@@ -47,7 +47,7 @@ export function useMapInit(
   const sketchLayerRef = useRef<GraphicsLayer | null>(null);
   const sketchVMRef = useRef<SketchViewModel | null>(null);
 
-  const deconflictGraphicsRef = useRef<() => void>(() => {});
+  const deconflictGraphicsRef = useRef<() => void>(() => { });
   const onFeatureAddedRef = useRef(callbacks.onFeatureAdded);
   const onFeatureDeletedRef = useRef(callbacks.onFeatureDeleted);
 
@@ -106,160 +106,160 @@ export function useMapInit(
 
     view.when(
       () => {
-      const zoomWidget = new Zoom({ view });
-      const compassWidget = new Compass({ view });
-      view.ui.add([zoomWidget, compassWidget], "top-right");
+        const zoomWidget = new Zoom({ view });
+        const compassWidget = new Compass({ view });
+        view.ui.add([zoomWidget, compassWidget], "top-right");
 
-      if (layerVisibility.sketch) {
-        const svm = new SketchViewModel({
-          view,
-          layer: sketchLayer,
-          updateOnGraphicClick: false,
-          defaultUpdateOptions: {
-            tool: "transform",
-            enableRotation: true,
-            enableScaling: true,
-            toggleToolOnClick: false,
-            multipleSelectionEnabled: true,
-          },
-        });
-        sketchVMRef.current = svm;
-      }
-
-      runDeconflict();
-
-      reactiveUtils.watch(() => view.extent, () => { runDeconflict(); });
-      reactiveUtils.watch(() => view.zoom, (z) => { if (typeof z === "number") setCurrentZoom(z); });
-      reactiveUtils.watch(() => view.scale, (s) => { if (typeof s === "number") setCurrentScale(Math.round(s)); });
-      reactiveUtils.watch(() => view.stationary, (isStationary) => { if (isStationary) runDeconflict(); });
-
-      view.on("pointer-move", (evt: any) => {
-        const point = view.toMap({ x: evt.x, y: evt.y });
-        if (point) setCoords({ lat: point.latitude ?? 0, lng: point.longitude ?? 0 });
-      });
-
-      if (layerVisibility.sketch && sketchVMRef.current) {
-        const svm = sketchVMRef.current;
-        svm.on("create", (evt: any) => {
-        if (evt.state === "complete") {
-          const g = evt.graphic;
-          const count = sketchLayer.graphics.filter((x) => !x.attributes?.isLabel && x.geometry?.type === g.geometry?.type).length + 1;
-          const title = typeLabel(g.geometry.type) + " " + count;
-          g.attributes = { title };
-
-          if (g.geometry.type === "point" || g.geometry.type === "polygon") {
-            const isPolyLabel = g.geometry.type === "polygon";
-            const labelSym = new TextSymbol({
-              text: title,
-              color: "white",
-              haloColor: "black",
-              haloSize: "1px",
-              font: { size: 11, family: "sans-serif", weight: "bold" },
-              yoffset: g.geometry.type === "point" ? 12 : 0,
-            });
-            const currentZ = view.zoom;
-            const requiredZoom = isPolyLabel ? 14 : 16;
-            const isZoomOk = currentZ !== undefined && !isNaN(currentZ) && currentZ >= requiredZoom;
-            sketchLayer.add(new Graphic({
-              geometry: isPolyLabel ? centroidExecute(g.geometry!) : g.geometry!.clone(),
-              symbol: labelSym,
-              visible: isZoomOk && (isPolyLabel ? layerVisibility.polygonLabels : layerVisibility.pointLabels),
-              attributes: { isLabel: true, parentId: (g as any).uid, isPolygonLabel: isPolyLabel },
-            }));
-          }
-
-          if (onFeatureAddedRef.current) {
-            onFeatureAddedRef.current({
-              id: (g as any).uid,
-              title,
-              type: g.geometry.type as DrawnFeature["type"],
-              color: callbacks.getActiveColor().hex,
-              geojsonGeometry: geoToJSON(g.geometry),
-            });
-          }
-          setTimeout(runDeconflict, 50);
+        if (layerVisibility.sketch) {
+          const svm = new SketchViewModel({
+            view,
+            layer: sketchLayer,
+            updateOnGraphicClick: false,
+            defaultUpdateOptions: {
+              tool: "transform",
+              enableRotation: true,
+              enableScaling: true,
+              toggleToolOnClick: false,
+              multipleSelectionEnabled: true,
+            },
+          });
+          sketchVMRef.current = svm;
         }
-        if (evt.state === "cancel") { /* handled externally */ }
-      });
 
-      svm.on("update", (evt: any) => {
-        evt.graphics?.forEach((g: any) => {
-          const label = sketchLayer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
-          if (label) {
-            label.geometry = g.geometry?.type === "polygon" ? centroidExecute(g.geometry!) : g.geometry!.clone();
-          }
+        runDeconflict();
+
+        reactiveUtils.watch(() => view.extent, () => { runDeconflict(); });
+        reactiveUtils.watch(() => view.zoom, (z) => { if (typeof z === "number") setCurrentZoom(z); });
+        reactiveUtils.watch(() => view.scale, (s) => { if (typeof s === "number") setCurrentScale(Math.round(s)); });
+        reactiveUtils.watch(() => view.stationary, (isStationary) => { if (isStationary) runDeconflict(); });
+
+        view.on("pointer-move", (evt: any) => {
+          const point = view.toMap({ x: evt.x, y: evt.y });
+          if (point) setCoords({ lat: point.latitude ?? 0, lng: point.longitude ?? 0 });
         });
-        if (evt.state === "complete") {
-          evt.graphics?.forEach((g: any) => {
-            if (onFeatureAddedRef.current && g.geometry) {
-              const featId = g.attributes?.id || g.uid;
-              const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-              onFeatureAddedRef.current({
-                id: featId,
-                title: g.attributes?.title || "Elemento",
-                type: g.geometry.type as DrawnFeature["type"],
-                color: feat?.color || callbacks.getActiveColor().hex,
-                geojsonGeometry: geoToJSON(g.geometry),
-                _isUpdate: true,
+
+        if (layerVisibility.sketch && sketchVMRef.current) {
+          const svm = sketchVMRef.current;
+          svm.on("create", (evt: any) => {
+            if (evt.state === "complete") {
+              const g = evt.graphic;
+              const count = sketchLayer.graphics.filter((x) => !x.attributes?.isLabel && x.geometry?.type === g.geometry?.type).length + 1;
+              const title = typeLabel(g.geometry.type) + " " + count;
+              g.attributes = { title };
+
+              if (g.geometry.type === "point" || g.geometry.type === "polygon") {
+                const isPolyLabel = g.geometry.type === "polygon";
+                const labelSym = new TextSymbol({
+                  text: title,
+                  color: "white",
+                  haloColor: "black",
+                  haloSize: "1px",
+                  font: { size: 11, family: "sans-serif", weight: "bold" },
+                  yoffset: g.geometry.type === "point" ? 12 : 0,
+                });
+                const currentZ = view.zoom;
+                const requiredZoom = isPolyLabel ? 14 : 16;
+                const isZoomOk = currentZ !== undefined && !isNaN(currentZ) && currentZ >= requiredZoom;
+                sketchLayer.add(new Graphic({
+                  geometry: isPolyLabel ? centroidExecute(g.geometry!) : g.geometry!.clone(),
+                  symbol: labelSym,
+                  visible: isZoomOk && (isPolyLabel ? layerVisibility.polygonLabels : layerVisibility.pointLabels),
+                  attributes: { isLabel: true, parentId: (g as any).uid, isPolygonLabel: isPolyLabel },
+                }));
+              }
+
+              if (onFeatureAddedRef.current) {
+                onFeatureAddedRef.current({
+                  id: (g as any).uid,
+                  title,
+                  type: g.geometry.type as DrawnFeature["type"],
+                  color: callbacks.getActiveColor().hex,
+                  geojsonGeometry: geoToJSON(g.geometry),
+                });
+              }
+              setTimeout(runDeconflict, 50);
+            }
+            if (evt.state === "cancel") { /* handled externally */ }
+          });
+
+          svm.on("update", (evt: any) => {
+            evt.graphics?.forEach((g: any) => {
+              const label = sketchLayer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
+              if (label) {
+                label.geometry = g.geometry?.type === "polygon" ? centroidExecute(g.geometry!) : g.geometry!.clone();
+              }
+            });
+            if (evt.state === "complete") {
+              evt.graphics?.forEach((g: any) => {
+                if (onFeatureAddedRef.current && g.geometry) {
+                  const featId = g.attributes?.id || g.uid;
+                  const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
+                  onFeatureAddedRef.current({
+                    id: featId,
+                    title: g.attributes?.title || "Elemento",
+                    type: g.geometry.type as DrawnFeature["type"],
+                    color: feat?.color || callbacks.getActiveColor().hex,
+                    geojsonGeometry: geoToJSON(g.geometry),
+                    _isUpdate: true,
+                  });
+                }
               });
+              runDeconflict();
             }
           });
-          runDeconflict();
+
+          svm.on("delete", (evt: any) => {
+            evt.graphics?.forEach((g: any) => {
+              const label = sketchLayer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
+              if (label) sketchLayer.remove(label);
+              if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(g.attributes?.id || g.uid);
+            });
+            runDeconflict();
+          });
         }
-      });
 
-      svm.on("delete", (evt: any) => {
-        evt.graphics?.forEach((g: any) => {
-          const label = sketchLayer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
-          if (label) sketchLayer.remove(label);
-          if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(g.attributes?.id || g.uid);
-        });
-        runDeconflict();
-      });
-      }
+        view.on("click", async (evt: any) => {
+          if (sketchVMRef.current?.activeTool) return;
+          // En modo SVG el overlay maneja los clics (hit-test propio); con la capa
+          // oculta hitTest() no encuentra nada y cerraría el popup recién abierto.
+          if (layerVisibilityRef.current.svgOverlay) return;
+          const hit = await view.hitTest(evt);
+          const result = hit.results.find(
+            (r: any) => "graphic" in r && r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel
+          );
+          if (result) {
+            const g = (result as any).graphic;
+            const featId = g.attributes?.id || (g as any).uid;
+            const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
+            if (feat) {
+              callbacks.onFeatureClick?.();
+              setCustomPopup({ mapPoint: view.toMap(evt), feat });
 
-      view.on("click", async (evt: any) => {
-        if (sketchVMRef.current?.activeTool) return;
-        // En modo SVG el overlay maneja los clics (hit-test propio); con la capa
-        // oculta hitTest() no encuentra nada y cerraría el popup recién abierto.
-        if (layerVisibilityRef.current.svgOverlay) return;
-        const hit = await view.hitTest(evt);
-        const result = hit.results.find(
-          (r: any) => "graphic" in r && r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel
-        );
-        if (result) {
-          const g = (result as any).graphic;
-          const featId = g.attributes?.id || (g as any).uid;
-          const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-          if (feat) {
-            callbacks.onFeatureClick?.();
-            setCustomPopup({ mapPoint: view.toMap(evt), feat });
-
-            const svm = sketchVMRef.current;
-            // Solo entrar en modo edición/transformación si las herramientas de
-            // dibujo están activas, el elemento NO está bloqueado y el usuario es admin.
-            const canEdit =
-              layerVisibilityRef.current.sketch &&
-              !feat.locked &&
-              canEditRef.current;
-            if (svm && svm.state !== "active" && callbacks.onGraphicSelected && canEdit) {
-              callbacks.onGraphicSelected(g);
-              svm.update([g], { tool: "transform" });
+              const svm = sketchVMRef.current;
+              // Solo entrar en modo edición/transformación si las herramientas de
+              // dibujo están activas, el elemento NO está bloqueado y el usuario es admin.
+              const canEdit =
+                layerVisibilityRef.current.sketch &&
+                !feat.locked &&
+                canEditRef.current;
+              if (svm && svm.state !== "active" && callbacks.onGraphicSelected && canEdit) {
+                callbacks.onGraphicSelected(g);
+                svm.update([g], { tool: "transform" });
+              }
+            } else {
+              setCustomPopup(null);
             }
           } else {
             setCustomPopup(null);
           }
-        } else {
-          setCustomPopup(null);
-        }
-      });
+        });
 
-      setMapReady(true);
-    },
-    (err) => {
-      console.error("[map] view.when() failed:", err);
-      setMapReady(true);
-    });
+        setMapReady(true);
+      },
+      (err) => {
+        console.error("[map] view.when() failed:", err);
+        setMapReady(true);
+      });
 
     return () => {
       if (sketchVMRef.current) { sketchVMRef.current.destroy(); sketchVMRef.current = null; }
