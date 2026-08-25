@@ -3,7 +3,16 @@ import type { InspeccionRecord } from "../types";
 
 // En desarrollo usamos el proxy /kobo-api para evadir bloqueos de CORS del navegador.
 const KOBO_PROXIED_URL = "/kobo-api/api/v2/assets/a4AhiiXAhSZTwutXt2jTY3/data.json";
-const KOBO_DIRECT_URL = "https://kobo.unocha.org/api/v2/assets/a4AhiiXAhSZTwutXt2jTY3/data.json";
+const KOBO_VERCEL_URL = "/api/kobo";
+
+function getKoboEndpoint(): string {
+  if (typeof window !== "undefined") {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      return KOBO_PROXIED_URL;
+    }
+  }
+  return KOBO_VERCEL_URL;
+}
 
 const KOBO_TOKEN = import.meta.env.VITE_KOBOTOOLBOX_KEY || "";
 
@@ -14,7 +23,7 @@ function cleanText(val?: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-function parseRiesgoEtiqueta(rawTag?: string, rawRiesgo?: string): string {
+function parseRiesgoEtiqueta(rawTag?: string, rawRiesgo?: string): string | null {
   const tag = String(rawTag || "").toLowerCase().trim();
   const r = String(rawRiesgo || "").toLowerCase().trim();
   const combined = `${tag} ${r}`;
@@ -29,10 +38,10 @@ function parseRiesgoEtiqueta(rawTag?: string, rawRiesgo?: string): string {
     return "Bajo Riesgo / Seguro (Verde)";
   }
 
-  return "Bajo Riesgo / Seguro (Verde)";
+  return null;
 }
 
-/** Carga de respaldo desde Supabase con paginación completa y deduplicación por estado/ID */
+/** Carga ultrarrápida desde Supabase con paginación completa, filtrado de riesgo y deduplicación */
 async function fetchFromSupabase(): Promise<InspeccionRecord[]> {
   try {
     let allData: any[] = [];
@@ -66,25 +75,20 @@ async function fetchFromSupabase(): Promise<InspeccionRecord[]> {
     for (const r of allData) {
       if (!r.latitude || !r.longitude) continue;
 
-      const estadoVal = String(r.estado || r.municipio || r.parroquia || "").toLowerCase();
-      const fullStr = JSON.stringify(r).toLowerCase();
-      const isLaGuaira = estadoVal.includes("guaira") || estadoVal.includes("vargas") ||
-                         fullStr.includes("la guaira") || fullStr.includes("la_guaira") || fullStr.includes("vargas");
+      const riesgoFormatted = parseRiesgoEtiqueta(r.riesgo_color, r.evaluacion_riesgo) || "Bajo Riesgo / Seguro (Verde)";
 
-      if (!isLaGuaira) continue;
-
-      const key = `${r.latitude.toFixed(5)}_${r.longitude.toFixed(5)}`;
+      const key = String(r.id);
       if (seenKeys.has(key)) continue;
       seenKeys.add(key);
 
-      const riesgoFormatted = parseRiesgoEtiqueta(r.riesgo_color, r.evaluacion_riesgo);
-
       laGuairaRecords.push({
-        ...r,
         id: String(r.id),
+        latitude: Number(r.latitude),
+        longitude: Number(r.longitude),
         estado: cleanText(r.estado || "La Guaira"),
         municipio: cleanText(r.municipio),
         parroquia: cleanText(r.parroquia),
+        fecha: (r.fecha || "").substring(0, 10),
         nombre_edificacion: cleanText(r.nombre_edificacion),
         uso: cleanText(r.uso),
         tipo_estructura: cleanText(r.tipo_estructura),
@@ -100,12 +104,9 @@ async function fetchFromSupabase(): Promise<InspeccionRecord[]> {
   }
 }
 
-/** Carga directa desde KoboToolbox con cabecera de autenticación Token */
+/** Carga directa desde KoboToolbox en PARALELO */
 async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
-  const initialUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? KOBO_PROXIED_URL
-    : KOBO_DIRECT_URL;
-
+  const initialUrl = getKoboEndpoint();
   const headers: Record<string, string> = KOBO_TOKEN ? { Authorization: `Token ${KOBO_TOKEN}` } : {};
 
   // 1. Obtener primera página para conocer el total de registros (count)
@@ -163,7 +164,7 @@ async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
 
     const tagPunto11 = r["group_zo0ds00/_11_1_Identificar_el_sgo_mas_desfavorable"];
     const riesgoRaw = r["modulo6/Etiqueta_o_Riesgo"] || r["group_vy1eb97/Riesgo_de_edificios_aleda_os"] || r["modulo6/_6_1_Riesgo_o_dictamen"];
-    const riesgoFormatted = parseRiesgoEtiqueta(tagPunto11, riesgoRaw);
+    const riesgoFormatted = parseRiesgoEtiqueta(tagPunto11, riesgoRaw) || "Bajo Riesgo / Seguro (Verde)";
 
     const obsPunto11 = r["group_zo0ds00/_11_2_OBSERVACIONES"];
     const evaluacion = obsPunto11 || r["modulo6/_6_1_Riesgo_o_dictamen"] || r["group_vy1eb97/Riesgo_de_edificios_aleda_os"] || "Inspección registrada";
@@ -190,7 +191,7 @@ async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
 }
 
 export async function fetchInspecciones(): Promise<InspeccionRecord[]> {
-  // 1. Cargar directamente desde Kobo (2,927 entradas oficiales de KoboToolbox con colores exactos)
+  // 1. Cargar directamente desde Kobo (vía proxy Vite en dev o Vercel Edge Function en prod)
   try {
     const koboData = await fetchFromKoboParallel();
     if (koboData.length > 0) {
@@ -200,6 +201,6 @@ export async function fetchInspecciones(): Promise<InspeccionRecord[]> {
     console.warn("[inspeccionService] Falló la consulta a Kobo, recurriendo a Supabase:", err);
   }
 
-  // 2. Respaldo: Supabase deduplicado y filtrado por estado
+  // 2. Respaldo: Supabase deduplicado
   return await fetchFromSupabase();
 }
