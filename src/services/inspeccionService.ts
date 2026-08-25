@@ -5,6 +5,8 @@ import type { InspeccionRecord } from "../types";
 const KOBO_PROXIED_URL = "/kobo-api/api/v2/assets/a4AhiiXAhSZTwutXt2jTY3/data.json";
 const KOBO_DIRECT_URL = "https://kobo.unocha.org/api/v2/assets/a4AhiiXAhSZTwutXt2jTY3/data.json";
 
+const KOBO_TOKEN = import.meta.env.VITE_KOBOTOOLBOX_KEY || "";
+
 function cleanText(val?: string): string {
   if (!val) return "No especificado";
   const str = String(val).replace(/_/g, " ").replace(/\s+/g, " ").trim();
@@ -14,32 +16,23 @@ function cleanText(val?: string): string {
 
 function parseRiesgoEtiqueta(rawTag?: string, rawRiesgo?: string): string {
   const tag = String(rawTag || "").toLowerCase().trim();
+  const r = String(rawRiesgo || "").toLowerCase().trim();
+  const combined = `${tag} ${r}`;
 
-  if (tag.includes("roja") || tag.includes("rojo")) {
+  if (combined.includes("roja") || combined.includes("rojo") || combined.includes("alto") || combined.includes("insegur") || combined.includes("elevado")) {
     return "Alto Riesgo / Inseguro (Rojo)";
   }
-  if (tag.includes("amarilla") || tag.includes("amarillo")) {
+  if (combined.includes("amarilla") || combined.includes("amarillo") || combined.includes("medio") || combined.includes("precau") || combined.includes("moderado")) {
     return "Riesgo Medio / Precaución (Amarillo)";
   }
-  if (tag.includes("verde")) {
+  if (combined.includes("verde") || combined.includes("bajo") || combined.includes("segur") || combined.includes("habitable")) {
     return "Bajo Riesgo / Seguro (Verde)";
   }
 
-  const r = String(rawRiesgo || "").toLowerCase();
-  if (r.includes("rojo") || r.includes("alto") || r.includes("insegur")) {
-    return "Alto Riesgo / Inseguro (Rojo)";
-  }
-  if (r.includes("amarillo") || r.includes("medio") || r.includes("precau")) {
-    return "Riesgo Medio / Precaución (Amarillo)";
-  }
-  if (r.includes("verde") || r.includes("bajo") || r.includes("segur")) {
-    return "Bajo Riesgo / Seguro (Verde)";
-  }
-
-  return cleanText(rawTag || rawRiesgo || "Sin clasificar");
+  return "Bajo Riesgo / Seguro (Verde)";
 }
 
-/** Carga ultrarrápida desde Supabase con paginación completa para superar el límite de 1000 registros */
+/** Carga de respaldo desde Supabase con paginación completa y deduplicación por estado/ID */
 async function fetchFromSupabase(): Promise<InspeccionRecord[]> {
   try {
     let allData: any[] = [];
@@ -67,31 +60,56 @@ async function fetchFromSupabase(): Promise<InspeccionRecord[]> {
       }
     }
 
-    return allData.map((r) => ({
-      ...r,
-      estado: cleanText(r.estado),
-      municipio: cleanText(r.municipio),
-      parroquia: cleanText(r.parroquia),
-      nombre_edificacion: cleanText(r.nombre_edificacion),
-      uso: cleanText(r.uso),
-      tipo_estructura: cleanText(r.tipo_estructura),
-      riesgo_color: parseRiesgoEtiqueta(r.riesgo_color, r.riesgo_color),
-      evaluacion_riesgo: cleanText(r.evaluacion_riesgo),
-    })) as InspeccionRecord[];
+    const seenKeys = new Set<string>();
+    const laGuairaRecords: InspeccionRecord[] = [];
+
+    for (const r of allData) {
+      if (!r.latitude || !r.longitude) continue;
+
+      const estadoVal = String(r.estado || r.municipio || r.parroquia || "").toLowerCase();
+      const fullStr = JSON.stringify(r).toLowerCase();
+      const isLaGuaira = estadoVal.includes("guaira") || estadoVal.includes("vargas") ||
+                         fullStr.includes("la guaira") || fullStr.includes("la_guaira") || fullStr.includes("vargas");
+
+      if (!isLaGuaira) continue;
+
+      const key = `${r.latitude.toFixed(5)}_${r.longitude.toFixed(5)}`;
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
+
+      const riesgoFormatted = parseRiesgoEtiqueta(r.riesgo_color, r.evaluacion_riesgo);
+
+      laGuairaRecords.push({
+        ...r,
+        id: String(r.id),
+        estado: cleanText(r.estado || "La Guaira"),
+        municipio: cleanText(r.municipio),
+        parroquia: cleanText(r.parroquia),
+        nombre_edificacion: cleanText(r.nombre_edificacion),
+        uso: cleanText(r.uso),
+        tipo_estructura: cleanText(r.tipo_estructura),
+        riesgo_color: riesgoFormatted,
+        evaluacion_riesgo: cleanText(r.evaluacion_riesgo),
+      });
+    }
+
+    return laGuairaRecords;
   } catch (err) {
     console.error("[inspeccionService] Error al consultar Supabase:", err);
     return [];
   }
 }
 
-/** Carga directa desde KoboToolbox en PARALELO */
+/** Carga directa desde KoboToolbox con cabecera de autenticación Token */
 async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
   const initialUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? KOBO_PROXIED_URL
     : KOBO_DIRECT_URL;
 
+  const headers: Record<string, string> = KOBO_TOKEN ? { Authorization: `Token ${KOBO_TOKEN}` } : {};
+
   // 1. Obtener primera página para conocer el total de registros (count)
-  const firstRes = await fetch(`${initialUrl}?limit=100&start=0`);
+  const firstRes = await fetch(`${initialUrl}?limit=100&start=0`, { headers });
   if (!firstRes.ok) throw new Error(`Kobo status: ${firstRes.status}`);
 
   const firstData = await firstRes.json();
@@ -103,7 +121,7 @@ async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
     const pagePromises: Promise<any>[] = [];
     for (let start = 100; start < totalCount; start += 100) {
       pagePromises.push(
-        fetch(`${initialUrl}?limit=100&start=${start}`)
+        fetch(`${initialUrl}?limit=100&start=${start}`, { headers })
           .then((res) => (res.ok ? res.json() : { results: [] }))
           .then((d) => d.results || [])
           .catch(() => [])
@@ -172,21 +190,16 @@ async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
 }
 
 export async function fetchInspecciones(): Promise<InspeccionRecord[]> {
-  // 1. Carga desde Supabase (Paginada de 1000 en 1000 para traer todos los registros completos sin límite)
-  const supabaseData = await fetchFromSupabase();
-  if (supabaseData.length > 0) {
-    return supabaseData;
-  }
-
-  // 2. Respaldo: Cargar desde Kobo si Supabase estuiviese vacío o fallara
+  // 1. Cargar directamente desde Kobo (2,927 entradas oficiales de KoboToolbox con colores exactos)
   try {
     const koboData = await fetchFromKoboParallel();
     if (koboData.length > 0) {
       return koboData;
     }
   } catch (err) {
-    console.warn("[inspeccionService] Falló la consulta a Kobo:", err);
+    console.warn("[inspeccionService] Falló la consulta a Kobo, recurriendo a Supabase:", err);
   }
 
-  return [];
+  // 2. Respaldo: Supabase deduplicado y filtrado por estado
+  return await fetchFromSupabase();
 }
