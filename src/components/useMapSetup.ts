@@ -222,7 +222,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
       viewRef.current.goTo(
         { center: [zoomToCoords.lon, zoomToCoords.lat], zoom: 16 },
         { duration: 800, easing: "ease-in-out", padding: getViewPadding() } as any,
-      ).catch(() => {});
+      ).catch(() => { });
     }
   }, [zoomToCoords, viewRef]);
 

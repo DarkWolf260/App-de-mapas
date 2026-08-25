@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { DepartmentTabs } from './DepartmentTabs';
 import type { DepartmentView } from '../types';
 import { getLocalDateStr } from '../utils/dateUtils';
-import { 
-  MapPin, 
-  Trash2, 
-  Download, 
-  Upload, 
-  Search, 
-  ShieldAlert, 
-  Home, 
-  HeartPulse, 
+import {
+  MapPin,
+  Trash2,
+  Download,
+  Upload,
+  Search,
+  ShieldAlert,
+  Home,
+  HeartPulse,
   Layers,
   Map,
   Activity,
@@ -121,16 +121,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Filtrado de elementos
   const filteredPoints = points.filter(p => {
     const term = searchTerm.toLowerCase();
-    const matchesSearch = p.name.toLowerCase().includes(term) || 
-                          p.description.toLowerCase().includes(term) ||
-                          (p.isCollapsed && ("colapsado".includes(term) || String(p.collapsedCount || "").includes(term)));
+    const matchesSearch = p.name.toLowerCase().includes(term) ||
+      p.description.toLowerCase().includes(term) ||
+      (p.isCollapsed && ("colapsado".includes(term) || String(p.collapsedCount || "").includes(term)));
     const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
   const filteredAreas = areas.filter(a => {
-    const matchesSearch = a.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          a.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || a.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
@@ -140,7 +140,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ points, areas }, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    
+
     const date = getLocalDateStr();
     downloadAnchor.setAttribute("download", `sig_la_guaira_${date}.json`);
     document.body.appendChild(downloadAnchor);
@@ -208,7 +208,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Search size={14} />
             <span>Búsqueda y Filtros</span>
           </div>
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <input
@@ -248,69 +248,69 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span>Puntos Operacionales ({filteredPoints.length})</span>
               <span style={{ marginLeft: "auto" }}>{showPoints ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
             </div>
-            
+
             {showPoints && (
-            <div className="element-list" style={{ flex: 1, maxHeight: showAreas ? "180px" : "none", overflowY: "auto", minHeight: 0 }}>
-              {filteredPoints.length === 0 ? (
-                <div className="empty-state">No hay puntos registrados</div>
-              ) : (
-                filteredPoints.map(point => (
-                  <div
-                    key={point.id}
-                    className={`element-item ${selectedItemId === point.id ? 'active' : ''}`}
-                    onClick={() => onSelectItem(point.id, 'point')}
-                    style={{ borderLeftColor: point.color }}
-                  >
-                    <div className="element-header">
-                      <span className="element-name">{point.name}</span>
-                      {point.isCollapsed && (
-                        <span
-                          style={{
-                            fontSize: "0.62rem",
-                            fontWeight: 800,
-                            color: "#f87171",
-                            background: "rgba(239, 68, 68, 0.18)",
-                            border: "1px solid rgba(239, 68, 68, 0.4)",
-                            padding: "1px 6px",
-                            borderRadius: "4px",
-                            marginLeft: "6px",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          Colapsado: {point.collapsedCount || "1"}
-                        </span>
-                      )}
-                      <div className="element-actions" onClick={(e) => e.stopPropagation()}>
-                        {onToggleFeatureVisibility && (
-                          <input
-                            type="checkbox"
-                            checked={!hiddenFeatures[String(point.id)]}
-                            onChange={() => onToggleFeatureVisibility(String(point.id))}
-                            title={hiddenFeatures[String(point.id)] ? "Mostrar punto" : "Ocultar punto"}
-                            style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#38bdf8", flexShrink: 0 }}
-                          />
-                        )}
-                        {isAdmin && (
-                          <button 
-                            className="action-icon-btn" 
-                            onClick={() => onDeleteItem(point.id, 'point')}
-                            title="Eliminar punto"
+              <div className="element-list" style={{ flex: 1, maxHeight: showAreas ? "180px" : "none", overflowY: "auto", minHeight: 0 }}>
+                {filteredPoints.length === 0 ? (
+                  <div className="empty-state">No hay puntos registrados</div>
+                ) : (
+                  filteredPoints.map(point => (
+                    <div
+                      key={point.id}
+                      className={`element-item ${selectedItemId === point.id ? 'active' : ''}`}
+                      onClick={() => onSelectItem(point.id, 'point')}
+                      style={{ borderLeftColor: point.color }}
+                    >
+                      <div className="element-header">
+                        <span className="element-name">{point.name}</span>
+                        {point.isCollapsed && (
+                          <span
+                            style={{
+                              fontSize: "0.62rem",
+                              fontWeight: 800,
+                              color: "#f87171",
+                              background: "rgba(239, 68, 68, 0.18)",
+                              border: "1px solid rgba(239, 68, 68, 0.4)",
+                              padding: "1px 6px",
+                              borderRadius: "4px",
+                              marginLeft: "6px",
+                              whiteSpace: "nowrap",
+                            }}
                           >
-                            <Trash2 size={14} />
-                          </button>
+                            Colapsado: {point.collapsedCount || "1"}
+                          </span>
                         )}
+                        <div className="element-actions" onClick={(e) => e.stopPropagation()}>
+                          {onToggleFeatureVisibility && (
+                            <input
+                              type="checkbox"
+                              checked={!hiddenFeatures[String(point.id)]}
+                              onChange={() => onToggleFeatureVisibility(String(point.id))}
+                              title={hiddenFeatures[String(point.id)] ? "Mostrar punto" : "Ocultar punto"}
+                              style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#38bdf8", flexShrink: 0 }}
+                            />
+                          )}
+                          {isAdmin && (
+                            <button
+                              className="action-icon-btn"
+                              onClick={() => onDeleteItem(point.id, 'point')}
+                              title="Eliminar punto"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <span className="element-desc">{point.description || 'Sin descripción'}</span>
+                      <div className="element-meta">
+                        {getCategoryIcon(point.category)}
+                        <span className="category-tag">{point.category}</span>
+                        <span>• {point.coordinates.latitude.toFixed(4)}, {point.coordinates.longitude.toFixed(4)}</span>
                       </div>
                     </div>
-                    <span className="element-desc">{point.description || 'Sin descripción'}</span>
-                    <div className="element-meta">
-                      {getCategoryIcon(point.category)}
-                      <span className="category-tag">{point.category}</span>
-                      <span>• {point.coordinates.latitude.toFixed(4)}, {point.coordinates.longitude.toFixed(4)}</span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+                  ))
+                )}
+              </div>
             )}
           </div>
         )}
@@ -322,52 +322,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>Áreas y Polígonos ({filteredAreas.length})</span>
             <span style={{ marginLeft: "auto" }}>{showAreas ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
           </div>
-          
+
           {showAreas && (
-          <div className="element-list" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-            {filteredAreas.length === 0 ? (
-              <div className="empty-state">No hay áreas trazadas</div>
-            ) : (
-              filteredAreas.map(area => (
-                <div
-                  key={area.id}
-                  className={`element-item ${selectedItemId === area.id ? 'active' : ''}`}
-                  onClick={() => onSelectItem(area.id, 'area')}
-                  style={{ borderLeftColor: area.color }}
-                >
-                  <div className="element-header">
-                     <span className="element-name">{area.name}</span>
-                    <div className="element-actions" onClick={(e) => e.stopPropagation()}>
-                      {onToggleFeatureVisibility && (
-                        <input
-                          type="checkbox"
-                          checked={!hiddenFeatures[String(area.id)]}
-                          onChange={() => onToggleFeatureVisibility(String(area.id))}
-                          title={hiddenFeatures[String(area.id)] ? "Mostrar área" : "Ocultar área"}
-                          style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#38bdf8", flexShrink: 0 }}
-                        />
-                      )}
-                      {isAdmin && (
-                        <button 
-                          className="action-icon-btn" 
-                          onClick={() => onDeleteItem(area.id, 'area')}
-                          title="Eliminar área"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
+            <div className="element-list" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+              {filteredAreas.length === 0 ? (
+                <div className="empty-state">No hay áreas trazadas</div>
+              ) : (
+                filteredAreas.map(area => (
+                  <div
+                    key={area.id}
+                    className={`element-item ${selectedItemId === area.id ? 'active' : ''}`}
+                    onClick={() => onSelectItem(area.id, 'area')}
+                    style={{ borderLeftColor: area.color }}
+                  >
+                    <div className="element-header">
+                      <span className="element-name">{area.name}</span>
+                      <div className="element-actions" onClick={(e) => e.stopPropagation()}>
+                        {onToggleFeatureVisibility && (
+                          <input
+                            type="checkbox"
+                            checked={!hiddenFeatures[String(area.id)]}
+                            onChange={() => onToggleFeatureVisibility(String(area.id))}
+                            title={hiddenFeatures[String(area.id)] ? "Mostrar área" : "Ocultar área"}
+                            style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#38bdf8", flexShrink: 0 }}
+                          />
+                        )}
+                        {isAdmin && (
+                          <button
+                            className="action-icon-btn"
+                            onClick={() => onDeleteItem(area.id, 'area')}
+                            title="Eliminar área"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <span className="element-desc">{area.description || 'Sin descripción'}</span>
+                    <div className="element-meta">
+                      {getCategoryIcon(area.category)}
+                      <span className="category-tag">{area.category}</span>
+                      <span>• {area.areaHectares.toFixed(2)} Ha</span>
                     </div>
                   </div>
-                  <span className="element-desc">{area.description || 'Sin descripción'}</span>
-                  <div className="element-meta">
-                    {getCategoryIcon(area.category)}
-                    <span className="category-tag">{area.category}</span>
-                    <span>• {area.areaHectares.toFixed(2)} Ha</span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                ))
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -382,11 +382,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <label className="btn-transfer" style={{ cursor: 'pointer' }} title="Importar datos desde JSON">
             <Upload size={16} />
             <span>Importar</span>
-            <input 
-              type="file" 
-              accept=".json" 
-              onChange={handleImport} 
-              style={{ display: 'none' }} 
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              style={{ display: 'none' }}
             />
           </label>
         </div>

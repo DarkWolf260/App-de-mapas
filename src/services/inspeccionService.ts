@@ -39,16 +39,35 @@ function parseRiesgoEtiqueta(rawTag?: string, rawRiesgo?: string): string {
   return cleanText(rawTag || rawRiesgo || "Sin clasificar");
 }
 
-/** Carga ultrarrápida desde Supabase en < 100ms */
+/** Carga ultrarrápida desde Supabase con paginación completa para superar el límite de 1000 registros */
 async function fetchFromSupabase(): Promise<InspeccionRecord[]> {
   try {
-    const { data, error } = await supabase
-      .from("inspecciones_edificaciones")
-      .select("*");
+    let allData: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
 
-    if (error || !data) return [];
+    while (hasMore) {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error } = await supabase
+        .from("inspecciones_edificaciones")
+        .select("*")
+        .range(from, to);
 
-    return (data as any[]).map((r) => ({
+      if (error || !data || data.length === 0) {
+        hasMore = false;
+      } else {
+        allData = allData.concat(data);
+        if (data.length < pageSize) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      }
+    }
+
+    return allData.map((r) => ({
       ...r,
       estado: cleanText(r.estado),
       municipio: cleanText(r.municipio),
@@ -59,7 +78,8 @@ async function fetchFromSupabase(): Promise<InspeccionRecord[]> {
       riesgo_color: parseRiesgoEtiqueta(r.riesgo_color, r.riesgo_color),
       evaluacion_riesgo: cleanText(r.evaluacion_riesgo),
     })) as InspeccionRecord[];
-  } catch {
+  } catch (err) {
+    console.error("[inspeccionService] Error al consultar Supabase:", err);
     return [];
   }
 }
@@ -152,16 +172,21 @@ async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
 }
 
 export async function fetchInspecciones(): Promise<InspeccionRecord[]> {
-  // 1. Principal: Intentar cargar directamente desde Kobo
+  // 1. Carga desde Supabase (Paginada de 1000 en 1000 para traer todos los registros completos sin límite)
+  const supabaseData = await fetchFromSupabase();
+  if (supabaseData.length > 0) {
+    return supabaseData;
+  }
+
+  // 2. Respaldo: Cargar desde Kobo si Supabase estuiviese vacío o fallara
   try {
     const koboData = await fetchFromKoboParallel();
     if (koboData.length > 0) {
       return koboData;
     }
   } catch (err) {
-    console.warn("[inspeccionService] Falló la consulta a Kobo, recurriendo a Supabase como respaldo:", err);
+    console.warn("[inspeccionService] Falló la consulta a Kobo:", err);
   }
 
-  // 2. Respaldo (Fallback): Cargar desde Supabase si Kobo falla
-  return await fetchFromSupabase();
+  return [];
 }
