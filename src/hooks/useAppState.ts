@@ -25,6 +25,7 @@ export function useAppState(isAdmin: boolean) {
     hideNestedAreas: true,
     allowLabelOverlap: true,
     svgOverlay: false,
+    inspecciones: false,
   });
 
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toLocaleDateString('en-CA'));

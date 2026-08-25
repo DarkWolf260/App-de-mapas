@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
-import type { DrawnFeature, DepartmentView } from "../types";
+import type { DrawnFeature, DepartmentView, InspeccionRecord } from "../types";
 import { getPeriodStats } from "../utils/logUtils";
-import { ChevronUp, ChevronDown, Clock, Calendar } from "lucide-react";
+import { ChevronUp, ChevronDown, Clock, Calendar, Building2 } from "lucide-react";
 
 interface GlobalStatsWidgetProps {
   drawnFeatures: DrawnFeature[];
@@ -11,6 +11,12 @@ interface GlobalStatsWidgetProps {
   showAccumulated?: boolean;
   onToggleAccumulated?: () => void;
   compact?: boolean;
+
+  // Inspecciones props
+  isInspeccionesMode?: boolean;
+  inspeccionesRecords?: InspeccionRecord[];
+  selectedColorFilter?: "all" | "rojo" | "amarillo" | "verde";
+  setSelectedColorFilter?: (color: "all" | "rojo" | "amarillo" | "verde") => void;
 }
 
 export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
@@ -21,10 +27,40 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
   showAccumulated = false,
   onToggleAccumulated,
   compact = false,
+  isInspeccionesMode = false,
+  inspeccionesRecords = [],
+  selectedColorFilter = "all",
+  setSelectedColorFilter,
 }) => {
   const todayStr = useMemo(() => selectedDate || new Date().toLocaleDateString('en-CA'), [selectedDate]);
 
-  // Features filtered to today's logs only (for daily mode)
+  // --- MODO INSPECCIONES ---
+  const inspeccionesByDate = useMemo(() => {
+    if (!inspeccionesRecords) return [];
+    if (showAccumulated || !todayStr) return inspeccionesRecords;
+    return inspeccionesRecords.filter((r) => r.fecha && r.fecha.startsWith(todayStr));
+  }, [inspeccionesRecords, showAccumulated, todayStr]);
+
+  const inspeccionCounts = useMemo(() => {
+    let red = 0;
+    let yellow = 0;
+    let green = 0;
+
+    inspeccionesByDate.forEach((r) => {
+      const tag = String(r.riesgo_color || "").toLowerCase();
+      if (tag.includes("rojo") || tag.includes("roja") || tag.includes("alto") || tag.includes("insegur")) {
+        red++;
+      } else if (tag.includes("amarillo") || tag.includes("amarilla") || tag.includes("medio") || tag.includes("precau")) {
+        yellow++;
+      } else {
+        green++;
+      }
+    });
+
+    return { total: inspeccionesByDate.length, red, yellow, green };
+  }, [inspeccionesByDate]);
+
+  // --- MODO OPERATIVO DE SIEMPRE ---
   const dailyFeatures = useMemo(() => {
     return drawnFeatures.map((f) => ({
       ...f,
@@ -35,7 +71,6 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
     }));
   }, [drawnFeatures, todayStr, activeDepartment]);
 
-  // Daily: getPeriodStats on today-only features → sectors aggregate contained points, commissions de-duped
   const dailyStats = useMemo(() => {
     const period = getPeriodStats(dailyFeatures, activeDepartment);
     return {
@@ -47,7 +82,6 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
     };
   }, [dailyFeatures, activeDepartment]);
 
-  // Accumulated: getPeriodStats on all features across all dates
   const periodStats = useMemo(() => {
     const period = getPeriodStats(drawnFeatures, activeDepartment);
     return {
@@ -87,32 +121,44 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
           boxShadow: "0 1px 8px rgba(0,0,0,0.4)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, justifyContent: "center", overflow: "hidden" }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.rescuedPeople}</span>
-            <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#38bdf8", textTransform: "uppercase", opacity: 0.8 }}>Rescatados</span>
+        {isInspeccionesMode ? (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, justifyContent: "center", overflow: "hidden" }}>
+            <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#ef4444" }}>{inspeccionCounts.red} Alto</span>
+            <span style={{ color: "rgba(255,255,255,0.12)" }}>|</span>
+            <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#f59e0b" }}>{inspeccionCounts.yellow} Prec.</span>
+            <span style={{ color: "rgba(255,255,255,0.12)" }}>|</span>
+            <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#22c55e" }}>{inspeccionCounts.green} Bajo</span>
+            <span style={{ color: "rgba(255,255,255,0.12)" }}>|</span>
+            <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#818cf8" }}>{inspeccionCounts.total} Total</span>
           </div>
-          <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "0.8rem" }}>|</span>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.recoveredBodies}</span>
-            <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#ef4444", textTransform: "uppercase", opacity: 0.8 }}>Cadáveres</span>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, justifyContent: "center", overflow: "hidden" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.rescuedPeople}</span>
+              <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#38bdf8", textTransform: "uppercase", opacity: 0.8 }}>Rescatados</span>
+            </div>
+            <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "0.8rem" }}>|</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.recoveredBodies}</span>
+              <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#ef4444", textTransform: "uppercase", opacity: 0.8 }}>Cadáveres</span>
+            </div>
+            <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "0.8rem" }}>|</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.rescuedPets}</span>
+              <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#22c55e", textTransform: "uppercase", opacity: 0.8 }}>Mascotas</span>
+            </div>
+            <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "0.8rem" }}>|</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.prehospitalCare}</span>
+              <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#38bdf8", textTransform: "uppercase", opacity: 0.8 }}>Atenciones</span>
+            </div>
+            <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "0.8rem" }}>|</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.transfers}</span>
+              <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#c084fc", textTransform: "uppercase", opacity: 0.8 }}>Traslados</span>
+            </div>
           </div>
-          <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "0.8rem" }}>|</span>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.rescuedPets}</span>
-            <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#22c55e", textTransform: "uppercase", opacity: 0.8 }}>Mascotas</span>
-          </div>
-          <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "0.8rem" }}>|</span>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.prehospitalCare}</span>
-            <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#38bdf8", textTransform: "uppercase", opacity: 0.8 }}>Atenciones</span>
-          </div>
-          <span style={{ color: "rgba(255,255,255,0.12)", fontSize: "0.8rem" }}>|</span>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <span style={{ fontSize: "1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.transfers}</span>
-            <span style={{ fontSize: "0.42rem", fontWeight: 600, color: "#c084fc", textTransform: "uppercase", opacity: 0.8 }}>Traslados</span>
-          </div>
-        </div>
+        )}
 
         {onToggleAccumulated && (
           <button
@@ -142,13 +188,13 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
     <div
       style={{
         position: "absolute",
-        top: isCollapsed ? "-52px" : "18px",
+        top: isCollapsed ? "-44px" : "18px",
         left: "50%",
         transform: "translateX(-50%)",
-        background: "rgba(10, 15, 28, 0.9)",
+        background: "rgba(10, 15, 28, 0.92)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(255, 255, 255, 0.1)",
+        border: `1px solid ${isInspeccionesMode ? "rgba(129, 140, 248, 0.3)" : "rgba(255, 255, 255, 0.1)"}`,
         borderRadius: "14px",
         padding: "6px 20px",
         boxShadow: "0 12px 30px rgba(0, 0, 0, 0.6)",
@@ -160,33 +206,136 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
         transition: "top 0.3s cubic-bezier(0.4, 0, 0.2, 1), left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
-      {/* Stats Display */}
-      <div style={{ display: "flex", alignItems: "center", gap: compact ? "6px" : "14px" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "var(--color-info)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "R." : "Rescatados"}</span>
-          <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.rescuedPeople}</span>
+      {/* SI ES MODO INSPECCIONES */}
+      {isInspeccionesMode ? (
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          {/* Alto Riesgo */}
+          <div
+            onClick={() => setSelectedColorFilter?.(selectedColorFilter === "rojo" ? "all" : "rojo")}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              cursor: "pointer",
+              padding: "2px 6px",
+              borderRadius: "6px",
+              background: selectedColorFilter === "rojo" ? "rgba(239, 68, 68, 0.25)" : "transparent",
+              border: `1px solid ${selectedColorFilter === "rojo" ? "rgba(239, 68, 68, 0.6)" : "transparent"}`,
+              transition: "all 0.15s ease",
+            }}
+          >
+            <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Alto Riesgo
+            </span>
+            <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#ef4444" }}>
+              {inspeccionCounts.red}
+            </span>
+          </div>
+
+          <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+
+          {/* Precaución */}
+          <div
+            onClick={() => setSelectedColorFilter?.(selectedColorFilter === "amarillo" ? "all" : "amarillo")}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              cursor: "pointer",
+              padding: "2px 6px",
+              borderRadius: "6px",
+              background: selectedColorFilter === "amarillo" ? "rgba(245, 158, 11, 0.25)" : "transparent",
+              border: `1px solid ${selectedColorFilter === "amarillo" ? "rgba(245, 158, 11, 0.6)" : "transparent"}`,
+              transition: "all 0.15s ease",
+            }}
+          >
+            <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Riesgo Medio
+            </span>
+            <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f59e0b" }}>
+              {inspeccionCounts.yellow}
+            </span>
+          </div>
+
+          <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+
+          {/* Bajo Riesgo */}
+          <div
+            onClick={() => setSelectedColorFilter?.(selectedColorFilter === "verde" ? "all" : "verde")}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              cursor: "pointer",
+              padding: "2px 6px",
+              borderRadius: "6px",
+              background: selectedColorFilter === "verde" ? "rgba(34, 197, 94, 0.25)" : "transparent",
+              border: `1px solid ${selectedColorFilter === "verde" ? "rgba(34, 197, 94, 0.6)" : "transparent"}`,
+              transition: "all 0.15s ease",
+            }}
+          >
+            <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#22c55e", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Bajo Riesgo
+            </span>
+            <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#22c55e" }}>
+              {inspeccionCounts.green}
+            </span>
+          </div>
+
+          <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+
+          {/* Total Edificios */}
+          <div
+            onClick={() => setSelectedColorFilter?.("all")}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              cursor: "pointer",
+              padding: "2px 6px",
+              borderRadius: "6px",
+              background: selectedColorFilter === "all" ? "rgba(129, 140, 248, 0.2)" : "transparent",
+              border: `1px solid ${selectedColorFilter === "all" ? "rgba(129, 140, 248, 0.5)" : "transparent"}`,
+              transition: "all 0.15s ease",
+            }}
+          >
+            <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#818cf8", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Total Edificaciones
+            </span>
+            <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>
+              {inspeccionCounts.total}
+            </span>
+          </div>
         </div>
-        <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.08)" }} />
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "C." : "Cadáveres"}</span>
-          <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.recoveredBodies}</span>
+      ) : (
+        /* MODO OPERATIVO DE SIEMPRE */
+        <div style={{ display: "flex", alignItems: "center", gap: compact ? "6px" : "14px" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "var(--color-info)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "R." : "Rescatados"}</span>
+            <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.rescuedPeople}</span>
+          </div>
+          <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "C." : "Cadáveres"}</span>
+            <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.recoveredBodies}</span>
+          </div>
+          <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "var(--color-green)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "M." : "Mascotas"}</span>
+            <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.rescuedPets}</span>
+          </div>
+          {!compact && <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.08)" }} />}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "#38bdf8", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "At." : "Atenciones"}</span>
+            <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.prehospitalCare}</span>
+          </div>
+          <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "var(--color-purple)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "T." : "Traslados"}</span>
+            <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.transfers}</span>
+          </div>
         </div>
-        <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.08)" }} />
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "var(--color-green)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "M." : "Mascotas"}</span>
-          <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.rescuedPets}</span>
-        </div>
-        {!compact && <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.08)" }} />}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "#38bdf8", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "At." : "Atenciones"}</span>
-          <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.prehospitalCare}</span>
-        </div>
-        <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.08)" }} />
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "var(--color-purple)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "T." : "Traslados"}</span>
-          <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.transfers}</span>
-        </div>
-      </div>
+      )}
 
       {/* Mode toggle */}
       {onToggleAccumulated && (
@@ -198,7 +347,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
             borderRadius: "6px",
             border: `1px solid ${showAccumulated ? "rgba(56,189,248,0.4)" : "rgba(255,255,255,0.12)"}`,
             background: showAccumulated ? "rgba(56,189,248,0.15)" : "rgba(255,255,255,0.03)",
-            color: showAccumulated ? "#38bdf8" : "var(--text-muted)",
+            color: showAccumulated ? (isInspeccionesMode ? "#818cf8" : "#38bdf8") : "var(--text-muted)",
             cursor: "pointer",
             fontSize: "0.58rem",
             fontWeight: 700,
@@ -215,7 +364,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
         </button>
       )}
 
-      {/* Slide Toggle Tab */}
+      {/* Slide Toggle Tab Handle */}
       <button
         onClick={() => {
           const next = !isCollapsed;
@@ -228,7 +377,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
           left: "50%",
           transform: "translateX(-50%)",
           background: "rgba(10, 15, 29, 0.97)",
-          border: "1px solid rgba(56, 189, 248, 0.25)",
+          border: `1px solid ${isInspeccionesMode ? "rgba(129, 140, 248, 0.3)" : "rgba(56, 189, 248, 0.25)"}`,
           borderTop: "none",
           borderRadius: "0 0 10px 10px",
           width: "36px",
@@ -236,7 +385,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "rgba(56, 189, 248, 0.8)",
+          color: isInspeccionesMode ? "#818cf8" : "rgba(56, 189, 248, 0.8)",
           cursor: "pointer",
           boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
           outline: "none",
@@ -249,7 +398,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = "rgba(10, 15, 29, 0.9)";
-          e.currentTarget.style.color = "rgba(56, 189, 248, 0.8)";
+          e.currentTarget.style.color = isInspeccionesMode ? "#818cf8" : "rgba(56, 189, 248, 0.8)";
         }}
         title={isCollapsed ? "Mostrar estadísticas" : "Ocultar estadísticas"}
       >

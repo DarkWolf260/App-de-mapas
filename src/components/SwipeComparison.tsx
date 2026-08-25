@@ -77,8 +77,13 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
+    const handleToggle = () => setPanelOpen((p) => !p);
     window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
+    window.addEventListener("toggle-swipe-panel", handleToggle);
+    return () => {
+      window.removeEventListener("resize", check);
+      window.removeEventListener("toggle-swipe-panel", handleToggle);
+    };
   }, []);
 
   const setStatus = useCallback((id: string, status: LayerStatus) => {
@@ -201,28 +206,10 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
         </div>
       </div>
 
-      <div className="swipe-buttons-group">
-        <button
-          className="swipe-layer-toggle"
-          onClick={() => setPanelOpen((p) => !p)}
-          title="Seleccionar capas"
-        >
-          <Layers size={16} />
-        </button>
-
-        <button
-          className="swipe-close-btn"
-          onClick={_onClose}
-          title="Cerrar comparación"
-        >
-          <X size={16} />
-        </button>
-      </div>
-
       {panelOpen && (
         <div
           className="swipe-layer-panel"
-          style={{ left: leftPos }}
+          style={{ position: "fixed", bottom: "68px", left: "132px", top: "auto", zIndex: 120 }}
         >
           <div className="swipe-layer-panel-title">Capas post-sismo</div>
           {COG_SOURCES.map((src) => (

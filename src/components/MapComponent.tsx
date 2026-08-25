@@ -4,6 +4,7 @@ import type { DrawnFeature, LayerVisibility, RemoveFeatureId } from "../types";
 import { DrawingToolbar } from "./DrawingToolbar";
 import { CustomMapPopup } from "./CustomMapPopup";
 import { DeploymentSummaryCard } from "./DeploymentSummaryCard";
+import { GlobalStatsWidget } from "./GlobalStatsWidget";
 import { MapSettingsPanel } from "./MapSettingsPanel";
 import { HtmlPointLabels } from "./HtmlPointLabels";
 import { SwipeComparison } from "./SwipeComparison";
@@ -13,13 +14,14 @@ import { useDraggable } from "../hooks/useDraggable";
 import type { MapFeatureActions, MapUIContext } from "./mapTypes";
 import Point from "@arcgis/core/geometry/Point";
 import { DEFAULT_CENTER } from "../utils/mapUtils";
-import { Satellite, Calendar, MapPin, ExternalLink, Copy, Link2, Check } from "lucide-react";
+import { Satellite, Calendar, MapPin, ExternalLink, Copy, Link2, Check, Building2, Layers } from "lucide-react";
 
 interface MapComponentProps {
   activeBasemap: string;
   activeCity: string;
   layerVisibility: LayerVisibility;
   onToggleLayer?: (layerName: keyof LayerVisibility) => void;
+  onToggleAccumulated?: () => void;
   drawnFeatures: DrawnFeature[];
   hiddenFeatures: Record<string, boolean>;
   zoomToFeature: DrawnFeature | null;
@@ -81,6 +83,11 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     handleDeleteSelected,
     handleToggleEditMode,
     handleColorChange,
+    inspeccionesRecords,
+    selectedColorFilter,
+    setSelectedColorFilter,
+    selectedDateFilter,
+    setSelectedDateFilter,
   } = useMapSetup({
     ...props,
     selectedDate: ui.selectedDate,
@@ -95,6 +102,22 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     bitacoraOpen: ui.bitacoraOpen,
     canEditMap,
   });
+
+  React.useEffect(() => {
+    window.dispatchEvent(new CustomEvent("swipe-state-changed", { detail: swipeActive }));
+  }, [swipeActive]);
+
+  React.useEffect(() => {
+    const handleToggleSwipe = () => {
+      if (swipeActive) {
+        deactivateSwipe();
+      } else {
+        activateSwipe();
+      }
+    };
+    window.addEventListener("toggle-swipe", handleToggleSwipe);
+    return () => window.removeEventListener("toggle-swipe", handleToggleSwipe);
+  }, [swipeActive, activateSwipe, deactivateSwipe]);
 
   const [contextMenu, setContextMenu] = React.useState<{
     x: number;
@@ -122,6 +145,20 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
       setContextMenu(null);
     }, 600);
   }, []);
+
+  const handleToggleInspeccionesLayer = React.useCallback(() => {
+    const isCurrentlyActive = !!layerVisibility.inspecciones;
+    if (!isCurrentlyActive) {
+      if (layerVisibility.sketch) {
+        props.onToggleLayer?.("sketch");
+      }
+    } else {
+      if (!layerVisibility.sketch) {
+        props.onToggleLayer?.("sketch");
+      }
+    }
+    props.onToggleLayer?.("inspecciones");
+  }, [layerVisibility.inspecciones, layerVisibility.sketch, props.onToggleLayer]);
 
   const handleCopyCoords = React.useCallback((lat: number, lng: number) => {
     const coordsStr = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
@@ -255,8 +292,8 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         sketchLayer={sketchLayer}
         sketchVMRef={sketchVMRef}
         enabled={!!layerVisibility.svgOverlay}
-        drawnFeatures={drawnFeatures}
-        htmlLabels={htmlLabels}
+        drawnFeatures={layerVisibility.inspecciones ? drawnFeatures.filter((f) => f.type === "polygon") : drawnFeatures}
+        htmlLabels={layerVisibility.inspecciones ? [] : htmlLabels}
         interactive={!bare}
         onFeatureClick={handleSvgFeatureClick}
       />
@@ -344,6 +381,8 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
           {tooltip.text}
         </div>
       )}
+
+
       {/* Floating Bottom-Right Container (Map Settings Panel + Deployment Summary Card) */}
       {!bare && (
         <div
@@ -423,6 +462,18 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
               }}
               selectedDate={ui.selectedDate}
               activeDepartment={ui.activeDepartment}
+              showAccumulated={ui.showAccumulated}
+              isInspeccionesMode={layerVisibility.inspecciones ?? false}
+              inspeccionesRecords={inspeccionesRecords}
+              selectedColorFilter={selectedColorFilter}
+              onZoomToInspeccion={(rec) => {
+                if (viewRef.current && rec.latitude && rec.longitude) {
+                  viewRef.current.goTo(
+                    { center: [rec.longitude, rec.latitude], zoom: 17 },
+                    { duration: 1200, easing: "ease-in-out" } as any
+                  );
+                }
+              }}
             />
           </div>
         </div>
@@ -440,7 +491,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
 
       {/* HTML point labels with background (personnel info) */}
       <HtmlPointLabels
-        labels={htmlLabels}
+        labels={layerVisibility.inspecciones ? [] : htmlLabels}
         isAuthenticated={ui.isAuthenticated ?? false}
         onSelectLabel={(lblId) => {
           const feat = drawnFeatures.find((f) => String(f.id) === String(lblId));
@@ -462,18 +513,55 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         <SwipeComparison view={viewRef.current} onClose={deactivateSwipe} />
       )}
 
-      {/* Floating comparison toggle button — bottom-left */}
-      {!bare && (
-        <button
-          className={`swipe-toggle-btn ${swipeActive ? "active" : ""}`}
-          onClick={swipeActive ? deactivateSwipe : activateSwipe}
-          title={swipeActive ? "Cerrar comparación" : "Comparar antes/después"}
-        >
-          <Satellite size={16} />
-          <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Después"}</span>
-        </button>
+      {/* Floating Action Buttons — Bottom Left (Solo cuando el sidebar está colapsado) */}
+      {!bare && !ui.sidebarOpen && (
+        <div style={{ position: "fixed", bottom: "24px", left: "24px", zIndex: 30, display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>
+          {/* Fila Superior: Botón de Inspecciones (Encima de Antes / Después) */}
+          <button
+            className={`swipe-toggle-btn ${layerVisibility.inspecciones ? "active" : ""}`}
+            onClick={handleToggleInspeccionesLayer}
+            title={layerVisibility.inspecciones ? "Desactivar Capa de Inspecciones Kobo" : "Activar Capa de Inspecciones Kobo"}
+            style={{
+              position: "relative",
+              bottom: "auto",
+              left: "auto",
+              borderColor: layerVisibility.inspecciones ? "rgba(99, 102, 241, 0.8)" : undefined,
+              backgroundColor: layerVisibility.inspecciones ? "rgba(99, 102, 241, 0.25)" : undefined,
+            }}
+          >
+            <Building2 size={16} style={{ color: layerVisibility.inspecciones ? "#818cf8" : undefined }} />
+            <span className="swipe-toggle-label">Inspecciones</span>
+          </button>
+
+          {/* Fila Inferior: Botón Antes / Después + Capas (Sín hueco) */}
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <button
+              className={`swipe-toggle-btn ${swipeActive ? "active" : ""}`}
+              style={{ position: "relative", bottom: "auto", left: "auto" }}
+              onClick={swipeActive ? deactivateSwipe : activateSwipe}
+              title={swipeActive ? "Cerrar comparación" : "Comparar antes/después"}
+            >
+              <Satellite size={16} />
+              <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Después"}</span>
+            </button>
+
+            {swipeActive && (
+              <button
+                className="swipe-layer-toggle"
+                onClick={() => window.dispatchEvent(new CustomEvent("toggle-swipe-panel"))}
+                title="Seleccionar capas post-sismo"
+                style={{ position: "relative", top: "auto", left: "auto" }}
+              >
+                <Layers size={16} />
+              </button>
+            )}
+          </div>
+        </div>
       )}
-      {/* Floating Right-Click Context Menu (Discreto: Buscar en Maps, Copiar enlace y Copiar coordenadas) */}
+
+
+
+      {/* Context Menu */}
       {contextMenu && (
         <div
           style={{

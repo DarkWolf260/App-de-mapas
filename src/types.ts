@@ -107,6 +107,24 @@ export interface LayerVisibility {
   basemapLabels?: boolean;
   /** Dibujar los elementos como SVG (DOM) en vez del renderer WebGL. Útil en PCs antiguas. */
   svgOverlay: boolean;
+  inspecciones?: boolean;
+}
+
+export interface InspeccionRecord {
+  id: string;
+  latitude: number;
+  longitude: number;
+  estado?: string;
+  municipio?: string;
+  parroquia?: string;
+  fecha?: string;
+  nombre_edificacion?: string;
+  uso?: string;
+  tipo_estructura?: string;
+  riesgo_color?: string;
+  evaluacion_riesgo?: string;
+  codigo_edificacion?: string;
+  sector?: string;
 }
 
 export interface RemoveFeatureId {

@@ -50,13 +50,45 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ pendingCount, campsCou
     />
     <MetricCard
       icon={<Server size={20} />}
-      iconBg={supabaseOk ? "rgba(168, 85, 247, 0.15)" : "rgba(239, 68, 68, 0.15)"}
-      iconColor={supabaseOk ? "#c084fc" : "#ef4444"}
+      iconBg={supabaseOk ? "rgba(34, 197, 94, 0.15)" : "rgba(239, 68, 68, 0.15)"}
+      iconColor={supabaseOk ? "#4ade80" : "#ef4444"}
       label="Base de Datos Supabase"
       value={
-        supabaseOk
-          ? <span style={{ color: "#4ade80", display: "flex", alignItems: "center", gap: "4px" }}><CheckCircle size={14} /> Conectado</span>
-          : <span style={{ color: "#ef4444", display: "flex", alignItems: "center", gap: "4px" }}><WifiOff size={14} /> Sin conexión</span>
+        supabaseOk ? (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px",
+              padding: "2px 10px",
+              borderRadius: "20px",
+              background: "rgba(34, 197, 94, 0.15)",
+              border: "1px solid rgba(34, 197, 94, 0.35)",
+              color: "#4ade80",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+            }}
+          >
+            <CheckCircle size={13} /> En línea
+          </span>
+        ) : (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px",
+              padding: "2px 10px",
+              borderRadius: "20px",
+              background: "rgba(239, 68, 68, 0.15)",
+              border: "1px solid rgba(239, 68, 68, 0.35)",
+              color: "#f87171",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+            }}
+          >
+            <WifiOff size={13} /> Sin conexión
+          </span>
+        )
       }
     />
   </div>

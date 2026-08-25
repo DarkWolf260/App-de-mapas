@@ -16,6 +16,8 @@ import { MobileSettingsSheet } from './components/MobileSettingsSheet';
 import { Sheet } from './components/Sheet';
 import { UserNavMenu } from './components/UserNavMenu';
 import { Menu, ChevronLeft } from 'lucide-react';
+import { fetchInspecciones } from './services/inspeccionService';
+import type { InspeccionRecord } from './types';
 import './App.css';
 
 function App() {
@@ -25,6 +27,11 @@ function App() {
 
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
   const [mobilePanel, setMobilePanel] = useState<'personal' | 'settings' | null>(null);
+  const [inspeccionesRecords, setInspeccionesRecords] = useState<InspeccionRecord[]>([]);
+
+  useEffect(() => {
+    fetchInspecciones().then((records) => setInspeccionesRecords(records));
+  }, []);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
@@ -78,13 +85,13 @@ function App() {
       )}
 
       {!isMobile && (
-      <button
-        className={`toggle-sidebar-btn ${state.sidebarCollapsed ? 'collapsed' : ''}`}
-        onClick={() => state.setSidebarCollapsed(!state.sidebarCollapsed)}
-        title={state.sidebarCollapsed ? "Mostrar panel lateral" : "Ocultar panel lateral"}
-      >
-        {state.sidebarCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
-      </button>
+        <button
+          className={`toggle-sidebar-btn ${state.sidebarCollapsed ? 'collapsed' : ''}`}
+          onClick={() => state.setSidebarCollapsed(!state.sidebarCollapsed)}
+          title={state.sidebarCollapsed ? "Mostrar panel lateral" : "Ocultar panel lateral"}
+        >
+          {state.sidebarCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
+        </button>
       )}
 
       <GlobalStatsWidget
@@ -95,6 +102,8 @@ function App() {
         showAccumulated={state.showAccumulated}
         onToggleAccumulated={() => state.setShowAccumulated(!state.showAccumulated)}
         compact={isMobile}
+        isInspeccionesMode={state.layerVisibility.inspecciones ?? false}
+        inspeccionesRecords={inspeccionesRecords}
       />
 
       <FloatingSearchBar
@@ -113,25 +122,22 @@ function App() {
         onDeleteItem={state.handleDeleteItem}
         selectedItemId={state.selectedItemId}
         className={state.sidebarCollapsed ? 'collapsed' : ''}
-        activeDepartment={state.activeDepartment}
-        onDepartmentChange={state.setActiveDepartment}
-        isAdmin={isAdmin}
+        isMobile={isMobile}
         showPoints={state.showPoints}
-        onToggleShowPoints={() => state.setShowPoints(!state.showPoints)}
         showAreas={state.showAreas}
+        onToggleShowPoints={() => state.setShowPoints(!state.showPoints)}
         onToggleShowAreas={() => state.setShowAreas(!state.showAreas)}
-        hiddenFeatures={state.hiddenFeatures}
-        onToggleFeatureVisibility={state.handleToggleFeatureVisibility}
-        onImportData={state.handleImportData}
-        realtimeStatus={state.realtimeStatus}
+        layerVisibility={state.layerVisibility}
+        onToggleLayer={state.handleToggleLayer}
       />
 
-      <div className="map-viewport">
+      <div className="map-wrapper" style={{ flex: 1, position: 'relative' }}>
         <MapComponent
           activeCity={activeCity}
           activeBasemap="satellite-free"
           layerVisibility={state.layerVisibility}
           onToggleLayer={state.handleToggleLayer}
+          onToggleAccumulated={() => state.setShowAccumulated(!state.showAccumulated)}
           onZoomToFeature={state.setZoomToFeature}
           drawnFeatures={state.drawnFeatures}
           hiddenFeatures={state.hiddenFeatures}

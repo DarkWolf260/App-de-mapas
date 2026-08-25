@@ -2,6 +2,7 @@ import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import MapView from "@arcgis/core/views/MapView";
 import Graphic from "@arcgis/core/Graphic";
 import TextSymbol from "@arcgis/core/symbols/TextSymbol";
+import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol";
 import { execute as centroidExecute } from "@arcgis/core/geometry/operators/centroidOperator";
 import { buildParentsMap } from "./spatialUtils";
 import { symbolForType } from "./mapUtils";
@@ -20,6 +21,23 @@ export function syncDrawnFeaturesToGraphics(
 ): void {
   const effectiveZoom = bare ? 999 : currentZoom;
   const { parentsMap, polygonAreas } = buildParentsMap(drawnFeatures);
+
+  const validIds = new Set(drawnFeatures.map((f) => String(f.id)));
+  const toRemove: Graphic[] = [];
+  layer.graphics.forEach((g) => {
+    if (g.attributes?.isLabel) {
+      const parentId = g.attributes?.parentId;
+      if (parentId && !validIds.has(String(parentId)) && !g.attributes?.title?.startsWith("Importado")) {
+        toRemove.push(g);
+      }
+    } else {
+      const featId = g.attributes?.id ?? (g as any).uid;
+      if (featId && !validIds.has(String(featId)) && !g.attributes?.title?.startsWith("Importado")) {
+        toRemove.push(g);
+      }
+    }
+  });
+  toRemove.forEach((g) => layer.remove(g));
 
   drawnFeatures.forEach((feat) => {
     const g = layer.graphics.find((x) => String((x as any).uid) === String(feat.id) || String(x.attributes?.id) === String(feat.id));
@@ -197,6 +215,24 @@ export function syncImportedFeatures(
   viewRef: React.MutableRefObject<MapView | null>,
   layer: GraphicsLayer
 ): void {
+  const validIds = new Set(importedFeatures.map((f) => String(f.id)));
+  const toRemove: Graphic[] = [];
+  layer.graphics.forEach((g) => {
+    const isImported = String(g.attributes?.title || "").startsWith("Importado");
+    if (isImported) {
+      const featId = g.attributes?.id ?? (g as any).uid;
+      const parentId = g.attributes?.parentId;
+      if (g.attributes?.isLabel) {
+        if (parentId && !validIds.has(String(parentId))) {
+          toRemove.push(g);
+        }
+      } else if (featId && !validIds.has(String(featId))) {
+        toRemove.push(g);
+      }
+    }
+  });
+  toRemove.forEach((g) => layer.remove(g));
+
   importedFeatures.forEach((feat) => {
     if (layer.graphics.some((g) => String((g as any).uid) === String(feat.id) || String(g.attributes?.id) === String(feat.id))) return;
 
@@ -229,5 +265,78 @@ export function syncImportedFeatures(
         attributes: { isLabel: true, parentId: feat.id, isPolygonLabel: false },
       }));
     }
+  });
+}
+
+export function syncInspeccionesToGraphics(
+  layer: GraphicsLayer,
+  records: any[],
+  visible: boolean,
+): void {
+  layer.visible = visible;
+  layer.removeAll();
+
+  if (!visible || records.length === 0) return;
+
+  records.forEach((r) => {
+    if (!r.latitude || !r.longitude) return;
+
+    const rLower = String(r.riesgo_color || "").toLowerCase();
+    const isRed = rLower.includes("rojo") || rLower.includes("roja") || rLower.includes("alto") || rLower.includes("insegur");
+    const isYellow = rLower.includes("amarillo") || rLower.includes("amarilla") || rLower.includes("medio") || rLower.includes("precau");
+    const color = isRed ? "#ef4444" : isYellow ? "#f59e0b" : "#22c55e";
+
+    const symbol = new SimpleMarkerSymbol({
+      style: "circle",
+      color,
+      size: 7,
+      outline: { color: [15, 23, 42, 0.8], width: 1 },
+    });
+
+    const cleanStr = (val?: string) => {
+      if (!val) return "";
+      const s = String(val).replace(/_/g, " ").replace(/\s+/g, " ").trim();
+      return s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+    };
+
+    const g = new Graphic({
+      geometry: {
+        type: "point",
+        longitude: r.longitude,
+        latitude: r.latitude,
+        spatialReference: { wkid: 4326 },
+      } as any,
+      attributes: {
+        nombre_edificacion: cleanStr(r.nombre_edificacion) || "Inspección de Edificación",
+        uso: cleanStr(r.uso) || "No especificado",
+        tipo_estructura: cleanStr(r.tipo_estructura) || "No especificado",
+        evaluacion_riesgo: cleanStr(r.evaluacion_riesgo) || "Sin evaluación registrada",
+        riesgo_color: r.riesgo_color || "Sin clasificar",
+        municipio: cleanStr(r.municipio) || "",
+        parroquia: cleanStr(r.parroquia) || "",
+        estado: cleanStr(r.estado) || "",
+        fecha: r.fecha || "Sin fecha",
+      },
+      symbol,
+      popupTemplate: {
+        title: "<span style='font-size:14px; font-weight:800; color:#f8fafc;'>{riesgo_color}</span>",
+        actions: [],
+        content: `
+          <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; color: #f8fafc; padding: 2px 0;">
+            <div style="margin-bottom: 8px; font-size: 13px; font-weight: 700; color: #38bdf8;">
+              {nombre_edificacion}
+            </div>
+            <p style="margin: 4px 0; color: #e2e8f0; line-height: 1.4;"><b style="color: #94a3b8;">Uso:</b> {uso}</p>
+            <p style="margin: 4px 0; color: #e2e8f0; line-height: 1.4;"><b style="color: #94a3b8;">Estructura:</b> {tipo_estructura}</p>
+            <p style="margin: 4px 0; color: #e2e8f0; line-height: 1.4;"><b style="color: #94a3b8;">Evaluación:</b> {evaluacion_riesgo}</p>
+            <hr style="margin: 8px 0; border: none; border-top: 1px solid rgba(255, 255, 255, 0.15);" />
+            <p style="margin: 4px 0; color: #cbd5e1; font-size: 11px;"><b style="color: #94a3b8;">Ubicación:</b> {municipio}, {parroquia} ({estado})</p>
+            <p style="margin: 4px 0; color: #fbbf24; font-size: 11px; font-weight: 600;"><b style="color: #94a3b8;">Fecha de Inspección:</b> {fecha}</p>
+          </div>
+        `,
+      },
+    });
+
+    layer.add(g);
   });
 }

@@ -124,8 +124,6 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 250px;
-  overflow-y: auto;
   padding-right: 4px;
 }
 
@@ -284,4 +282,11 @@
   background: #1f2937;
   border-color: var(--accent-orange);
   color: var(--accent-orange);
+}
+
+.sidebar-action-buttons .swipe-toggle-btn {
+  position: static !important;
+  bottom: auto !important;
+  left: auto !important;
+  box-shadow: none;
 }

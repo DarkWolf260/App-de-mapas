@@ -45,6 +45,7 @@ export function useMapInit(
   const mapDiv = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
   const sketchLayerRef = useRef<GraphicsLayer | null>(null);
+  const inspeccionesLayerRef = useRef<GraphicsLayer | null>(null);
   const sketchVMRef = useRef<SketchViewModel | null>(null);
 
   const deconflictGraphicsRef = useRef<() => void>(() => { });
@@ -99,6 +100,10 @@ export function useMapInit(
       ui: { components: [] },
     });
     viewRef.current = view;
+
+    const inspeccionesLayer = new GraphicsLayer({ title: "Inspecciones de Edificaciones" });
+    map.add(inspeccionesLayer);
+    inspeccionesLayerRef.current = inspeccionesLayer;
 
     const sketchLayer = new GraphicsLayer({ title: "Dibujos y Trazados" });
     map.add(sketchLayer);
@@ -224,6 +229,24 @@ export function useMapInit(
           // oculta hitTest() no encuentra nada y cerraría el popup recién abierto.
           if (layerVisibilityRef.current.svgOverlay) return;
           const hit = await view.hitTest(evt);
+          const inspeccionResult = hit.results.find(
+            (r: any) => "graphic" in r && r.graphic?.layer === inspeccionesLayerRef.current
+          );
+          if (inspeccionResult) {
+            const g = (inspeccionResult as any).graphic;
+            if (view.popup) {
+              view.popup.visibleElements = {
+                actionBar: false,
+                closeButton: true,
+              };
+            }
+            view.openPopup({
+              location: g.geometry,
+              features: [g],
+            });
+            return;
+          }
+
           const result = hit.results.find(
             (r: any) => "graphic" in r && r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel
           );
@@ -271,6 +294,7 @@ export function useMapInit(
     mapDiv,
     viewRef,
     sketchLayerRef,
+    inspeccionesLayerRef,
     sketchVMRef,
     drawnFeaturesRef,
     hiddenFeaturesRef,

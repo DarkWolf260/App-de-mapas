@@ -4,6 +4,15 @@ import { resolve } from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    proxy: {
+      "/kobo-api": {
+        target: "https://kobo.unocha.org",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/kobo-api/, ""),
+      },
+    },
+  },
   plugins: [
     react(),
     {

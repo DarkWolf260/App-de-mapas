@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DepartmentTabs } from './DepartmentTabs';
 import type { DepartmentView } from '../types';
 import { getLocalDateStr } from '../utils/dateUtils';
@@ -17,6 +17,8 @@ import {
   Info,
   ChevronDown,
   ChevronRight,
+  Building2,
+  Satellite,
 } from 'lucide-react';
 import Select from './ui/Select';
 import { RealtimeStatusBadge } from './RealtimeStatusBadge';
@@ -53,9 +55,10 @@ interface SidebarProps {
   areas: MapArea[];
   onSelectItem: (id: string, type: 'point' | 'area') => void;
   onDeleteItem: (id: string, type: 'point' | 'area') => void;
-  onImportData: (data: { points: MapPoint[]; areas: MapArea[] }) => void;
+  onImportData?: (data: { points: MapPoint[]; areas: MapArea[] }) => void;
   selectedItemId: string | null;
   className?: string;
+  isMobile?: boolean;
   activeDepartment?: DepartmentView;
   onDepartmentChange?: (dept: DepartmentView) => void;
   isAdmin?: boolean;
@@ -66,6 +69,10 @@ interface SidebarProps {
   hiddenFeatures?: Record<string, boolean>;
   onToggleFeatureVisibility?: (id: string | number) => void;
   realtimeStatus?: RealtimeChannelStatus;
+  layerVisibility?: any;
+  onToggleLayer?: any;
+  swipeActive?: boolean;
+  onToggleSwipe?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -86,9 +93,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   hiddenFeatures = {},
   onToggleFeatureVisibility,
   realtimeStatus,
+  layerVisibility,
+  onToggleLayer,
 }) => {
+  const isInspeccionesMode = layerVisibility?.inspecciones ?? false;
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [isSwipeActive, setIsSwipeActive] = useState(false);
+
+  useEffect(() => {
+    const handleSwipeState = (e: CustomEvent<boolean>) => {
+      setIsSwipeActive(!!e.detail);
+    };
+    window.addEventListener("swipe-state-changed", handleSwipeState as EventListener);
+    return () => window.removeEventListener("swipe-state-changed", handleSwipeState as EventListener);
+  }, []);
 
   const categories = [
     { value: 'all', label: 'Todas las categorías', color: '#9ca3af', icon: Layers },
@@ -138,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         try {
           const parsed = JSON.parse(event.target?.result as string);
           if (parsed && (Array.isArray(parsed.points) || Array.isArray(parsed.areas))) {
-            onImportData({
+            onImportData?.({
               points: parsed.points || [],
               areas: parsed.areas || []
             });
@@ -182,9 +201,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Contenido Principal */}
-      <div className="sidebar-content">
+      <div className="sidebar-content" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", gap: "16px" }}>
         {/* Filtros e Historial */}
-        <div className="sidebar-section">
+        <div className="sidebar-section" style={{ flexShrink: 0 }}>
           <div className="section-title">
             <Search size={14} />
             <span>Búsqueda y Filtros</span>
@@ -221,89 +240,91 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Listado de Puntos */}
-        <div className="sidebar-section">
-          <div className="section-title" onClick={onToggleShowPoints} style={{ cursor: "pointer" }}>
-            <MapPin size={14} />
-            <span>Puntos Operacionales ({filteredPoints.length})</span>
-            <span style={{ marginLeft: "auto" }}>{showPoints ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
-          </div>
-          
-          {showPoints && (
-          <div className="element-list">
-            {filteredPoints.length === 0 ? (
-              <div className="empty-state">No hay puntos registrados</div>
-            ) : (
-              filteredPoints.map(point => (
-                <div
-                  key={point.id}
-                  className={`element-item ${selectedItemId === point.id ? 'active' : ''}`}
-                  onClick={() => onSelectItem(point.id, 'point')}
-                  style={{ borderLeftColor: point.color }}
-                >
-                  <div className="element-header">
-                    <span className="element-name">{point.name}</span>
-                    {point.isCollapsed && (
-                      <span
-                        style={{
-                          fontSize: "0.62rem",
-                          fontWeight: 800,
-                          color: "#f87171",
-                          background: "rgba(239, 68, 68, 0.18)",
-                          border: "1px solid rgba(239, 68, 68, 0.4)",
-                          padding: "1px 6px",
-                          borderRadius: "4px",
-                          marginLeft: "6px",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Colapsado: {point.collapsedCount || "1"}
-                      </span>
-                    )}
-                    <div className="element-actions" onClick={(e) => e.stopPropagation()}>
-                      {onToggleFeatureVisibility && (
-                        <input
-                          type="checkbox"
-                          checked={!hiddenFeatures[String(point.id)]}
-                          onChange={() => onToggleFeatureVisibility(String(point.id))}
-                          title={hiddenFeatures[String(point.id)] ? "Mostrar punto" : "Ocultar punto"}
-                          style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#38bdf8", flexShrink: 0 }}
-                        />
-                      )}
-                      {isAdmin && (
-                        <button 
-                          className="action-icon-btn" 
-                          onClick={() => onDeleteItem(point.id, 'point')}
-                          title="Eliminar punto"
+        {/* Listado de Puntos (Oculto en modo Inspecciones para mostrar únicamente polígonos) */}
+        {!isInspeccionesMode && (
+          <div className="sidebar-section" style={{ flex: showPoints && !showAreas ? 1 : "0 1 auto", display: "flex", flexDirection: "column", minHeight: 0 }}>
+            <div className="section-title" onClick={onToggleShowPoints} style={{ cursor: "pointer", flexShrink: 0 }}>
+              <MapPin size={14} />
+              <span>Puntos Operacionales ({filteredPoints.length})</span>
+              <span style={{ marginLeft: "auto" }}>{showPoints ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
+            </div>
+            
+            {showPoints && (
+            <div className="element-list" style={{ flex: 1, maxHeight: showAreas ? "180px" : "none", overflowY: "auto", minHeight: 0 }}>
+              {filteredPoints.length === 0 ? (
+                <div className="empty-state">No hay puntos registrados</div>
+              ) : (
+                filteredPoints.map(point => (
+                  <div
+                    key={point.id}
+                    className={`element-item ${selectedItemId === point.id ? 'active' : ''}`}
+                    onClick={() => onSelectItem(point.id, 'point')}
+                    style={{ borderLeftColor: point.color }}
+                  >
+                    <div className="element-header">
+                      <span className="element-name">{point.name}</span>
+                      {point.isCollapsed && (
+                        <span
+                          style={{
+                            fontSize: "0.62rem",
+                            fontWeight: 800,
+                            color: "#f87171",
+                            background: "rgba(239, 68, 68, 0.18)",
+                            border: "1px solid rgba(239, 68, 68, 0.4)",
+                            padding: "1px 6px",
+                            borderRadius: "4px",
+                            marginLeft: "6px",
+                            whiteSpace: "nowrap",
+                          }}
                         >
-                          <Trash2 size={14} />
-                        </button>
+                          Colapsado: {point.collapsedCount || "1"}
+                        </span>
                       )}
+                      <div className="element-actions" onClick={(e) => e.stopPropagation()}>
+                        {onToggleFeatureVisibility && (
+                          <input
+                            type="checkbox"
+                            checked={!hiddenFeatures[String(point.id)]}
+                            onChange={() => onToggleFeatureVisibility(String(point.id))}
+                            title={hiddenFeatures[String(point.id)] ? "Mostrar punto" : "Ocultar punto"}
+                            style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#38bdf8", flexShrink: 0 }}
+                          />
+                        )}
+                        {isAdmin && (
+                          <button 
+                            className="action-icon-btn" 
+                            onClick={() => onDeleteItem(point.id, 'point')}
+                            title="Eliminar punto"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <span className="element-desc">{point.description || 'Sin descripción'}</span>
+                    <div className="element-meta">
+                      {getCategoryIcon(point.category)}
+                      <span className="category-tag">{point.category}</span>
+                      <span>• {point.coordinates.latitude.toFixed(4)}, {point.coordinates.longitude.toFixed(4)}</span>
                     </div>
                   </div>
-                  <span className="element-desc">{point.description || 'Sin descripción'}</span>
-                  <div className="element-meta">
-                    {getCategoryIcon(point.category)}
-                    <span className="category-tag">{point.category}</span>
-                    <span>• {point.coordinates.latitude.toFixed(4)}, {point.coordinates.longitude.toFixed(4)}</span>
-                  </div>
-                </div>
-              ))
+                ))
+              )}
+            </div>
             )}
           </div>
-          )}
-        </div>
+        )}
 
         {/* Listado de Áreas */}
-        <div className="sidebar-section">
-          <div className="section-title" onClick={onToggleShowAreas} style={{ cursor: "pointer" }}>
+        <div className="sidebar-section" style={{ flex: showAreas ? 1 : "0 1 auto", display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <div className="section-title" onClick={onToggleShowAreas} style={{ cursor: "pointer", flexShrink: 0 }}>
             <Map size={14} />
             <span>Áreas y Polígonos ({filteredAreas.length})</span>
             <span style={{ marginLeft: "auto" }}>{showAreas ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
           </div>
           
           {showAreas && (
-          <div className="element-list">
+          <div className="element-list" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
             {filteredAreas.length === 0 ? (
               <div className="empty-state">No hay áreas trazadas</div>
             ) : (
@@ -370,6 +391,93 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </label>
         </div>
       )}
+
+      {/* Botones de Acción al pie del Sidebar (Inspecciones y Antes / Después) */}
+      <div className="sidebar-action-buttons" style={{ padding: "12px 16px 16px 16px", borderTop: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "8px", flexShrink: 0, background: "rgba(10, 15, 28, 0.4)" }}>
+        <button
+          className={`swipe-toggle-btn ${isInspeccionesMode ? "active" : ""}`}
+          onClick={() => onToggleLayer?.("inspecciones")}
+          title={isInspeccionesMode ? "Desactivar Capa de Inspecciones Kobo" : "Activar Capa de Inspecciones Kobo"}
+          style={{
+            position: "static",
+            bottom: "auto",
+            left: "auto",
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            padding: "9px 12px",
+            borderRadius: "8px",
+            border: `1px solid ${isInspeccionesMode ? "rgba(99, 102, 241, 0.8)" : "var(--border-color)"}`,
+            backgroundColor: isInspeccionesMode ? "rgba(99, 102, 241, 0.25)" : "var(--bg-tertiary)",
+            color: isInspeccionesMode ? "#818cf8" : "var(--text-primary)",
+            cursor: "pointer",
+            fontWeight: 700,
+            fontSize: "11px",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <Building2 size={16} color={isInspeccionesMode ? "#818cf8" : "var(--text-muted)"} />
+          <span>Inspecciones</span>
+        </button>
+
+        <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+          <button
+            className={`swipe-toggle-btn ${isSwipeActive ? "active" : ""}`}
+            onClick={() => window.dispatchEvent(new CustomEvent("toggle-swipe"))}
+            title={isSwipeActive ? "Cerrar comparación" : "Comparar antes/después"}
+            style={{
+              position: "static",
+              bottom: "auto",
+              left: "auto",
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "9px 12px",
+              borderRadius: "8px",
+              border: `1px solid ${isSwipeActive ? "rgba(56, 189, 248, 0.8)" : "var(--border-color)"}`,
+              backgroundColor: isSwipeActive ? "rgba(56, 189, 248, 0.25)" : "var(--bg-tertiary)",
+              color: isSwipeActive ? "#38bdf8" : "var(--text-primary)",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: "11px",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              transition: "all 0.2s ease",
+            }}
+          >
+            <Satellite size={16} color={isSwipeActive ? "#38bdf8" : "var(--text-muted)"} />
+            <span>{isSwipeActive ? "Cerrar" : "Antes / Después"}</span>
+          </button>
+
+          {isSwipeActive && (
+            <button
+              className="swipe-layer-toggle"
+              onClick={() => window.dispatchEvent(new CustomEvent("toggle-swipe-panel"))}
+              title="Seleccionar capas post-sismo"
+              style={{
+                position: "static",
+                top: "auto",
+                left: "auto",
+                padding: "9px 12px",
+                borderRadius: "8px",
+                border: "1px solid var(--border-color)",
+                background: "var(--bg-tertiary)",
+                color: "#f8fafc",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Layers size={16} />
+            </button>
+          )}
+        </div>
+      </div>
     </aside>
   );
 };

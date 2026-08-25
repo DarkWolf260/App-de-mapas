@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import Graphic from "@arcgis/core/Graphic";
 import type { Color } from "../utils/colorUtils";
 import { PALETTE, hexToRgb } from "../utils/colorUtils";
 import { ToolId } from "./DrawingToolbar";
 import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapValue, makeSymbols } from "../utils/mapUtils";
-import { syncDrawnFeaturesToGraphics, syncImportedFeatures } from "../utils/graphicsSync";
+import { syncDrawnFeaturesToGraphics, syncImportedFeatures, syncInspeccionesToGraphics } from "../utils/graphicsSync";
+import { fetchInspecciones } from "../services/inspeccionService";
 import { useMapInit } from "./useMapInit";
-import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DepartmentView } from "../types";
+import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DepartmentView, InspeccionRecord } from "../types";
 
 export interface UseMapSetupProps {
   activeBasemap: string;
@@ -238,16 +239,71 @@ export const useMapSetup = (props: UseMapSetupProps) => {
   useEffect(() => {
     const layer = sketchLayerRef.current;
     if (!layer) return;
+    if (layerVisibility.inspecciones) {
+      const polygonFeatures = drawnFeatures.filter((f) => f.type === "polygon");
+      syncDrawnFeaturesToGraphics(polygonFeatures, hiddenFeatures, layerVisibility, init.currentZoom, layer, selectedDateRef.current, activeDepartmentRef.current, bare);
+      deconflictGraphicsRef.current?.();
+      return;
+    }
     syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, init.currentZoom, layer, selectedDateRef.current, activeDepartmentRef.current, bare);
     deconflictGraphicsRef.current?.();
-  }, [drawnFeatures, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.hideNestedAreas, init.mapReady, init.currentZoom, selectedDate, activeDepartment, sketchLayerRef, deconflictGraphicsRef, bare]);
+  }, [drawnFeatures, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.inspecciones, layerVisibility.hideNestedAreas, init.mapReady, init.currentZoom, selectedDate, activeDepartment, sketchLayerRef, deconflictGraphicsRef, bare]);
 
   useEffect(() => {
     const layer = sketchLayerRef.current;
-    if (!importedFeatures?.length || !layer) return;
-    syncImportedFeatures(importedFeatures, layerVisibility, viewRef, layer);
+    if (!layer) return;
+    const targetImported = layerVisibility.inspecciones
+      ? (importedFeatures || []).filter((f) => f.type === "polygon" || f.geojsonGeometry?.type === "Polygon")
+      : (importedFeatures || []);
+    syncImportedFeatures(targetImported, layerVisibility, viewRef, layer);
     deconflictGraphicsRef.current?.();
-  }, [importedFeatures, init.mapReady, layerVisibility.pointLabels, sketchLayerRef, viewRef, deconflictGraphicsRef]);
+  }, [importedFeatures, init.mapReady, layerVisibility.pointLabels, layerVisibility.inspecciones, sketchLayerRef, viewRef, deconflictGraphicsRef]);
+
+  const [inspeccionesRecords, setInspeccionesRecords] = useState<InspeccionRecord[]>([]);
+  const [selectedColorFilter, setSelectedColorFilter] = useState<"all" | "rojo" | "amarillo" | "verde">("all");
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>("");
+
+  useEffect(() => {
+    fetchInspecciones().then((records) => {
+      setInspeccionesRecords(records);
+    });
+  }, []);
+
+  const filteredInspeccionesRecords = useMemo(() => {
+    return inspeccionesRecords.filter((r) => {
+      // Si está en modo ACUMULADO (showAccumulated === true), no se filtra por fecha (se muestran todos los puntos de la historia)
+      if (!showAccumulated && !selectedDateFilter) {
+        if (selectedDate && selectedDate.trim().length >= 8 && r.fecha) {
+          if (!r.fecha.startsWith(selectedDate)) {
+            return false;
+          }
+        }
+      } else if (selectedDateFilter) {
+        if (r.fecha && !r.fecha.startsWith(selectedDateFilter)) {
+          return false;
+        }
+      }
+      if (selectedColorFilter !== "all") {
+        const tag = String(r.riesgo_color || "").toLowerCase();
+        if (selectedColorFilter === "rojo") {
+          return tag.includes("rojo") || tag.includes("roja") || tag.includes("alto") || tag.includes("insegur");
+        }
+        if (selectedColorFilter === "amarillo") {
+          return tag.includes("amarillo") || tag.includes("amarilla") || tag.includes("medio") || tag.includes("precau");
+        }
+        if (selectedColorFilter === "verde") {
+          return !tag.includes("rojo") && !tag.includes("roja") && !tag.includes("alto") && !tag.includes("amarillo") && !tag.includes("amarilla") && !tag.includes("medio");
+        }
+      }
+      return true;
+    });
+  }, [inspeccionesRecords, selectedDateFilter, selectedDate, showAccumulated, selectedColorFilter]);
+
+  useEffect(() => {
+    const layer = init.inspeccionesLayerRef.current;
+    if (!layer) return;
+    syncInspeccionesToGraphics(layer, filteredInspeccionesRecords, layerVisibility.inspecciones ?? false);
+  }, [filteredInspeccionesRecords, layerVisibility.inspecciones, init.mapReady, init.inspeccionesLayerRef]);
 
   useEffect(() => {
     if (viewRef.current) {
@@ -305,5 +361,10 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     handleDeleteSelected,
     handleToggleEditMode,
     handleColorChange,
+    inspeccionesRecords,
+    selectedColorFilter,
+    setSelectedColorFilter,
+    selectedDateFilter,
+    setSelectedDateFilter,
   };
 };

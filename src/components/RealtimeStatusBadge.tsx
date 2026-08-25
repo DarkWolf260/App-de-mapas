@@ -7,22 +7,24 @@ interface RealtimeStatusBadgeProps {
 }
 
 export const RealtimeStatusBadge: React.FC<RealtimeStatusBadgeProps> = ({ status, className = "" }) => {
-  const getStatusInfo = () => {
+  const getStatusConfig = () => {
     switch (status) {
       case "SUBSCRIBED":
         return {
-          label: "En vivo",
-          color: "bg-emerald-500",
-          textColor: "text-emerald-700 dark:text-emerald-300",
-          bgContainer: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50",
+          label: "En línea",
+          dotColor: "#22c55e",
+          textColor: "#4ade80",
+          bg: "rgba(34, 197, 94, 0.12)",
+          border: "1px solid rgba(34, 197, 94, 0.35)",
           pulse: true,
         };
       case "CONNECTING":
         return {
           label: "Conectando...",
-          color: "bg-amber-500",
-          textColor: "text-amber-700 dark:text-amber-300",
-          bgContainer: "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/50",
+          dotColor: "#f59e0b",
+          textColor: "#fbbf24",
+          bg: "rgba(245, 158, 11, 0.12)",
+          border: "1px solid rgba(245, 158, 11, 0.35)",
           pulse: true,
         };
       case "TIMED_OUT":
@@ -31,30 +33,75 @@ export const RealtimeStatusBadge: React.FC<RealtimeStatusBadgeProps> = ({ status
       default:
         return {
           label: "Sin conexión",
-          color: "bg-rose-500",
-          textColor: "text-rose-700 dark:text-rose-300",
-          bgContainer: "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/50",
+          dotColor: "#ef4444",
+          textColor: "#f87171",
+          bg: "rgba(239, 68, 68, 0.12)",
+          border: "1px solid rgba(239, 68, 68, 0.35)",
           pulse: false,
         };
     }
   };
 
-  const info = getStatusInfo();
+  const cfg = getStatusConfig();
 
   return (
     <div
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border shadow-xs transition-colors duration-200 ${info.bgContainer} ${info.textColor} ${className}`}
-      title={`Estatus de sincronización en tiempo real: ${status}`}
+      className={className}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "6px",
+        padding: "3px 10px",
+        borderRadius: "20px",
+        background: cfg.bg,
+        border: cfg.border,
+        color: cfg.textColor,
+        fontSize: "0.68rem",
+        fontWeight: 700,
+        letterSpacing: "0.02em",
+        backdropFilter: "blur(6px)",
+        WebkitBackdropFilter: "blur(6px)",
+        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.2)",
+        transition: "all 0.2s ease",
+        whiteSpace: "nowrap",
+      }}
+      title={`Estatus de conexión en tiempo real: ${status}`}
     >
-      <span className="relative flex h-2 w-2">
-        {info.pulse && (
+      <span
+        style={{
+          position: "relative",
+          display: "flex",
+          width: "7px",
+          height: "7px",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {cfg.pulse && (
           <span
-            className={`animate-ping absolute inline-flex h-full w-full rounded-full ${info.color} opacity-75`}
+            style={{
+              position: "absolute",
+              width: "100%",
+              height: "100%",
+              borderRadius: "50%",
+              background: cfg.dotColor,
+              opacity: 0.6,
+              animation: "ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite",
+            }}
           />
         )}
-        <span className={`relative inline-flex rounded-full h-2 w-2 ${info.color}`} />
+        <span
+          style={{
+            position: "relative",
+            width: "7px",
+            height: "7px",
+            borderRadius: "50%",
+            background: cfg.dotColor,
+            boxShadow: `0 0 6px ${cfg.dotColor}`,
+          }}
+        />
       </span>
-      <span>{info.label}</span>
+      <span>{cfg.label}</span>
     </div>
   );
 };

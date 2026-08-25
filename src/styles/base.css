@@ -6,12 +6,14 @@
   position: relative;
   background-color: var(--bg-primary);
   font-family: var(--sans-font);
+  overflow: hidden;
 }
 
 html, body {
   touch-action: manipulation;
   -ms-touch-action: manipulation;
   overscroll-behavior: none;
+  overflow: hidden;
 }
 
 .map-viewport {

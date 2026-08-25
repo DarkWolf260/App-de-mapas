@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
-import type { DrawnFeature, DepartmentView } from "../types";
+import type { DrawnFeature, DepartmentView, InspeccionRecord } from "../types";
 import { getTotalPersonnel, getNormalizedGroupList, mergeLogs, getDayStats } from "../utils/logUtils";
-import { LayoutDashboard, Users, MapPin, Tag, X, BarChart2, List } from "lucide-react";
+import { LayoutDashboard, Users, MapPin, Tag, X, BarChart2, List, Building2 } from "lucide-react";
 
 interface DeploymentSummaryCardProps {
   drawnFeatures: DrawnFeature[];
@@ -12,6 +12,13 @@ interface DeploymentSummaryCardProps {
   selectedDate?: string;
   activeDepartment?: DepartmentView;
   style?: React.CSSProperties;
+
+  // Inspecciones & Mode Props
+  showAccumulated?: boolean;
+  isInspeccionesMode?: boolean;
+  inspeccionesRecords?: InspeccionRecord[];
+  selectedColorFilter?: "all" | "rojo" | "amarillo" | "verde";
+  onZoomToInspeccion?: (rec: InspeccionRecord) => void;
 }
 
 interface ActivePoint {
@@ -89,6 +96,17 @@ function computeTeams(drawnFeatures: DrawnFeature[], targetDate: string, activeD
   return teams.sort((a, b) => a.groupName.localeCompare(b.groupName, "es"));
 }
 
+function getRiskBadgeInfo(rec: InspeccionRecord) {
+  const tag = String(rec.riesgo_color || "").toLowerCase();
+  if (tag.includes("rojo") || tag.includes("roja") || tag.includes("alto") || tag.includes("insegur")) {
+    return { label: "Alto", color: "#ef4444", bg: "rgba(239, 68, 68, 0.18)", border: "rgba(239, 68, 68, 0.4)" };
+  }
+  if (tag.includes("amarillo") || tag.includes("amarilla") || tag.includes("medio") || tag.includes("precau")) {
+    return { label: "Medio", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.18)", border: "rgba(245, 158, 11, 0.4)" };
+  }
+  return { label: "Bajo", color: "#22c55e", bg: "rgba(34, 197, 94, 0.18)", border: "rgba(34, 197, 94, 0.4)" };
+}
+
 export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   drawnFeatures,
   widgetCollapsed,
@@ -98,10 +116,41 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   selectedDate,
   activeDepartment,
   style: customStyle,
+  showAccumulated = false,
+  isInspeccionesMode = false,
+  inspeccionesRecords = [],
+  selectedColorFilter = "all",
+  onZoomToInspeccion,
 }) => {
+  // Desactivar totalmente cuando el acumulado está activado (sea operativo o inspecciones)
+  if (showAccumulated) {
+    return null;
+  }
+
   const targetDateStr = selectedDate || new Date().toLocaleDateString("en-CA");
   const [viewMode, setViewMode] = useState<ViewMode>("sitios");
   const [isCompact, setIsCompact] = useState<boolean>(false);
+
+  // Filtro de inspecciones
+  const filteredInspecciones = useMemo(() => {
+    if (!isInspeccionesMode || !inspeccionesRecords) return [];
+    return inspeccionesRecords.filter((r) => {
+      if (r.fecha && !r.fecha.startsWith(targetDateStr)) return false;
+      if (selectedColorFilter !== "all") {
+        const tag = String(r.riesgo_color || "").toLowerCase();
+        if (selectedColorFilter === "rojo") {
+          return tag.includes("rojo") || tag.includes("roja") || tag.includes("alto") || tag.includes("insegur");
+        }
+        if (selectedColorFilter === "amarillo") {
+          return tag.includes("amarillo") || tag.includes("amarilla") || tag.includes("medio") || tag.includes("precau");
+        }
+        if (selectedColorFilter === "verde") {
+          return !tag.includes("rojo") && !tag.includes("roja") && !tag.includes("alto") && !tag.includes("amarillo") && !tag.includes("amarilla") && !tag.includes("medio");
+        }
+      }
+      return true;
+    });
+  }, [isInspeccionesMode, inspeccionesRecords, targetDateStr, selectedColorFilter]);
 
   const activePoints = useMemo(() => computeActivePoints(drawnFeatures, targetDateStr, activeDepartment), [drawnFeatures, targetDateStr, activeDepartment]);
   const teams = useMemo(() => computeTeams(drawnFeatures, targetDateStr, activeDepartment), [drawnFeatures, targetDateStr, activeDepartment]);
@@ -155,9 +204,9 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
           padding: 0,
           ...customStyle,
         }}
-        title={`Personal Desplegado: ${totalOff} funcionarios (${targetDateStr})`}
+        title={isInspeccionesMode ? `Inspecciones Kobo hoy: ${filteredInspecciones.length}` : `Personal Desplegado: ${totalOff} funcionarios (${targetDateStr})`}
       >
-        <Users size={16} />
+        {isInspeccionesMode ? <Building2 size={16} /> : <Users size={16} />}
       </button>
     );
   }
@@ -179,14 +228,14 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
         zIndex: 100,
         width: "330px",
         maxHeight: "260px",
-        overflowY: "auto",
+        overflow: "hidden",
         display: "flex",
         flexDirection: "column",
         gap: "6px",
         ...customStyle,
       }}
     >
-      {/* Header en una sola línea */}
+      {/* Header en una sola línea (Siempre Fijo) */}
       <div
         style={{
           fontWeight: 800,
@@ -199,36 +248,37 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
           justifyContent: "space-between",
           alignItems: "center",
           whiteSpace: "nowrap",
+          flexShrink: 0,
         }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: "5px", whiteSpace: "nowrap" }}>
-          <LayoutDashboard size={12} style={{ flexShrink: 0 }} />
-          PERSONAL DESPLEGADO
+          {isInspeccionesMode ? <Building2 size={12} style={{ flexShrink: 0 }} /> : <LayoutDashboard size={12} style={{ flexShrink: 0 }} />}
+          {isInspeccionesMode ? `INSPECCIONES KOBO (${filteredInspecciones.length})` : "PERSONAL DESPLEGADO"}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
           <span style={{ fontSize: "9.5px", color: "var(--text-muted)", fontWeight: 600 }}>{targetDateStr}</span>
-          
-          {/* Botón para alternar entre vista de Totales (números) y Lista completa */}
-          <button
-            onClick={() => setIsCompact(!isCompact)}
-            style={{
-              background: "transparent",
-              border: "1px solid rgba(56, 189, 248, 0.25)",
-              borderRadius: "4px",
-              color: "var(--color-info)",
-              cursor: "pointer",
-              padding: "2px 4px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.2s ease",
-            }}
-            title={isCompact ? "Ver lista completa" : "Ver solo números de totales"}
-          >
-            {isCompact ? <List size={12} /> : <BarChart2 size={12} />}
-          </button>
 
-          {/* Botón para ocultar a icono discreto */}
+          {!isInspeccionesMode && (
+            <button
+              onClick={() => setIsCompact(!isCompact)}
+              style={{
+                background: "transparent",
+                border: "1px solid rgba(56, 189, 248, 0.25)",
+                borderRadius: "4px",
+                color: "var(--color-info)",
+                cursor: "pointer",
+                padding: "2px 4px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.2s ease",
+              }}
+              title={isCompact ? "Ver lista completa" : "Ver solo números de totales"}
+            >
+              {isCompact ? <List size={12} /> : <BarChart2 size={12} />}
+            </button>
+          )}
+
           <button
             onClick={(e) => { e.stopPropagation(); onToggleCollapse(true); }}
             style={{
@@ -249,8 +299,52 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
         </div>
       </div>
 
-      {/* Modo 2: Vista de Totales (sólo muestra los números) */}
-      {isCompact ? (
+      {/* Área de Contenido Desplazable (Scrollable) */}
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column", gap: "6px", minHeight: 0 }}>
+
+      {/* MODO INSPECCIONES */}
+      {isInspeccionesMode ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+          {filteredInspecciones.length === 0 ? (
+            <div style={{ fontSize: "10px", color: "var(--text-muted)", fontStyle: "italic", textAlign: "center", padding: "8px 0" }}>
+              Sin inspecciones registradas hoy
+            </div>
+          ) : (
+            filteredInspecciones.map((rec, idx) => {
+              const badge = getRiskBadgeInfo(rec);
+              const title = rec.codigo_edificacion || rec.nombre_edificacion || rec.sector || `Edificación ${idx + 1}`;
+              return (
+                <div
+                  key={rec.id || idx}
+                  onClick={() => onZoomToInspeccion?.(rec)}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "10px", padding: "4px 6px", background: "rgba(255,255,255,0.02)", borderRadius: "4px", borderLeft: `2px solid ${badge.color}`, cursor: "pointer", transition: "background 0.2s ease" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
+                  title={`Clic para ubicar ${title} en el mapa`}
+                >
+                  <span style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "190px" }}>{title}</span>
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      fontWeight: 700,
+                      color: badge.color,
+                      background: badge.bg,
+                      border: `1px solid ${badge.border}`,
+                      fontSize: "8px",
+                      padding: "1px 5px",
+                      borderRadius: "4px",
+                      lineHeight: "1.2",
+                    }}
+                  >
+                    {badge.label}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : isCompact ? (
+        /* Modo Totales (sólo muestra los números) */
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "4px 0" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around" }}>
             {renderStat("Funcionarios", totalOff, "rgba(56, 189, 248, 0.85)")}
@@ -274,9 +368,8 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
           )}
         </div>
       ) : (
-        /* Modo 3: Vista Completa con pestañas e ítems */
+        /* Modo Vista Completa con pestañas e ítems */
         <>
-          {/* View Mode Toggle */}
           <div style={{ display: "flex", gap: "3px", padding: "1px", background: "rgba(255,255,255,0.03)", borderRadius: "6px" }}>
             <button
               onClick={() => setViewMode("sitios")}
@@ -308,7 +401,6 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
             </button>
           </div>
 
-          {/* Content */}
           {hasMetrics && (
             <div style={{ display: "flex", justifyContent: "center", gap: "8px", flexWrap: "wrap", padding: "4px 6px", background: "rgba(255,255,255,0.03)", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.06)" }}>
               {metricBadges.filter((m) => m.value > 0).map((m) => (
@@ -323,7 +415,6 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
               Sin personal desplegado hoy
             </div>
           ) : viewMode === "sitios" ? (
-            /* Sitios view */
             <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
               {sortedPoints.map((pt) => (
                 <div
@@ -355,7 +446,6 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
               </div>
             </div>
           ) : (
-            /* Equipos view */
             <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
               {teams.map((t) => (
                 <div
@@ -398,6 +488,7 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
           )}
         </>
       )}
+      </div>
     </div>
   );
 };
