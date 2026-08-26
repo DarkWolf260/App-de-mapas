@@ -9,7 +9,7 @@ export interface DeleteTarget {
 
 export interface WorkTeam {
   id: string;
-  featureId: number;
+  featureId: number | string;
   groupIndex: number;
   groupName: string;
   pointTitle: string;

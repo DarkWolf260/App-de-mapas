@@ -85,7 +85,7 @@ export type GeoJSONGeometry =
   | { type: "Polygon"; coordinates: number[][][] };
 
 export interface DrawnFeature {
-  id: number;
+  id: number | string;
   title: string;
   type: FeatureType;
   description?: string;
@@ -128,6 +128,6 @@ export interface InspeccionRecord {
 }
 
 export interface RemoveFeatureId {
-  id: number;
+  id: number | string;
   timestamp: number;
 }

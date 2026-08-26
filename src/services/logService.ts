@@ -23,8 +23,8 @@ export async function fetchLogs(date?: string): Promise<Map<string, DailyLog[]>>
   return logsMap;
 }
 
-export async function saveDailyLog(featureId: number, log: DailyLog): Promise<void> {
-  const fidStr = String(featureId);
+export async function saveDailyLog(featureId: number | string, log: DailyLog): Promise<void> {
+  const fidStr = String(featureId ?? "");
   if (!fidStr || fidStr === "NaN" || fidStr === "undefined") {
     console.warn("[logService] Ignorando guardado con featureId inválido:", featureId);
     return;
@@ -71,7 +71,7 @@ function rowToDailyLog(row: any): DailyLog {
   };
 }
 
-function dailyLogToRow(featureId: number, log: DailyLog): Record<string, unknown> {
+function dailyLogToRow(featureId: number | string, log: DailyLog): Record<string, unknown> {
   const fidStr = String(featureId);
   const deptToUse = log.department || "pc";
   const groupsList = getNormalizedGroupList(log).filter((g) =>

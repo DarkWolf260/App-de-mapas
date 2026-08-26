@@ -24,7 +24,7 @@ export async function upsertFeature(feat: DrawnFeature): Promise<void> {
   if (error) console.error("[featureService] upsert error:", error);
 }
 
-export async function updateFeatureTitle(id: number, title: string): Promise<void> {
+export async function updateFeatureTitle(id: number | string, title: string): Promise<void> {
   const { error } = await supabase
     .from("drawn_features")
     .update({ title, updated_at: new Date().toISOString() })
@@ -32,7 +32,7 @@ export async function updateFeatureTitle(id: number, title: string): Promise<voi
   if (error) console.error("[featureService] update title error:", error);
 }
 
-export async function updateFeatureDescription(id: number, description: string): Promise<void> {
+export async function updateFeatureDescription(id: number | string, description: string): Promise<void> {
   const { error } = await supabase
     .from("drawn_features")
     .update({ description, updated_at: new Date().toISOString() })
@@ -40,7 +40,7 @@ export async function updateFeatureDescription(id: number, description: string):
   if (error) console.error("[featureService] update description error:", error);
 }
 
-export async function updateFeatureColor(id: number, color: string): Promise<void> {
+export async function updateFeatureColor(id: number | string, color: string): Promise<void> {
   const { error } = await supabase
     .from("drawn_features")
     .update({ color, updated_at: new Date().toISOString() })
@@ -48,7 +48,7 @@ export async function updateFeatureColor(id: number, color: string): Promise<voi
   if (error) console.error("[featureService] update color error:", error);
 }
 
-export async function updateFeatureLock(id: number, locked: boolean): Promise<void> {
+export async function updateFeatureLock(id: number | string, locked: boolean): Promise<void> {
   const { error } = await supabase
     .from("drawn_features")
     .update({ locked, updated_at: new Date().toISOString() })
@@ -56,7 +56,7 @@ export async function updateFeatureLock(id: number, locked: boolean): Promise<vo
   if (error) console.error("[featureService] update lock error:", error);
 }
 
-export async function updateFeatureCollapsed(id: number, isCollapsed: boolean, collapsedCount: string | number): Promise<void> {
+export async function updateFeatureCollapsed(id: number | string, isCollapsed: boolean, collapsedCount: string | number): Promise<void> {
   const { error } = await supabase
     .from("drawn_features")
     .update({
@@ -68,14 +68,14 @@ export async function updateFeatureCollapsed(id: number, isCollapsed: boolean, c
   if (error) console.error("[featureService] update collapsed error:", error);
 }
 
-export async function deleteFeature(id: number): Promise<void> {
+export async function deleteFeature(id: number | string): Promise<void> {
   const { error } = await supabase.from("drawn_features").delete().eq("id", String(id));
   if (error) console.error("[featureService] delete error:", error);
 }
 
 function rowToFeature(row: any): DrawnFeature {
   return {
-    id: isNaN(Number(row.id)) ? (row.id as unknown as number) : Number(row.id),
+    id: isNaN(Number(row.id)) ? row.id : Number(row.id),
     title: row.title,
     type: row.type,
     description: row.description || "",

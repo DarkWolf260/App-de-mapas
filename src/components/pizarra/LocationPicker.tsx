@@ -26,10 +26,10 @@ const inputStyle: React.CSSProperties = {
 
 interface LocationPickerProps {
   features: DrawnFeature[];
-  selectedFeatureId: number | "";
+  selectedFeatureId: number | string | "";
   search: string;
   onSearchChange: (value: string) => void;
-  onSelect: (id: number, title: string) => void;
+  onSelect: (id: number | string, title: string) => void;
   onClear: () => void;
 }
 

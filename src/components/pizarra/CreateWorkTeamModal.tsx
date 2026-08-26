@@ -41,7 +41,7 @@ export const CreateWorkTeamModal: React.FC<CreateWorkTeamModalProps> = ({
   onSave,
 }) => {
   const [features, setFeatures] = useState<DrawnFeature[]>([]);
-  const [selectedFeatureId, setSelectedFeatureId] = useState<number | "">("");
+  const [selectedFeatureId, setSelectedFeatureId] = useState<number | string | "">("");
   const [department, setDepartment] = useState<"pc" | "bomberos">("pc");
   const [groupName, setGroupName] = useState("");
   const [unitOut, setUnitOut] = useState("");
@@ -67,7 +67,7 @@ export const CreateWorkTeamModal: React.FC<CreateWorkTeamModalProps> = ({
     });
   }, []);
 
-  const handleSelectFeature = (id: number, title: string) => {
+  const handleSelectFeature = (id: number | string, title: string) => {
     setSelectedFeatureId(id);
     setLocationSearch(title);
   };
@@ -77,16 +77,16 @@ export const CreateWorkTeamModal: React.FC<CreateWorkTeamModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedFeatureId === "") {
+    if (selectedFeatureId === "" || selectedFeatureId === undefined || selectedFeatureId === null) {
       alert("Por favor selecciona una ubicación/punto.");
       return;
     }
     setSaving(true);
     try {
-      const feat = features.find((f) => f.id === selectedFeatureId);
+      const feat = features.find((f) => String(f.id) === String(selectedFeatureId));
       const pointTitle = feat ? feat.title : "Ubicación seleccionada";
       await onSave({
-        featureId: Number(selectedFeatureId),
+        featureId: selectedFeatureId,
         groupName: groupName.trim(),
         pointTitle,
         unitOut,
