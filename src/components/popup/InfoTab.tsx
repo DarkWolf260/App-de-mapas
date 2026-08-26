@@ -350,6 +350,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
           {saveSuccess ? "¡Estadísticas Guardadas!" : "Guardar Estadísticas"}
         </button>
       )}
+
     </div>
   );
 };

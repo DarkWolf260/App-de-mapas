@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Activity, Plus, Save, Check, Edit3, CheckSquare, Lock, Users, FileSpreadsheet, Calendar as CalendarIcon } from "lucide-react";
+import { Activity, Plus, Save, Check, Edit3, CheckSquare, Lock, Users, FileSpreadsheet, Download, Calendar as CalendarIcon } from "lucide-react";
 import { UserNavMenu } from "../UserNavMenu";
 import { BitacoraCalendar } from "../BitacoraCalendar";
 import { getLocalDateStr } from "../../utils/dateUtils";
@@ -19,6 +19,7 @@ export interface PizarraHeaderProps {
   handleSaveAll: () => void;
   handleAddCamp: () => void;
   handleExportTeamsExcel: () => void;
+  handleExportReportImage?: () => void;
   workTeamsCount: number;
   onAddTeam?: () => void;
 }
@@ -37,6 +38,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
   handleSaveAll,
   handleAddCamp,
   handleExportTeamsExcel,
+  handleExportReportImage,
   workTeamsCount,
   onAddTeam,
 }) => {
@@ -225,6 +227,34 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
             </div>
           )}
         </div>
+
+        {/* BOTÓN REPORTE EN IMAGEN (EXCLUSIVO DE /CONSOLIDADO) */}
+        {handleExportReportImage && (
+          <button
+            type="button"
+            onClick={handleExportReportImage}
+            title="Generar y descargar reporte en imagen institucional (PNG) de la fecha seleccionada"
+            style={{
+              height: "32px",
+              background: "rgba(234, 88, 12, 0.2)",
+              border: "1px solid rgba(234, 88, 12, 0.5)",
+              borderRadius: "8px",
+              color: "#ea580c",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              fontFamily: "var(--sans-font)",
+              padding: "0 12px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <Download size={14} />
+            <span>Descargar Imagen</span>
+          </button>
+        )}
 
         <div style={{ height: "18px", width: "1px", background: "rgba(255, 255, 255, 0.12)" }} />
 

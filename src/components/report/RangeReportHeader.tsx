@@ -1,4 +1,3 @@
-import React from "react";
 import { Calendar, BarChart2, X } from "lucide-react";
 import type { DrawnFeature } from "../../types";
 
@@ -46,9 +45,11 @@ export const RangeReportHeader: React.FC<RangeReportHeaderProps> = ({
             </p>
           </div>
         </div>
-        <button className="rr-close-btn" onClick={onClose} title="Cerrar">
-          <X size={15} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <button className="rr-close-btn" onClick={onClose} title="Cerrar">
+            <X size={15} />
+          </button>
+        </div>
       </div>
 
       <div className="rr-tabs">
@@ -70,3 +71,4 @@ export const RangeReportHeader: React.FC<RangeReportHeaderProps> = ({
     </>
   );
 };
+

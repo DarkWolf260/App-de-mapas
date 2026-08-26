@@ -14,6 +14,8 @@ import { fetchFeatures } from "../services/featureService";
 import { fetchLogs, saveDailyLog } from "../services/logService";
 import { getNormalizedGroupList, getLocalDateStr } from "../utils/logUtils";
 import { exportWorkTeamsToExcel, type WorkTeamExportRow } from "../utils/excelExporter";
+import { generateAndDownloadReportImage } from "../utils/reportImageExporter";
+import type { DrawnFeature } from "../types";
 
 // SOLID Sub-components
 import { DeleteTarget, WorkTeam } from "./pizarra/types";
@@ -62,6 +64,7 @@ export const PizarraOperacional: React.FC = () => {
   const [refreshTeamsCounter, setRefreshTeamsCounter] = useState(0);
   const [editingTeam, setEditingTeam] = useState<WorkTeam | null>(null);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
+  const [allFeatures, setAllFeatures] = useState<DrawnFeature[]>([]);
 
   useEffect(() => {
     if (!canEdit) {
@@ -87,6 +90,13 @@ export const PizarraOperacional: React.FC = () => {
     let isMounted = true;
     Promise.all([fetchFeatures(), fetchLogs()]).then(([features, logsMap]) => {
       if (!isMounted) return;
+      const enrichedFeatures = features.map((f) => {
+        const fidStr = String(f.id);
+        const featureLogs = logsMap.get(fidStr) || [];
+        return { ...f, dailyLogs: featureLogs };
+      });
+      setAllFeatures(enrichedFeatures);
+
       const teams: WorkTeam[] = [];
       features.forEach((f) => {
         const fidStr = String(f.id);
@@ -127,6 +137,15 @@ export const PizarraOperacional: React.FC = () => {
       isMounted = false;
     };
   }, [selectedDate, canAccess, refreshTeamsCounter]);
+
+  const handleExportReportImage = useCallback(() => {
+    generateAndDownloadReportImage({
+      features: allFeatures,
+      startDate: selectedDate,
+      endDate: selectedDate,
+      activeDepartment: deptFilter === "all" ? "mixto" : (deptFilter as any),
+    });
+  }, [allFeatures, selectedDate, deptFilter]);
 
   const executeSaveAll = async () => {
     if (!canEdit) return;
@@ -646,6 +665,7 @@ export const PizarraOperacional: React.FC = () => {
         handleSaveAll={handleSaveAll}
         handleAddCamp={handleAddCamp}
         handleExportTeamsExcel={handleExportTeamsExcel}
+        handleExportReportImage={handleExportReportImage}
         workTeamsCount={workTeams.length}
         onAddTeam={() => setIsCreateTeamOpen(true)}
       />
