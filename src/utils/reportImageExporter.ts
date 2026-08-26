@@ -7,8 +7,11 @@ export interface ExportReportImageOptions {
   features: DrawnFeature[];
   startDate?: string;
   endDate?: string;
+  startTime?: string;
+  endTime?: string;
   activeDepartment?: DepartmentView;
   singleFeatureTitle?: string;
+  customDepartmentTitle?: string;
 }
 
 function formatDateSpanish(dateStr?: string): string {
@@ -25,37 +28,42 @@ function formatDateSpanish(dateStr?: string): string {
   return `${day} DE ${months[monthIdx] || ""} DE ${year}`;
 }
 
-export function generateAndDownloadReportImage({
-  features,
-  startDate,
-  endDate,
-  activeDepartment = "pc",
-  singleFeatureTitle,
-}: ExportReportImageOptions): void {
-  const canvas = document.createElement("canvas");
+export function renderReportToCanvas(
+  canvas: HTMLCanvasElement,
+  {
+    features,
+    startDate,
+    endDate,
+    startTime = "00:00",
+    endTime = "23:59",
+    activeDepartment = "pc",
+    singleFeatureTitle,
+    customDepartmentTitle,
+  }: ExportReportImageOptions
+): { totalRescued: number; totalRecovered: number; totalPets: number; sectorsCount: number } {
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     console.error("No canvas 2D context available");
-    return;
+    return { totalRescued: 0, totalRecovered: 0, totalPets: 0, sectorsCount: 0 };
   }
 
-  // Determine Department Label
-  let deptLabel = "PROTECCIÓN CIVIL";
-  if (activeDepartment === "bomberos") {
+  // Department Label: Default strictly to "PROTECCIÓN CIVIL" unless custom or bomberos specified
+  let deptLabel = customDepartmentTitle || "PROTECCIÓN CIVIL";
+  if (!customDepartmentTitle && activeDepartment === "bomberos") {
     deptLabel = "CUERPO DE BOMBEROS";
-  } else if (activeDepartment === "mixto") {
-    deptLabel = "MANDO MIXTO";
   }
 
-  // Date banner text & target dates
+  // Date & Time banner text & target dates
   const sDate = startDate || endDate || new Date().toLocaleDateString("en-CA");
   const eDate = endDate || startDate || new Date().toLocaleDateString("en-CA");
-  let dateBannerText = "";
+  const sTime = startTime || "00:00";
+  const eTime = endTime || "23:59";
 
+  let dateBannerText = "";
   if (sDate === eDate) {
-    dateBannerText = `REPORTE DEL DIA ${formatDateSpanish(sDate)} (00:00 - 23:59 HLV)`;
+    dateBannerText = `REPORTE DEL DIA ${formatDateSpanish(sDate)} (${sTime} - ${eTime} HLV)`;
   } else {
-    dateBannerText = `DESDE EL ${formatDateSpanish(sDate)} A LAS 00:00 HLV HASTA LAS 23:59 HLV DEL DIA ${formatDateSpanish(eDate)}`;
+    dateBannerText = `DESDE EL ${formatDateSpanish(sDate)} A LAS ${sTime} HLV HASTA LAS ${eTime} HLV DEL DIA ${formatDateSpanish(eDate)}`;
   }
 
   const isDateInRange = (logDate?: string) => {
@@ -335,7 +343,7 @@ export function generateAndDownloadReportImage({
   ctx.textBaseline = "middle";
   wrapText(ctx, dateBannerText, dateBannerWidth / 2, topBannerHeight / 2, dateBannerWidth - 20, 14);
 
-  // Text inside Department Banner (Center)
+  // Text inside Department Banner (Center - Default: PROTECCIÓN CIVIL)
   ctx.fillStyle = "#000000";
   ctx.font = "bold 20px Arial, sans-serif";
   ctx.textAlign = "center";
@@ -400,7 +408,7 @@ export function generateAndDownloadReportImage({
   ctx.lineTo(totalWidth, subHeaderY + subHeaderHeight);
   ctx.stroke();
 
-  // 3. CATEGORY DATA ROWS (WITH MERGED TITLE AND MERGED TOTAL)
+  // 3. CATEGORY DATA ROWS (MERGED SECTOR COUNT + LOCATION WITH PARENTHESES AT START)
   let currentY = subHeaderY + subHeaderHeight;
 
   categoryHeights.forEach((rowConfig, rIdx) => {
@@ -428,46 +436,62 @@ export function generateAndDownloadReportImage({
     ctx.textBaseline = "middle";
     ctx.fillText(rowConfig.total > 0 ? String(rowConfig.total) : "", totalBannerStart + colTotalWidth / 2, currentY + catHeight / 2);
 
-    // Render Sub-Rows for each sub-site
-    for (let subIdx = 0; subIdx < rowConfig.numSubRows; subIdx++) {
-      const subY = currentY + subIdx * singleSubRowHeight;
-      let sX = colCategoryWidth;
+    // MERGED SECTOR COUNT CELLS & SUB-ROW UBICACIÓN CELLS WITH PARENTHESES AT START
+    let sX = colCategoryWidth;
+    siteColumns.forEach((site) => {
+      const mData = site.metrics[rowConfig.key];
 
-      siteColumns.forEach((site) => {
-        const mData = site.metrics[rowConfig.key];
+      // Combined Merged Sector Quantity Cell (Spans catHeight for this sector)
+      if (mData.totalCount > 0) {
+        ctx.fillStyle = "#000000";
+        ctx.font = "bold 15px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(mData.totalCount), sX + colSiteWidth / 2, currentY + catHeight / 2);
+      }
+
+      // Ubicación Sub-Rows (Quantity in parentheses at start)
+      for (let subIdx = 0; subIdx < rowConfig.numSubRows; subIdx++) {
+        const subY = currentY + subIdx * singleSubRowHeight;
         const subSite = mData.subSites[subIdx];
 
         ctx.fillStyle = "#000000";
-        ctx.font = "13px Arial, sans-serif";
+        ctx.font = "11px Arial, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
+        let locText = "";
         if (subSite) {
-          // Sub-site numeric count
-          ctx.fillText(String(subSite.count), sX + colSiteWidth / 2, subY + singleSubRowHeight / 2);
-          // Sub-site location name
-          ctx.font = "11px Arial, sans-serif";
-          wrapText(ctx, subSite.locationName, sX + colSiteWidth + colLocationWidth / 2, subY + singleSubRowHeight / 2, colLocationWidth - 10, 13);
+          // Format: "(1) OPP26" or "(3) OPP36"
+          locText = `(${subSite.count}) ${subSite.locationName}`;
         } else if (subIdx === 0 && mData.totalCount > 0) {
-          // Single site or direct count fallback
-          ctx.fillText(String(mData.totalCount), sX + colSiteWidth / 2, subY + singleSubRowHeight / 2);
-          ctx.font = "11px Arial, sans-serif";
-          wrapText(ctx, mData.fallbackLocationText, sX + colSiteWidth + colLocationWidth / 2, subY + singleSubRowHeight / 2, colLocationWidth - 10, 13);
+          locText = `(${mData.totalCount}) ${mData.fallbackLocationText}`;
         }
 
-        sX += colSiteWidth + colLocationWidth;
-      });
+        if (locText) {
+          wrapText(
+            ctx,
+            locText,
+            sX + colSiteWidth + colLocationWidth / 2,
+            subY + singleSubRowHeight / 2,
+            colLocationWidth - 10,
+            13
+          );
+        }
 
-      // Internal sub-row divider line (if not last sub-row)
-      if (subIdx < rowConfig.numSubRows - 1) {
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.25)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(colCategoryWidth, subY + singleSubRowHeight);
-        ctx.lineTo(totalBannerStart, subY + singleSubRowHeight);
-        ctx.stroke();
+        // Horizontal line between sub-rows strictly inside Ubicación column
+        if (subIdx < rowConfig.numSubRows - 1) {
+          ctx.strokeStyle = "rgba(0, 0, 0, 0.2)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(sX + colSiteWidth, subY + singleSubRowHeight);
+          ctx.lineTo(sX + colSiteWidth + colLocationWidth, subY + singleSubRowHeight);
+          ctx.stroke();
+        }
       }
-    }
+
+      sX += colSiteWidth + colLocationWidth;
+    });
 
     // Category Bottom Solid Border Line
     ctx.strokeStyle = "#000000";
@@ -499,8 +523,21 @@ export function generateAndDownloadReportImage({
   ctx.lineTo(totalBannerStart, totalHeight);
   ctx.stroke();
 
-  // TRIGGER PNG DOWNLOAD
-  const sanitizedDate = (sDate || "reporte").replace(/[^a-zA-Z0-9_-]/g, "_");
+  return {
+    totalRescued,
+    totalRecovered,
+    totalPets,
+    sectorsCount: siteColumns.filter((s) => s.hasStats).length,
+  };
+}
+
+export function generateAndDownloadReportImage(options: ExportReportImageOptions): void {
+  const canvas = document.createElement("canvas");
+  renderReportToCanvas(canvas, options);
+
+  const deptLabel = options.customDepartmentTitle || "PROTECCIÓN CIVIL";
+  const sDate = options.startDate || options.endDate || new Date().toLocaleDateString("en-CA");
+  const sanitizedDate = sDate.replace(/[^a-zA-Z0-9_-]/g, "_");
   const filename = `Reporte_Informacion_${deptLabel.replace(/\s+/g, "_")}_${sanitizedDate}.png`;
 
   const link = document.createElement("a");

@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Activity, Plus, Save, Check, Edit3, CheckSquare, Lock, Users, FileSpreadsheet, Download, Calendar as CalendarIcon } from "lucide-react";
+import { Activity, Plus, Save, Check, Edit3, CheckSquare, Lock, Users, FileSpreadsheet, Download, Image as ImageIcon, Calendar as CalendarIcon } from "lucide-react";
 import { UserNavMenu } from "../UserNavMenu";
 import { BitacoraCalendar } from "../BitacoraCalendar";
 import { getLocalDateStr } from "../../utils/dateUtils";
 
 export interface PizarraHeaderProps {
-  activeTab: "pizarra" | "equipos";
-  setActiveTab: (tab: "pizarra" | "equipos") => void;
+  activeTab: "pizarra" | "equipos" | "imagen";
+  setActiveTab: (tab: "pizarra" | "equipos" | "imagen") => void;
   selectedDate: string;
   setSelectedDate: (date: string) => void;
   canEdit: boolean;
@@ -156,6 +156,26 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
               >
                 {workTeamsCount}
               </span>
+            </button>
+            <button
+              onClick={() => setActiveTab("imagen")}
+              style={{
+                background: activeTab === "imagen" ? "var(--accent-orange)" : "transparent",
+                color: activeTab === "imagen" ? "#fff" : "var(--text-muted)",
+                border: "none",
+                borderRadius: "6px",
+                padding: "5px 12px",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+                fontFamily: "var(--sans-font)",
+              }}
+            >
+              <ImageIcon size={13} /> Reporte en Imagen
             </button>
           </div>
         </div>

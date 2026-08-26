@@ -31,12 +31,13 @@ import { OverwriteWarningModal } from "./pizarra/OverwriteWarningModal";
 import { AddBaseBanner } from "./pizarra/AddBaseBanner";
 import { EditModeBanner } from "./pizarra/EditModeBanner";
 import { AddCampEntryModal } from "./pizarra/AddCampEntryModal";
+import { ReportImageTab } from "./pizarra/ReportImageTab";
 
 export const PizarraOperacional: React.FC = () => {
   const { isAdmin, isOperador, isAuthenticated, permissions, loading } = useAuth();
   const canAccess = isAuthenticated && (isAdmin || isOperador);
 
-  const [activeTab, setActiveTab] = useState<"pizarra" | "equipos">("pizarra");
+  const [activeTab, setActiveTab] = useState<"pizarra" | "equipos" | "imagen">("pizarra");
   const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateStr());
 
   const isToday = selectedDate === getLocalDateStr();
@@ -847,13 +848,18 @@ export const PizarraOperacional: React.FC = () => {
             </div>
           </div>
         </main>
-      ) : (
+      ) : activeTab === "equipos" ? (
         <WorkTeamsTab
           workTeams={workTeams}
           deptFilter={deptFilter}
           setDeptFilter={setDeptFilter}
           onEditTeam={canEditLogs ? setEditingTeam : undefined}
           onDeleteTeam={canEditLogs ? requestDeleteTeam : undefined}
+        />
+      ) : (
+        <ReportImageTab
+          features={allFeatures}
+          selectedDate={selectedDate}
         />
       )}
 
