@@ -14,10 +14,10 @@ interface ArrowStyle {
   left?: string;
   right?: string;
   transform: string;
-  borderRight?: string;
-  borderBottom?: string;
-  borderTop?: string;
-  borderLeft?: string;
+  borderRight: string;
+  borderBottom: string;
+  borderTop: string;
+  borderLeft: string;
 }
 
 interface Placement {
@@ -33,7 +33,15 @@ function computePlacement(lbl: HtmlLabel, borderStyle: string): Placement {
       top: `${lbl.y + 12}px`,
       left: `${lbl.x}px`,
       transform: "translate(-50%, 0)",
-      arrowStyle: { top: "0", left: "50%", transform: "translate(-50%, -50%) rotate(45deg)", borderTop: borderStyle, borderLeft: borderStyle },
+      arrowStyle: {
+        top: "0",
+        left: "50%",
+        transform: "translate(-50%, -50%) rotate(45deg)",
+        borderTop: borderStyle,
+        borderLeft: borderStyle,
+        borderRight: "none",
+        borderBottom: "none",
+      },
     };
   }
   if (lbl.placement === "right") {
@@ -41,7 +49,15 @@ function computePlacement(lbl: HtmlLabel, borderStyle: string): Placement {
       top: `${lbl.y}px`,
       left: `${lbl.x + 12}px`,
       transform: "translate(0, -50%)",
-      arrowStyle: { top: "50%", left: "0", transform: "translate(-50%, -50%) rotate(45deg)", borderBottom: borderStyle, borderLeft: borderStyle },
+      arrowStyle: {
+        top: "50%",
+        left: "0",
+        transform: "translate(-50%, -50%) rotate(45deg)",
+        borderTop: "none",
+        borderLeft: borderStyle,
+        borderRight: "none",
+        borderBottom: borderStyle,
+      },
     };
   }
   if (lbl.placement === "left") {
@@ -49,14 +65,30 @@ function computePlacement(lbl: HtmlLabel, borderStyle: string): Placement {
       top: `${lbl.y}px`,
       left: `${lbl.x - 12}px`,
       transform: "translate(-100%, -50%)",
-      arrowStyle: { top: "50%", right: "0", transform: "translate(50%, -50%) rotate(45deg)", borderTop: borderStyle, borderRight: borderStyle },
+      arrowStyle: {
+        top: "50%",
+        right: "0",
+        transform: "translate(50%, -50%) rotate(45deg)",
+        borderTop: borderStyle,
+        borderLeft: "none",
+        borderRight: borderStyle,
+        borderBottom: "none",
+      },
     };
   }
   return {
     top: `${lbl.y - 12}px`,
     left: `${lbl.x}px`,
     transform: "translate(-50%, -100%)",
-    arrowStyle: { bottom: "0", left: "50%", transform: "translate(-50%, 50%) rotate(45deg)", borderRight: borderStyle, borderBottom: borderStyle },
+    arrowStyle: {
+      bottom: "0",
+      left: "50%",
+      transform: "translate(-50%, 50%) rotate(45deg)",
+      borderTop: "none",
+      borderLeft: "none",
+      borderRight: borderStyle,
+      borderBottom: borderStyle,
+    },
   };
 }
 

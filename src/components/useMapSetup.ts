@@ -169,19 +169,30 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     const svm = sketchVMRef.current;
     if (!svm || !selectedGraphic) return;
     const featId = selectedGraphic.attributes?.id || (selectedGraphic as any).uid;
+    const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
+    if (feat?.locked) return;
     if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(featId);
   };
 
   const handleToggleEditMode = (mode: "transform" | "reshape") => {
+    if (!selectedGraphic) return;
+    const featId = selectedGraphic.attributes?.id || (selectedGraphic as any).uid;
+    const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
+    if (feat?.locked) return;
+
     setEditMode(mode);
     const svm = sketchVMRef.current;
-    if (!svm || !selectedGraphic) return;
+    if (!svm) return;
     svm.update([selectedGraphic], { tool: mode });
   };
 
   const onSelectGraphicForEdit = useCallback((g: Graphic) => {
     // Solo usuarios con permiso de edición de mapa y herramientas de dibujo activas.
     if (canEditMap !== true || !layerVisibilityRef.current.sketch) return;
+    const featId = g.attributes?.id || (g as any).uid;
+    const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
+    if (feat?.locked) return;
+
     setActiveTool(null);
     setSelectedGraphic(g);
     setEditMode("transform");
@@ -189,7 +200,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     if (svm && svm.state !== "active") {
       svm.update([g], { tool: "transform" });
     }
-  }, [sketchVMRef, canEditMap, layerVisibilityRef]);
+  }, [sketchVMRef, canEditMap, layerVisibilityRef, drawnFeaturesRef]);
 
   const handleColorChange = (color: Color) => {
     setActiveColor(color);

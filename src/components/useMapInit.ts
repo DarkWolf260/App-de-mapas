@@ -188,6 +188,18 @@ export function useMapInit(
           });
 
           svm.on("update", (evt: any) => {
+            // Verificar si algún elemento está bloqueado (locked)
+            const hasLocked = evt.graphics?.some((g: any) => {
+              const featId = g.attributes?.id || g.uid;
+              const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
+              return feat?.locked === true;
+            });
+
+            if (hasLocked) {
+              svm.cancel();
+              return;
+            }
+
             evt.graphics?.forEach((g: any) => {
               const label = sketchLayer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
               if (label) {
@@ -215,9 +227,13 @@ export function useMapInit(
 
           svm.on("delete", (evt: any) => {
             evt.graphics?.forEach((g: any) => {
+              const featId = g.attributes?.id || g.uid;
+              const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
+              if (feat?.locked) return;
+
               const label = sketchLayer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
               if (label) sketchLayer.remove(label);
-              if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(g.attributes?.id || g.uid);
+              if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(featId);
             });
             runDeconflict();
           });
