@@ -171,12 +171,42 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {!isPolygon && activeFeat.isCollapsed && canViewDetails && (
-        <div style={{ background: "rgba(239, 68, 68, 0.14)", border: "1px solid rgba(239, 68, 68, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#f87171", fontSize: "0.72rem", fontWeight: 700 }}>
-          <span>Estructura Colapsada</span>
-          <span style={{ background: "#ef4444", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontSize: "0.68rem", fontWeight: 800 }}>
-            Cantidad: {activeFeat.collapsedCount || "1"}
-          </span>
+      {!isPolygon && (activeFeat.isCollapsed || activeFeat.isCampement || activeFeat.isHealthCenter || activeFeat.otherCategoryName) && canViewDetails && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+          {activeFeat.isCollapsed && (
+            <div style={{ background: "rgba(239, 68, 68, 0.14)", border: "1px solid rgba(239, 68, 68, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#f87171", fontSize: "0.72rem", fontWeight: 700 }}>
+              <span>🔴 Estructura Colapsada</span>
+              <span style={{ background: "#ef4444", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontSize: "0.68rem", fontWeight: 800 }}>
+                Cantidad: {activeFeat.collapsedCount || "1"}
+              </span>
+            </div>
+          )}
+          {activeFeat.isCampement && (
+            <div style={{ background: "rgba(245, 158, 11, 0.14)", border: "1px solid rgba(245, 158, 11, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#fbbf24", fontSize: "0.72rem", fontWeight: 700 }}>
+              <span>⛺ Campamento / Refugio</span>
+              {activeFeat.campementCount && (
+                <span style={{ background: "#f59e0b", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontSize: "0.68rem", fontWeight: 800 }}>
+                  Personas: {activeFeat.campementCount}
+                </span>
+              )}
+            </div>
+          )}
+          {activeFeat.isHealthCenter && (
+            <div style={{ background: "rgba(56, 189, 248, 0.14)", border: "1px solid rgba(56, 189, 248, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#38bdf8", fontSize: "0.72rem", fontWeight: 700 }}>
+              <span>🏥 Centro Asistencial / Salud</span>
+              {activeFeat.healthCenterType && (
+                <span style={{ background: "#0284c7", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontSize: "0.68rem", fontWeight: 800 }}>
+                  {activeFeat.healthCenterType}
+                </span>
+              )}
+            </div>
+          )}
+          {activeFeat.otherCategoryName && (
+            <div style={{ background: "rgba(168, 85, 247, 0.14)", border: "1px solid rgba(168, 85, 247, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", gap: "6px", color: "#c084fc", fontSize: "0.72rem", fontWeight: 700 }}>
+              <span>📍 Clasificación:</span>
+              <span style={{ fontWeight: 800, color: "#ffffff" }}>{activeFeat.otherCategoryName}</span>
+            </div>
+          )}
         </div>
       )}
 

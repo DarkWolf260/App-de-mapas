@@ -1,18 +1,7 @@
 import React, { useState } from "react";
 import type { CustomActivity } from "../../types";
-import { Activity, Plus, Trash2, Tag, Check, Edit3 } from "lucide-react";
+import { Activity, Plus, Trash2, Tag, Check } from "lucide-react";
 import { sectionBox, inputStyle } from "./popupStyles";
-
-export const PRESET_ACTIVITIES = [
-  "Inspecciones de Riesgo",
-  "Entrega de Agua / Insumos",
-  "Despeje de Vía / Limpieza",
-  "Evaluación EDAN",
-  "Punto de Control / Monitoreo",
-  "Evacuación de Familias",
-  "Entrega de Raciones",
-  "Atención Médica Primaria",
-] as const;
 
 interface CustomActivitiesSectionProps {
   customActivities: CustomActivity[];
@@ -29,16 +18,13 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
   title = "Actividades Personalizadas",
   subtitle = "Adicionales a los indicadores estándar",
 }) => {
-  const [selectedPreset, setSelectedPreset] = useState<string>(PRESET_ACTIVITIES[0]);
   const [customName, setCustomName] = useState<string>("");
-  const [isCustomText, setIsCustomText] = useState<boolean>(false);
   const [value, setValue] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
-  const [editingDescId, setEditingDescId] = useState<string | null>(null);
 
   const handleAdd = () => {
-    const name = (isCustomText ? customName : selectedPreset).trim();
+    const name = customName.trim();
     const val = value.trim() || "1";
     if (!name) return;
 
@@ -216,58 +202,23 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                 marginTop: "4px",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "0.6rem", fontWeight: 700, color: "#c084fc" }}>
-                  Nueva Actividad
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsCustomText(!isCustomText)}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "var(--color-info)",
-                    fontSize: "0.55rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  {isCustomText ? "Ver Sugerencias" : "Texto Personalizado"}
-                </button>
-              </div>
+              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#c084fc" }}>
+                Nueva Actividad Personalizada
+              </span>
 
-              {!isCustomText ? (
-                <select
-                  value={selectedPreset}
-                  onChange={(e) => setSelectedPreset(e.target.value)}
-                  style={{
-                    ...inputStyle,
-                    fontSize: "0.68rem",
-                    background: "rgba(10, 15, 29, 0.9)",
-                    cursor: "pointer",
-                  }}
-                >
-                  {PRESET_ACTIVITIES.map((p) => (
-                    <option key={p} value={p} style={{ background: "#0a0f1d", color: "#fff" }}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  placeholder="Nombre de la actividad..."
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  style={{ ...inputStyle, fontSize: "0.68rem" }}
-                  autoFocus
-                />
-              )}
+              <input
+                type="text"
+                placeholder="Nombre de la actividad (Ej: Guardia preventiva)..."
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                style={{ ...inputStyle, fontSize: "0.68rem" }}
+                autoFocus
+              />
 
               <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                 <input
                   type="text"
-                  placeholder="Cant. (Ej: 5)"
+                  placeholder="Cant. (Ej: 1)"
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
                   style={{ ...inputStyle, fontSize: "0.68rem", width: "80px" }}
@@ -285,16 +236,16 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                 <button
                   type="button"
                   onClick={handleAdd}
-                  disabled={isCustomText ? !customName.trim() : !selectedPreset}
+                  disabled={!customName.trim()}
                   style={{
-                    background: "rgba(168, 85, 247, 0.25)",
-                    border: "1px solid rgba(168, 85, 247, 0.5)",
+                    background: customName.trim() ? "rgba(168, 85, 247, 0.25)" : "rgba(255,255,255,0.05)",
+                    border: `1px solid ${customName.trim() ? "rgba(168, 85, 247, 0.5)" : "rgba(255,255,255,0.1)"}`,
                     borderRadius: "5px",
-                    color: "#c084fc",
+                    color: customName.trim() ? "#c084fc" : "var(--text-muted)",
                     fontSize: "0.64rem",
                     fontWeight: 700,
                     padding: "4px 10px",
-                    cursor: "pointer",
+                    cursor: customName.trim() ? "pointer" : "default",
                     display: "flex",
                     alignItems: "center",
                     gap: "4px",

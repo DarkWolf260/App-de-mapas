@@ -104,6 +104,11 @@ export interface DrawnFeature {
   locked?: boolean;
   isCollapsed?: boolean;
   collapsedCount?: string | number;
+  isCampement?: boolean;
+  campementCount?: string | number;
+  isHealthCenter?: boolean;
+  healthCenterType?: string;
+  otherCategoryName?: string;
   dailyLogs?: DailyLog[];
   geojsonGeometry: GeoJSONGeometry;
   _isUpdate?: boolean;

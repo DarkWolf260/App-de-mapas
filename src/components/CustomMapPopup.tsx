@@ -117,6 +117,11 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   const [localColor, setLocalColor] = useState("#3b82f6");
   const [localIsCollapsed, setLocalIsCollapsed] = useState(false);
   const [localCollapsedCount, setLocalCollapsedCount] = useState("1");
+  const [localIsCampement, setLocalIsCampement] = useState(false);
+  const [localCampementCount, setLocalCampementCount] = useState("");
+  const [localIsHealthCenter, setLocalIsHealthCenter] = useState(false);
+  const [localHealthCenterType, setLocalHealthCenterType] = useState("");
+  const [localOtherCategoryName, setLocalOtherCategoryName] = useState("");
   const [showSecondGroup, setShowSecondGroup] = useState(false);
   const [generalSaveSuccess, setGeneralSaveSuccess] = useState(false);
   const [logSaveSuccess, setLogSaveSuccess] = useState(false);
@@ -131,6 +136,11 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     setLocalColor(activeFeat.color || "#3b82f6");
     setLocalIsCollapsed(!!activeFeat.isCollapsed);
     setLocalCollapsedCount(activeFeat.collapsedCount ? String(activeFeat.collapsedCount) : "1");
+    setLocalIsCampement(!!activeFeat.isCampement);
+    setLocalCampementCount(activeFeat.campementCount ? String(activeFeat.campementCount) : "");
+    setLocalIsHealthCenter(!!activeFeat.isHealthCenter);
+    setLocalHealthCenterType(activeFeat.healthCenterType || "");
+    setLocalOtherCategoryName(activeFeat.otherCategoryName || "");
     setGeneralSaveSuccess(false);
     setLogSaveSuccess(false);
 
@@ -153,6 +163,12 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   const handleGeneralSave = async () => {
     if (!canEditMap) return;
     try {
+      activeFeat.isCampement = localIsCampement;
+      activeFeat.campementCount = localCampementCount;
+      activeFeat.isHealthCenter = localIsHealthCenter;
+      activeFeat.healthCenterType = localHealthCenterType;
+      activeFeat.otherCategoryName = localOtherCategoryName;
+
       if (onRenameFeature) await onRenameFeature(activeFeat.id, localTitle);
       if (onUpdateFeatureDescription) await onUpdateFeatureDescription(activeFeat.id, localDescription);
       if (onUpdateFeatureColor) await onUpdateFeatureColor(activeFeat.id, localColor);
@@ -404,12 +420,22 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           localColor={localColor}
           localIsCollapsed={localIsCollapsed}
           localCollapsedCount={localCollapsedCount}
+          localIsCampement={localIsCampement}
+          localCampementCount={localCampementCount}
+          localIsHealthCenter={localIsHealthCenter}
+          localHealthCenterType={localHealthCenterType}
+          localOtherCategoryName={localOtherCategoryName}
           generalSaveSuccess={generalSaveSuccess}
           onRename={setLocalTitle}
           onDescription={setLocalDescription}
           onColor={setLocalColor}
           onIsCollapsedChange={setLocalIsCollapsed}
           onCollapsedCountChange={setLocalCollapsedCount}
+          onIsCampementChange={setLocalIsCampement}
+          onCampementCountChange={setLocalCampementCount}
+          onIsHealthCenterChange={setLocalIsHealthCenter}
+          onHealthCenterTypeChange={setLocalHealthCenterType}
+          onOtherCategoryNameChange={setLocalOtherCategoryName}
           onSave={handleGeneralSave}
         />
       )}
