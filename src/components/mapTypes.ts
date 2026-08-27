@@ -3,13 +3,13 @@ import type { UserPermissions } from "../services/adminUsersService";
 
 export interface MapFeatureActions {
   onFeatureAdded: (feat: DrawnFeature) => void;
-  onFeatureDeleted: (id: number) => void;
-  onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
-  onToggleFeatureLock?: (id: number, locked: boolean) => void;
-  onRenameFeature?: (id: number, title: string) => Promise<void>;
-  onUpdateFeatureDescription?: (id: number, desc: string) => Promise<void>;
-  onUpdateFeatureColor?: (id: number, color: string) => Promise<void>;
-  onUpdateFeatureCollapsed?: (id: number, isCollapsed: boolean, count: string | number) => Promise<void>;
+  onFeatureDeleted: (id: number | string) => void;
+  onSaveDailyLog?: (featureId: number | string, log: DailyLog) => Promise<void>;
+  onToggleFeatureLock?: (id: number | string, locked: boolean) => void;
+  onRenameFeature?: (id: number | string, title: string) => Promise<void>;
+  onUpdateFeatureDescription?: (id: number | string, desc: string) => Promise<void>;
+  onUpdateFeatureColor?: (id: number | string, color: string) => Promise<void>;
+  onUpdateFeatureCollapsed?: (id: number | string, isCollapsed: boolean, count: string | number) => Promise<void>;
   onRefreshFeatures?: () => Promise<void>;
   onOpenRangeReport?: (feat: DrawnFeature | "all") => void;
 }

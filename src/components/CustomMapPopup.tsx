@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, Department } from "../types";
+import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, Department, NovedadEntry } from "../types";
 import { computeContainedItems } from "../utils/spatialUtils";
 import { getNormalizedGroupList } from "../utils/logUtils";
 import { Lock, Unlock, FileText, Settings, History, Info, X } from "lucide-react";
@@ -14,11 +14,11 @@ import Point from "@arcgis/core/geometry/Point";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 
 interface FeatureEditActions {
-  onRenameFeature?: (id: number, newTitle: string) => Promise<void>;
-  onUpdateFeatureDescription?: (id: number, newDesc: string) => Promise<void>;
-  onUpdateFeatureColor?: (id: number, newColor: string) => Promise<void>;
-  onUpdateFeatureCollapsed?: (id: number, isCollapsed: boolean, collapsedCount: string | number) => Promise<void>;
-  onToggleFeatureLock?: (id: number, locked: boolean) => void;
+  onRenameFeature?: (id: number | string, newTitle: string) => Promise<void>;
+  onUpdateFeatureDescription?: (id: number | string, newDesc: string) => Promise<void>;
+  onUpdateFeatureColor?: (id: number | string, newColor: string) => Promise<void>;
+  onUpdateFeatureCollapsed?: (id: number | string, isCollapsed: boolean, collapsedCount: string | number) => Promise<void>;
+  onToggleFeatureLock?: (id: number | string, locked: boolean) => void;
 }
 
 interface CustomMapPopupProps {
@@ -28,7 +28,7 @@ interface CustomMapPopupProps {
   layerVisibility: LayerVisibility;
   popupEditDate: string;
   setPopupEditDate: (date: string) => void;
-  onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
+  onSaveDailyLog?: (featureId: number | string, log: DailyLog) => Promise<void>;
   onRefreshFeatures?: () => Promise<void>;
   featureActions: FeatureEditActions;
   sketchLayer: GraphicsLayer | null;
@@ -92,7 +92,7 @@ function tabBtnStyle(active: boolean): React.CSSProperties {
 }
 
 export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
-  customPopup, _popupScreenPos, drawnFeatures, layerVisibility,
+  customPopup, popupScreenPos: _popupScreenPos, drawnFeatures, layerVisibility,
   popupEditDate, setPopupEditDate, onSaveDailyLog, onRefreshFeatures,
   featureActions: { onToggleFeatureLock, onRenameFeature, onUpdateFeatureDescription, onUpdateFeatureColor, onUpdateFeatureCollapsed },
   sketchLayer, onClose, onNavigateToFeature,
@@ -140,7 +140,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     ) || [];
     const todayLog = todayLogs[0];
     setLocalLog(todayLog ? { ...todayLog, department: deptToUse } : { date: popupEditDate, department: deptToUse, ...EMPTY_LOG });
-    setShowSecondGroup(todayLog ? (todayLog.groups && todayLog.groups.length > 1) : false);
+    setShowSecondGroup(todayLog ? Boolean(todayLog.groups && todayLog.groups.length > 1) : false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- activeFeat re-creates on every parent render; id+date cover the intended trigger
   }, [activeFeat?.id, popupEditDate, activeDepartment, selectedDept]);
 
@@ -281,7 +281,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           if (novedades.length === 0 && !observations) return null;
           return { origin: feat.title || `Punto ${feat.id}`, originFeatId: feat.id, novedades };
         })
-        .filter(Boolean) as Array<{ origin: string; originFeatId: number; novedades: Array<{ id: string; timestamp: string; time: string; text: string; type: string }> }>;
+        .filter(Boolean) as Array<{ origin: string; originFeatId?: number | string; novedades: NovedadEntry[] }>;
 
   const showSketchTabs = layerVisibility.sketch && canEditMap;
 
@@ -419,8 +419,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           localLog={localLog}
           popupEditDate={popupEditDate}
           setPopupEditDate={setPopupEditDate}
-          showSecondGroup={showSecondGroup}
-          setShowSecondGroup={setShowSecondGroup}
           onFieldChange={handleLogFieldChange}
           onSave={handleLogSave}
           saveSuccess={logSaveSuccess}

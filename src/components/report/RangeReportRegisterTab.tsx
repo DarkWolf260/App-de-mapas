@@ -56,11 +56,11 @@ interface RangeReportRegisterTabProps {
   feat: DrawnFeature | "all";
   allFeatures: DrawnFeature[];
   parentsMap: Record<number | string, number | string>;
-  activeEditFeatureId: number | null;
-  setActiveEditFeatureId: (id: number | null) => void;
+  activeEditFeatureId: number | string | null;
+  setActiveEditFeatureId: (id: number | string | null) => void;
   activeDepartment: DepartmentView;
   canEdit: boolean;
-  onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
+  onSaveDailyLog?: (featureId: number | string, log: DailyLog) => Promise<void>;
   handleToggleArrivalQuick: (pt: DrawnFeature, groupIndex: 1 | 2 | 3 | 4, newArrived: boolean) => Promise<void>;
 }
 
@@ -429,7 +429,7 @@ export const RangeReportRegisterTab: React.FC<RangeReportRegisterTabProps> = ({
                   ]}
                   value=""
                   onChange={(val) => {
-                    if (val) setActiveEditFeatureId(parseInt(val, 10));
+                    if (val) setActiveEditFeatureId(val);
                   }}
                   style={{ width: "100%" }}
                 />

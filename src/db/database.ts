@@ -135,7 +135,7 @@ export const initDatabase = (): Promise<RxDrawnDatabase> => {
 
 export const closeDatabase = async (): Promise<void> => {
   if (_dbInstance) {
-    try { await _dbInstance.destroy(); } catch (err) { console.error("RxDB: Destroy failed", err); }
+    try { await ((_dbInstance as any).destroy ? (_dbInstance as any).destroy() : _dbInstance.close()); } catch (err) { console.error("RxDB: Destroy failed", err); }
     _dbInstance = null; dbPromise = null;
   }
 };

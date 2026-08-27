@@ -19,7 +19,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 function getRelevantLog(feat: DrawnFeature, dateStr: string, activeDept?: DepartmentView): DailyLog | undefined {
   if (!feat.dailyLogs) return undefined;
-  const deptToUse: Department = activeDept === "mixto" ? undefined : (activeDept as Department);
+  const deptToUse: Department | undefined = activeDept === "mixto" ? undefined : (activeDept as Department);
   return feat.dailyLogs.find((l) =>
     l.date === dateStr && (activeDept === "mixto" ? true : (deptToUse ? (l.department === deptToUse || !l.department) : true))
   );

@@ -18,7 +18,7 @@ export interface TableEntry {
   origin: string;
   isObservation: boolean;
   type?: NovedadType;
-  featureId?: number;
+  featureId?: number | string;
   rawTimestamp?: string;
   level?: "libro" | "zona" | "punto";
 }
@@ -43,7 +43,7 @@ interface RangeReportNovedadesTabProps {
   tableEntries: TableEntry[];
   showOrigin: boolean;
   setShowOrigin: (val: boolean) => void;
-  onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
+  onSaveDailyLog?: (featureId: number | string, log: DailyLog) => Promise<void>;
   onDeleteGlobalNovedad?: (entryId: string) => Promise<void>;
   onNavigateToFeature?: (feat: DrawnFeature) => void;
   handleNavigateToEntry: (entry: TableEntry) => void;

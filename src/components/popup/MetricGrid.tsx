@@ -61,11 +61,12 @@ interface MetricBadgesProps {
 }
 
 export function MetricBadges({ group }: MetricBadgesProps) {
-  const has = METRIC_FIELDS.some((m) => {
+  const hasStandard = METRIC_FIELDS.some((m) => {
     const v = getMetricValue(group, m.field);
     return v && v !== "0";
   });
-  if (!has) return null;
+  const customActs = group.customActivities || [];
+  if (!hasStandard && customActs.length === 0) return null;
 
   const badges: { label: string; color: string; value: string }[] = [];
   for (const m of METRIC_FIELDS) {
@@ -80,6 +81,12 @@ export function MetricBadges({ group }: MetricBadgesProps) {
       {badges.map(({ label, color, value }) => (
         <span key={label} style={{ color, fontWeight: 700 }}>{value} {label}</span>
       ))}
+      {customActs.map((act) => (
+        <span key={act.id} style={{ color: "#c084fc", fontWeight: 700 }}>
+          {act.value} {act.name}
+          {act.description && <span style={{ opacity: 0.85, fontWeight: 500, fontStyle: "italic", marginLeft: "3px" }}>({act.description})</span>}
+        </span>
+      ))}
     </div>
   );
 }
@@ -92,18 +99,53 @@ interface MetricDisplayGridProps {
 
 export function MetricDisplayGrid({ source, showZero = true, smallFont = false }: MetricDisplayGridProps) {
   const fontSize = smallFont ? "0.75rem" : "0.8rem";
+  const customActs = source.customActivities || [];
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "2px" }}>
-      {METRIC_FIELDS.map(({ label, field, color }) => {
-        const val = getMetricValue(source, field) || "0";
-        if (!showZero && val === "0") return null;
-        return (
-          <div key={field} style={{ textAlign: "center" }}>
-            <span style={{ fontSize: "0.5rem", fontWeight: 700, color, display: "block" }}>{label}</span>
-            <span style={{ fontSize, fontWeight: 800, color }}>{val}</span>
-          </div>
-        );
-      })}
+    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "2px" }}>
+        {METRIC_FIELDS.map(({ label, field, color }) => {
+          const val = getMetricValue(source, field) || "0";
+          if (!showZero && val === "0") return null;
+          return (
+            <div key={field} style={{ textAlign: "center" }}>
+              <span style={{ fontSize: "0.5rem", fontWeight: 700, color, display: "block" }}>{label}</span>
+              <span style={{ fontSize, fontWeight: 800, color }}>{val}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {customActs.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "4px" }}>
+          {customActs.map((act) => (
+            <div
+              key={act.id || act.name}
+              style={{
+                fontSize: "0.62rem",
+                color: "#c084fc",
+                background: "rgba(168, 85, 247, 0.12)",
+                border: "1px solid rgba(168, 85, 247, 0.3)",
+                borderRadius: "5px",
+                padding: "3px 7px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "2px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
+                <span>{act.name}</span>
+                <span style={{ fontWeight: 800 }}>{act.value}</span>
+              </div>
+              {act.description && (
+                <div style={{ fontSize: "0.58rem", color: "#e2e8f0", fontStyle: "italic", opacity: 0.9 }}>
+                  💬 {act.description}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

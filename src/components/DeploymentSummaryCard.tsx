@@ -22,7 +22,7 @@ interface DeploymentSummaryCardProps {
 }
 
 interface ActivePoint {
-  id: number;
+  id: number | string;
   title: string;
   color: string;
   totalOff: number;
@@ -34,7 +34,7 @@ interface TeamEntry {
   id: string;
   groupName: string;
   pointTitle: string;
-  pointId: number;
+  pointId: number | string;
   color: string;
   officersCount: string;
   hasArrived: boolean;

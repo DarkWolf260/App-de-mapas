@@ -130,13 +130,13 @@ export const buildParentsMap = (drawnFeatures: DrawnFeature[]): {
 
 export function computeContainedItems(
   activeFeat: DrawnFeature,
-  sketchLayer: __esri.GraphicsLayer,
+  sketchLayer: any,
   drawnFeatures: DrawnFeature[]
 ): DrawnFeature[] {
   const items: DrawnFeature[] = [];
   if (activeFeat.type !== "polygon" || !sketchLayer) return items;
 
-  const polyGraphic = sketchLayer.graphics.find((x) => {
+  const polyGraphic = sketchLayer.graphics.find((x: any) => {
     if (x.attributes?.isLabel) return false;
     const xId = x.attributes?.id || x.uid;
     return String(xId) === String(activeFeat.id);
@@ -151,7 +151,7 @@ export function computeContainedItems(
   if (!polyGeom) return items;
 
   const others = sketchLayer.graphics
-    .filter((x) => {
+    .filter((x: any) => {
       if (x.attributes?.isLabel) return false;
       const xId = x.attributes?.id || x.uid;
       return String(xId) !== String(activeFeat.id);

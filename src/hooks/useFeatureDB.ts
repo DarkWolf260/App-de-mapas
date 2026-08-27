@@ -145,30 +145,30 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     await featureRepo.upsert(feat);
   };
 
-  const handleRenameFeature = async (id: number, title: string) => {
-    setDrawnFeatures((prev) => prev.map((f) => (Number(f.id) === Number(id) ? { ...f, title } : f)));
+  const handleRenameFeature = async (id: number | string, title: string) => {
+    setDrawnFeatures((prev) => prev.map((f) => (String(f.id) === String(id) ? { ...f, title } : f)));
     await featureRepo.updateTitle(id, title);
   };
 
-  const handleUpdateFeatureDescription = async (id: number, desc: string) => {
-    setDrawnFeatures((prev) => prev.map((f) => (Number(f.id) === Number(id) ? { ...f, description: desc } : f)));
+  const handleUpdateFeatureDescription = async (id: number | string, desc: string) => {
+    setDrawnFeatures((prev) => prev.map((f) => (String(f.id) === String(id) ? { ...f, description: desc } : f)));
     await featureRepo.updateDescription(id, desc);
   };
 
-  const handleUpdateFeatureColor = async (id: number, color: string) => {
-    setDrawnFeatures((prev) => prev.map((f) => (Number(f.id) === Number(id) ? { ...f, color } : f)));
+  const handleUpdateFeatureColor = async (id: number | string, color: string) => {
+    setDrawnFeatures((prev) => prev.map((f) => (String(f.id) === String(id) ? { ...f, color } : f)));
     await featureRepo.updateColor(id, color);
   };
 
-  const handleToggleFeatureLock = async (id: number, locked: boolean) => {
-    setDrawnFeatures((prev) => prev.map((f) => (Number(f.id) === Number(id) ? { ...f, locked } : f)));
+  const handleToggleFeatureLock = async (id: number | string, locked: boolean) => {
+    setDrawnFeatures((prev) => prev.map((f) => (String(f.id) === String(id) ? { ...f, locked } : f)));
     await featureRepo.updateLock(id, locked);
   };
 
-  const handleUpdateFeatureCollapsed = async (id: number, isCollapsed: boolean, collapsedCount: string | number) => {
+  const handleUpdateFeatureCollapsed = async (id: number | string, isCollapsed: boolean, collapsedCount: string | number) => {
     setDrawnFeatures((prev) =>
       prev.map((f) =>
-        Number(f.id) === Number(id)
+        String(f.id) === String(id)
           ? { ...f, isCollapsed, collapsedCount: String(collapsedCount || "") }
           : f
       )
@@ -176,12 +176,12 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     await featureRepo.updateCollapsed(id, isCollapsed, collapsedCount);
   };
 
-  const handleSaveDailyLog = async (featureId: number, log: DailyLog) => {
+  const handleSaveDailyLog = async (featureId: number | string, log: DailyLog) => {
     await logRepo.save(featureId, log);
   };
 
-  const handleFeatureDeleted = async (id: number) => {
-    setDrawnFeatures((prev) => prev.filter((f) => Number(f.id) !== Number(id)));
+  const handleFeatureDeleted = async (id: number | string) => {
+    setDrawnFeatures((prev) => prev.filter((f) => String(f.id) !== String(id)));
     await featureRepo.delete(id);
   };
 

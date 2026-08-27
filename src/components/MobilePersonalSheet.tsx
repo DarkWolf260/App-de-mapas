@@ -31,8 +31,7 @@ export const MobilePersonalSheet: React.FC<MobilePersonalSheetProps> = ({
         if (totalOff === 0 && groups.length === 0) return null;
         return { id: f.id, title: f.title, color: f.color || "#22c55e", feat: f, totalOff, totalGroups: groups.length, activeGroups: groups.filter((g) => !g.hasArrived).length };
       })
-      .filter(Boolean)
-      .sort((a, b) => a!.title.localeCompare(b!.title, "es")) as NonNullable<typeof points[0]>[];
+      .filter(Boolean) as Array<{ id: number | string; title: string; color: string; feat: DrawnFeature; totalOff: number; totalGroups: number; activeGroups: number }>;
   }, [drawnFeatures, selectedDate, activeDepartment]);
 
   const totalOff = activePoints.reduce((acc, p) => acc + p.totalOff, 0);

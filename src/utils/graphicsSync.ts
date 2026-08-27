@@ -188,7 +188,7 @@ function convertGeoJSONGeometry(feat: DrawnFeature): any {
 
 function reorderGraphics(
   drawnFeatures: DrawnFeature[],
-  polygonAreas: Record<number, number>,
+  polygonAreas: Record<number | string, number>,
   layer: GraphicsLayer
 ): void {
   if (!drawnFeatures) return;

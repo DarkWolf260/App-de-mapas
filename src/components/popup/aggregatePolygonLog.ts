@@ -1,5 +1,6 @@
-import type { DailyLog, GroupLogEntry, DrawnFeature } from "../../types";
+import type { DailyLog, GroupLogEntry, DrawnFeature, CustomActivity } from "../../types";
 import { getNormalizedGroupList } from "../../utils/logUtils";
+import { mergeCustomActivities } from "../../utils/logMerge";
 import { METRIC_FIELDS, getMetricNumeric, COMMISSION_INDEPENDENT } from "./metricFields";
 
 interface ContainedPoint {
@@ -35,6 +36,8 @@ export function aggregatePolygonLog(
   const totals: Record<string, number> = {};
   for (const m of METRIC_FIELDS) totals[m.field] = 0;
 
+  let customActivities: CustomActivity[] = polygonOwnLog.customActivities ? [...polygonOwnLog.customActivities] : [];
+
   // 1. General polygon stats (independent from groups)
   addMetricsFromLog(totals, polygonOwnLog);
 
@@ -47,6 +50,9 @@ export function aggregatePolygonLog(
       seenComms.add(cid);
     }
     addMetricsFromGroup(totals, g);
+    if (g.customActivities) {
+      customActivities = mergeCustomActivities(customActivities, g.customActivities);
+    }
   }
 
   // 3. Add contained point metrics
@@ -62,20 +68,27 @@ export function aggregatePolygonLog(
           ptComms.add(cid);
         }
         addMetricsFromGroup(totals, g);
+        if (g.customActivities) {
+          customActivities = mergeCustomActivities(customActivities, g.customActivities);
+        }
       }
     } else {
       addMetricsFromLog(totals, log);
+    }
+    if (log.customActivities) {
+      customActivities = mergeCustomActivities(customActivities, log.customActivities);
     }
     if (log.observations) {
       observations += (observations ? "\n" : "") + `${point.title}: ${log.observations}`;
     }
   }
 
-  const hasAnyLog = METRIC_FIELDS.some((m) => totals[m.field] > 0);
+  const hasAnyLog = METRIC_FIELDS.some((m) => totals[m.field] > 0) || customActivities.length > 0;
 
   const result: AggregatedLog = {
     ...polygonOwnLog,
     observations: observations || undefined,
+    customActivities: customActivities.length > 0 ? customActivities : undefined,
     _hasData: hasAnyLog || containedWithLogs.length > 0 || polygonGroups.length > 0,
   };
 

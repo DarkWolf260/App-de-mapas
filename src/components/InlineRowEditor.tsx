@@ -8,7 +8,7 @@ interface InlineRowEditorProps {
   dateStr: string;
   log: DailyLog | undefined;
   feat: DrawnFeature;
-  onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
+  onSaveDailyLog?: (featureId: number | string, log: DailyLog) => Promise<void>;
   onCloseEditor: () => void;
 }
 

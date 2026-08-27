@@ -6,9 +6,9 @@ interface SpatialHierarchy {
   rootPoints: DrawnFeature[];
   rootLines: DrawnFeature[];
   rootPolygons: DrawnFeature[];
-  pointsByParent: Map<number, DrawnFeature[]>;
-  childrenMap: Map<number, DrawnFeature[]>;
-  polygonAreas: Map<number, number>;
+  pointsByParent: Map<number | string, DrawnFeature[]>;
+  childrenMap: Map<number | string, DrawnFeature[]>;
+  polygonAreas: Map<number | string, number>;
 }
 
 export function useSpatialHierarchy(drawnFeatures: DrawnFeature[]): SpatialHierarchy {
@@ -18,22 +18,22 @@ export function useSpatialHierarchy(drawnFeatures: DrawnFeature[]): SpatialHiera
 
   const { parentsMap, polygonAreas: areasRecord } = buildParentsMap(drawnFeatures);
 
-  const polygonAreas = new Map<number, number>();
+  const polygonAreas = new Map<number | string, number>();
   for (const [id, area] of Object.entries(areasRecord)) {
-    polygonAreas.set(Number(id), area);
+    polygonAreas.set(id, area);
   }
 
-  const parentsMapNative = new Map<number, number>();
+  const parentsMapNative = new Map<number | string, number | string>();
   for (const [id, parentId] of Object.entries(parentsMap)) {
-    parentsMapNative.set(Number(id), Number(parentId));
+    parentsMapNative.set(id, parentId);
   }
 
-  const childrenMap = new Map<number, DrawnFeature[]>();
+  const childrenMap = new Map<number | string, DrawnFeature[]>();
   for (const [featId, parentId] of parentsMapNative.entries()) {
     if (!childrenMap.has(parentId)) {
       childrenMap.set(parentId, []);
     }
-    const feat = drawnFeatures.find((f) => f.id === featId);
+    const feat = drawnFeatures.find((f) => String(f.id) === String(featId));
     if (feat) childrenMap.get(parentId)!.push(feat);
   }
 
@@ -41,7 +41,7 @@ export function useSpatialHierarchy(drawnFeatures: DrawnFeature[]): SpatialHiera
   const rootLines = lines.filter((l) => !parentsMapNative.has(l.id));
   const rootPolygons = polys.filter((p) => !parentsMapNative.has(p.id));
 
-  const pointsByParent = new Map<number, DrawnFeature[]>();
+  const pointsByParent = new Map<number | string, DrawnFeature[]>();
   for (const pt of points) {
     const parentId = parentsMapNative.get(pt.id);
     if (parentId !== undefined) {
@@ -77,9 +77,9 @@ export function useCollapsedGroups() {
 }
 
 export function useCollapsedChildren() {
-  const [collapsedChildren, setCollapsedChildren] = useState<Record<number, boolean>>({});
+  const [collapsedChildren, setCollapsedChildren] = useState<Record<number | string, boolean>>({});
 
-  const toggleChildrenCollapse = (polyId: number) => {
+  const toggleChildrenCollapse = (polyId: number | string) => {
     setCollapsedChildren((prev) => ({ ...prev, [polyId]: !prev[polyId] }));
   };
 

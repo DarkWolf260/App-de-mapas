@@ -4,10 +4,10 @@ import type { DailyLog } from "../types";
 
 const baseLog: DailyLog = {
   date: "2026-07-21",
-  groupName: "Alpha",
-  managerName: "Juan",
-  managerPhone: "555-1234",
-  unitOut: "Unit 1",
+  groups: [
+    { id: "g1", groupName: "Alpha", managerName: "Juan", managerPhone: "555-1234", unitOut: "Unit 1" }
+  ],
+  observations: "Nota inicial",
 };
 
 beforeEach(() => {
@@ -30,10 +30,10 @@ describe("useLogEditor", () => {
     const { result } = renderHook(() => useLogEditor(baseLog, onSave));
 
     act(() => {
-      result.current.handleChange("groupName", "Bravo");
+      result.current.handleChange("observations", "Novedad test");
     });
 
-    expect(result.current.draft.groupName).toBe("Bravo");
+    expect(result.current.draft.observations).toBe("Novedad test");
     expect(result.current.draft.date).toBe("2026-07-21");
   });
 
@@ -53,7 +53,7 @@ describe("useLogEditor", () => {
     const { result } = renderHook(() => useLogEditor(baseLog, onSave));
 
     act(() => {
-      result.current.handleChange("groupName", "Bravo");
+      result.current.handleChange("observations", "Novedad test");
     });
 
     await act(async () => {
@@ -62,7 +62,7 @@ describe("useLogEditor", () => {
 
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({ groupName: "Bravo" }),
+      expect.objectContaining({ observations: "Novedad test" }),
     );
   });
 
@@ -90,8 +90,7 @@ describe("useLogEditor", () => {
 
     const newLog: DailyLog = {
       ...baseLog,
-      groupName: "Charlie",
-      managerName: "Maria",
+      observations: "Charlie nova",
     };
 
     act(() => {

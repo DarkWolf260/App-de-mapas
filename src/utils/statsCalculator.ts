@@ -96,7 +96,7 @@ export interface GroupStats {
 }
 
 export interface FeatureStat {
-  featureId: number;
+  featureId: number | string;
   featureTitle: string;
   featureType?: FeatureType;
   featureColor?: string;
@@ -153,7 +153,7 @@ export function getPeriodStats(
   activeDepartment?: DepartmentView,
 ): PeriodStats {
   const groupMap = new Map<string, GroupStats>();
-  const featureStatsMap = new Map<number, FeatureStat>();
+  const featureStatsMap = new Map<number | string, FeatureStat>();
   const activeDates = new Set<string>();
 
   let totalPersonnel = 0;

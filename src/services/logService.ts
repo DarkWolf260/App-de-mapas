@@ -51,14 +51,39 @@ export async function saveDailyLog(featureId: number | string, log: DailyLog): P
 }
 
 function rowToDailyLog(row: any): DailyLog {
-  const parsedGroups = Array.isArray(row.groups)
+  const rawGroups = Array.isArray(row.groups)
     ? row.groups
     : (typeof row.groups === "string" && row.groups.trim() ? JSON.parse(row.groups) : []);
+
+  let parsedCustomActivities: any[] = [];
+  if (Array.isArray(row.custom_activities)) {
+    parsedCustomActivities = [...row.custom_activities];
+  } else if (typeof row.custom_activities === "string" && row.custom_activities.trim()) {
+    try {
+      parsedCustomActivities = JSON.parse(row.custom_activities);
+    } catch {}
+  } else if (Array.isArray(row.customActivities)) {
+    parsedCustomActivities = [...row.customActivities];
+  }
+
+  const cleanGroups: any[] = [];
+  for (const g of rawGroups) {
+    if (g.customActivities && Array.isArray(g.customActivities)) {
+      for (const ca of g.customActivities) {
+        if (!parsedCustomActivities.some((existing) => existing.id === ca.id || existing.name === ca.name)) {
+          parsedCustomActivities.push(ca);
+        }
+      }
+    }
+    if (g.id !== "__custom_meta__") {
+      cleanGroups.push(g);
+    }
+  }
 
   return {
     date: row.date,
     department: row.department,
-    groups: parsedGroups,
+    groups: cleanGroups,
     observations: row.observations || "",
     novedades: Array.isArray(row.novedades)
       ? row.novedades
@@ -68,6 +93,7 @@ function rowToDailyLog(row: any): DailyLog {
     rescuedPetsCount: row.rescued_pets_count || "",
     prehospitalCareCount: row.prehospital_care_count || "",
     transfersCount: row.transfers_count || "",
+    customActivities: parsedCustomActivities,
   };
 }
 
@@ -75,11 +101,21 @@ function dailyLogToRow(featureId: number | string, log: DailyLog): Record<string
   const fidStr = String(featureId);
   const deptToUse = log.department || "pc";
   const groupsList = getNormalizedGroupList(log).filter((g) =>
+    g.id !== "__custom_meta__" &&
     !!(g.groupName?.trim() || g.officersCount?.trim() || g.unitOut?.trim() || g.managerName?.trim() ||
        g.departureTime?.trim() || g.arrivalTime?.trim() || g.managerPhone?.trim() ||
        g.rescuedCount?.trim() || g.recoveredCount?.trim() || g.rescuedPetsCount?.trim() ||
-       g.prehospitalCareCount?.trim() || g.transfersCount?.trim() || g.edanCount?.trim())
+       g.prehospitalCareCount?.trim() || g.transfersCount?.trim() || g.edanCount?.trim() ||
+       (g.customActivities && g.customActivities.length > 0))
   );
+
+  if (log.customActivities && log.customActivities.length > 0) {
+    if (groupsList.length > 0) {
+      groupsList[0] = { ...groupsList[0], customActivities: log.customActivities };
+    } else {
+      groupsList.push({ id: "__custom_meta__", groupName: "", customActivities: log.customActivities });
+    }
+  }
 
   return {
     feature_id: fidStr,

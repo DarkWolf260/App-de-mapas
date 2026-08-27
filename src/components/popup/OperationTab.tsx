@@ -5,11 +5,13 @@ import { GroupFields } from "../GroupFields";
 import { inputStyle, sectionBox, saveBtnStyle } from "./popupStyles";
 import { GROUP_COLORS, getGroupColor } from "./metricFields";
 
+import { CustomActivitiesSection } from "./CustomActivitiesSection";
+
 interface OperationTabProps {
   localLog: DailyLog;
   popupEditDate: string;
   setPopupEditDate: (d: string) => void;
-  onFieldChange: (field: keyof DailyLog, value: string | boolean) => void;
+  onFieldChange: (field: keyof DailyLog, value: any) => void;
   onSave: () => Promise<void>;
   saveSuccess: boolean;
   activeDepartment?: DepartmentView;
@@ -193,18 +195,13 @@ export const OperationTab: React.FC<OperationTabProps> = ({
         Edita las estadísticas de cada equipo en la pestaña "Información"
       </div>
 
-      {/* Sección: Observaciones */}
-      <div style={{ ...sectionBox, background: "rgba(168, 85, 247, 0.03)", borderColor: "rgba(168, 85, 247, 0.12)", flex: 1, display: "flex", flexDirection: "column" }}>
-        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#a855f7", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px" }}>
-          Observación / Notas del Día
-        </div>
-        <textarea
-          style={{ ...inputStyle, flex: 1, minHeight: "50px", resize: "vertical" }}
-          placeholder="Notas u observaciones..."
-          value={localLog.observations || ""}
-          onChange={(e) => onFieldChange("observations", e.target.value)}
-        />
-      </div>
+      {/* Sección: Actividades Personalizadas */}
+      <CustomActivitiesSection
+        customActivities={localLog.customActivities || []}
+        onChange={(acts) => onFieldChange("customActivities", acts as any)}
+        canEdit={true}
+        title="Actividades Personalizadas"
+      />
 
       {/* Botón Guardar */}
       {saveSuccess && (

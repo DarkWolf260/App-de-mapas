@@ -25,7 +25,7 @@ interface RangeReportModalProps {
   feat: DrawnFeature | "all" | null;
   allFeatures?: DrawnFeature[];
   onClose: () => void;
-  onSaveDailyLog?: (featureId: number, log: DailyLog) => Promise<void>;
+  onSaveDailyLog?: (featureId: number | string, log: DailyLog) => Promise<void>;
   activeDepartment?: DepartmentView;
   selectedDate?: string;
   onSelectedDateChange?: (date: string) => void;
@@ -60,7 +60,7 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
   const [activeTab, setActiveTab] = useState<"registro" | "estadisticas" | "novedades">(() =>
     isAllMode ? "estadisticas" : "registro"
   );
-  const [activeEditFeatureId, setActiveEditFeatureId] = useState<number | null>(null);
+  const [activeEditFeatureId, setActiveEditFeatureId] = useState<number | string | null>(null);
 
   useEffect(() => {
     if (isAllMode) {

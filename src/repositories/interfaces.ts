@@ -3,17 +3,17 @@ import type { DrawnFeature, DailyLog, NovedadEntry } from "../types";
 export interface IFeatureRepository {
   fetchAll(): Promise<DrawnFeature[]>;
   upsert(feat: DrawnFeature): Promise<void>;
-  updateTitle(id: number, title: string): Promise<void>;
-  updateDescription(id: number, desc: string): Promise<void>;
-  updateColor(id: number, color: string): Promise<void>;
-  updateLock(id: number, locked: boolean): Promise<void>;
-  updateCollapsed(id: number, isCollapsed: boolean, collapsedCount: string | number): Promise<void>;
-  delete(id: number): Promise<void>;
+  updateTitle(id: number | string, title: string): Promise<void>;
+  updateDescription(id: number | string, desc: string): Promise<void>;
+  updateColor(id: number | string, color: string): Promise<void>;
+  updateLock(id: number | string, locked: boolean): Promise<void>;
+  updateCollapsed(id: number | string, isCollapsed: boolean, collapsedCount: string | number): Promise<void>;
+  delete(id: number | string): Promise<void>;
 }
 
 export interface ILogRepository {
   fetchAll(date?: string): Promise<Map<string, DailyLog[]>>;
-  save(featureId: number, log: DailyLog): Promise<void>;
+  save(featureId: number | string, log: DailyLog): Promise<void>;
 }
 
 export interface INovedadRepository {

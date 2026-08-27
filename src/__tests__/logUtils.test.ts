@@ -14,6 +14,7 @@ import {
   featureMatchesSearch,
   isSectorFeature,
   REPORT_START_DATE,
+  mergeCustomActivities,
 } from "../utils/logUtils";
 
 describe("formatDateFriendly", () => {
@@ -367,5 +368,17 @@ describe("getDayStats", () => {
     ];
     const stats = getDayStats(features as any, "2026-07-15");
     expect(stats.groupsArrived).toBe(1);
+  });
+});
+
+describe("mergeCustomActivities", () => {
+  it("combines custom activities and sums numeric values", () => {
+    const listA = [{ id: "1", name: "Inspecciones", value: "3", description: "Sector 1" }];
+    const listB = [{ id: "2", name: "Inspecciones", value: "5", description: "Sector 2" }, { id: "3", name: "Despeje de vía", value: "2" }];
+    const merged = mergeCustomActivities(listA, listB);
+    expect(merged.length).toBe(2);
+    const insp = merged.find((m: any) => m.name === "Inspecciones");
+    expect(insp?.value).toBe("8");
+    expect(insp?.description).toBe("Sector 1 • Sector 2");
   });
 });

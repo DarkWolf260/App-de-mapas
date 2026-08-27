@@ -40,28 +40,7 @@ interface JointCommissionStat {
   totalPets: number;
 }
 
-interface PeriodStats {
-  totalRescued: number;
-  totalRecovered: number;
-  totalPrehospitalCare: number;
-  totalTransfers: number;
-  totalPets: number;
-  totalDaysWithData: number;
-  groupStats: GroupStat[];
-  independentGroupStats?: GroupStat[];
-  jointCommissionStats?: JointCommissionStat[];
-  featureStats: {
-    featureId: number;
-    featureTitle: string;
-    featureType?: string;
-    featureColor?: string;
-    daysActive: number;
-    totalRescued: number;
-    totalRecovered: number;
-    totalPrehospitalCare: number;
-    totalTransfers: number;
-  }[];
-}
+import type { PeriodStats } from "../../utils/statsCalculator";
 
 type StatsSortKey =
   | "nombre"

@@ -23,6 +23,8 @@ export interface HtmlLabel {
   isCollapsed?: boolean;
   collapsedCount?: string | number;
   teamNames?: string[];
+  customActivities?: CustomActivity[];
+  activityNotes?: string[];
 }
 
 export interface MapPoint {
@@ -33,6 +35,13 @@ export interface MapPoint {
 export interface ContainedItem {
   title: string;
   type: FeatureType;
+}
+
+export interface CustomActivity {
+  id: string;
+  name: string;
+  value: string;
+  description?: string;
 }
 
 export interface GroupLogEntry {
@@ -54,6 +63,7 @@ export interface GroupLogEntry {
   commissionId?: string;
   isVolunteer?: boolean;
   department?: string;
+  customActivities?: CustomActivity[];
 }
 
 export type NovedadType = "novedad" | "incidencia" | "actualización";
@@ -77,6 +87,7 @@ export interface DailyLog {
   rescuedPetsCount?: string;
   prehospitalCareCount?: string;
   transfersCount?: string;
+  customActivities?: CustomActivity[];
 }
 
 export type GeoJSONGeometry =

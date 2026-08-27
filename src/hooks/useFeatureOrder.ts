@@ -4,7 +4,7 @@ import { browserStorage } from "../repositories/storageImpl";
 import type { IStorage } from "../repositories/interfaces";
 
 export function useFeatureOrder(drawnFeatures: DrawnFeature[], storage: IStorage = browserStorage) {
-  const [featureOrder, setFeatureOrder] = useState<number[]>(() => {
+  const [featureOrder, setFeatureOrder] = useState<(number | string)[]>(() => {
     const saved = storage.getItem("pc_feature_order");
     if (saved) {
       try { return JSON.parse(saved); } catch { /* ignore */ }
@@ -43,7 +43,7 @@ export function useFeatureOrder(drawnFeatures: DrawnFeature[], storage: IStorage
     });
   }, [drawnFeatures, featureOrder]);
 
-  const handleReorderFeature = (id: number, direction: "up" | "down"): void => {
+  const handleReorderFeature = (id: number | string, direction: "up" | "down"): void => {
     setFeatureOrder((prev) => {
       const index = prev.indexOf(id);
       if (index === -1) return prev;

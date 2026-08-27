@@ -3,8 +3,8 @@ import MapView from "@arcgis/core/views/MapView";
 import Graphic from "@arcgis/core/Graphic";
 import TextSymbol from "@arcgis/core/symbols/TextSymbol";
 import { buildParentsMap } from "./spatialUtils";
-import { getNormalizedGroupList } from "./logUtils";
-import type { DrawnFeature, LayerVisibility, DepartmentView } from "../types";
+import { getNormalizedGroupList, mergeCustomActivities } from "./logUtils";
+import type { DrawnFeature, LayerVisibility, DepartmentView, CustomActivity } from "../types";
 import type { HtmlLabel } from "../types";
 
 interface DeconflictRefs {
@@ -34,7 +34,9 @@ function logHasData(l: any): boolean {
   const polyPets = parseInt(l.rescuedPetsCount || "0", 10) || 0;
   const polyPrehospital = parseInt(l.prehospitalCareCount || "0", 10) || 0;
   const polyTransfers = parseInt(l.transfersCount || "0", 10) || 0;
-  return polyRescued > 0 || polyRecovered > 0 || polyPets > 0 || polyPrehospital > 0 || polyTransfers > 0;
+  const hasCustomActs = Array.isArray(l.customActivities) && l.customActivities.length > 0;
+  const hasObs = !!(l.observations && l.observations.trim());
+  return polyRescued > 0 || polyRecovered > 0 || polyPets > 0 || polyPrehospital > 0 || polyTransfers > 0 || hasCustomActs || hasObs;
 }
 
 function filterCandidateLabels(
@@ -59,16 +61,16 @@ function filterCandidateLabels(
 
     const feat = (refs.drawnFeaturesRef.current || []).find((f) => String(f.id) === String(pid));
     const isSubpolygon = isPolygonLabel && feat && parentsMap[feat.id] !== undefined;
-
+    const accMode = refs.showAccumulatedRef?.current === true;
     const hasPersonnel = feat && (feat.dailyLogs?.some((l) =>
-      l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
+      (accMode || !dateStr || l.date === dateStr) && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) && logHasData(l)
     ) || false);
 
-    let requiredZoom = 16;
+    let requiredZoom = 12;
     if (hasPersonnel) {
-      requiredZoom = 13;
+      requiredZoom = 10;
     } else if (isPolygonLabel && !isSubpolygon) {
-      requiredZoom = 14;
+      requiredZoom = 12;
     }
 
     if (currentZoom === undefined || isNaN(currentZoom) || currentZoom < requiredZoom) return false;
@@ -247,14 +249,16 @@ function buildHtmlLabels(
         let recoveredCount = 0;
         let rescuedPetsCount = 0;
 
+        let customActivitiesList: CustomActivity[] = [];
         statLogs.forEach((l) => {
+          if (l.customActivities) {
+            customActivitiesList = mergeCustomActivities(customActivitiesList, l.customActivities);
+          }
           const groups = getNormalizedGroupList(l);
           for (const g of groups) {
-            rescuedCount += parseInt(g.rescuedCount || "0", 10) || 0;
-            recoveredCount += parseInt(g.recoveredCount || "0", 10) || 0;
-            rescuedPetsCount += parseInt(g.rescuedPetsCount || "0", 10) || 0;
-            transfersCount += parseInt(g.transfersCount || "0", 10) || 0;
-            prehospitalCount += parseInt(g.prehospitalCareCount || "0", 10) || 0;
+            if (g.customActivities) {
+              customActivitiesList = mergeCustomActivities(customActivitiesList, g.customActivities);
+            }
           }
           rescuedCount += parseInt(l.rescuedCount || "0", 10) || 0;
           recoveredCount += parseInt(l.recoveredCount || "0", 10) || 0;
@@ -263,7 +267,7 @@ function buildHtmlLabels(
           transfersCount += parseInt(l.transfersCount || "0", 10) || 0;
         });
 
-        const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0 || rescuedPetsCount > 0;
+        const hasBadges = prehospitalCount > 0 || transfersCount > 0 || rescuedCount > 0 || recoveredCount > 0 || rescuedPetsCount > 0 || customActivitiesList.length > 0;
         // En modo mixto un punto puede tener logs de múltiples departamentos (pc + bomberos).
         // Debemos recolectar los grupos de TODOS los logs del día para que:
         //   1. hasArrived sea correcto (no marca verde si hay grupos de otro dept. aún desplegados)
@@ -298,6 +302,19 @@ function buildHtmlLabels(
         const { placement, box } = choosePlacement(x, y, w, h, allowOverlap, placedBoxes);
         placedBoxes.push(box);
 
+        const notesSet = new Set<string>();
+        statLogs.forEach((l) => {
+          if (l.observations?.trim()) {
+            notesSet.add(l.observations.trim());
+          }
+        });
+        for (const ca of customActivitiesList) {
+          if (ca.description?.trim()) {
+            notesSet.add(ca.description.trim());
+          }
+        }
+        const activityNotes = Array.from(notesSet);
+
         activeHtmlLabels.push({
           id: pid,
           title,
@@ -315,6 +332,8 @@ function buildHtmlLabels(
           isCollapsed: feat?.isCollapsed,
           collapsedCount: feat?.collapsedCount,
           teamNames: teamNames.length > 0 ? teamNames : undefined,
+          customActivities: customActivitiesList.length > 0 ? customActivitiesList : undefined,
+          activityNotes: activityNotes.length > 0 ? activityNotes : undefined,
         });
       }
     } else {

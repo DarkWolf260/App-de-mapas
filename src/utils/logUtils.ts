@@ -13,7 +13,7 @@ export {
 } from "./groupParser";
 export type { GroupData } from "./groupParser";
 
-export { mergeLogs } from "./logMerge";
+export { mergeLogs, mergeCustomActivities } from "./logMerge";
 
 export {
   getDayStats,

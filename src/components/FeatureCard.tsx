@@ -12,13 +12,13 @@ const FEATURE_ICONS: Record<string, React.ReactNode> = {
 interface FeatureCardProps {
   feat: DrawnFeature;
   hiddenFeatures: Record<string, boolean>;
-  onToggleFeatureVisibility: (id: number) => void;
-  onRenameFeature: (id: number, newTitle: string) => void;
-  onUpdateFeatureDescription: (id: number, newDesc: string) => void;
-  onReorderFeature: (id: number, direction: "up" | "down") => void;
+  onToggleFeatureVisibility: (id: number | string) => void;
+  onRenameFeature: (id: number | string, newTitle: string) => void;
+  onUpdateFeatureDescription: (id: number | string, newDesc: string) => void;
+  onReorderFeature: (id: number | string, direction: "up" | "down") => void;
   onZoomToFeature: (feat: DrawnFeature) => void;
-  onDeleteFeature: (id: number) => void;
-  onToggleFeatureLock: (id: number, locked: boolean) => void;
+  onDeleteFeature: (id: number | string) => void;
+  onToggleFeatureLock: (id: number | string, locked: boolean) => void;
   onOpenRangeReport?: (feat: DrawnFeature) => void;
   hasChildren?: boolean;
   isChildrenCollapsed?: boolean;

@@ -1,14 +1,16 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { Copy, Check, Activity, Save } from "lucide-react";
+import { Copy, Check, Activity, Save, FileText } from "lucide-react";
 import type { DrawnFeature, DailyLog, DepartmentView, Department, NovedadEntry } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
 import { getNormalizedGroupList, mergeLogs } from "../../utils/logUtils";
-import { labelStyle, sectionBox } from "./popupStyles";
+import { labelStyle, sectionBox, inputStyle } from "./popupStyles";
 import { formatCoordinates, getCoordLabel, METRIC_FIELDS, getMetricValue } from "./metricFields";
 import { MetricDisplayGrid } from "./MetricGrid";
 import { useGrouping } from "./useGrouping";
 import { aggregatePolygonLog } from "./aggregatePolygonLog";
 import { WorkTeamsSection, buildDisplayItems } from "./WorkTeamsSection";
+
+import { CustomActivitiesSection } from "./CustomActivitiesSection";
 
 interface InfoTabProps {
   activeFeat: DrawnFeature;
@@ -22,14 +24,14 @@ interface InfoTabProps {
   canToggleArrival?: boolean;
   onToggleArrivalGroup?: (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => Promise<void>;
   onGroupFieldChange?: (groupIdx: number, field: string, value: string | boolean) => void;
-  onGeneralFieldChange?: (field: string, value: string) => void;
+  onGeneralFieldChange?: (field: string, value: any) => void;
   onSaveStats?: () => void;
   saveSuccess?: boolean;
   novedades?: NovedadEntry[];
   onAddNovedad?: (time: string, text: string) => Promise<void>;
   onDeleteNovedad?: (id: string) => Promise<void>;
   onUpdateNovedad?: (entryId: string, newText: string, newTime?: string) => Promise<void>;
-  containedNovedades?: Array<{ origin: string; originFeatId?: number; novedades: NovedadEntry[] }>;
+  containedNovedades?: Array<{ origin: string; originFeatId?: number | string; novedades: NovedadEntry[] }>;
   onNavigateToFeature?: (feat: DrawnFeature) => void;
   activeDepartment?: DepartmentView;
   selectedDept?: Department;
@@ -314,6 +316,15 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
+      {!isPolygon && (canEdit || (log.customActivities && log.customActivities.length > 0)) && (
+        <CustomActivitiesSection
+          customActivities={log.customActivities || []}
+          onChange={(acts) => onGeneralFieldChange?.("customActivities", acts)}
+          canEdit={canEdit && !!onGeneralFieldChange}
+          title="Actividades Personalizadas del Punto"
+        />
+      )}
+
       {!isPolygon && pointGroups.length > 0 && (
         <WorkTeamsSection
           variant="point"
@@ -341,6 +352,31 @@ export const InfoTab: React.FC<InfoTabProps> = ({
             <Activity size={10} /> Reportes de Hoy
           </div>
           <MetricDisplayGrid source={log} />
+        </div>
+      )}
+
+      {canEdit && onGeneralFieldChange && (
+        <div style={{ ...sectionBox, background: "rgba(168, 85, 247, 0.03)", borderColor: "rgba(168, 85, 247, 0.12)" }}>
+          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#a855f7", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <FileText size={10} /> Observación / Notas del Día
+          </div>
+          <textarea
+            style={{ ...inputStyle, minHeight: "45px", resize: "vertical" }}
+            placeholder="Notas u observaciones del día..."
+            value={localLog?.observations || log.observations || ""}
+            onChange={(e) => onGeneralFieldChange("observations", e.target.value)}
+          />
+        </div>
+      )}
+
+      {!canEdit && log.observations && (
+        <div style={{ ...sectionBox, background: "rgba(168, 85, 247, 0.03)", borderColor: "rgba(168, 85, 247, 0.12)" }}>
+          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#a855f7", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <FileText size={10} /> Observaciones del Día
+          </div>
+          <div style={{ fontSize: "0.68rem", color: "var(--text-main)", whiteSpace: "pre-wrap" }}>
+            {log.observations}
+          </div>
         </div>
       )}
 

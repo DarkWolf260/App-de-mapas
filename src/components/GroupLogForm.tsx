@@ -5,9 +5,11 @@ import { GroupFields } from "./GroupFields";
 import { inputStyle, sectionBox, saveBtnStyle } from "./popup/popupStyles";
 import { getGroupColor } from "./popup/metricFields";
 
+import { CustomActivitiesSection } from "./popup/CustomActivitiesSection";
+
 interface GroupLogFormProps {
   draft: DailyLog;
-  onChange: (field: keyof DailyLog, value: string | boolean) => void;
+  onChange: (field: keyof DailyLog, value: any) => void;
   onSave?: () => Promise<void>;
   saving?: boolean;
   saved?: boolean;
@@ -329,6 +331,14 @@ export const GroupLogForm: React.FC<GroupLogFormProps> = ({
           />
         </div>
       ))}
+
+      {/* Actividades Personalizadas */}
+      <CustomActivitiesSection
+        customActivities={draft.customActivities || []}
+        onChange={(acts) => onChange("customActivities", acts)}
+        canEdit={true}
+        title="Actividades Personalizadas"
+      />
 
       {/* Observaciones */}
       <div style={{ ...sectionBox, background: "rgba(168, 85, 247, 0.03)", borderColor: "rgba(168, 85, 247, 0.12)" }}>
