@@ -52,6 +52,13 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     return localStorage.getItem("pc_widget_collapsed") === "true";
   });
   const [showMapSettings, setShowMapSettings] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState(() => typeof window !== "undefined" && window.innerWidth <= 768);
+
+  React.useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const canEditMap = !!ui.permissions?.edit_map;
 
@@ -382,22 +389,22 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         </div>
       )}
 
-
-      {/* Floating Bottom-Right Container (Map Settings Panel + Deployment Summary Card) */}
-      {!bare && (
+      {/* Floating Bottom-Right Container (Map Settings Panel + Deployment Summary Card - Solo Escritorio) */}
+      {!bare && !isMobile && (
         <div
-          style={{
-            position: "absolute",
-            bottom: "52px",
-            right: "16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-            alignItems: "flex-end",
-            zIndex: 100,
-            pointerEvents: "none",
-          }}
-        >
+          className="floating-bottom-right-container"
+      style={{
+        position: "absolute",
+        bottom: "52px",
+        right: "16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        alignItems: "flex-end",
+        zIndex: 100,
+        pointerEvents: "none",
+      }}
+    >
           {/* Botón Flotante Discreto de Bitácora General (Verde Neón) */}
           {actions.onOpenRangeReport && (
             <button
@@ -531,8 +538,8 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         </div>
       )}
 
-      {/* Floating Action Buttons — Bottom Left (Solo cuando el sidebar está colapsado) */}
-      {!bare && !ui.sidebarOpen && (
+      {/* Floating Action Buttons — Bottom Left (Solo Escritorio cuando el sidebar está colapsado) */}
+      {!bare && !isMobile && !ui.sidebarOpen && (
         <div style={{ position: "fixed", bottom: "24px", left: "24px", zIndex: 30, display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>
           {/* Fila Superior: Botón de Inspecciones (Encima de Antes / Después) */}
           <button

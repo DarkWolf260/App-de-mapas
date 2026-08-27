@@ -117,8 +117,9 @@
     display: none !important;
   }
 
-  /* Botón flotante de bitácora: oculto en móvil */
-  .bitacora-floating-btn {
+  /* Botón flotante de bitácora y botones Antes/Después: ocultos en móvil */
+  .bitacora-floating-btn,
+  .swipe-toggle-btn {
     display: none !important;
   }
 
@@ -152,16 +153,28 @@
     gap: 3px;
   }
 
+  /* UserNavMenu: mostrar solo icono en móvil */
+  .user-nav-label,
+  .user-nav-chevron {
+    display: none !important;
+  }
+
+  .user-nav-btn {
+    padding: 0 8px !important;
+    min-width: 32px !important;
+    justify-content: center !important;
+  }
+
   /* Barra de estado coordenadas: oculta en móvil */
   .status-bar-coordinates {
     display: none;
   }
 
-  /* Search bar: centrada y más grande */
+  /* Search bar: centrada debajo de la barra de estadísticas en móvil */
   .floating-search-container {
     left: 16px;
     right: 16px;
-    top: 52px;
+    top: 86px;
   }
 
   .floating-search-bar {

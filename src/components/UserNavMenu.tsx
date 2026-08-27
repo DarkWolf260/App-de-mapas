@@ -42,6 +42,7 @@ export const UserNavMenu: React.FC<UserNavMenuProps> = ({ currentPage = "mapa" }
   return (
     <div style={{ position: "relative" }}>
       <button
+        className="user-nav-btn"
         onClick={() => setOpen(!open)}
         title="Menú de Módulos y Usuario"
         style={{
@@ -64,10 +65,10 @@ export const UserNavMenu: React.FC<UserNavMenuProps> = ({ currentPage = "mapa" }
         }}
       >
         <User size={14} style={{ color: "var(--accent-orange)" }} />
-        <span style={{ maxWidth: "110px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span className="user-nav-label" style={{ maxWidth: "110px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {user?.email?.split("@")[0]}
         </span>
-        <ChevronDown size={14} style={{ color: "var(--text-muted)", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+        <ChevronDown className="user-nav-chevron" size={14} style={{ color: "var(--text-muted)", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
       </button>
 
       {open && (

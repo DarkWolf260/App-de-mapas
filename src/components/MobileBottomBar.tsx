@@ -1,9 +1,10 @@
 import React from "react";
-import { Users, FileText, Settings, Search } from "lucide-react";
+import { Users, FileText, Settings, Search, Layers } from "lucide-react";
 
 export interface MobileBottomBarProps {
   onOpenPersonal: () => void;
   onOpenBitacora: () => void;
+  onOpenLayers?: () => void;
   onOpenSettings: () => void;
   onOpenSearch?: () => void;
 }
@@ -22,7 +23,7 @@ const tabStyle = (): React.CSSProperties => ({
   cursor: "pointer",
   padding: "6px 10px",
   borderRadius: "8px",
-  minWidth: "60px",
+  minWidth: "55px",
   transition: "all 0.15s ease",
   fontFamily: "var(--font-sans)",
 });
@@ -37,6 +38,7 @@ const labelStyle: React.CSSProperties = {
 export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
   onOpenPersonal,
   onOpenBitacora,
+  onOpenLayers,
   onOpenSettings,
   onOpenSearch,
 }) => {
@@ -55,7 +57,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-around",
-        padding: "0 8px",
+        padding: "0 4px",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         zIndex: 130,
         color: "#f8fafc",
@@ -66,6 +68,13 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
         <Users size={18} />
         <span style={labelStyle}>Personal</span>
       </button>
+
+      {onOpenLayers && (
+        <button style={tabStyle()} onClick={onOpenLayers}>
+          <Layers size={18} />
+          <span style={labelStyle}>Capas</span>
+        </button>
+      )}
 
       <button style={tabStyle()} onClick={onOpenBitacora}>
         <FileText size={18} />

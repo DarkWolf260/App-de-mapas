@@ -104,21 +104,21 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
       <div
         style={{
           position: "fixed",
-          top: 0,
+          top: "48px",
           left: 0,
           right: 0,
-          height: "44px",
+          height: "34px",
           background: "rgba(10, 15, 28, 0.95)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-          zIndex: 110,
+          zIndex: 120,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 10px",
           fontFamily: "var(--font-sans)",
-          boxShadow: "0 1px 8px rgba(0,0,0,0.4)",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.4)",
         }}
       >
         {isInspeccionesMode ? (

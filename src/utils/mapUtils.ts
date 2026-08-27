@@ -10,13 +10,11 @@ export const DEFAULT_ZOOM = 13;
 
 export const getBasemapValue = (key: string): string | Basemap => {
   if (key === "satellite-free") {
-    const bm = new Basemap({
+    return new Basemap({
       baseLayers: [new TileLayer({ url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" })],
       title: "Satelital Gratis",
       id: "satellite-free",
     });
-    bm.load().catch(() => {});
-    return bm;
   }
   return key;
 };

@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Building2,
   Satellite,
+  X,
 } from 'lucide-react';
 import Select from './ui/Select';
 import { RealtimeStatusBadge } from './RealtimeStatusBadge';
@@ -73,6 +74,7 @@ interface SidebarProps {
   onToggleLayer?: any;
   swipeActive?: boolean;
   onToggleSwipe?: () => void;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -95,6 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   realtimeStatus,
   layerVisibility,
   onToggleLayer,
+  onCloseMobile,
 }) => {
   const isInspeccionesMode = layerVisibility?.inspecciones ?? false;
   const [searchTerm, setSearchTerm] = useState('');
@@ -193,7 +196,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <p>{activeDepartment === 'bomberos' ? 'Cuerpo de Bomberos' : activeDepartment === 'mixto' ? 'Mando Mixto' : 'Protección Civil'}</p>
             </div>
           </div>
-          {realtimeStatus && <RealtimeStatusBadge status={realtimeStatus} />}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {realtimeStatus && <RealtimeStatusBadge status={realtimeStatus} />}
+            {onCloseMobile && (
+              <button
+                onClick={onCloseMobile}
+                style={{
+                  background: "rgba(255, 255, 255, 0.08)",
+                  border: "1px solid rgba(255, 255, 255, 0.15)",
+                  borderRadius: "8px",
+                  color: "#ffffff",
+                  padding: "6px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                title="Cerrar menú lateral"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
         </div>
         {onDepartmentChange && (
           <DepartmentTabs activeDepartment={activeDepartment} onDepartmentChange={onDepartmentChange} />

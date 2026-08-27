@@ -224,11 +224,13 @@
   align-items: center;
   gap: 8px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  font-family: var(--font-sans);
 }
 
 .dt-nav-btn,
 .dt-calendar-btn,
 .dt-today-btn {
+  font-family: inherit;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
@@ -268,6 +270,7 @@
 }
 
 .dt-date-btn {
+  font-family: inherit;
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-secondary);

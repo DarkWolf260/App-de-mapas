@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import ImageryTileLayer from "@arcgis/core/layers/ImageryTileLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
-import RasterStretchRenderer from "@arcgis/core/renderers/RasterStretchRenderer";
 import Swipe from "@arcgis/core/widgets/Swipe";
 import { X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, AlertTriangle, Layers, Check, Loader } from "lucide-react";
 import type MapView from "@arcgis/core/views/MapView";
@@ -29,12 +28,6 @@ const COG_SOURCES = [
   },
 ] as const;
 
-const stretchRenderer = new RasterStretchRenderer({
-  stretchType: "min-max",
-  gamma: [1, 1, 1],
-  useGamma: true,
-});
-
 const globalCogCache = new Map<string, ImageryTileLayer>();
 
 function getOrCreateCogLayer(id: string): ImageryTileLayer | null {
@@ -44,8 +37,6 @@ function getOrCreateCogLayer(id: string): ImageryTileLayer | null {
   if (!layer) {
     layer = new ImageryTileLayer({
       url: src.url,
-      bandIds: [2, 1, 0],
-      renderer: stretchRenderer,
       title: src.label,
     });
     globalCogCache.set(id, layer);
