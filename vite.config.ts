@@ -36,10 +36,10 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(__dirname, "index.html"),
-        consolidado: resolve(__dirname, "consolidado.html"),
-        admin: resolve(__dirname, "admin.html"),
-        login: resolve(__dirname, "login.html"),
+        main: resolve(import.meta.dirname, "index.html"),
+        consolidado: resolve(import.meta.dirname, "consolidado.html"),
+        admin: resolve(import.meta.dirname, "admin.html"),
+        login: resolve(import.meta.dirname, "login.html"),
       },
       output: {
         manualChunks(id) {

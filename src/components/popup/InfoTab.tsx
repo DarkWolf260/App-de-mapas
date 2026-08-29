@@ -304,14 +304,8 @@ export const InfoTab: React.FC<InfoTabProps> = ({
             </div>
             <MetricDisplayGrid source={aggregatedLog} />
           </div>
-          {canEdit && onSaveStats && (
-            <button type="button" onClick={onSaveStats} style={{ width: "100%", background: saveSuccess ? "rgba(34, 197, 94, 0.18)" : "rgba(56, 189, 248, 0.12)", border: `1px solid ${saveSuccess ? "rgba(34, 197, 94, 0.5)" : "rgba(56, 189, 248, 0.35)"}`, borderRadius: "7px", color: saveSuccess ? "#22c55e" : "#38bdf8", fontSize: "0.72rem", fontWeight: 700, padding: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "all 0.2s ease" }}>
-              {saveSuccess ? <Check size={13} /> : <Save size={13} />}
-              {saveSuccess ? "\u00a1Estadisticas Guardadas!" : "Guardar Estadisticas"}
-            </button>
-          )}
 
-          {polygonGroups.length === 0 && !hasGeneralStats && containedWithLogs.length === 0 && (
+          {polygonGroups.length === 0 && !hasGeneralStats && !(polygonOwnLog.customActivities && polygonOwnLog.customActivities.length > 0) && !(log.customActivities && log.customActivities.length > 0) && containedWithLogs.length === 0 && (
             <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
               No hay grupos ni datos cargados en esta zona
             </div>
@@ -346,12 +340,12 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
-      {!isPolygon && (canEdit || (log.customActivities && log.customActivities.length > 0)) && (
+      {(canEdit || (log.customActivities && log.customActivities.length > 0)) && (
         <CustomActivitiesSection
-          customActivities={log.customActivities || []}
+          customActivities={canEdit ? (localLog?.customActivities || (isPolygon ? polygonOwnLog.customActivities : dailyLog?.customActivities) || []) : (log.customActivities || [])}
           onChange={(acts) => onGeneralFieldChange?.("customActivities", acts)}
           canEdit={canEdit && !!onGeneralFieldChange}
-          title="Actividades Personalizadas del Punto"
+          title={isPolygon ? "Actividades Personalizadas del Sector" : "Actividades Personalizadas del Punto"}
         />
       )}
 
@@ -410,7 +404,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         </div>
       )}
 
-      {canEdit && !isPolygon && onSaveStats && (
+      {canEdit && onSaveStats && (
         <button type="button" onClick={onSaveStats} style={{ width: "100%", background: saveSuccess ? "rgba(34, 197, 94, 0.18)" : "rgba(56, 189, 248, 0.12)", border: `1px solid ${saveSuccess ? "rgba(34, 197, 94, 0.5)" : "rgba(56, 189, 248, 0.35)"}`, borderRadius: "7px", color: saveSuccess ? "#22c55e" : "#38bdf8", fontSize: "0.72rem", fontWeight: 700, padding: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "all 0.2s ease" }}>
           {saveSuccess ? <Check size={13} /> : <Save size={13} />}
           {saveSuccess ? "¡Estadísticas Guardadas!" : "Guardar Estadísticas"}

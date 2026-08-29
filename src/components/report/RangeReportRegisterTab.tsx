@@ -290,6 +290,27 @@ export const RangeReportRegisterTab: React.FC<RangeReportRegisterTabProps> = ({
                               </div>
                             )}
 
+                            {log?.customActivities && log.customActivities.length > 0 && !isEditingThis && (
+                              <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginTop: "4px" }}>
+                                {log.customActivities.map((act) => (
+                                  <span
+                                    key={act.id || act.name}
+                                    style={{
+                                      background: "rgba(168, 85, 247, 0.15)",
+                                      border: "1px solid rgba(168, 85, 247, 0.35)",
+                                      color: "#c084fc",
+                                      borderRadius: "4px",
+                                      padding: "1px 6px",
+                                      fontSize: "0.58rem",
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    {act.value} {act.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
                             {containedPoints.some((cp) => cp.dailyLogs?.some((l) => l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department) && logHasAnyData(l))) && (
                               <div style={{ marginTop: "6px", padding: "6px 10px", background: "rgba(56, 189, 248, 0.05)", borderRadius: "8px", border: "1px dashed rgba(56, 189, 248, 0.25)", display: "flex", flexDirection: "column", gap: "4px" }}>
                                 <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", display: "flex", alignItems: "center", gap: "4px" }}>
@@ -381,6 +402,27 @@ export const RangeReportRegisterTab: React.FC<RangeReportRegisterTabProps> = ({
                                 {getNormalizedGroupList(log).length > 1 && <GroupDisplay group={getGroupData(log, 2)} label="G2" accentColor="#a855f7" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 2, newArrived)} />}
                                 {getNormalizedGroupList(log).length > 2 && <GroupDisplay group={getGroupData(log, 3)} label="G3" accentColor="#c084fc" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 3, newArrived)} />}
                                 {getNormalizedGroupList(log).length > 3 && <GroupDisplay group={getGroupData(log, 4)} label="G4" accentColor="#fb923c" onToggleArrival={(newArrived) => handleToggleArrivalQuick(pt, 4, newArrived)} />}
+                              </div>
+                            )}
+
+                            {log?.customActivities && log.customActivities.length > 0 && !isEditingThis && (
+                              <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginTop: "4px" }}>
+                                {log.customActivities.map((act) => (
+                                  <span
+                                    key={act.id || act.name}
+                                    style={{
+                                      background: "rgba(168, 85, 247, 0.15)",
+                                      border: "1px solid rgba(168, 85, 247, 0.35)",
+                                      color: "#c084fc",
+                                      borderRadius: "4px",
+                                      padding: "1px 6px",
+                                      fontSize: "0.58rem",
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    {act.value} {act.name}
+                                  </span>
+                                ))}
                               </div>
                             )}
 

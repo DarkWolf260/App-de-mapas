@@ -22,7 +22,8 @@ END $$;
 ALTER TABLE public.daily_logs DROP CONSTRAINT IF EXISTS daily_logs_feature_id_fkey;
 ALTER TABLE public.daily_logs DROP CONSTRAINT IF EXISTS fk_daily_logs_feature;
 
--- 3. Índices de rendimiento para consultas por fecha y departamento
+-- 3. Índices de rendimiento para consultas por fecha, departamento y feature_id
+CREATE INDEX IF NOT EXISTS idx_daily_logs_lookup ON public.daily_logs(feature_id, date, department);
 CREATE INDEX IF NOT EXISTS idx_daily_logs_date_dept ON public.daily_logs(date, department);
 CREATE INDEX IF NOT EXISTS idx_novedades_date_dept ON public.novedades(date, department);
 CREATE INDEX IF NOT EXISTS idx_campamentos_date ON public.campamentos(date);

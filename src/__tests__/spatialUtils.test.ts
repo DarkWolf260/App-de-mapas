@@ -1,5 +1,6 @@
 import {
   calculatePolygonArea,
+  getPolygonBoundingBox,
   isPointInPolygon,
   buildParentsMap,
   geoToJSON,
@@ -42,6 +43,15 @@ describe("isPointInPolygon", () => {
     const square = [[0, 0], [1, 0], [1, 1], [0, 1]];
     const result = isPointInPolygon(0.5, 0, square);
     expect(typeof result).toBe("boolean");
+  });
+
+  it("calculates BoundingBox and filters points outside bounds correctly", () => {
+    const square = [[0, 0], [10, 0], [10, 10], [0, 10]];
+    const bbox = getPolygonBoundingBox(square);
+    expect(bbox).toEqual({ minX: 0, minY: 0, maxX: 10, maxY: 10 });
+    expect(isPointInPolygon(5, 5, square, bbox)).toBe(true);
+    expect(isPointInPolygon(15, 5, square, bbox)).toBe(false);
+    expect(isPointInPolygon(-2, 5, square, bbox)).toBe(false);
   });
 });
 

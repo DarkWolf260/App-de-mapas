@@ -47,11 +47,46 @@ export const calculatePolygonArea = (coords: number[][][]): number => {
   return Math.abs(area) / 2;
 };
 
+export interface BoundingBox {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
 /**
- * Test de inclusión de punto en polígono (Ray Casting / Jordan Curve Theorem).
+ * Calcula la caja envolvente (Bounding Box) O(N) de un anillo de vértices.
  */
-export const isPointInPolygon = (x: number, y: number, vs: number[][]): boolean => {
+export const getPolygonBoundingBox = (vs: number[][]): BoundingBox | null => {
+  if (!vs || vs.length === 0 || !vs[0]) return null;
+  let minX = vs[0][0];
+  let maxX = vs[0][0];
+  let minY = vs[0][1];
+  let maxY = vs[0][1];
+
+  for (let i = 1; i < vs.length; i++) {
+    const x = vs[i][0];
+    const y = vs[i][1];
+    if (x < minX) minX = x;
+    else if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    else if (y > maxY) maxY = y;
+  }
+  return { minX, minY, maxX, maxY };
+};
+
+/**
+ * Test de inclusión de punto en polígono (Ray Casting / Jordan Curve Theorem)
+ * con descarte previo O(1) por Bounding Box.
+ */
+export const isPointInPolygon = (x: number, y: number, vs: number[][], bbox?: BoundingBox | null): boolean => {
   if (!vs || vs.length === 0) return false;
+
+  const box = bbox !== undefined ? bbox : getPolygonBoundingBox(vs);
+  if (box && (x < box.minX || x > box.maxX || y < box.minY || y > box.maxY)) {
+    return false;
+  }
+
   let inside = false;
   for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
     const xi = vs[i][0], yi = vs[i][1];
@@ -72,9 +107,12 @@ export const buildParentsMap = (drawnFeatures: DrawnFeature[]): {
 } => {
   const polys = drawnFeatures.filter((f) => f.type === "polygon");
   const polygonAreas: Record<string | number, number> = {};
+  const polygonBBoxes: Record<string | number, BoundingBox | null> = {};
   
   polys.forEach((f) => {
-    polygonAreas[f.id] = calculatePolygonArea(f.geojsonGeometry?.coordinates as number[][][]);
+    const coords = f.geojsonGeometry?.coordinates as number[][][];
+    polygonAreas[f.id] = calculatePolygonArea(coords);
+    polygonBBoxes[f.id] = coords && coords[0] ? getPolygonBoundingBox(coords[0]) : null;
   });
 
   const parentsMap: Record<string | number, string | number> = {};
@@ -93,21 +131,22 @@ export const buildParentsMap = (drawnFeatures: DrawnFeature[]): {
 
       let isContained = false;
       const vs = polyCoords[0];
+      const bbox = polygonBBoxes[poly.id];
 
       if (feat.type === "point" && feat.geojsonGeometry?.type === "Point") {
         const ptCoords = feat.geojsonGeometry.coordinates as number[];
         if (ptCoords) {
-          isContained = isPointInPolygon(ptCoords[0], ptCoords[1], vs);
+          isContained = isPointInPolygon(ptCoords[0], ptCoords[1], vs, bbox);
         }
       } else if (feat.type === "polyline" && feat.geojsonGeometry?.type === "LineString") {
         const lineCoords = feat.geojsonGeometry.coordinates as number[][];
         if (lineCoords) {
-          isContained = lineCoords.every((pt) => isPointInPolygon(pt[0], pt[1], vs));
+          isContained = lineCoords.every((pt) => isPointInPolygon(pt[0], pt[1], vs, bbox));
         }
       } else if (feat.type === "polygon" && feat.geojsonGeometry?.type === "Polygon") {
         const innerPolyCoords = feat.geojsonGeometry.coordinates as number[][][];
         if (innerPolyCoords && innerPolyCoords[0]) {
-          isContained = innerPolyCoords[0].every((pt) => isPointInPolygon(pt[0], pt[1], vs));
+          isContained = innerPolyCoords[0].every((pt) => isPointInPolygon(pt[0], pt[1], vs, bbox));
         }
       }
 

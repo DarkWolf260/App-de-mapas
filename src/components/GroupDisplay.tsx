@@ -89,7 +89,7 @@ export const GroupDisplay: React.FC<GroupDisplayProps> = ({
       </div>
 
       {/* Operational Results Badges */}
-      {(rescued || recovered || prehospitalCare || transfers) && (
+      {(rescued || recovered || prehospitalCare || transfers || (group.customActivities && group.customActivities.length > 0)) && (
         <div className="rr-group-results">
           {rescued && (
             <span className="rr-result-badge rescued">
@@ -111,6 +111,19 @@ export const GroupDisplay: React.FC<GroupDisplayProps> = ({
               <Ambulance size={11} /> {transfers} Traslados
             </span>
           )}
+          {group.customActivities?.map((act) => (
+            <span
+              key={act.id || act.name}
+              className="rr-result-badge"
+              style={{
+                background: "rgba(168, 85, 247, 0.15)",
+                color: "#c084fc",
+                border: "1px solid rgba(168, 85, 247, 0.35)",
+              }}
+            >
+              {act.value} {act.name}
+            </span>
+          ))}
         </div>
       )}
     </div>
