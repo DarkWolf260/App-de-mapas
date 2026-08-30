@@ -126,10 +126,10 @@ export function renderReportToCanvas(
     const containedPoints =
       vs.length > 0
         ? allPoints.filter((pt) => {
-            const ptCoords = pt.geojsonGeometry?.coordinates as number[];
-            if (!ptCoords) return false;
-            return isPointInPolygon(ptCoords[0], ptCoords[1], vs);
-          })
+          const ptCoords = pt.geojsonGeometry?.coordinates as number[];
+          if (!ptCoords) return false;
+          return isPointInPolygon(ptCoords[0], ptCoords[1], vs);
+        })
         : [];
 
     const metrics: Record<MetricKey, MetricSectorData> = {
@@ -548,6 +548,390 @@ export function generateAndDownloadReportImage(options: ExportReportImageOptions
   document.body.removeChild(link);
 }
 
+export interface SlideCustomImage {
+  id: string;
+  name: string;
+  dataUrl: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  visible?: boolean;
+  locked?: boolean;
+}
+
+export interface SlideShape {
+  id: string;
+  type: "rect" | "circle" | "bar" | "text";
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fillColor: string;
+  borderColor?: string;
+  borderWidth?: number;
+  borderRadius?: number;
+  opacity?: number;
+  text?: string;
+  textColor?: string;
+  fontSize?: number;
+  fontWeight?: string;
+  visible?: boolean;
+  locked?: boolean;
+}
+
+export interface ExportFullSlideOptions extends ExportReportImageOptions {
+  customImages?: SlideCustomImage[];
+  customShapes?: SlideShape[];
+  headerTitle?: string;
+  subTitle?: string;
+  tableScale?: number;
+  tableOffsetX?: number;
+  tableOffsetY?: number;
+  flagLogoConfig?: { x: number; y: number; width: number; height: number };
+  pazLogoConfig?: { x: number; y: number; width: number; height: number };
+  headerConfig?: { x: number; y: number; fontSize: number; fontWeight?: string };
+  subtitleConfig?: { x: number; y: number; fontSize: number; fontWeight?: string };
+  laguairaConfig?: { x: number; y: number; fontSize: number; fontWeight?: string };
+}
+
+/**
+ * Renders the entire 16:9 Slide Presentation (1920x1080) replicating the exact official master template:
+ * - Top Left: Venezuelan Justice & Cuadrantes de Paz logos
+ * - Top Right: Circular Protección Civil Venezuela seal
+ * - Header: Two-line blue title + blue accent bar spanning from left
+ * - Subtitle: Official banner text
+ * - Central Table: Operational rescue and recovered matrix
+ * - Bottom Left: 3D Orange silhouette of La Guaira state + italic text
+ * - Bottom Right: Navy blue footer band + blue chevrons + dot matrix
+ */
+export function renderFullSlideToCanvas(
+  canvas: HTMLCanvasElement,
+  options: ExportFullSlideOptions
+): {
+  totalRescued: number;
+  totalRecovered: number;
+  totalPets: number;
+  sectorsCount: number;
+  tableBounds: { x: number; y: number; width: number; height: number };
+} {
+  const SLIDE_WIDTH = 1920;
+  const SLIDE_HEIGHT = 1080;
+
+  canvas.width = SLIDE_WIDTH;
+  canvas.height = SLIDE_HEIGHT;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    console.error("No 2D context for full slide canvas");
+    return {
+      totalRescued: 0,
+      totalRecovered: 0,
+      totalPets: 0,
+      sectorsCount: 0,
+      tableBounds: { x: 0, y: 0, width: 0, height: 0 },
+    };
+  }
+
+  // 1. Background (Pure White + Subtle Outer Border)
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, SLIDE_WIDTH, SLIDE_HEIGHT);
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, SLIDE_WIDTH - 2, SLIDE_HEIGHT - 2);
+
+  // 2. Navy Blue Bottom Footer Band (PPTX Group 20: Y=935, H=145)
+  const footerHeight = 145;
+  const footerY = SLIDE_HEIGHT - footerHeight;
+  ctx.fillStyle = "#0e1789"; // PPTX srgbClr 0E1789
+  ctx.fillRect(0, footerY, SLIDE_WIDTH, footerHeight);
+
+  // 3. Blue Accent Bar under title spanning from left (PPTX Group 34: X: 2, Y: 170, W: 1325, H: 35)
+  ctx.fillStyle = "#3f4bdf"; // PPTX srgbClr 3F4BDF
+  ctx.fillRect(2, 170, 1325, 35);
+
+  // 4. Institutional Header Titles (PPTX TextBox 37 & TextBox 25)
+  const headerMain = options.headerTitle || "DIRECCIÓN NACIONAL DE PROTECCIÓN CIVIL\nY ADMINISTRACIÓN DE DESASTRES";
+  const subTitle = options.subTitle || "REPORTE DIARIO DE RESCATES DE PERSONAS, CUERPOS RECUPERADOS Y MASCOTAS RESCATADAS";
+
+  const headX = options.headerConfig?.x ?? 960;
+  const headY = options.headerConfig?.y ?? 58;
+  const headSize = options.headerConfig?.fontSize ?? 42;
+  const headWeight = options.headerConfig?.fontWeight ?? "bold";
+
+  ctx.save();
+  ctx.fillStyle = "#292c7b"; // PPTX Title Color
+  ctx.font = `${headWeight} ${headSize}px Arial, Helvetica, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const lines = headerMain.split("\n");
+  if (lines.length === 1) {
+    ctx.fillText(lines[0], headX, headY + 15);
+  } else {
+    ctx.fillText(lines[0], headX, headY);
+    ctx.fillText(lines[1], headX, headY + headSize * 1.25);
+  }
+
+  // Subtitle Banner Text (PPTX TextBox 25)
+  const subX = options.subtitleConfig?.x ?? 959;
+  const subY = options.subtitleConfig?.y ?? 249;
+  const subSize = options.subtitleConfig?.fontSize ?? 32;
+  const subWeight = options.subtitleConfig?.fontWeight ?? "bold";
+
+  ctx.fillStyle = "#0e1789";
+  ctx.font = `${subWeight} ${subSize}px Arial, Helvetica, sans-serif`;
+  ctx.fillText(subTitle, subX, subY);
+  ctx.restore();
+
+  // 5. Draw Official Master Graphics & Logos (Exact PPTX Media & Coordinates)
+  try {
+    const drawCached = (src: string, x: number, y: number, w: number, h: number, rotDeg = 0) => {
+      const cached = imageCache.get(src);
+      const draw = (img: HTMLImageElement) => {
+        if (rotDeg === 0) {
+          ctx.drawImage(img, x, y, w, h);
+        } else {
+          ctx.save();
+          ctx.translate(x + w / 2, y + h / 2);
+          ctx.rotate((rotDeg * Math.PI) / 180);
+          ctx.drawImage(img, -w / 2, -h / 2, w, h);
+          ctx.restore();
+        }
+      };
+
+      if (cached && cached.complete && cached.naturalWidth > 0) {
+        draw(cached);
+      } else {
+        const img = new Image();
+        img.onload = () => {
+          imageCache.set(src, img);
+          draw(img);
+        };
+        img.src = src;
+      }
+    };
+
+    // Top Left: Venezuelan Justice Flag Logo (Exact user calibrated dimensions)
+    const flagX = options.flagLogoConfig?.x ?? -63;
+    const flagY = options.flagLogoConfig?.y ?? -67;
+    const flagW = options.flagLogoConfig?.width ?? 356;
+    const flagH = options.flagLogoConfig?.height ?? 318;
+    drawCached("/assets/slide/image11.png", flagX, flagY, flagW, flagH);
+
+    // Top Left: Gran Mision Cuadrantes de Paz Logo (Exact user calibrated dimensions)
+    const pazX = options.pazLogoConfig?.x ?? 219;
+    const pazY = options.pazLogoConfig?.y ?? -24;
+    const pazW = options.pazLogoConfig?.width ?? 269;
+    const pazH = options.pazLogoConfig?.height ?? 221;
+    drawCached("/assets/slide/image10.png", pazX, pazY, pazW, pazH);
+
+    // Top Right: Circular PC Venezuela Seal (PPTX Imagen 40: X: 1654, Y: 11, W: 213, H: 213)
+    drawCached("/assets/slide/image7.png", 1654, 11, 213, 213);
+
+    // Bottom Left: 3D Silhouette of La Guaira State (PPTX Freeform 74: X: 40, Y: 814, W: 772, H: 208)
+    drawCached("/assets/slide/la_guaira_silhouette.svg", 40, 814, 772, 208);
+
+    // Text "LA GUAIRA" under silhouette (PPTX Rectangle 75)
+    const lgX = options.laguairaConfig?.x ?? 537;
+    const lgY = options.laguairaConfig?.y ?? 923;
+    const lgSize = options.laguairaConfig?.fontSize ?? 23;
+    const lgWeight = options.laguairaConfig?.fontWeight ?? "bold";
+
+    ctx.save();
+    ctx.fillStyle = "#000000";
+    ctx.font = `italic ${lgWeight} ${lgSize}px Arial, Helvetica, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("LA GUAIRA", lgX, lgY);
+    ctx.restore();
+
+    // Bottom Right: Blue Chevrons (PPTX Freeform 32: X: 1620, Y: 688, W: 119, H: 336, Rot: 90°)
+    drawCached("/assets/slide/image8.svg", 1620, 688, 119, 336, 90);
+
+    // Bottom Right: Dot Matrix Grid (PPTX Freeform 33: X: 1594, Y: 788, W: 318, H: 175)
+    drawCached("/assets/slide/image9.svg", 1594, 788, 318, 175);
+  } catch (e) {
+    console.warn("Could not draw master slide assets:", e);
+  }
+
+  // 6. Render Custom Vector Shapes (If created by user)
+  if (options.customShapes && options.customShapes.length > 0) {
+    options.customShapes.forEach((s) => {
+      if (s.visible === false) return;
+      ctx.save();
+      ctx.globalAlpha = s.opacity ?? 1.0;
+
+      if (s.type === "circle") {
+        ctx.beginPath();
+        ctx.ellipse(s.x + s.width / 2, s.y + s.height / 2, s.width / 2, s.height / 2, 0, 0, Math.PI * 2);
+        ctx.fillStyle = s.fillColor;
+        ctx.fill();
+        if (s.borderColor && (s.borderWidth || 0) > 0) {
+          ctx.strokeStyle = s.borderColor;
+          ctx.lineWidth = s.borderWidth || 1;
+          ctx.stroke();
+        }
+      } else if (s.type === "text") {
+        if (s.fillColor && s.fillColor !== "transparent") {
+          ctx.fillStyle = s.fillColor;
+          ctx.fillRect(s.x, s.y, s.width, s.height);
+        }
+        ctx.fillStyle = s.textColor || "#000000";
+        ctx.font = `${s.fontWeight || "bold"} ${s.fontSize || 20}px Arial, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        wrapText(ctx, s.text || s.name, s.x + s.width / 2, s.y + s.height / 2, s.width - 10, (s.fontSize || 20) * 1.3);
+      } else {
+        // "rect" or "bar"
+        const rad = s.borderRadius || 0;
+        ctx.beginPath();
+        if (rad > 0 && ctx.roundRect) {
+          ctx.roundRect(s.x, s.y, s.width, s.height, rad);
+        } else {
+          ctx.rect(s.x, s.y, s.width, s.height);
+        }
+        ctx.fillStyle = s.fillColor;
+        ctx.fill();
+        if (s.borderColor && (s.borderWidth || 0) > 0) {
+          ctx.strokeStyle = s.borderColor;
+          ctx.lineWidth = s.borderWidth || 1;
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    });
+  }
+
+  // 7. Render Central Operational Table to offscreen canvas and draw it centered
+  const offscreenCanvas = document.createElement("canvas");
+  const stats = renderReportToCanvas(offscreenCanvas, options);
+
+  const tableRawWidth = offscreenCanvas.width / 2; // account for scale 2 in renderReportToCanvas
+  const tableRawHeight = offscreenCanvas.height / 2;
+
+  const maxTableWidth = 1500;
+  const maxTableHeight = 460;
+  const scaleFit = Math.min(1.0, maxTableWidth / tableRawWidth, maxTableHeight / tableRawHeight);
+  const userScale = options.tableScale ?? scaleFit;
+
+  const destWidth = tableRawWidth * userScale;
+  const destHeight = tableRawHeight * userScale;
+  const destX = (SLIDE_WIDTH - destWidth) / 2 + (options.tableOffsetX ?? 0);
+  const destY = 285 + (options.tableOffsetY ?? 0);
+
+  ctx.save();
+  ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 5;
+  ctx.drawImage(offscreenCanvas, 0, 0, offscreenCanvas.width, offscreenCanvas.height, destX, destY, destWidth, destHeight);
+  ctx.restore();
+
+  // 8. Draw Additional Custom Images / Photos uploaded by user
+  if (options.customImages && options.customImages.length > 0) {
+    options.customImages.forEach((imgObj) => {
+      if (imgObj.visible === false) return;
+      try {
+        const cached = imageCache.get(imgObj.dataUrl);
+        if (cached && cached.complete && cached.naturalWidth > 0) {
+          ctx.drawImage(cached, imgObj.x, imgObj.y, imgObj.width, imgObj.height);
+        } else {
+          const img = new Image();
+          img.onload = () => {
+            imageCache.set(imgObj.dataUrl, img);
+            ctx.drawImage(img, imgObj.x, imgObj.y, imgObj.width, imgObj.height);
+          };
+          img.src = imgObj.dataUrl;
+        }
+      } catch (err) {
+        console.warn("[renderFullSlideToCanvas] Could not render custom image:", imgObj.name, err);
+      }
+    });
+  }
+
+  return {
+    ...stats,
+    tableBounds: {
+      x: destX,
+      y: destY,
+      width: destWidth,
+      height: destHeight,
+    },
+  };
+}
+
+const imageCache = new Map<string, HTMLImageElement>();
+
+export function preloadImage(src: string): Promise<HTMLImageElement> {
+  if (imageCache.has(src)) {
+    const cached = imageCache.get(src)!;
+    if (cached.complete && cached.naturalWidth > 0) {
+      return Promise.resolve(cached);
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      imageCache.set(src, img);
+      resolve(img);
+    };
+    img.onerror = (e) => {
+      console.warn("Could not load image:", src, e);
+      resolve(img); // Resolve anyway so rendering does not block
+    };
+    img.src = src;
+  });
+}
+
+/**
+ * Preloads all master template graphics and custom images, then renders to canvas.
+ */
+export async function renderFullSlideToCanvasAsync(
+  canvas: HTMLCanvasElement,
+  options: ExportFullSlideOptions
+): Promise<{
+  totalRescued: number;
+  totalRecovered: number;
+  totalPets: number;
+  sectorsCount: number;
+  tableBounds: { x: number; y: number; width: number; height: number };
+}> {
+  // Preload all assets (Exact PPTX Media)
+  const masterUrls = [
+    "/assets/slide/image11.png",
+    "/assets/slide/image10.png",
+    "/assets/slide/image7.png",
+    "/assets/slide/la_guaira_silhouette.svg",
+    "/assets/slide/image8.svg",
+    "/assets/slide/image9.svg",
+  ];
+
+  const customUrls = (options.customImages || []).map((img) => img.dataUrl);
+  await Promise.all([...masterUrls, ...customUrls].map(preloadImage));
+
+  return renderFullSlideToCanvas(canvas, options);
+}
+
+export async function generateAndDownloadFullSlideImage(options: ExportFullSlideOptions): Promise<void> {
+  const canvas = document.createElement("canvas");
+  await renderFullSlideToCanvasAsync(canvas, options);
+
+  const deptLabel = options.customDepartmentTitle || "PROTECCIÓN_CIVIL";
+  const sDate = options.startDate || options.endDate || new Date().toLocaleDateString("en-CA");
+  const sanitizedDate = sDate.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const filename = `Diapositiva_Presentacion_${deptLabel.replace(/\s+/g, "_")}_${sanitizedDate}.png`;
+
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = canvas.toDataURL("image/png");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 // Helper text wrapper for canvas
 function wrapText(
   ctx: CanvasRenderingContext2D,
@@ -579,3 +963,4 @@ function wrapText(
     ctx.fillText(line, x, startY + idx * lineHeight);
   });
 }
+
