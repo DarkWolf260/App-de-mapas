@@ -170,6 +170,11 @@ describe("getBasemapValue", () => {
     const bm = getBasemapValue("satellite-free");
     expect(bm).not.toBeNull();
   });
+
+  it("returns Basemap object for google-satellite", () => {
+    const bm = getBasemapValue("google-satellite");
+    expect(bm).not.toBeNull();
+  });
 });
 
 describe("DEFAULT_CENTER and DEFAULT_ZOOM", () => {

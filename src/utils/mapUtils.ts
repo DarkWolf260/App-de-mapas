@@ -1,5 +1,6 @@
 import Basemap from "@arcgis/core/Basemap";
 import TileLayer from "@arcgis/core/layers/TileLayer";
+import WebTileLayer from "@arcgis/core/layers/WebTileLayer";
 import type { DrawnFeature, DepartmentView } from "../types";
 import { hexToRgb } from "./colorUtils";
 import { getNormalizedGroupList } from "./logUtils";
@@ -12,8 +13,22 @@ export const getBasemapValue = (key: string): string | Basemap => {
   if (key === "satellite-free") {
     return new Basemap({
       baseLayers: [new TileLayer({ url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" })],
-      title: "Satelital Gratis",
+      title: "Satelital ArcGIS",
       id: "satellite-free",
+    });
+  }
+  if (key === "google-satellite") {
+    return new Basemap({
+      baseLayers: [
+        new WebTileLayer({
+          urlTemplate: "https://mt{subDomain}.google.com/vt/lyrs=s&x={col}&y={row}&z={level}",
+          subDomains: ["0", "1", "2", "3"],
+          title: "Google Satelital",
+          id: "google-satellite-layer",
+        }),
+      ],
+      title: "Google Satelital",
+      id: "google-satellite",
     });
   }
   return key;

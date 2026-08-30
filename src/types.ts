@@ -4,7 +4,7 @@ export type Department = "pc" | "bomberos";
 
 export type DepartmentView = Department | "mixto";
 
-export type BasemapKey = "topo-vector" | "satellite" | "hybrid" | "streets-vector" | "dark-gray-vector" | "osm";
+export type BasemapKey = "satellite-free" | "google-satellite" | "topo-vector" | "satellite" | "hybrid" | "streets-vector" | "dark-gray-vector" | "osm";
 
 export interface HtmlLabel {
   id: number | string;

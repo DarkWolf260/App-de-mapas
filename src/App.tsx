@@ -214,7 +214,8 @@ function App() {
       <div className="map-wrapper" style={{ flex: 1, position: 'relative' }}>
         <MapComponent
           activeCity={activeCity}
-          activeBasemap="satellite-free"
+          activeBasemap={state.activeBasemap}
+          onSelectBasemap={state.setActiveBasemap}
           layerVisibility={state.layerVisibility}
           onToggleLayer={state.handleToggleLayer}
           onToggleAccumulated={() => state.setShowAccumulated(!state.showAccumulated)}

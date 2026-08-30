@@ -79,9 +79,10 @@ export function useFeaturePopupSession({
       activeDepartment === "mixto" ? selectedDept : activeDepartment === "bomberos" ? "bomberos" : "pc";
     const todayLogs =
       activeFeat.dailyLogs?.filter((l) =>
-        activeDepartment === "mixto"
+        l.date === popupEditDate &&
+        (activeDepartment === "mixto"
           ? l.department === deptToUse || (!l.department && deptToUse === "pc")
-          : l.department === activeDepartment || !l.department
+          : l.department === activeDepartment || !l.department)
       ) || [];
     const todayLog = todayLogs[0];
     setLocalLog(

@@ -4,7 +4,7 @@ import { useFeatureVisibility } from "../hooks/useFeatureVisibility";
 import { useFeatureOrder } from "../hooks/useFeatureOrder";
 import { useGeoJSONIO, ParsedFeature } from "../hooks/useGeoJSONIO";
 import { useLocalStorageState } from "../hooks/useLocalStorageState";
-import type { DepartmentView, DrawnFeature, LayerVisibility, RemoveFeatureId } from "../types";
+import type { BasemapKey, DepartmentView, DrawnFeature, LayerVisibility, RemoveFeatureId } from "../types";
 import { DEFAULT_CENTER } from "../utils/mapUtils";
 import type { MapPoint, MapArea } from "../components/Sidebar";
 
@@ -17,6 +17,7 @@ const CATEGORY_COLORS = {
 };
 
 export function useAppState(isAdmin: boolean) {
+  const [activeBasemap, setActiveBasemap] = useLocalStorageState<BasemapKey>('pc_active_basemap', 'google-satellite');
   const [layerVisibility, setLayerVisibility] = useLocalStorageState<LayerVisibility>('pc_layer_visibility', {
     sketch: true,
     polygonLabels: true,
@@ -237,6 +238,8 @@ export function useAppState(isAdmin: boolean) {
     setShowPoints,
     showAreas,
     setShowAreas,
+    activeBasemap,
+    setActiveBasemap,
     dashboardOpen,
     setDashboardOpen,
     mapInfoOpen,

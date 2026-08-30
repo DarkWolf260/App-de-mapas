@@ -260,15 +260,8 @@ export function buildHtmlLabels(
         let customActivitiesList: CustomActivity[] = [];
 
         statLogs.forEach((l) => {
-          if (l.customActivities) {
-            customActivitiesList = FeatureLogBook.mergeCustomActivities(customActivitiesList, l.customActivities);
-          }
-          const groups = FeatureLogBook.normalizeGroups(l);
-          for (const g of groups) {
-            if (g.customActivities) {
-              customActivitiesList = FeatureLogBook.mergeCustomActivities(customActivitiesList, g.customActivities);
-            }
-          }
+          const logActivities = FeatureLogBook.getLogCustomActivities(l);
+          customActivitiesList = FeatureLogBook.mergeCustomActivities(customActivitiesList, logActivities);
           rescuedCount += parseInt(l.rescuedCount || "0", 10) || 0;
           recoveredCount += parseInt(l.recoveredCount || "0", 10) || 0;
           rescuedPetsCount += parseInt(l.rescuedPetsCount || "0", 10) || 0;

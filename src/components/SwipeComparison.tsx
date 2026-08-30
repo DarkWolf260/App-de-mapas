@@ -1,53 +1,79 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import ImageryTileLayer from "@arcgis/core/layers/ImageryTileLayer";
+import WebTileLayer from "@arcgis/core/layers/WebTileLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
 import Swipe from "@arcgis/core/widgets/Swipe";
-import { X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, AlertTriangle, Layers, Check, Loader } from "lucide-react";
+import { X, AlertTriangle, Check, Loader } from "lucide-react";
 import type MapView from "@arcgis/core/views/MapView";
+import type Layer from "@arcgis/core/layers/Layer";
 
-const COG_SOURCES = [
+interface ComparisonSource {
+  id: string;
+  type: "webtile" | "cog";
+  url: string;
+  label: string;
+}
+
+const COMPARISON_SOURCES: readonly ComparisonSource[] = [
+  {
+    id: "googleSat",
+    type: "webtile",
+    url: "https://mt{subDomain}.google.com/vt/lyrs=s&x={col}&y={row}&z={level}",
+    label: "Google Satelital (Principal)",
+  },
   {
     id: "cogA",
+    type: "cog",
     url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B140001100B5CA10.tif",
     label: "Escena A — Jun 29",
   },
   {
     id: "cogB",
+    type: "cog",
     url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B140001100B5C810.tif",
     label: "Escena B — Jun 29",
   },
   {
     id: "cogC",
+    type: "cog",
     url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B140001100B5C710.tif",
     label: "Escena C — Jun 29",
   },
   {
     id: "cogD",
+    type: "cog",
     url: "https://vantor-opendata.s3.amazonaws.com/events/Venezuela-Earthquake-Jun-2026/B140001100B5C710.tif",
     label: "Escena D — Jun 29",
   },
 ] as const;
 
-const globalCogCache = new Map<string, ImageryTileLayer>();
+const globalLayerCache = new Map<string, Layer>();
 
-function getOrCreateCogLayer(id: string): ImageryTileLayer | null {
-  const src = COG_SOURCES.find((s) => s.id === id);
+function getOrCreateComparisonLayer(id: string): Layer | null {
+  const src = COMPARISON_SOURCES.find((s) => s.id === id);
   if (!src) return null;
-  let layer = globalCogCache.get(id);
+  let layer = globalLayerCache.get(id);
   if (!layer) {
-    layer = new ImageryTileLayer({
-      url: src.url,
-      title: src.label,
-    });
-    globalCogCache.set(id, layer);
+    if (src.type === "webtile") {
+      layer = new WebTileLayer({
+        urlTemplate: src.url,
+        subDomains: ["0", "1", "2", "3"],
+        title: src.label,
+      });
+    } else {
+      layer = new ImageryTileLayer({
+        url: src.url,
+        title: src.label,
+      });
+    }
+    globalLayerCache.set(id, layer);
     layer.load().catch(() => {
-      globalCogCache.delete(id);
+      globalLayerCache.delete(id);
     });
   }
   return layer;
 }
 
-// Precargar metadatos del COG principal en segundo plano (se carga bajo demanda al abrir la comparación)
 type LayerStatus = "idle" | "loading" | "ok" | "error";
 
 interface SwipeComparisonProps {
@@ -58,13 +84,23 @@ interface SwipeComparisonProps {
 export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose: _onClose }) => {
   const [warning, setWarning] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [layerVis, setLayerVis] = useState<Record<string, boolean>>({ cogA: false, cogB: true, cogC: false, cogD: false });
-  const [layerStatus, setLayerStatus] = useState<Record<string, LayerStatus>>({ cogA: "idle", cogB: "idle", cogC: "idle", cogD: "idle" });
+  const [layerVis, setLayerVis] = useState<Record<string, boolean>>({
+    googleSat: true,
+    cogA: false,
+    cogB: false,
+    cogC: false,
+    cogD: false,
+  });
+  const [layerStatus, setLayerStatus] = useState<Record<string, LayerStatus>>({
+    googleSat: "idle",
+    cogA: "idle",
+    cogB: "idle",
+    cogC: "idle",
+    cogD: "idle",
+  });
   const groupLayerRef = useRef<GroupLayer | null>(null);
   const swipeWidgetRef = useRef<Swipe | null>(null);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 768);
-
-  const leftPos = "16px";
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
@@ -81,11 +117,11 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
     setLayerStatus((prev) => ({ ...prev, [id]: status }));
   }, []);
 
-  const loadCog = useCallback(async (id: string) => {
-    const src = COG_SOURCES.find((s) => s.id === id);
+  const loadLayer = useCallback(async (id: string) => {
+    const src = COMPARISON_SOURCES.find((s) => s.id === id);
     if (!src || !groupLayerRef.current) return;
 
-    const layer = getOrCreateCogLayer(id);
+    const layer = getOrCreateComparisonLayer(id);
     if (!layer) return;
 
     if (layer.loaded) {
@@ -105,14 +141,14 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
       setStatus(id, "ok");
     } catch {
       setStatus(id, "error");
-      globalCogCache.delete(id);
+      globalLayerCache.delete(id);
       setWarning(`${src.label} no disponible`);
       setTimeout(() => setWarning(null), 6000);
     }
   }, [setStatus]);
 
-  const unloadCog = useCallback((id: string) => {
-    const layer = globalCogCache.get(id);
+  const unloadLayer = useCallback((id: string) => {
+    const layer = globalLayerCache.get(id);
     if (layer && groupLayerRef.current) {
       groupLayerRef.current.remove(layer);
       setStatus(id, "idle");
@@ -123,18 +159,18 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
     setLayerVis((prev) => {
       const next = { ...prev, [id]: !prev[id] };
       if (next[id]) {
-        loadCog(id);
+        loadLayer(id);
       } else {
-        unloadCog(id);
+        unloadLayer(id);
       }
       return next;
     });
-  }, [loadCog, unloadCog]);
+  }, [loadLayer, unloadLayer]);
 
   useEffect(() => {
     if (!view) return;
 
-    const groupLayer = new GroupLayer({ title: "Post-sismo" });
+    const groupLayer = new GroupLayer({ title: "Capa Después / Comparación" });
     groupLayerRef.current = groupLayer;
 
     const map = view.map;
@@ -155,14 +191,8 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
     swipeWidgetRef.current = swipeWidget;
     view.ui.add(swipeWidget);
 
-    if (isMobile) {
-      COG_SOURCES.forEach((src) => {
-        loadCog(src.id);
-        setLayerVis((prev) => ({ ...prev, [src.id]: true }));
-      });
-    } else {
-      loadCog("cogB");
-    }
+    // Cargar Google Satelital como capa principal inicial del Después
+    loadLayer("googleSat");
 
     return () => {
       try {
@@ -179,31 +209,17 @@ export const SwipeComparison: React.FC<SwipeComparisonProps> = ({ view, onClose:
         console.error("Error cleaning up Swipe widget:", err);
       }
     };
-  }, [view, loadCog, isMobile]);
+  }, [view, loadLayer, isMobile]);
 
   return (
     <>
-      <div className="swipe-overlay">
-        <div className="swipe-label-bar">
-          <span className="swipe-label swipe-label-before">
-            {isMobile ? <ChevronUp size={14} /> : <ChevronLeft size={14} />}
-            {isMobile ? "ARRIBA" : "IZQUIERDA"}
-          </span>
-          <span className="swipe-label swipe-label-divider">|</span>
-          <span className="swipe-label swipe-label-after">
-            POST-SISMO
-            {isMobile ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </span>
-        </div>
-      </div>
-
       {panelOpen && (
         <div
           className="swipe-layer-panel"
           style={{ position: "fixed", bottom: "68px", left: "132px", top: "auto", zIndex: 120 }}
         >
-          <div className="swipe-layer-panel-title">Capas post-sismo</div>
-          {COG_SOURCES.map((src) => (
+          <div className="swipe-layer-panel-title">Capas de Comparación (Después)</div>
+          {COMPARISON_SOURCES.map((src) => (
             <label key={src.id} className="swipe-layer-item">
               <input
                 type="checkbox"

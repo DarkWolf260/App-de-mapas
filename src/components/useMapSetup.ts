@@ -58,6 +58,15 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     getActiveColor: () => activeColorRef.current,
   });
 
+  // Sincronización inmediata de refs para evitar condiciones de carrera en el render
+  init.layerVisibilityRef.current = layerVisibility;
+  init.drawnFeaturesRef.current = drawnFeatures;
+  init.hiddenFeaturesRef.current = hiddenFeatures;
+  init.selectedDateRef.current = selectedDate;
+  init.activeDepartmentRef.current = activeDepartment;
+  init.showAccumulatedRef.current = showAccumulated ?? false;
+  init.canEditRef.current = canEditMap === true;
+
   useEffect(() => { init.layerVisibilityRef.current = layerVisibility; }, [layerVisibility, init]);
   useEffect(() => { init.drawnFeaturesRef.current = drawnFeatures; }, [drawnFeatures, init]);
   useEffect(() => { init.hiddenFeaturesRef.current = hiddenFeatures; }, [hiddenFeatures, init]);
@@ -252,13 +261,13 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     if (!layer) return;
     if (layerVisibility.inspecciones) {
       const polygonFeatures = drawnFeatures.filter((f) => f.type === "polygon");
-      syncDrawnFeaturesToGraphics(polygonFeatures, hiddenFeatures, layerVisibility, init.currentZoom, layer, selectedDateRef.current, activeDepartmentRef.current, bare);
+      syncDrawnFeaturesToGraphics(polygonFeatures, hiddenFeatures, layerVisibility, init.currentZoom, layer, selectedDate, activeDepartment, bare);
       deconflictGraphicsRef.current?.();
       return;
     }
-    syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, init.currentZoom, layer, selectedDateRef.current, activeDepartmentRef.current, bare);
+    syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, init.currentZoom, layer, selectedDate, activeDepartment, bare);
     deconflictGraphicsRef.current?.();
-  }, [drawnFeatures, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.inspecciones, layerVisibility.hideNestedAreas, init.mapReady, init.currentZoom, selectedDate, activeDepartment, sketchLayerRef, deconflictGraphicsRef, bare]);
+  }, [drawnFeatures, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.inspecciones, layerVisibility.hideNestedAreas, init.mapReady, init.currentZoom, selectedDate, activeDepartment, showAccumulated, sketchLayerRef, deconflictGraphicsRef, bare]);
 
   useEffect(() => {
     const layer = sketchLayerRef.current;

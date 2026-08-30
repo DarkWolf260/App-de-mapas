@@ -1,6 +1,6 @@
 import React from "react";
 import "@arcgis/core/assets/esri/themes/dark/main.css";
-import type { DrawnFeature, LayerVisibility, RemoveFeatureId } from "../types";
+import type { BasemapKey, DrawnFeature, LayerVisibility, RemoveFeatureId } from "../types";
 import { DrawingToolbar } from "./DrawingToolbar";
 import { CustomMapPopup } from "./CustomMapPopup";
 import { DeploymentSummaryCard } from "./DeploymentSummaryCard";
@@ -17,7 +17,8 @@ import { DEFAULT_CENTER } from "../utils/mapUtils";
 import { Satellite, Calendar, MapPin, ExternalLink, Copy, Link2, Check, Building2, Layers } from "lucide-react";
 
 interface MapComponentProps {
-  activeBasemap: string;
+  activeBasemap: BasemapKey | string;
+  onSelectBasemap?: (basemap: BasemapKey) => void;
   activeCity: string;
   layerVisibility: LayerVisibility;
   onToggleLayer?: (layerName: keyof LayerVisibility) => void;
@@ -439,6 +440,8 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
           {props.onToggleLayer && (
             <div style={{ pointerEvents: "auto" }} className="map-settings-wrapper">
               <MapSettingsPanel
+                activeBasemap={props.activeBasemap}
+                onSelectBasemap={props.onSelectBasemap}
                 layerVisibility={layerVisibility}
                 onToggleLayer={props.onToggleLayer}
                 expanded={showMapSettings}

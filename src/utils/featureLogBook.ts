@@ -437,7 +437,7 @@ export function aggregatePolygonLog(
     processGroupEntry(g);
   }
 
-  // 3. Add contained point metrics
+  // 3. Add contained point metrics and point-level custom activities
   let observations = polygonOwnLog.observations ? `Polígono: ${polygonOwnLog.observations}` : "";
   for (const { point, log } of containedWithLogs) {
     const gList = getNormalizedGroupList(log);
@@ -448,8 +448,10 @@ export function aggregatePolygonLog(
     } else {
       addMetricsFromLog(totals, log);
     }
-    if (log.customActivities) {
-      customActivities = mergeCustomActivities(customActivities, log.customActivities);
+    // Las actividades personalizadas pertenecen al Punto (DailyLog)
+    const pointActivities = getLogCustomActivities(log);
+    if (pointActivities.length > 0) {
+      customActivities = mergeCustomActivities(customActivities, pointActivities);
     }
     if (log.observations) {
       observations += (observations ? "\n" : "") + `${point.title}: ${log.observations}`;
@@ -560,94 +562,27 @@ export function getDayStats(
 }
 
 /**
- * Database serialization: Converts a database row to a typed DailyLog.
+ * Extrae y consolida de forma limpia todas las actividades personalizadas
+ * de un DailyLog (tanto de grupos como del nivel de log general), sin duplicaciones.
  */
-export function fromDatabaseRow(row: any): DailyLog {
-  const rawGroups = Array.isArray(row.groups)
-    ? row.groups
-    : (typeof row.groups === "string" && row.groups.trim() ? JSON.parse(row.groups) : []);
-
-  let parsedCustomActivities: CustomActivity[] = [];
-  if (Array.isArray(row.custom_activities)) {
-    parsedCustomActivities = [...row.custom_activities];
-  } else if (typeof row.custom_activities === "string" && row.custom_activities.trim()) {
-    try {
-      parsedCustomActivities = JSON.parse(row.custom_activities);
-    } catch {}
-  } else if (Array.isArray(row.customActivities)) {
-    parsedCustomActivities = [...row.customActivities];
+export function getLogCustomActivities(log?: Partial<DailyLog>): CustomActivity[] {
+  if (!log) return [];
+  let activities: CustomActivity[] = [];
+  if (Array.isArray(log.customActivities) && log.customActivities.length > 0) {
+    activities = [...log.customActivities];
   }
-
-  const cleanGroups: GroupLogEntry[] = [];
-  for (const g of rawGroups) {
-    if (g.customActivities && Array.isArray(g.customActivities)) {
-      for (const ca of g.customActivities) {
-        if (!parsedCustomActivities.some((existing) => existing.id === ca.id || existing.name === ca.name)) {
-          parsedCustomActivities.push(ca);
-        }
-      }
-    }
-    if (g.id !== "__custom_meta__") {
-      cleanGroups.push(g);
+  const groups = getNormalizedGroupList(log);
+  for (const g of groups) {
+    if (g.customActivities && g.customActivities.length > 0) {
+      activities = mergeCustomActivities(activities, g.customActivities);
     }
   }
-
-  return {
-    date: row.date,
-    department: row.department,
-    groups: cleanGroups,
-    observations: row.observations || "",
-    novedades: Array.isArray(row.novedades)
-      ? row.novedades
-      : (typeof row.novedades === "string" && row.novedades.trim() ? JSON.parse(row.novedades) : []),
-    rescuedCount: row.rescued_count || "",
-    recoveredCount: row.recovered_count || "",
-    rescuedPetsCount: row.rescued_pets_count || "",
-    prehospitalCareCount: row.prehospital_care_count || "",
-    transfersCount: row.transfers_count || "",
-    customActivities: parsedCustomActivities,
-  };
+  return activities;
 }
 
-/**
- * Database serialization: Converts a DailyLog to a row dictionary for Supabase.
- */
-export function toDatabaseRow(featureId: number | string, log: DailyLog): Record<string, unknown> {
-  const fidStr = String(featureId);
-  const deptToUse = log.department || "pc";
-  const groupsList = getNormalizedGroupList(log).filter((g) =>
-    g.id !== "__custom_meta__" &&
-    !!(g.groupName?.trim() || g.officersCount?.trim() || g.unitOut?.trim() || g.managerName?.trim() ||
-       g.departureTime?.trim() || g.arrivalTime?.trim() || g.managerPhone?.trim() ||
-       g.rescuedCount?.trim() || g.recoveredCount?.trim() || g.rescuedPetsCount?.trim() ||
-       g.prehospitalCareCount?.trim() || g.transfersCount?.trim() || g.edanCount?.trim() ||
-       (g.customActivities && g.customActivities.length > 0))
-  );
-
-  if (log.customActivities && log.customActivities.length > 0) {
-    if (groupsList.length > 0) {
-      groupsList[0] = { ...groupsList[0], customActivities: log.customActivities };
-    } else {
-      groupsList.push({ id: "__custom_meta__", groupName: "", customActivities: log.customActivities });
-    }
-  }
-
-  return {
-    feature_id: fidStr,
-    date: log.date,
-    department: deptToUse,
-    groups: groupsList,
-    observations: log.observations || "",
-    novedades: log.novedades || [],
-    rescued_count: log.rescuedCount || "",
-    recovered_count: log.recoveredCount || "",
-    rescued_pets_count: log.rescuedPetsCount || "",
-    prehospital_care_count: log.prehospitalCareCount || "",
-    transfers_count: log.transfersCount || "",
-    custom_activities: log.customActivities || [],
-    updated_at: new Date().toISOString(),
-  };
-}
+// Re-exportar adaptadores de serialización de base de datos (SRP)
+export { fromDatabaseRow, toDatabaseRow, CUSTOM_META_GROUP_ID } from "./logSerialization";
+import { fromDatabaseRow, toDatabaseRow } from "./logSerialization";
 
 /**
  * Consolidated Deep Module Namespace
@@ -662,6 +597,7 @@ export const FeatureLogBook = {
   matchesArrivalFilter: logMatchesArrivalFilter,
   hasAnyData: logHasAnyData,
   getGroupData,
+  getLogCustomActivities,
   mergeCustomActivities,
   mergeLogs,
   aggregatePolygon: aggregatePolygonLog,

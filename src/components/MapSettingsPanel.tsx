@@ -1,8 +1,10 @@
 import React from "react";
-import { Settings, X } from "lucide-react";
-import type { LayerVisibility } from "../types";
+import { Settings, X, Globe } from "lucide-react";
+import type { BasemapKey, LayerVisibility } from "../types";
 
 interface MapSettingsPanelProps {
+  activeBasemap?: BasemapKey | string;
+  onSelectBasemap?: (basemap: BasemapKey) => void;
   layerVisibility: LayerVisibility;
   onToggleLayer: (layerName: keyof LayerVisibility) => void;
   expanded: boolean;
@@ -20,6 +22,8 @@ const TOGGLES: Array<{ key: keyof LayerVisibility; label: string }> = [
 ];
 
 export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
+  activeBasemap = "google-satellite",
+  onSelectBasemap,
   layerVisibility,
   onToggleLayer,
   expanded,
@@ -56,7 +60,7 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
   return (
     <div
       style={{
-        width: "260px",
+        width: "270px",
         background: "rgba(10, 15, 28, 0.94)",
         border: "1px solid rgba(255, 255, 255, 0.12)",
         borderRadius: "12px",
@@ -105,6 +109,69 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
           <X size={14} />
         </button>
       </div>
+
+      {/* Selector de Mapa Base */}
+      {onSelectBasemap && (
+        <div style={{ marginBottom: "10px", paddingBottom: "8px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
+          <div
+            style={{
+              fontSize: "0.68rem",
+              fontWeight: 700,
+              color: "var(--text-muted)",
+              textTransform: "uppercase",
+              letterSpacing: "0.03em",
+              marginBottom: "6px",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+            }}
+          >
+            <Globe size={11} /> Mapa Base
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+            <button
+              onClick={() => onSelectBasemap("google-satellite")}
+              style={{
+                padding: "6px 8px",
+                fontSize: "0.68rem",
+                fontWeight: 600,
+                borderRadius: "6px",
+                border: activeBasemap === "google-satellite"
+                  ? "1px solid #38bdf8"
+                  : "1px solid rgba(255, 255, 255, 0.1)",
+                background: activeBasemap === "google-satellite"
+                  ? "rgba(56, 189, 248, 0.2)"
+                  : "rgba(255, 255, 255, 0.04)",
+                color: activeBasemap === "google-satellite" ? "#38bdf8" : "var(--text-secondary)",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
+              Google Satélite
+            </button>
+            <button
+              onClick={() => onSelectBasemap("satellite-free")}
+              style={{
+                padding: "6px 8px",
+                fontSize: "0.68rem",
+                fontWeight: 600,
+                borderRadius: "6px",
+                border: activeBasemap === "satellite-free"
+                  ? "1px solid #38bdf8"
+                  : "1px solid rgba(255, 255, 255, 0.1)",
+                background: activeBasemap === "satellite-free"
+                  ? "rgba(56, 189, 248, 0.2)"
+                  : "rgba(255, 255, 255, 0.04)",
+                color: activeBasemap === "satellite-free" ? "#38bdf8" : "var(--text-secondary)",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
+              ArcGIS Satélite
+            </button>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
         {TOGGLES.map(({ key, label }) => (
