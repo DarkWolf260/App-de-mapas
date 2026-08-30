@@ -156,18 +156,28 @@ export const ReportImageTab: React.FC<ReportImageTabProps> = ({
   }, [pazConfig]);
 
   // Operational Matrix Table adjustment state (the only element user customizes)
-  const [tableConfig, setTableConfig] = useState<{ offsetX: number; offsetY: number; scale: number }>(() => {
+  const [tableConfig, setTableConfig] = useState<{ offsetX: number; offsetY: number; scaleX: number; scaleY: number }>(() => {
     try {
-      const saved = localStorage.getItem("report_table_custom_config");
+      const saved = localStorage.getItem("report_table_custom_config_v2");
       if (saved) return JSON.parse(saved);
+      const old = localStorage.getItem("report_table_custom_config");
+      if (old) {
+        const parsed = JSON.parse(old);
+        return {
+          offsetX: parsed.offsetX ?? 0,
+          offsetY: parsed.offsetY ?? 0,
+          scaleX: parsed.scale ?? 1.0,
+          scaleY: parsed.scale ?? 1.0,
+        };
+      }
     } catch {}
-    return { offsetX: 0, offsetY: 0, scale: 1.0 };
+    return { offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0 };
   });
   const [renderedTableBounds, setRenderedTableBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
   useEffect(() => {
     try {
-      localStorage.setItem("report_table_custom_config", JSON.stringify(tableConfig));
+      localStorage.setItem("report_table_custom_config_v2", JSON.stringify(tableConfig));
     } catch {}
   }, [tableConfig]);
 
@@ -216,6 +226,8 @@ export const ReportImageTab: React.FC<ReportImageTabProps> = ({
     initialHeight: number;
     initialX: number;
     initialY: number;
+    initialScaleX?: number;
+    initialScaleY?: number;
   } | null>(null);
 
   // Save to localStorage
@@ -268,7 +280,8 @@ export const ReportImageTab: React.FC<ReportImageTabProps> = ({
             headerConfig,
             subtitleConfig,
             laguairaConfig,
-            tableScale: tableConfig.scale,
+            tableScaleX: tableConfig.scaleX,
+            tableScaleY: tableConfig.scaleY,
             tableOffsetX: tableConfig.offsetX,
             tableOffsetY: tableConfig.offsetY,
           });
@@ -288,7 +301,7 @@ export const ReportImageTab: React.FC<ReportImageTabProps> = ({
         }
       }
       setIsRendering(false);
-    }, 50);
+    }, 10);
 
     return () => clearTimeout(timer);
   }, [
@@ -329,7 +342,8 @@ export const ReportImageTab: React.FC<ReportImageTabProps> = ({
         headerConfig,
         subtitleConfig,
         laguairaConfig,
-        tableScale: tableConfig.scale,
+        tableScaleX: tableConfig.scaleX,
+        tableScaleY: tableConfig.scaleY,
         tableOffsetX: tableConfig.offsetX,
         tableOffsetY: tableConfig.offsetY,
       });
@@ -600,11 +614,46 @@ export const ReportImageTab: React.FC<ReportImageTabProps> = ({
           )
         );
       } else if (resizingItem.type === "table") {
-        const factor = Math.max(0.4, Math.min(1.8, Number((newWidth / (resizingItem.initialWidth || 1) * tableConfig.scale).toFixed(2))));
-        setTableConfig((prev) => ({
-          ...prev,
-          scale: factor,
-        }));
+        const initW = resizingItem.initialWidth || 1450;
+        const initH = resizingItem.initialHeight || 480;
+        const initScaleX = resizingItem.initialScaleX ?? 1.0;
+        const initScaleY = resizingItem.initialScaleY ?? 1.0;
+        const initOffsetX = resizingItem.initialX;
+        const initOffsetY = resizingItem.initialY;
+
+        let newScaleX = initScaleX;
+        let newScaleY = initScaleY;
+        let newOffsetX = initOffsetX;
+        let newOffsetY = initOffsetY;
+
+        // Ancho
+        if (resizingItem.handle.includes("e")) {
+          const deltaScaleX = deltaX / (initW / initScaleX);
+          newScaleX = Math.max(0.25, Math.min(2.5, +(initScaleX + deltaScaleX).toFixed(3)));
+          newOffsetX = Math.round(initOffsetX + deltaX / 2);
+        } else if (resizingItem.handle.includes("w")) {
+          const deltaScaleX = -deltaX / (initW / initScaleX);
+          newScaleX = Math.max(0.25, Math.min(2.5, +(initScaleX + deltaScaleX).toFixed(3)));
+          newOffsetX = Math.round(initOffsetX + deltaX / 2);
+        }
+
+        // Alto
+        if (resizingItem.handle.includes("s")) {
+          const deltaScaleY = deltaY / (initH / initScaleY);
+          newScaleY = Math.max(0.25, Math.min(2.5, +(initScaleY + deltaScaleY).toFixed(3)));
+          newOffsetY = Math.round(initOffsetY + deltaY / 2);
+        } else if (resizingItem.handle.includes("n")) {
+          const deltaScaleY = -deltaY / (initH / initScaleY);
+          newScaleY = Math.max(0.25, Math.min(2.5, +(initScaleY + deltaScaleY).toFixed(3)));
+          newOffsetY = Math.round(initOffsetY + deltaY / 2);
+        }
+
+        setTableConfig({
+          scaleX: newScaleX,
+          scaleY: newScaleY,
+          offsetX: newOffsetX,
+          offsetY: newOffsetY,
+        });
       }
     }
   };
@@ -1467,10 +1516,14 @@ export const ReportImageTab: React.FC<ReportImageTabProps> = ({
 
               {/* RECUADRO INTERACTIVO EXCLUSIVO PARA AJUSTAR EL CUADRO / TABLA A SU GUSTO */}
               {renderMode === "slide" && (() => {
-                const curWidth = renderedTableBounds?.width ?? Math.round(1460 * tableConfig.scale);
-                const curHeight = renderedTableBounds?.height ?? Math.round(480 * tableConfig.scale);
+                const curWidth = renderedTableBounds?.width ?? Math.round(1460 * tableConfig.scaleX);
+                const curHeight = renderedTableBounds?.height ?? Math.round(480 * tableConfig.scaleY);
                 const curX = renderedTableBounds?.x ?? Math.round((1920 - curWidth) / 2 + tableConfig.offsetX);
                 const curY = renderedTableBounds?.y ?? Math.round(285 + tableConfig.offsetY);
+
+                const handles: Array<"nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w"> = [
+                  "nw", "n", "ne", "e", "se", "s", "sw", "w"
+                ];
 
                 return (
                   <div
@@ -1508,95 +1561,121 @@ export const ReportImageTab: React.FC<ReportImageTabProps> = ({
                     <div
                       style={{
                         position: "absolute",
-                        bottom: "-32px",
+                        bottom: "-36px",
                         left: "50%",
                         transform: "translateX(-50%)",
                         background: "rgba(15, 23, 42, 0.95)",
                         border: "1px solid #2563eb",
                         color: "#fff",
-                        padding: "3px 8px",
+                        padding: "4px 10px",
                         borderRadius: "6px",
-                        fontSize: "0.64rem",
+                        fontSize: "0.65rem",
                         fontWeight: 800,
                         display: "flex",
                         alignItems: "center",
                         gap: "6px",
                         whiteSpace: "nowrap",
-                        boxShadow: "0 4px 14px rgba(0,0,0,0.6)",
+                        boxShadow: "0 4px 16px rgba(0,0,0,0.6)",
                         pointerEvents: "auto",
                       }}
                       onPointerDown={(e) => e.stopPropagation()}
                     >
-                      <span style={{ color: "#93c5fd" }}>📊 Cuadro ({Math.round(tableConfig.scale * 100)}%)</span>
+                      <span style={{ color: "#93c5fd" }}>
+                        📊 Cuadro: ↔ {Math.round(tableConfig.scaleX * 100)}% | ↕ {Math.round(tableConfig.scaleY * 100)}%
+                      </span>
+
+                      {/* Controles de Ancho */}
+                      <span style={{ color: "#cbd5e1", marginLeft: "2px" }}>Ancho:</span>
                       <button
                         type="button"
-                        onClick={() => setTableConfig((p) => ({ ...p, scale: Math.max(0.4, Number((p.scale - 0.05).toFixed(2))) }))}
-                        title="Achicar cuadro"
-                        style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: "3px", padding: "2px 6px", fontSize: "0.62rem", cursor: "pointer" }}
-                      >➖ Achicar</button>
+                        onClick={() => setTableConfig((p) => ({ ...p, scaleX: Math.max(0.3, Number((p.scaleX - 0.05).toFixed(2))) }))}
+                        title="Reducir ancho"
+                        style={{ background: "rgba(255,255,255,0.12)", border: "none", color: "#fff", borderRadius: "3px", padding: "2px 6px", fontSize: "0.62rem", cursor: "pointer" }}
+                      >➖</button>
                       <button
                         type="button"
-                        onClick={() => setTableConfig((p) => ({ ...p, scale: Math.min(1.8, Number((p.scale + 0.05).toFixed(2))) }))}
-                        title="Agrandar cuadro"
-                        style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: "3px", padding: "2px 6px", fontSize: "0.62rem", cursor: "pointer" }}
-                      >➕ Agrandar</button>
+                        onClick={() => setTableConfig((p) => ({ ...p, scaleX: Math.min(2.5, Number((p.scaleX + 0.05).toFixed(2))) }))}
+                        title="Aumentar ancho"
+                        style={{ background: "rgba(255,255,255,0.12)", border: "none", color: "#fff", borderRadius: "3px", padding: "2px 6px", fontSize: "0.62rem", cursor: "pointer" }}
+                      >➕</button>
+
+                      {/* Controles de Largo / Alto */}
+                      <span style={{ color: "#cbd5e1", marginLeft: "2px" }}>Largo:</span>
                       <button
                         type="button"
-                        onClick={() => setTableConfig((p) => ({ ...p, offsetY: p.offsetY - 10 }))}
-                        title="Subir cuadro"
-                        style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: "3px", padding: "2px 6px", fontSize: "0.62rem", cursor: "pointer" }}
-                      >▲ Subir</button>
+                        onClick={() => setTableConfig((p) => ({ ...p, scaleY: Math.max(0.3, Number((p.scaleY - 0.05).toFixed(2))) }))}
+                        title="Reducir largo"
+                        style={{ background: "rgba(255,255,255,0.12)", border: "none", color: "#fff", borderRadius: "3px", padding: "2px 6px", fontSize: "0.62rem", cursor: "pointer" }}
+                      >➖</button>
                       <button
                         type="button"
-                        onClick={() => setTableConfig((p) => ({ ...p, offsetY: p.offsetY + 10 }))}
-                        title="Bajar cuadro"
-                        style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: "3px", padding: "2px 6px", fontSize: "0.62rem", cursor: "pointer" }}
-                      >▼ Bajar</button>
+                        onClick={() => setTableConfig((p) => ({ ...p, scaleY: Math.min(2.5, Number((p.scaleY + 0.05).toFixed(2))) }))}
+                        title="Aumentar largo"
+                        style={{ background: "rgba(255,255,255,0.12)", border: "none", color: "#fff", borderRadius: "3px", padding: "2px 6px", fontSize: "0.62rem", cursor: "pointer" }}
+                      >➕</button>
+
+                      {/* Botón Restablecer */}
                       <button
                         type="button"
-                        onClick={() => setTableConfig({ offsetX: 0, offsetY: 0, scale: 1.0 })}
-                        title="Centrar y restablecer"
-                        style={{ background: "#2563eb", border: "none", color: "#fff", borderRadius: "3px", padding: "2px 6px", fontSize: "0.62rem", fontWeight: 800, cursor: "pointer" }}
-                      >🔄 Centrar</button>
+                        onClick={() => setTableConfig({ offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0 })}
+                        title="Restablecer tamaño y centrado original"
+                        style={{ background: "#2563eb", border: "none", color: "#fff", borderRadius: "3px", padding: "2px 7px", fontSize: "0.62rem", fontWeight: 800, cursor: "pointer", marginLeft: "4px" }}
+                      >🔄 Restablecer</button>
                     </div>
 
-                    {/* MANIJAS EN LAS 4 ESQUINAS PARA REDIMENSIONAR DIRECTO CON EL RATÓN */}
-                    {(["nw", "ne", "se", "sw"] as const).map((handle) => (
-                      <div
-                        key={handle}
-                        onPointerDown={(e) => {
-                          e.stopPropagation();
-                          try {
-                            (e.target as HTMLElement).setPointerCapture(e.pointerId);
-                          } catch {}
-                          setResizingItem({
-                            type: "table",
-                            id: "table",
-                            handle,
-                            startX: e.clientX,
-                            startY: e.clientY,
-                            initialWidth: curWidth,
-                            initialHeight: curHeight,
-                            initialX: curX,
-                            initialY: curY,
-                          });
-                        }}
-                        style={{
-                          position: "absolute",
-                          width: "12px",
-                          height: "12px",
-                          background: "#2563eb",
-                          border: "2px solid #fff",
-                          borderRadius: "50%",
-                          cursor: handle === "nw" || handle === "se" ? "nwse-resize" : "nesw-resize",
-                          top: handle.includes("n") ? "-6px" : undefined,
-                          bottom: handle.includes("s") ? "-6px" : undefined,
-                          left: handle.includes("w") ? "-6px" : undefined,
-                          right: handle.includes("e") ? "-6px" : undefined,
-                          zIndex: 30,
-                        }}
-                      />
-                    ))}
+                    {/* 8 MANIJAS CARDINALES PARA REDIMENSIONAR LIBREMENTE CON EL RATÓN */}
+                    {handles.map((handle) => {
+                      let cursor = "nwse-resize";
+                      if (handle === "n" || handle === "s") cursor = "ns-resize";
+                      else if (handle === "e" || handle === "w") cursor = "ew-resize";
+                      else if (handle === "ne" || handle === "sw") cursor = "nesw-resize";
+
+                      const topPos = handle.includes("n") ? "-7px" : handle.includes("s") ? undefined : "calc(50% - 7px)";
+                      const bottomPos = handle.includes("s") ? "-7px" : undefined;
+                      const leftPos = handle.includes("w") ? "-7px" : handle.includes("e") ? undefined : "calc(50% - 7px)";
+                      const rightPos = handle.includes("e") ? "-7px" : undefined;
+
+                      return (
+                        <div
+                          key={handle}
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            try {
+                              (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                            } catch {}
+                            setResizingItem({
+                              type: "table",
+                              id: "table",
+                              handle,
+                              startX: e.clientX,
+                              startY: e.clientY,
+                              initialWidth: curWidth,
+                              initialHeight: curHeight,
+                              initialX: tableConfig.offsetX,
+                              initialY: tableConfig.offsetY,
+                              initialScaleX: tableConfig.scaleX,
+                              initialScaleY: tableConfig.scaleY,
+                            });
+                          }}
+                          style={{
+                            position: "absolute",
+                            width: "14px",
+                            height: "14px",
+                            background: "#2563eb",
+                            border: "2px solid #ffffff",
+                            borderRadius: "50%",
+                            cursor,
+                            top: topPos,
+                            bottom: bottomPos,
+                            left: leftPos,
+                            right: rightPos,
+                            zIndex: 30,
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.45)",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      );
+                    })}
                   </div>
                 );
               })()}

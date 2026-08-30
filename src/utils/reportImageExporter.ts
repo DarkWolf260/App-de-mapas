@@ -450,44 +450,46 @@ export function renderReportToCanvas(
         ctx.fillText(String(mData.totalCount), sX + colSiteWidth / 2, currentY + catHeight / 2);
       }
 
-      // Ubicación Sub-Rows (Quantity in parentheses at start)
-      for (let subIdx = 0; subIdx < rowConfig.numSubRows; subIdx++) {
-        const subY = currentY + subIdx * singleSubRowHeight;
-        const subSite = mData.subSites[subIdx];
+      // Ubicación Sub-Rows: Adaptable a la cantidad real de ubicaciones de ESTE sector (sin filas vacías)
+      const locList = mData.subSites.length > 0
+        ? mData.subSites
+        : (mData.totalCount > 0 && mData.fallbackLocationText
+            ? [{ locationName: mData.fallbackLocationText, count: mData.totalCount }]
+            : []);
 
-        ctx.fillStyle = "#000000";
-        ctx.font = "11px Arial, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
+      const numLocs = locList.length;
 
-        let locText = "";
-        if (subSite) {
-          // Format: "(1) OPP26" or "(3) OPP36"
-          locText = `(${subSite.count}) ${subSite.locationName}`;
-        } else if (subIdx === 0 && mData.totalCount > 0) {
-          locText = `(${mData.totalCount}) ${mData.fallbackLocationText}`;
-        }
+      if (numLocs > 0) {
+        const itemHeight = catHeight / numLocs;
 
-        if (locText) {
+        locList.forEach((subSite, subIdx) => {
+          const itemY = currentY + subIdx * itemHeight;
+
+          ctx.fillStyle = "#000000";
+          ctx.font = "11px Arial, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+
+          const locText = `(${subSite.count}) ${subSite.locationName}`;
           wrapText(
             ctx,
             locText,
             sX + colSiteWidth + colLocationWidth / 2,
-            subY + singleSubRowHeight / 2,
+            itemY + itemHeight / 2,
             colLocationWidth - 10,
             13
           );
-        }
 
-        // Horizontal line between sub-rows strictly inside Ubicación column
-        if (subIdx < rowConfig.numSubRows - 1) {
-          ctx.strokeStyle = "rgba(0, 0, 0, 0.2)";
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(sX + colSiteWidth, subY + singleSubRowHeight);
-          ctx.lineTo(sX + colSiteWidth + colLocationWidth, subY + singleSubRowHeight);
-          ctx.stroke();
-        }
+          // Línea horizontal separadora ÚNICAMENTE entre puntos reales de este sector
+          if (subIdx < numLocs - 1) {
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.2)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(sX + colSiteWidth, itemY + itemHeight);
+            ctx.lineTo(sX + colSiteWidth + colLocationWidth, itemY + itemHeight);
+            ctx.stroke();
+          }
+        });
       }
 
       sX += colSiteWidth + colLocationWidth;
@@ -587,6 +589,8 @@ export interface ExportFullSlideOptions extends ExportReportImageOptions {
   headerTitle?: string;
   subTitle?: string;
   tableScale?: number;
+  tableScaleX?: number;
+  tableScaleY?: number;
   tableOffsetX?: number;
   tableOffsetY?: number;
   flagLogoConfig?: { x: number; y: number; width: number; height: number };
@@ -814,10 +818,11 @@ export function renderFullSlideToCanvas(
   const maxTableWidth = 1500;
   const maxTableHeight = 460;
   const scaleFit = Math.min(1.0, maxTableWidth / tableRawWidth, maxTableHeight / tableRawHeight);
-  const userScale = options.tableScale ?? scaleFit;
+  const userScaleX = options.tableScaleX ?? options.tableScale ?? scaleFit;
+  const userScaleY = options.tableScaleY ?? options.tableScale ?? scaleFit;
 
-  const destWidth = tableRawWidth * userScale;
-  const destHeight = tableRawHeight * userScale;
+  const destWidth = tableRawWidth * userScaleX;
+  const destHeight = tableRawHeight * userScaleY;
   const destX = (SLIDE_WIDTH - destWidth) / 2 + (options.tableOffsetX ?? 0);
   const destY = 285 + (options.tableOffsetY ?? 0);
 
