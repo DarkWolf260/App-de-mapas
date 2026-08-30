@@ -140,8 +140,9 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
           transition: "background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+        <div className="html-point-label-body" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
           <div
+            className="html-point-label-title-row"
             style={{
               fontWeight: 800,
               fontSize: "11.5px",
@@ -152,8 +153,9 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
               textShadow: "0 1px 2px rgba(0,0,0,0.5)",
             }}
           >
-            <span>
+            <span className="html-point-label-title">
               <span
+                className="html-point-label-status-dot"
                 style={{
                   display: "inline-block",
                   width: "7px",
@@ -187,6 +189,7 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
             !lbl.customActivities?.some((a) => !!a.description) &&
             isTitleExpanded && (
               <div
+                className="html-point-label-notes"
                 style={{
                   fontWeight: 600,
                   fontSize: "9px",
@@ -209,6 +212,7 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
 
           {!!lbl.info && (
             <div
+              className="html-point-label-info"
               style={{
                 fontWeight: 600,
                 fontSize: "9px",
@@ -227,6 +231,7 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
           {/* Insignias de equipos desplegados */}
           {isAuthenticated && lbl.teamNames && lbl.teamNames.length > 0 && (
             <div
+              className="html-point-label-teams"
               style={{
                 display: "flex",
                 flexWrap: "wrap",
@@ -274,6 +279,7 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
             !!lbl.rescuedPetsCount ||
             (lbl.customActivities && lbl.customActivities.length > 0)) && (
             <div
+              className="html-point-label-badges"
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -428,6 +434,7 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
           )}
         </div>
         <div
+          className="html-point-label-arrow"
           style={{
             position: "absolute",
             width: "8px",

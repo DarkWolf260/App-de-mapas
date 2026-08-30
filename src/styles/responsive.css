@@ -61,50 +61,71 @@
     display: none !important;
   }
 
-  /* HTML labels (tarjetas): más pequeñas en móvil */
+  /* HTML labels (tarjetas): optimizadas y completas en móvil */
   .html-point-label {
-    padding: 3px 6px !important;
-    border-radius: 5px !important;
-    font-size: 9px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
-    backdrop-filter: blur(6px) !important;
-    -webkit-backdrop-filter: blur(6px) !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    font-size: 10px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    max-width: 85vw !important;
   }
 
-  .html-point-label > div > div:first-child {
-    font-size: 9px !important;
-    gap: 3px !important;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3) !important;
+  .html-point-label .html-point-label-title-row {
+    font-size: 10px !important;
+    gap: 4px !important;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4) !important;
   }
 
-  .html-point-label > div > div:first-child > span:first-child {
-    width: 5px !important;
-    height: 5px !important;
+  .html-point-label .html-point-label-title {
+    display: inline-flex !important;
+    align-items: center !important;
+    white-space: nowrap !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  .html-point-label .html-point-label-status-dot {
+    width: 6px !important;
+    height: 6px !important;
+    margin-right: 4px !important;
     box-shadow: none !important;
   }
 
-  .html-point-label > div > div:nth-child(2) {
-    font-size: 7px !important;
-    padding: 1px 4px !important;
+  .html-point-label .html-point-label-info {
+    font-size: 8px !important;
+    padding: 1px 5px !important;
     margin-top: 2px !important;
     border-radius: 3px !important;
   }
 
-  .html-point-label > div > div:nth-child(3) {
+  .html-point-label .html-point-label-teams {
     gap: 2px !important;
     margin-top: 2px !important;
-    font-size: 7px !important;
+    font-size: 7.5px !important;
   }
 
-  .html-point-label > div > div:nth-child(3) span {
-    padding: 0px 3px !important;
-    border-radius: 2px !important;
-    font-size: 7px !important;
+  .html-point-label .html-point-label-teams span {
+    padding: 1px 4px !important;
+    border-radius: 3px !important;
+    font-size: 7.5px !important;
   }
 
-  .html-point-label > div[style*="position: absolute"] {
-    width: 5px !important;
-    height: 5px !important;
+  .html-point-label .html-point-label-badges {
+    gap: 3px !important;
+    margin-top: 3px !important;
+  }
+
+  .html-point-label .html-point-label-badges span {
+    padding: 1px 4px !important;
+    border-radius: 3px !important;
+    font-size: 7.5px !important;
+  }
+
+  .html-point-label .html-point-label-arrow {
+    width: 6px !important;
+    height: 6px !important;
   }
 
   /* DeploymentSummaryCard: oculto del mapa en móvil */
