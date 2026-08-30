@@ -122,5 +122,9 @@ describe("reportImageExporter", () => {
     expect(mockCanvas.toDataURL).toHaveBeenCalledWith("image/png");
     expect(createdLink).not.toBeNull();
     expect(createdLink?.download).toContain("Reporte_Informacion_PROTECCIÓN_CIVIL_2026-08-25.png");
+
+    // Verify that the location name and count from the point are rendered even if the point has groups
+    const fillTextCalls = (mockCtx.fillText as any).mock.calls.map((c: any[]) => c[0]);
+    expect(fillTextCalls).toContain("(3) Punto de Rescate 1");
   });
 });

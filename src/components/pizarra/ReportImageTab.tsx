@@ -155,53 +155,34 @@ export const ReportImageTab: React.FC<ReportImageTabProps> = ({
     } catch {}
   }, [pazConfig]);
 
-  // Operational Matrix Table adjustment state (the only element user customizes)
-  const [tableConfig, setTableConfig] = useState<{ offsetX: number; offsetY: number; scaleX: number; scaleY: number }>(() => {
-    try {
-      const saved = localStorage.getItem("report_table_custom_config_v2");
-      if (saved) return JSON.parse(saved);
-      const old = localStorage.getItem("report_table_custom_config");
-      if (old) {
-        const parsed = JSON.parse(old);
-        return {
-          offsetX: parsed.offsetX ?? 0,
-          offsetY: parsed.offsetY ?? 0,
-          scaleX: parsed.scale ?? 1.0,
-          scaleY: parsed.scale ?? 1.0,
-        };
-      }
-    } catch {}
-    return { offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0 };
-  });
-  const [renderedTableBounds, setRenderedTableBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
-
+  // Clean up any stale localStorage items on mount
   useEffect(() => {
     try {
-      localStorage.setItem("report_table_custom_config_v2", JSON.stringify(tableConfig));
+      localStorage.removeItem("report_table_custom_config_v2");
+      localStorage.removeItem("report_table_custom_config");
+      localStorage.removeItem("pc_slide_custom_images_v5");
+      localStorage.removeItem("pc_slide_custom_shapes_v5");
     } catch {}
-  }, [tableConfig]);
+  }, []);
+
+  // Operational Matrix Table adjustment state (starts clean each session/day)
+  const [tableConfig, setTableConfig] = useState<{ offsetX: number; offsetY: number; scaleX: number; scaleY: number }>({
+    offsetX: 0,
+    offsetY: 0,
+    scaleX: 1.0,
+    scaleY: 1.0,
+  });
+  const [renderedTableBounds, setRenderedTableBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
   // Department
   const [activeDept, setActiveDept] = useState<DepartmentView>("pc");
   const [isRendering, setIsRendering] = useState(false);
 
-  // Additional custom images uploaded by user
-  const [customImages, setCustomImages] = useState<SlideCustomImage[]>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY_IMAGES);
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return [];
-  });
+  // Additional custom images uploaded by user (starts fresh each session/day)
+  const [customImages, setCustomImages] = useState<SlideCustomImage[]>([]);
 
-  // Custom Shapes
-  const [customShapes, setCustomShapes] = useState<SlideShape[]>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY_SHAPES);
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return [];
-  });
+  // Custom Shapes (starts fresh each session/day)
+  const [customShapes, setCustomShapes] = useState<SlideShape[]>([]);
 
   // Selection
   const [selectedElement, setSelectedElement] = useState<{ type: "image" | "shape"; id: string } | null>(null);
@@ -230,29 +211,17 @@ export const ReportImageTab: React.FC<ReportImageTabProps> = ({
     initialScaleY?: number;
   } | null>(null);
 
-  // Save to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY_IMAGES, JSON.stringify(customImages));
-    } catch (e) {
-      console.warn("Could not save images:", e);
-    }
-  }, [customImages]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY_SHAPES, JSON.stringify(customShapes));
-    } catch (e) {
-      console.warn("Could not save shapes:", e);
-    }
-  }, [customShapes]);
-
-  // Synchronize date
+  // Synchronize date and reset positions on date change
   useEffect(() => {
     if (selectedDate) {
       setStartDate(selectedDate);
       setEndDate(selectedDate);
     }
+    // Always reset table adjustments, shapes, images and selection when date changes
+    setTableConfig({ offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0 });
+    setCustomShapes([]);
+    setCustomImages([]);
+    setSelectedElement(null);
   }, [selectedDate]);
 
   // Render canvas
@@ -790,8 +759,13 @@ export const ReportImageTab: React.FC<ReportImageTabProps> = ({
               type="date"
               value={startDate}
               onChange={(e) => {
-                setStartDate(e.target.value);
-                setEndDate(e.target.value);
+                const newDate = e.target.value;
+                setStartDate(newDate);
+                setEndDate(newDate);
+                setTableConfig({ offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0 });
+                setCustomShapes([]);
+                setCustomImages([]);
+                setSelectedElement(null);
               }}
               style={{
                 background: "rgba(0, 0, 0, 0.4)",

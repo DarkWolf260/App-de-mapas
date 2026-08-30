@@ -207,9 +207,8 @@ export function renderReportToCanvas(
 
           const flatVal = parseInt((mergedPtLog as any)[field] || "0", 10) || 0;
           if (flatVal > 0) {
-            totalForMetric += flatVal;
-            ptSum += flatVal;
-            if (groups.length === 0) {
+            if (ptSum === 0) {
+              totalForMetric += flatVal;
               subSites.push({ locationName: pt.title, count: flatVal });
             }
           }
