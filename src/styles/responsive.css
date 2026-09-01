@@ -191,26 +191,7 @@
     display: none;
   }
 
-  /* Search bar: centrada debajo de la barra de estadísticas en móvil */
-  .floating-search-container {
-    left: 16px;
-    right: 16px;
-    top: 86px;
-  }
 
-  .floating-search-bar {
-    width: 100%;
-    padding: 10px 14px;
-    border-radius: 12px;
-  }
-
-  .floating-search-input {
-    font-size: 16px;
-  }
-
-  .floating-search-dropdown {
-    max-height: 200px;
-  }
 
   /* Drawing toolbar: compacto */
   .draw-toolbar {

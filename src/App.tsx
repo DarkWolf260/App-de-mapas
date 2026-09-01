@@ -3,7 +3,6 @@ import MapComponent from './components/MapComponent';
 import { Sidebar } from './components/Sidebar';
 import { GlobalStatsWidget } from './components/GlobalStatsWidget';
 import { DateTimeline } from './components/DateTimeline';
-import { FloatingSearchBar } from './components/FloatingSearchBar';
 import { RangeReportModal } from './components/RangeReportModal';
 import { Toast } from './components/Toast';
 import { ImportPreviewModal } from './components/ImportPreviewModal';
@@ -16,7 +15,7 @@ import { MobileSettingsSheet } from './components/MobileSettingsSheet';
 import { MobileLayersSheet } from './components/MobileLayersSheet';
 import { Sheet } from './components/Sheet';
 import { UserNavMenu } from './components/UserNavMenu';
-import { Menu, ChevronLeft, Activity } from 'lucide-react';
+import { Activity, Menu } from 'lucide-react';
 import { fetchInspecciones } from './services/inspeccionService';
 import type { InspeccionRecord } from './types';
 import './App.css';
@@ -163,16 +162,6 @@ function App() {
         </div>
       )}
 
-      {!isMobile && (
-        <button
-          className={`toggle-sidebar-btn ${state.sidebarCollapsed ? 'collapsed' : ''}`}
-          onClick={() => state.setSidebarCollapsed(!state.sidebarCollapsed)}
-          title={state.sidebarCollapsed ? "Mostrar panel lateral" : "Ocultar panel lateral"}
-        >
-          {state.sidebarCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
-        </button>
-      )}
-
       <GlobalStatsWidget
         drawnFeatures={state.drawnFeatures}
         selectedDate={state.selectedDate}
@@ -185,15 +174,6 @@ function App() {
         inspeccionesRecords={inspeccionesRecords}
       />
 
-      <FloatingSearchBar
-        drawnFeatures={state.drawnFeatures}
-        onZoomToFeature={state.setZoomToFeature}
-        onGoToCoords={state.handleGoToCoords}
-        onCreatePointAtCoords={state.handleCreatePointAtCoords}
-        showSidebar={!state.sidebarCollapsed}
-        canViewDetails={isAdmin || isOperador}
-      />
-
       <Sidebar
         points={state.points}
         areas={state.areas}
@@ -201,6 +181,8 @@ function App() {
         onDeleteItem={state.handleDeleteItem}
         selectedItemId={state.selectedItemId}
         className={state.sidebarCollapsed ? 'collapsed' : ''}
+        isCollapsed={state.sidebarCollapsed}
+        onToggleCollapse={() => state.setSidebarCollapsed(!state.sidebarCollapsed)}
         isMobile={isMobile}
         activeDepartment={state.activeDepartment}
         onDepartmentChange={state.setActiveDepartment}
@@ -211,6 +193,10 @@ function App() {
         layerVisibility={state.layerVisibility}
         onToggleLayer={state.handleToggleLayer}
         onCloseMobile={() => state.setSidebarCollapsed(true)}
+        onGoToCoords={state.handleGoToCoords}
+        onCreatePointAtCoords={state.handleCreatePointAtCoords}
+        onZoomToFeature={state.setZoomToFeature}
+        drawnFeatures={state.drawnFeatures}
       />
 
       <div className="map-wrapper" style={{ flex: 1, position: 'relative' }}>

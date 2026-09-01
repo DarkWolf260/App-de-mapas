@@ -97,28 +97,6 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
             COE La Guaira <span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Consolidado de Equipos de Trabajo</span>
           </span>
         </div>
-
-        {/* CONTADOR DE EQUIPOS EN EL HEADER */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "rgba(168, 85, 247, 0.15)",
-              border: "1px solid rgba(168, 85, 247, 0.3)",
-              borderRadius: "8px",
-              padding: "4px 10px",
-              color: "#c084fc",
-              fontSize: "0.72rem",
-              fontWeight: 700,
-            }}
-          >
-            <Users size={14} />
-            <span>{workTeamsCount} Equipos</span>
-          </div>
-        </div>
-
         <UserNavMenu currentPage="consolidado" />
       </header>
 

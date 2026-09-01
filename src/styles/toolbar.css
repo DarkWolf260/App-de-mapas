@@ -70,205 +70,48 @@
 /* Department Tabs (Protección Civil / Bomberos / Mixto) */
 .dept-tabs {
   display: flex;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 3px;
-  gap: 4px;
-  margin-top: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 3px;
+  margin-top: 4px;
+  font-family: var(--font-sans);
 }
 
 .dept-tab {
   flex: 1;
   background: transparent;
   border: none;
-  color: var(--text-secondary);
-  padding: 6px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-}
-
-.dept-tab:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.dept-tab.active {
-  background: var(--accent-orange);
-  color: white;
-  box-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
-}
-
-/* Floating Search Bar */
-.floating-search-container {
-  position: absolute;
-  top: 20px;
-  left: 80px;
-  z-index: 9;
-}
-
-.floating-search-bar {
-  background: rgba(17, 24, 39, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 6px 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 320px;
-  box-shadow: var(--shadow-lg);
-}
-
-.floating-search-icon {
-  color: var(--text-muted);
-}
-
-.floating-search-input {
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-size: 13px;
-  width: 100%;
-  outline: none;
-}
-
-.floating-search-clear {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 2px;
-  border-radius: 4px;
-}
-
-.floating-search-clear:hover {
-  color: var(--text-primary);
-}
-
-.floating-search-dropdown {
-  position: absolute;
-  top: 48px;
-  left: 0;
-  width: 100%;
-  background: #111827;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: var(--shadow-lg);
-  max-height: 280px;
-  overflow-y: auto;
-  z-index: 20;
-  padding: 6px;
-}
-
-.floating-search-item {
-  padding: 8px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.floating-search-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.floating-search-item-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.floating-search-item-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  flex: 1;
-}
-
-.floating-search-item-badge {
+  font-family: var(--font-sans);
+  color: rgba(255, 255, 255, 0.65);
+  padding: 4px 6px;
+  border-radius: 5px;
   font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-
-.floating-search-item-desc {
-  font-size: 11px;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-
-.floating-search-coord-result {
-  padding: 10px;
-  background: rgba(56, 189, 248, 0.08);
-  border: 1px solid rgba(56, 189, 248, 0.2);
-  border-radius: 6px;
-  margin-bottom: 6px;
-}
-
-.floating-search-coord-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.floating-search-coord-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--accent-blue);
-  text-transform: uppercase;
-}
-
-.floating-search-coord-value {
-  font-size: 12px;
-  font-family: var(--mono-font);
-  color: var(--text-primary);
-}
-
-.floating-search-coord-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.floating-search-coord-btn {
-  flex: 1;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  transition: all 0.15s ease;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
-.floating-search-coord-btn.accent {
-  background: var(--accent-orange);
-  border-color: var(--accent-orange);
-  color: white;
+.dept-tab:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.floating-search-empty {
-  padding: 12px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--text-muted);
+.dept-tab.active {
+  background: var(--accent-orange, #f97316);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.35);
 }
+
+
 
 /* Toggle Switch para Opciones del Mapa */
 .toggle-item {

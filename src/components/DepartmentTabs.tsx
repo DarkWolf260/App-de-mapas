@@ -7,9 +7,9 @@ interface DepartmentTabsProps {
 }
 
 const tabs: { key: DepartmentView; label: string; icon: React.ReactNode }[] = [
-  { key: "pc", label: "Proteccion Civil", icon: <Shield size={12} /> },
-  { key: "bomberos", label: "Bomberos", icon: <Flame size={12} /> },
-  { key: "mixto", label: "Mixto", icon: <Layers size={12} /> },
+  { key: "pc", label: "Protección Civil", icon: <Shield size={11} /> },
+  { key: "bomberos", label: "Bomberos", icon: <Flame size={11} /> },
+  { key: "mixto", label: "Mixto", icon: <Layers size={11} /> },
 ];
 
 export function DepartmentTabs({ activeDepartment, onDepartmentChange }: DepartmentTabsProps) {
