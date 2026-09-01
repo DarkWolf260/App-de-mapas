@@ -62,17 +62,27 @@ describe("FeatureLogBook - Group Normalization & State", () => {
   });
 
   it("evaluates arrival filter properly", () => {
+    const todayStr = new Date().toLocaleDateString("en-CA");
     const logArrived: DailyLog = {
-      date: "2026-08-28",
+      date: todayStr,
       groups: [{ id: "1", groupName: "G1", hasArrived: true }],
     };
     const logPending: DailyLog = {
-      date: "2026-08-28",
+      date: todayStr,
       groups: [{ id: "1", groupName: "G1", hasArrived: false }],
     };
     expect(logMatchesArrivalFilter(logArrived, "arrived")).toBe(true);
     expect(logMatchesArrivalFilter(logPending, "arrived")).toBe(false);
     expect(logMatchesArrivalFilter(logPending, "not_arrived")).toBe(true);
+  });
+
+  it("marks groups older than 48 hours as arrived automatically", () => {
+    const oldLog: DailyLog = {
+      date: "2026-01-01",
+      groups: [{ id: "1", groupName: "G1", hasArrived: false }],
+    };
+    const groups = getNormalizedGroupList(oldLog);
+    expect(groups[0].hasArrived).toBe(true);
   });
 
   it("detects any data presence including custom activities and novedades", () => {

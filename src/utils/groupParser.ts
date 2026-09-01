@@ -8,5 +8,6 @@ export {
   logMatchesArrivalFilter,
   logHasAnyData,
   getGroupData,
+  isGroupOlderThan48Hours,
 } from "./featureLogBook";
 export type { GroupData } from "./featureLogBook";

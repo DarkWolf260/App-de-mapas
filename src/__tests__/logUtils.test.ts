@@ -69,15 +69,23 @@ describe("logHasPersonnel", () => {
 
 describe("logIsArrived", () => {
   it("returns true when group has arrived", () => {
-    const log = emptyLog("2026-07-15");
+    const todayStr = new Date().toLocaleDateString("en-CA");
+    const log = emptyLog(todayStr);
     log.groups = [{ id: "g1", groupName: "Alpha", hasArrived: true }];
     expect(logIsArrived(log)).toBe(true);
   });
 
-  it("returns false when group has not arrived", () => {
-    const log = emptyLog("2026-07-15");
+  it("returns false when group has not arrived and is within 48h", () => {
+    const todayStr = new Date().toLocaleDateString("en-CA");
+    const log = emptyLog(todayStr);
     log.groups = [{ id: "g1", groupName: "Alpha", hasArrived: false }];
     expect(logIsArrived(log)).toBe(false);
+  });
+
+  it("returns true automatically when group is older than 48h", () => {
+    const oldLog = emptyLog("2026-01-01");
+    oldLog.groups = [{ id: "g1", groupName: "Alpha", hasArrived: false }];
+    expect(logIsArrived(oldLog)).toBe(true);
   });
 });
 
@@ -91,7 +99,8 @@ describe("logMatchesArrivalFilter", () => {
   });
 
   it("returns true for arrived log with 'arrived' filter", () => {
-    const log = emptyLog("2026-07-15");
+    const todayStr = new Date().toLocaleDateString("en-CA");
+    const log = emptyLog(todayStr);
     log.groups = [{ id: "g1", groupName: "Alpha", hasArrived: true }];
     expect(logMatchesArrivalFilter(log, "arrived")).toBe(true);
   });

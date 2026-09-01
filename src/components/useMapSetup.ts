@@ -240,7 +240,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
   useEffect(() => {
     if (zoomToCoords && viewRef.current) {
       viewRef.current.goTo(
-        { center: [zoomToCoords.lon, zoomToCoords.lat], zoom: 16 },
+        { center: [zoomToCoords.lon, zoomToCoords.lat], zoom: 20 },
         { duration: 800, easing: "ease-in-out", padding: getViewPadding() } as any,
       ).catch(() => { });
     }

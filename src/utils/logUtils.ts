@@ -10,6 +10,7 @@ export {
   logMatchesArrivalFilter,
   logHasAnyData,
   getGroupData,
+  isGroupOlderThan48Hours,
 } from "./groupParser";
 export type { GroupData } from "./groupParser";
 

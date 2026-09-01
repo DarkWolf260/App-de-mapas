@@ -32,6 +32,38 @@ export function emptyLog(date: string, department?: Department): DailyLog {
 }
 
 /**
+ * Determina si un grupo de trabajo lleva más de 48 horas desplegado/trabajando.
+ * Se calcula con la fecha del log (YYYY-MM-DD) y la hora de salida (HH:mm).
+ * Si han transcurrido >= 48 horas desde la salida con respecto al momento actual,
+ * se marca automáticamente como llegado a base.
+ */
+export function isGroupOlderThan48Hours(
+  logDate?: string,
+  departureTime?: string,
+  referenceTime: number = Date.now()
+): boolean {
+  if (!logDate) return false;
+  const parts = logDate.split("-").map(Number);
+  if (parts.length !== 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
+    return false;
+  }
+
+  let hours = 0;
+  let minutes = 0;
+  if (departureTime && departureTime.includes(":")) {
+    const tParts = departureTime.split(":").map(Number);
+    if (!isNaN(tParts[0])) hours = tParts[0];
+    if (!isNaN(tParts[1])) minutes = tParts[1];
+  }
+
+  const departureMs = new Date(parts[0], parts[1] - 1, parts[2], hours, minutes, 0, 0).getTime();
+  if (isNaN(departureMs)) return false;
+
+  const diffMs = referenceTime - departureMs;
+  return diffMs >= 48 * 60 * 60 * 1000;
+}
+
+/**
  * Normalizes groups in a DailyLog, supporting flat legacy fields and group splitting.
  */
 export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[] {
@@ -54,6 +86,7 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
         (g.customActivities && g.customActivities.length > 0)
       );
       if (hasData) {
+        const autoArrived = isGroupOlderThan48Hours(log.date, g.departureTime);
         rawEntries.push({
           id: g.id || crypto.randomUUID(),
           groupName: (g.groupName || "").trim(),
@@ -69,7 +102,7 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
           prehospitalCareCount: g.prehospitalCareCount || "",
           transfersCount: g.transfersCount || "",
           edanCount: g.edanCount || "",
-          hasArrived: !!g.hasArrived,
+          hasArrived: !!g.hasArrived || autoArrived,
           commissionId: g.commissionId || "independiente",
           isVolunteer: !!g.isVolunteer,
           department: g.department || log.department,
@@ -82,6 +115,7 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
     const legacyG1 = (log as any).groupName || (log as any).officersCount || (log as any).unitOut;
     const legacyG2 = (log as any).group2Name || (log as any).group2OfficersCount || (log as any).group2UnitOut;
     if (legacyG1) {
+      const autoArrivedG1 = isGroupOlderThan48Hours(log.date, (log as any).departureTime);
       rawEntries.push({
         id: "g1",
         groupName: (log as any).groupName || "",
@@ -97,12 +131,13 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
         prehospitalCareCount: (log as any).prehospitalCareCount || "",
         transfersCount: (log as any).transfersCount || "",
         edanCount: (log as any).edanCount || "",
-        hasArrived: !!(log as any).hasArrived,
+        hasArrived: !!(log as any).hasArrived || autoArrivedG1,
         commissionId: (log as any).commissionId || "independiente",
         isVolunteer: !!(log as any).isVolunteer,
       });
     }
     if (legacyG2) {
+      const autoArrivedG2 = isGroupOlderThan48Hours(log.date, (log as any).group2DepartureTime);
       rawEntries.push({
         id: "g2",
         groupName: (log as any).group2Name || "",
@@ -118,7 +153,7 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
         prehospitalCareCount: (log as any).group2PrehospitalCareCount || "",
         transfersCount: (log as any).group2TransfersCount || "",
         edanCount: (log as any).group2EdanCount || "",
-        hasArrived: !!(log as any).group2HasArrived,
+        hasArrived: !!(log as any).group2HasArrived || autoArrivedG2,
         commissionId: (log as any).group2CommissionId || "independiente",
         isVolunteer: !!(log as any).group2IsVolunteer,
       });
