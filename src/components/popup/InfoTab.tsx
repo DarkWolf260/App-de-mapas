@@ -67,10 +67,14 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 
   const containedWithLogs = useMemo(() => {
     return containedPoints.map((pt) => {
-      const log = pt.dailyLogs?.find((l) => l.date === popupEditDate) || {} as Partial<DailyLog>;
+      const logs = pt.dailyLogs?.filter((l) =>
+        l.date === popupEditDate &&
+        (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+      ) || [];
+      const log: Partial<DailyLog> = logs.length > 1 ? (mergeLogs(logs) || {}) : (logs[0] || {});
       return { point: pt, log };
     });
-  }, [containedPoints, popupEditDate]);
+  }, [containedPoints, popupEditDate, activeDepartment]);
 
   const sourceLog: Partial<DailyLog> = (isPolygon && localLog) ? localLog : (dailyLog || {});
   const polygonOwnLog = isPolygon ? sourceLog : {};

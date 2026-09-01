@@ -126,4 +126,18 @@ describe("HtmlPointLabels", () => {
     expect(screen.queryByText("Grupo 5")).toBeNull();
     expect(screen.getByText("... 2 más")).toBeInTheDocument();
   });
+
+  it("renders recovered count badge properly", () => {
+    render(
+      <HtmlPointLabels
+        labels={[
+          {
+            ...baseLabel,
+            recoveredCount: 4,
+          },
+        ]}
+      />
+    );
+    expect(screen.getByText("Recup. 4")).toBeInTheDocument();
+  });
 });

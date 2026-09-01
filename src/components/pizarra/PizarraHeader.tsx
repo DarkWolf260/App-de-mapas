@@ -5,19 +5,19 @@ import { BitacoraCalendar } from "../BitacoraCalendar";
 import { getLocalDateStr } from "../../utils/dateUtils";
 
 export interface PizarraHeaderProps {
-  activeTab: "pizarra" | "equipos" | "imagen";
-  setActiveTab: (tab: "pizarra" | "equipos" | "imagen") => void;
+  activeTab: "equipos" | "imagen";
+  setActiveTab: (tab: "equipos" | "imagen") => void;
   selectedDate: string;
   setSelectedDate: (date: string) => void;
   canEdit: boolean;
   canManageBases?: boolean;
   canManageEntries?: boolean;
-  isEditMode: boolean;
-  setIsEditMode: (val: boolean) => void;
-  saving: boolean;
-  saveSuccess: boolean;
-  handleSaveAll: () => void;
-  handleAddCamp: () => void;
+  isEditMode?: boolean;
+  setIsEditMode?: (val: boolean) => void;
+  saving?: boolean;
+  saveSuccess?: boolean;
+  handleSaveAll?: () => void;
+  handleAddCamp?: () => void;
   handleExportTeamsExcel: () => void;
   handleExportReportImage?: () => void;
   workTeamsCount: number;
@@ -30,13 +30,13 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
   selectedDate,
   setSelectedDate,
   canEdit,
-  canManageBases = true,
-  isEditMode,
-  setIsEditMode,
-  saving,
-  saveSuccess,
-  handleSaveAll,
-  handleAddCamp,
+  canManageBases: _canManageBases = true,
+  isEditMode: _isEditMode,
+  setIsEditMode: _setIsEditMode,
+  saving: _saving,
+  saveSuccess: _saveSuccess,
+  handleSaveAll: _handleSaveAll,
+  handleAddCamp: _handleAddCamp,
   handleExportTeamsExcel,
   handleExportReportImage,
   workTeamsCount,
@@ -98,33 +98,13 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
             <Activity size={17} />
           </div>
           <span style={{ color: "#f8fafc", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "-0.01em", fontFamily: "var(--sans-font)" }}>
-            COE La Guaira <span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Pizarra Operacional</span>
+            COE La Guaira <span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Consolidado Operacional</span>
           </span>
         </div>
 
         {/* PESTAÑAS DE NAVEGACIÓN DENTRO DEL HEADER */}
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", justifyContent: "center", zIndex: 10 }}>
           <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.4)", padding: "3px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
-            <button
-              onClick={() => setActiveTab("pizarra")}
-              style={{
-                background: activeTab === "pizarra" ? "var(--accent-orange)" : "transparent",
-                color: activeTab === "pizarra" ? "#fff" : "var(--text-muted)",
-                border: "none",
-                borderRadius: "6px",
-                padding: "5px 12px",
-                fontSize: "0.72rem",
-                fontWeight: 700,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                transition: "all 0.15s ease",
-                fontFamily: "var(--sans-font)",
-              }}
-            >
-              <Activity size={13} /> Pizarra Operacional
-            </button>
             <button
               onClick={() => setActiveTab("equipos")}
               style={{
@@ -278,86 +258,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
 
         <div style={{ height: "18px", width: "1px", background: "rgba(255, 255, 255, 0.12)" }} />
 
-        {/* MODO EDICIÓN Y ACCIONES DE GUARDADO */}
-        {activeTab === "pizarra" && canEdit && (
-          <>
-            <button
-              type="button"
-              onClick={() => setIsEditMode(!isEditMode)}
-              style={{
-                height: "32px",
-                display: "flex",
-                alignItems: "center",
-                gap: "5px",
-                background: isEditMode ? "rgba(249, 115, 22, 0.15)" : "rgba(255, 255, 255, 0.04)",
-                border: `1px solid ${isEditMode ? "rgba(249, 115, 22, 0.4)" : "rgba(255, 255, 255, 0.1)"}`,
-                borderRadius: "8px",
-                padding: "0 10px",
-                cursor: "pointer",
-                fontSize: "0.72rem",
-                fontWeight: 700,
-                color: isEditMode ? "var(--accent-orange)" : "var(--text-muted)",
-                fontFamily: "var(--sans-font)",
-              }}
-            >
-              {isEditMode ? (
-                <CheckSquare size={14} style={{ color: "var(--accent-orange)" }} />
-              ) : (
-                <Edit3 size={14} style={{ color: "var(--text-muted)" }} />
-              )}
-              <span>{isEditMode ? "Modo Edición" : "Editar"}</span>
-            </button>
 
-            {isEditMode && canManageBases && (
-              <button
-                onClick={handleAddCamp}
-                style={{
-                  height: "32px",
-                  background: "rgba(56, 189, 248, 0.12)",
-                  border: "1px solid rgba(56, 189, 248, 0.4)",
-                  borderRadius: "8px",
-                  color: "#38bdf8",
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  padding: "0 10px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  fontFamily: "var(--sans-font)",
-                }}
-              >
-                <Plus size={14} /> Nueva Base
-              </button>
-            )}
-
-            <button
-              onClick={handleSaveAll}
-              disabled={saving}
-              style={{
-                height: "32px",
-                background: saveSuccess
-                  ? "rgba(34, 197, 94, 0.2)"
-                  : "linear-gradient(135deg, var(--accent-orange), #ea580c)",
-                border: saveSuccess ? "1px solid var(--color-green)" : "none",
-                borderRadius: "8px",
-                color: "#fff",
-                fontSize: "0.72rem",
-                fontWeight: 700,
-                padding: "0 12px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "5px",
-                fontFamily: "var(--sans-font)",
-                boxShadow: saveSuccess ? "none" : "0 2px 8px rgba(249, 115, 22, 0.3)",
-              }}
-            >
-              {saveSuccess ? <Check size={14} /> : <Save size={14} />}
-              <span>{saving ? "Guardando..." : saveSuccess ? "Guardado" : "Guardar"}</span>
-            </button>
-          </>
-        )}
 
         {activeTab === "equipos" && (
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

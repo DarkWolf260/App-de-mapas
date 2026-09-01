@@ -3,7 +3,7 @@ import { fromDatabaseRow, toDatabaseRow } from "../utils/featureLogBook";
 import type { DailyLog } from "../types";
 
 export async function fetchLogs(date?: string): Promise<Map<string, DailyLog[]>> {
-  let query = supabase.from("daily_logs").select("*");
+  let query = supabase.from("daily_logs").select("*").range(0, 50000);
   if (date) {
     query = query.eq("date", date);
   }

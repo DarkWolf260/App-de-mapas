@@ -1,7 +1,7 @@
 import React from "react";
 import { MapPin, Clock, Navigation } from "lucide-react";
 import type { DrawnFeature, DailyLog, Department, DepartmentView } from "../../types";
-import { getNormalizedGroupList } from "../../utils/logUtils";
+import { getNormalizedGroupList, mergeLogs } from "../../utils/logUtils";
 import { getGeometryHandler } from "../../utils/geometryHandlers";
 
 interface ContainedTabProps {
@@ -20,9 +20,12 @@ const TYPE_COLORS: Record<string, string> = {
 function getRelevantLog(feat: DrawnFeature, dateStr: string, activeDept?: DepartmentView): DailyLog | undefined {
   if (!feat.dailyLogs) return undefined;
   const deptToUse: Department | undefined = activeDept === "mixto" ? undefined : (activeDept as Department);
-  return feat.dailyLogs.find((l) =>
+  const logs = feat.dailyLogs.filter((l) =>
     l.date === dateStr && (activeDept === "mixto" ? true : (deptToUse ? (l.department === deptToUse || !l.department) : true))
   );
+  if (logs.length === 0) return undefined;
+  if (logs.length === 1) return logs[0];
+  return mergeLogs(logs) as DailyLog;
 }
 
 export const ContainedTab: React.FC<ContainedTabProps> = ({ features, popupEditDate, activeDepartment, onNavigateToFeature }) => (

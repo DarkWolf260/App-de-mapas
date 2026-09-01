@@ -17,11 +17,11 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ logs }) => (
       <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "260px", overflowY: "auto", paddingRight: "2px" }}>
         {[...logs].reverse().map((log, idx) => {
           const groupList = getNormalizedGroupList(log);
-          const rescued = groupList.reduce((acc, g) => acc + (parseInt(g.rescuedCount || "0", 10) || 0), 0);
-          const recovered = groupList.reduce((acc, g) => acc + (parseInt(g.recoveredCount || "0", 10) || 0), 0);
-          const prehospital = groupList.reduce((acc, g) => acc + (parseInt(g.prehospitalCareCount || "0", 10) || 0), 0);
-          const transfers = groupList.reduce((acc, g) => acc + (parseInt(g.transfersCount || "0", 10) || 0), 0);
-          const pets = parseInt(log.rescuedPetsCount || "0", 10) || 0;
+          const rescued = groupList.reduce((acc, g) => acc + (parseInt(g.rescuedCount || "0", 10) || 0), 0) + (parseInt(log.rescuedCount || "0", 10) || 0);
+          const recovered = groupList.reduce((acc, g) => acc + (parseInt(g.recoveredCount || "0", 10) || 0), 0) + (parseInt(log.recoveredCount || "0", 10) || 0);
+          const prehospital = groupList.reduce((acc, g) => acc + (parseInt(g.prehospitalCareCount || "0", 10) || 0), 0) + (parseInt(log.prehospitalCareCount || "0", 10) || 0);
+          const transfers = groupList.reduce((acc, g) => acc + (parseInt(g.transfersCount || "0", 10) || 0), 0) + (parseInt(log.transfersCount || "0", 10) || 0);
+          const pets = groupList.reduce((acc, g) => acc + (parseInt(g.rescuedPetsCount || "0", 10) || 0), 0) + (parseInt(log.rescuedPetsCount || "0", 10) || 0);
 
           return (
             <div

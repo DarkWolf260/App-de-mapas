@@ -35,9 +35,9 @@ export interface BoxRect {
  * Determines whether a feature/label qualifies for display at current zoom level.
  */
 export function getRequiredZoom(isPolygonLabel: boolean, isSubpolygon: boolean, hasPersonnel: boolean): number {
-  if (hasPersonnel) return 10;
-  if (isPolygonLabel && !isSubpolygon) return 12;
-  return 12;
+  if (hasPersonnel) return 8;
+  if (isPolygonLabel && !isSubpolygon) return 10;
+  return 11;
 }
 
 /**
@@ -121,6 +121,7 @@ export function computeScreenLabels(
           );
         }
       }
+
       if (hasPersonnel) priority = 1;
     }
     return {
@@ -160,7 +161,7 @@ export function deconflictNativeNoPersonnelLabels(screenLabels: ScreenLabelItem[
 /**
  * Collision resolution for HTML badges/personnel cards when overlap is disabled.
  */
-export function deconflictPersonnelHtmlLabels(screenLabels: ScreenLabelItem[], minDistance = 55): void {
+export function deconflictPersonnelHtmlLabels(screenLabels: ScreenLabelItem[], minDistance = 15): void {
   const personnelLabels = screenLabels.filter((item) => item.hasPersonnel);
   for (let i = 0; i < personnelLabels.length; i++) {
     const l1 = personnelLabels[i];
@@ -221,6 +222,7 @@ export function buildHtmlLabels(
   const placedBoxes: BoxRect[] = [];
   const activeDept = refs.activeDepartmentRef?.current;
   const accMode = refs.showAccumulatedRef?.current === true;
+  const { parentsMap } = buildParentsMap(refs.drawnFeaturesRef.current || []);
 
   screenLabels.forEach((item) => {
     const lbl = item.graphic;
@@ -262,6 +264,35 @@ export function buildHtmlLabels(
         statLogs.forEach((l) => {
           const logActivities = FeatureLogBook.getLogCustomActivities(l);
           customActivitiesList = FeatureLogBook.mergeCustomActivities(customActivitiesList, logActivities);
+
+          const groups = FeatureLogBook.normalizeGroups(l);
+          const commRescued = new Map<string, number>();
+          const commRecovered = new Map<string, number>();
+          const commPrehospital = new Map<string, number>();
+          const commTransfers = new Map<string, number>();
+          const commPets = new Map<string, number>();
+
+          for (const g of groups) {
+            const r = parseInt(g.rescuedCount || "0", 10) || 0;
+            const rc = parseInt(g.recoveredCount || "0", 10) || 0;
+            const ph = parseInt(g.prehospitalCareCount || "0", 10) || 0;
+            const tr = parseInt(g.transfersCount || "0", 10) || 0;
+            const pets = parseInt(g.rescuedPetsCount || "0", 10) || 0;
+
+            const commKey = g.commissionId && g.commissionId !== "independiente" ? g.commissionId : `ind_${Math.random()}`;
+            commRescued.set(commKey, Math.max(commRescued.get(commKey) || 0, r));
+            commRecovered.set(commKey, Math.max(commRecovered.get(commKey) || 0, rc));
+            commPrehospital.set(commKey, Math.max(commPrehospital.get(commKey) || 0, ph));
+            commTransfers.set(commKey, Math.max(commTransfers.get(commKey) || 0, tr));
+            commPets.set(commKey, Math.max(commPets.get(commKey) || 0, pets));
+          }
+
+          commRescued.forEach((val) => { rescuedCount += val; });
+          commRecovered.forEach((val) => { recoveredCount += val; });
+          commPrehospital.forEach((val) => { prehospitalCount += val; });
+          commTransfers.forEach((val) => { transfersCount += val; });
+          commPets.forEach((val) => { rescuedPetsCount += val; });
+
           rescuedCount += parseInt(l.rescuedCount || "0", 10) || 0;
           recoveredCount += parseInt(l.recoveredCount || "0", 10) || 0;
           rescuedPetsCount += parseInt(l.rescuedPetsCount || "0", 10) || 0;

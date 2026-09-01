@@ -15,7 +15,18 @@ export const GroupDisplay: React.FC<GroupDisplayProps> = ({
   accentColor,
   onToggleArrival,
 }) => {
-  const hasData = !!(group.groupName || group.managerName || group.unitOut || group.officersCount);
+  const hasData = !!(
+    group.groupName ||
+    group.managerName ||
+    group.unitOut ||
+    group.officersCount ||
+    group.rescuedCount ||
+    group.recoveredCount ||
+    group.prehospitalCareCount ||
+    group.transfersCount ||
+    group.rescuedPetsCount ||
+    (group.customActivities && group.customActivities.length > 0)
+  );
   if (!hasData) return null;
 
   const isArrived = !!group.hasArrived;

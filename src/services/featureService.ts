@@ -2,7 +2,7 @@ import { supabase } from "../lib/supabaseClient";
 import type { DrawnFeature } from "../types";
 
 export async function fetchFeatures(): Promise<DrawnFeature[]> {
-  const { data, error } = await supabase.from("drawn_features").select("*");
+  const { data, error } = await supabase.from("drawn_features").select("*").range(0, 50000);
   if (error) {
     console.error("[featureService] fetch error:", error);
     return [];

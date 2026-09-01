@@ -10,14 +10,14 @@ import {
 
 describe("MapAnnotationEngine - Zoom Thresholds", () => {
   it("determines required zoom for features with and without personnel", () => {
-    // Feature with personnel: zoom 10
-    expect(getRequiredZoom(false, false, true)).toBe(10);
-    // Standalone polygon: zoom 12
-    expect(getRequiredZoom(true, false, false)).toBe(12);
-    // Subpolygon: zoom 12
-    expect(getRequiredZoom(true, true, false)).toBe(12);
-    // Regular point: zoom 12
-    expect(getRequiredZoom(false, false, false)).toBe(12);
+    // Feature with personnel / metrics: zoom 8
+    expect(getRequiredZoom(false, false, true)).toBe(8);
+    // Standalone polygon: zoom 10
+    expect(getRequiredZoom(true, false, false)).toBe(10);
+    // Subpolygon: zoom 11
+    expect(getRequiredZoom(true, true, false)).toBe(11);
+    // Regular point: zoom 11
+    expect(getRequiredZoom(false, false, false)).toBe(11);
   });
 });
 
@@ -71,5 +71,53 @@ describe("MapAnnotationEngine - Collision Deconfliction", () => {
     expect(personnelLabels[0].visible).toBe(true);
     expect(personnelLabels[1].visible).toBe(false);
     expect(personnelLabels[2].visible).toBe(true);
+  });
+});
+
+describe("MapAnnotationEngine - buildHtmlLabels Metrics Extraction", () => {
+  it("extracts recovered and rescued counts from groups on a specific date (e.g. 7 de julio)", () => {
+    const feat = {
+      id: "point-1",
+      title: "Sector Las Flores",
+      dailyLogs: [
+        {
+          date: "2024-07-07",
+          department: "pc" as const,
+          groups: [
+            {
+              id: "g1",
+              groupName: "Grupo Rescate A",
+              recoveredCount: "3",
+              rescuedCount: "5",
+              officersCount: "4",
+              hasArrived: true,
+            },
+          ],
+        },
+      ],
+    };
+
+    const dummyGraphic: any = {
+      attributes: { parentId: "point-1" },
+      symbol: { clone: () => ({}) },
+      visible: true,
+    };
+
+    const screenLabels: ScreenLabelItem[] = [
+      { graphic: dummyGraphic, x: 100, y: 100, visible: true, priority: 1, hasPersonnel: true },
+    ];
+
+    const refs: any = {
+      drawnFeaturesRef: { current: [feat] },
+      hiddenFeaturesRef: { current: {} },
+      activeDepartmentRef: { current: "mixto" },
+      showAccumulatedRef: { current: false },
+    };
+
+    const labels = MapAnnotationEngine.buildHtmlLabels(screenLabels, refs, true, "2024-07-07");
+    expect(labels).toHaveLength(1);
+    expect(labels[0].recoveredCount).toBe(3);
+    expect(labels[0].rescuedCount).toBe(5);
+    expect(labels[0].title).toBe("Sector Las Flores");
   });
 });

@@ -523,24 +523,6 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         <SwipeComparison view={viewRef.current} onClose={deactivateSwipe} />
       )}
 
-      {/* Floating Drawing Tools Toolbar (Ubicada sobre la línea del tiempo) */}
-      {!bare && canEditMap && layerVisibility.sketch && (
-        <div style={{ position: "fixed", bottom: "78px", left: "50%", transform: "translateX(-50%)", zIndex: 130, pointerEvents: "auto" }}>
-          <DrawingToolbar
-            activeTool={activeTool}
-            editMode={editMode}
-            onSelectTool={handleSelectTool}
-            onCancel={handleCancel}
-            onDelete={handleDeleteSelected}
-            onToggleEditMode={handleToggleEditMode}
-            hasSelection={Boolean(selectedGraphic)}
-            activeColor={activeColor}
-            onColorChange={handleColorChange}
-            popoverDirection="top"
-          />
-        </div>
-      )}
-
       {/* Floating Action Buttons — Bottom Left (Solo Escritorio cuando el sidebar está colapsado) */}
       {!bare && !isMobile && !ui.sidebarOpen && (
         <div style={{ position: "fixed", bottom: "24px", left: "24px", zIndex: 30, display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>

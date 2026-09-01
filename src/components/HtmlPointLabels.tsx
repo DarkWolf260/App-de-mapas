@@ -314,9 +314,9 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
                 {!!lbl.recoveredCount && (
                   <span
                     style={{
-                      color: "#38bdf8",
-                      background: "rgba(56,189,248,0.18)",
-                      border: "1px solid rgba(56,189,248,0.35)",
+                      color: "#f87171",
+                      background: "rgba(239,68,68,0.18)",
+                      border: "1px solid rgba(239,68,68,0.35)",
                       padding: "1px 5px",
                       borderRadius: "4px",
                     }}

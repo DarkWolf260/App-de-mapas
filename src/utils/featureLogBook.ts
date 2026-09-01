@@ -440,13 +440,13 @@ export function aggregatePolygonLog(
   // 3. Add contained point metrics and point-level custom activities
   let observations = polygonOwnLog.observations ? `Polígono: ${polygonOwnLog.observations}` : "";
   for (const { point, log } of containedWithLogs) {
+    // Sumar las estadísticas del área de trabajo (a nivel de punto)
+    addMetricsFromLog(totals, log);
+
+    // Sumar las estadísticas de grupos del punto
     const gList = getNormalizedGroupList(log);
-    if (gList.length > 0) {
-      for (const g of gList) {
-        processGroupEntry(g);
-      }
-    } else {
-      addMetricsFromLog(totals, log);
+    for (const g of gList) {
+      processGroupEntry(g);
     }
     // Las actividades personalizadas pertenecen al Punto (DailyLog)
     const pointActivities = getLogCustomActivities(log);
@@ -513,49 +513,57 @@ export function getDayStats(
     const logs = f.dailyLogs?.filter((l) =>
       l.date === dateStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
     ) || [];
-    const log = logs[0];
-    if (!log || !logHasAnyData(log)) continue;
+    if (logs.length === 0) continue;
 
-    activePoints++;
+    let hasDataForFeature = false;
 
-    const groups = getNormalizedGroupList(log);
-    const commRescued = new Map<string, number>();
-    const commRecovered = new Map<string, number>();
-    const commPrehospital = new Map<string, number>();
-    const commTransfers = new Map<string, number>();
-    const commPets = new Map<string, number>();
+    for (const log of logs) {
+      if (!logHasAnyData(log)) continue;
+      hasDataForFeature = true;
 
-    for (const g of groups) {
-      const p = parseInt(g.officersCount || "0", 10) || 0;
-      totalPersonnel += p;
+      const groups = getNormalizedGroupList(log);
+      const commRescued = new Map<string, number>();
+      const commRecovered = new Map<string, number>();
+      const commPrehospital = new Map<string, number>();
+      const commTransfers = new Map<string, number>();
+      const commPets = new Map<string, number>();
 
-      const r = parseInt(g.rescuedCount || "0", 10) || 0;
-      const rc = parseInt(g.recoveredCount || "0", 10) || 0;
-      const ph = parseInt(g.prehospitalCareCount || "0", 10) || 0;
-      const tr = parseInt(g.transfersCount || "0", 10) || 0;
-      const pets = parseInt(g.rescuedPetsCount || "0", 10) || 0;
+      for (const g of groups) {
+        const p = parseInt(g.officersCount || "0", 10) || 0;
+        totalPersonnel += p;
 
-      const commKey = g.commissionId && g.commissionId !== "independiente" ? g.commissionId : `ind_${Math.random()}`;
-      commRescued.set(commKey, Math.max(commRescued.get(commKey) || 0, r));
-      commRecovered.set(commKey, Math.max(commRecovered.get(commKey) || 0, rc));
-      commPrehospital.set(commKey, Math.max(commPrehospital.get(commKey) || 0, ph));
-      commTransfers.set(commKey, Math.max(commTransfers.get(commKey) || 0, tr));
-      commPets.set(commKey, Math.max(commPets.get(commKey) || 0, pets));
+        const r = parseInt(g.rescuedCount || "0", 10) || 0;
+        const rc = parseInt(g.recoveredCount || "0", 10) || 0;
+        const ph = parseInt(g.prehospitalCareCount || "0", 10) || 0;
+        const tr = parseInt(g.transfersCount || "0", 10) || 0;
+        const pets = parseInt(g.rescuedPetsCount || "0", 10) || 0;
 
-      if (g.hasArrived) groupsArrived++;
+        const commKey = g.commissionId && g.commissionId !== "independiente" ? g.commissionId : `ind_${Math.random()}`;
+        commRescued.set(commKey, Math.max(commRescued.get(commKey) || 0, r));
+        commRecovered.set(commKey, Math.max(commRecovered.get(commKey) || 0, rc));
+        commPrehospital.set(commKey, Math.max(commPrehospital.get(commKey) || 0, ph));
+        commTransfers.set(commKey, Math.max(commTransfers.get(commKey) || 0, tr));
+        commPets.set(commKey, Math.max(commPets.get(commKey) || 0, pets));
+
+        if (g.hasArrived) groupsArrived++;
+      }
+
+      commRescued.forEach((val) => { totalRescued += val; });
+      commRecovered.forEach((val) => { totalRecovered += val; });
+      commPrehospital.forEach((val) => { totalPrehospitalCare += val; });
+      commTransfers.forEach((val) => { totalTransfers += val; });
+      commPets.forEach((val) => { totalPets += val; });
+
+      totalRescued += parseInt(log.rescuedCount || "0", 10) || 0;
+      totalRecovered += parseInt(log.recoveredCount || "0", 10) || 0;
+      totalPrehospitalCare += parseInt(log.prehospitalCareCount || "0", 10) || 0;
+      totalTransfers += parseInt(log.transfersCount || "0", 10) || 0;
+      totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
     }
 
-    commRescued.forEach((val) => { totalRescued += val; });
-    commRecovered.forEach((val) => { totalRecovered += val; });
-    commPrehospital.forEach((val) => { totalPrehospitalCare += val; });
-    commTransfers.forEach((val) => { totalTransfers += val; });
-    commPets.forEach((val) => { totalPets += val; });
-
-    totalRescued += parseInt(log.rescuedCount || "0", 10) || 0;
-    totalRecovered += parseInt(log.recoveredCount || "0", 10) || 0;
-    totalPrehospitalCare += parseInt(log.prehospitalCareCount || "0", 10) || 0;
-    totalTransfers += parseInt(log.transfersCount || "0", 10) || 0;
-    totalPets += parseInt(log.rescuedPetsCount || "0", 10) || 0;
+    if (hasDataForFeature) {
+      activePoints++;
+    }
   }
 
   return { totalPersonnel, totalRescued, totalRecovered, totalPets, totalPrehospitalCare, totalTransfers, activePoints, groupsArrived };
