@@ -133,19 +133,23 @@ export const buildParentsMap = (drawnFeatures: DrawnFeature[]): {
       const vs = polyCoords[0];
       const bbox = polygonBBoxes[poly.id];
 
-      if (feat.type === "point" && feat.geojsonGeometry?.type === "Point") {
-        const ptCoords = feat.geojsonGeometry.coordinates as number[];
+      if (feat.type === "point") {
+        const ptCoords = feat.geojsonGeometry?.coordinates && Array.isArray(feat.geojsonGeometry.coordinates)
+          ? (feat.geojsonGeometry.coordinates as number[])
+          : (feat as any).coordinates?.longitude !== undefined
+          ? [(feat as any).coordinates.longitude, (feat as any).coordinates.latitude]
+          : null;
         if (ptCoords) {
           isContained = isPointInPolygon(ptCoords[0], ptCoords[1], vs, bbox);
         }
-      } else if (feat.type === "polyline" && feat.geojsonGeometry?.type === "LineString") {
+      } else if (feat.type === "polyline" && feat.geojsonGeometry?.coordinates) {
         const lineCoords = feat.geojsonGeometry.coordinates as number[][];
-        if (lineCoords) {
+        if (Array.isArray(lineCoords)) {
           isContained = lineCoords.every((pt) => isPointInPolygon(pt[0], pt[1], vs, bbox));
         }
-      } else if (feat.type === "polygon" && feat.geojsonGeometry?.type === "Polygon") {
+      } else if (feat.type === "polygon" && feat.geojsonGeometry?.coordinates) {
         const innerPolyCoords = feat.geojsonGeometry.coordinates as number[][][];
-        if (innerPolyCoords && innerPolyCoords[0]) {
+        if (Array.isArray(innerPolyCoords) && innerPolyCoords[0]) {
           isContained = innerPolyCoords[0].every((pt) => isPointInPolygon(pt[0], pt[1], vs, bbox));
         }
       }
@@ -173,9 +177,44 @@ export function computeContainedItems(
   drawnFeatures: DrawnFeature[]
 ): DrawnFeature[] {
   const items: DrawnFeature[] = [];
-  if (activeFeat.type !== "polygon" || !sketchLayer) return items;
+  if (activeFeat.type !== "polygon") return items;
 
-  const polyGraphic = sketchLayer.graphics.find((x: any) => {
+  const polyCoords = activeFeat.geojsonGeometry?.coordinates as number[][][];
+  const vs = polyCoords && polyCoords[0] ? polyCoords[0] : null;
+
+  if (vs) {
+    const bbox = getPolygonBoundingBox(vs);
+    for (const f of drawnFeatures) {
+      if (String(f.id) === String(activeFeat.id)) continue;
+      let isContained = false;
+      if (f.type === "point") {
+        const ptCoords = f.geojsonGeometry?.coordinates && Array.isArray(f.geojsonGeometry.coordinates)
+          ? (f.geojsonGeometry.coordinates as number[])
+          : (f as any).coordinates?.longitude !== undefined
+          ? [(f as any).coordinates.longitude, (f as any).coordinates.latitude]
+          : null;
+        if (ptCoords) {
+          isContained = isPointInPolygon(ptCoords[0], ptCoords[1], vs, bbox);
+        }
+      } else if (f.type === "polyline" && f.geojsonGeometry?.coordinates) {
+        const lineCoords = f.geojsonGeometry.coordinates as number[][];
+        if (Array.isArray(lineCoords)) {
+          isContained = lineCoords.every((pt) => isPointInPolygon(pt[0], pt[1], vs, bbox));
+        }
+      } else if (f.type === "polygon" && f.geojsonGeometry?.coordinates) {
+        const innerPolyCoords = f.geojsonGeometry.coordinates as number[][][];
+        if (Array.isArray(innerPolyCoords) && innerPolyCoords[0]) {
+          isContained = innerPolyCoords[0].every((pt) => isPointInPolygon(pt[0], pt[1], vs, bbox));
+        }
+      }
+      if (isContained) {
+        items.push(f);
+      }
+    }
+    return items;
+  }
+
+  const polyGraphic = sketchLayer?.graphics?.find((x: any) => {
     if (x.attributes?.isLabel) return false;
     const xId = x.attributes?.id || x.uid;
     return String(xId) === String(activeFeat.id);

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import { Copy, Check, Activity, Save, FileText } from "lucide-react";
 import type { DrawnFeature, DailyLog, DepartmentView, Department, NovedadEntry } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
-import { getNormalizedGroupList, mergeLogs } from "../../utils/logUtils";
+import { getNormalizedGroupList, mergeLogs, logHasAnyData } from "../../utils/logUtils";
 import { labelStyle, sectionBox, inputStyle } from "./popupStyles";
 import { formatCoordinates, getCoordLabel, METRIC_FIELDS, getMetricValue } from "./metricFields";
 import { MetricDisplayGrid } from "./MetricGrid";
@@ -11,6 +11,50 @@ import { aggregatePolygonLog } from "./aggregatePolygonLog";
 import { WorkTeamsSection, buildDisplayItems } from "./WorkTeamsSection";
 
 import { CustomActivitiesSection } from "./CustomActivitiesSection";
+
+export function getPointReportSummary(ptLog: Partial<DailyLog>) {
+  const groups = getNormalizedGroupList(ptLog);
+  let totalPersonnel = 0;
+  let totalRescued = parseInt(ptLog.rescuedCount || "0", 10) || 0;
+  let totalRecovered = parseInt(ptLog.recoveredCount || "0", 10) || 0;
+  let totalPets = parseInt(ptLog.rescuedPetsCount || "0", 10) || 0;
+  let totalPrehospital = parseInt(ptLog.prehospitalCareCount || "0", 10) || 0;
+  let totalTransfers = parseInt(ptLog.transfersCount || "0", 10) || 0;
+  let hasArrived = false;
+
+  for (const g of groups) {
+    totalPersonnel += parseInt(g.officersCount || "0", 10) || 0;
+    totalRescued += parseInt(g.rescuedCount || "0", 10) || 0;
+    totalRecovered += parseInt(g.recoveredCount || "0", 10) || 0;
+    totalPets += parseInt(g.rescuedPetsCount || "0", 10) || 0;
+    totalPrehospital += parseInt(g.prehospitalCareCount || "0", 10) || 0;
+    totalTransfers += parseInt(g.transfersCount || "0", 10) || 0;
+    if (g.hasArrived) hasArrived = true;
+  }
+
+  const hasAnyLogData =
+    logHasAnyData(ptLog) ||
+    totalPersonnel > 0 ||
+    totalRescued > 0 ||
+    totalRecovered > 0 ||
+    totalPets > 0 ||
+    totalPrehospital > 0 ||
+    totalTransfers > 0 ||
+    hasArrived ||
+    (Array.isArray(ptLog.novedades) && ptLog.novedades.length > 0) ||
+    !!(ptLog.observations && ptLog.observations.trim());
+
+  return {
+    totalPersonnel,
+    totalRescued,
+    totalRecovered,
+    totalPets,
+    totalPrehospital,
+    totalTransfers,
+    hasArrived,
+    hasAnyLogData,
+  };
+}
 
 interface InfoTabProps {
   activeFeat: DrawnFeature;
@@ -59,7 +103,11 @@ export const InfoTab: React.FC<InfoTabProps> = ({
     const vs = polyCoords[0];
     return drawnFeatures.filter((f) => {
       if (f.type !== "point") return false;
-      const ptCoords = f.geojsonGeometry?.coordinates as number[];
+      const ptCoords = f.geojsonGeometry?.coordinates && Array.isArray(f.geojsonGeometry.coordinates)
+        ? (f.geojsonGeometry.coordinates as number[])
+        : (f as any).coordinates?.longitude !== undefined
+        ? [(f as any).coordinates.longitude, (f as any).coordinates.latitude]
+        : null;
       if (!ptCoords) return false;
       return isPointInPolygon(ptCoords[0], ptCoords[1], vs);
     });
@@ -272,35 +320,70 @@ export const InfoTab: React.FC<InfoTabProps> = ({
             />
           )}
 
-          {containedWithLogs.length > 0 && (
-            <div style={sectionBox}>
-              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <span>Puntos con reporte ({containedWithLogs.filter(({ log }) => METRIC_FIELDS.some((m) => { const v = getMetricValue(log, m.field); return v && v !== "0"; })).length})</span>
-                <span style={{ fontWeight: 400, fontSize: "0.5rem", color: "var(--text-muted)", textAlign: "right" }}>
-                  {METRIC_FIELDS.map((m, i) => (
-                    <span key={m.field}>{i > 0 && " | "}<span style={{ color: m.color }}>{m.label.replace(".", "")}</span></span>
-                  ))}
-                </span>
-              </div>
-              {containedWithLogs.map(({ point, log: ptLog }) => {
-                const hasData = METRIC_FIELDS.some((m) => { const v = getMetricValue(ptLog, m.field); return v && v !== "0"; });
-                if (!hasData) return null;
-                return (
-                  <div key={point.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                    <span style={{ fontSize: "0.62rem", fontWeight: 600, color: "var(--text-main)" }}>{point.title}</span>
-                    <div style={{ display: "flex", gap: "4px", fontSize: "0.6rem", alignItems: "center" }}>
-                      {METRIC_FIELDS.map((m) => {
-                        const v = getMetricValue(ptLog, m.field);
-                        if (!v || v === "0") return null;
-                        const shortLabel = m.label.charAt(0);
-                        return <span key={m.field} style={{ color: m.color, fontWeight: 700 }}>{v}{shortLabel}</span>;
-                      })}
-                    </div>
+          {containedWithLogs.length > 0 && (() => {
+            const reportedPoints = containedWithLogs.filter(({ log }) => getPointReportSummary(log).hasAnyLogData);
+            return (
+              <div style={sectionBox}>
+                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "4px", marginBottom: "6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span>Puntos con reporte ({reportedPoints.length} de {containedPoints.length})</span>
+                </div>
+                {reportedPoints.length === 0 ? (
+                  <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontStyle: "italic", padding: "4px 0" }}>
+                    No hay puntos con actividad registrada en esta fecha
                   </div>
-                );
-              })}
-            </div>
-          )}
+                ) : (
+                  <div style={{ width: "100%", overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.62rem" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                          <th style={{ textAlign: "left", padding: "3px 4px", color: "var(--text-muted)", fontWeight: 600 }}>Punto</th>
+                          <th style={{ textAlign: "center", padding: "3px 4px", color: "var(--color-info)", fontWeight: 700, minWidth: "30px" }}>Resc.</th>
+                          <th style={{ textAlign: "center", padding: "3px 4px", color: "#ef4444", fontWeight: 700, minWidth: "30px" }}>Recup.</th>
+                          <th style={{ textAlign: "center", padding: "3px 4px", color: "var(--color-green)", fontWeight: 700, minWidth: "30px" }}>Masc.</th>
+                          <th style={{ textAlign: "center", padding: "3px 4px", color: "#0ea5e9", fontWeight: 700, minWidth: "30px" }}>Atenc.</th>
+                          <th style={{ textAlign: "center", padding: "3px 4px", color: "var(--color-purple)", fontWeight: 700, minWidth: "30px" }}>Trasl.</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportedPoints.map(({ point, log: ptLog }) => {
+                          const summary = getPointReportSummary(ptLog);
+                          return (
+                            <tr key={point.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                              <td style={{ textAlign: "left", padding: "4px 4px", color: "var(--text-main)", fontWeight: 600 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                                  {summary.hasArrived && (
+                                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", display: "inline-block", boxShadow: "0 0 4px #22c55e", flexShrink: 0 }} title="Personal en el sitio" />
+                                  )}
+                                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "115px", display: "inline-block" }}>
+                                    {point.title}
+                                  </span>
+                                </div>
+                              </td>
+                              <td style={{ textAlign: "center", padding: "4px 4px", color: summary.totalRescued > 0 ? "var(--color-info)" : "var(--text-muted)", fontWeight: summary.totalRescued > 0 ? 700 : 400 }}>
+                                {summary.totalRescued > 0 ? summary.totalRescued : "-"}
+                              </td>
+                              <td style={{ textAlign: "center", padding: "4px 4px", color: summary.totalRecovered > 0 ? "#ef4444" : "var(--text-muted)", fontWeight: summary.totalRecovered > 0 ? 700 : 400 }}>
+                                {summary.totalRecovered > 0 ? summary.totalRecovered : "-"}
+                              </td>
+                              <td style={{ textAlign: "center", padding: "4px 4px", color: summary.totalPets > 0 ? "var(--color-green)" : "var(--text-muted)", fontWeight: summary.totalPets > 0 ? 700 : 400 }}>
+                                {summary.totalPets > 0 ? summary.totalPets : "-"}
+                              </td>
+                              <td style={{ textAlign: "center", padding: "4px 4px", color: summary.totalPrehospital > 0 ? "#0ea5e9" : "var(--text-muted)", fontWeight: summary.totalPrehospital > 0 ? 700 : 400 }}>
+                                {summary.totalPrehospital > 0 ? summary.totalPrehospital : "-"}
+                              </td>
+                              <td style={{ textAlign: "center", padding: "4px 4px", color: summary.totalTransfers > 0 ? "var(--color-purple)" : "var(--text-muted)", fontWeight: summary.totalTransfers > 0 ? 700 : 400 }}>
+                                {summary.totalTransfers > 0 ? summary.totalTransfers : "-"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           <div style={sectionBox}>
             <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
