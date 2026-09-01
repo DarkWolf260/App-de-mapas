@@ -1,14 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { ShieldAlert, Shield, Flame, HelpCircle } from "lucide-react";
-import {
-  fetchCampamentos,
-  saveCampamentos,
-  deleteCampamento,
-  checkPizarraRecordExists,
-  CampamentoEntry,
-  StatePersonnelCount,
-  getEntryType,
-} from "../services/baseService";
+import { ShieldAlert } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { fetchFeatures } from "../services/featureService";
 import { fetchLogs, saveDailyLog } from "../services/logService";
@@ -17,20 +8,13 @@ import { exportWorkTeamsToExcel, type WorkTeamExportRow } from "../utils/excelEx
 import { generateAndDownloadReportImage } from "../utils/reportImageExporter";
 import type { DrawnFeature } from "../types";
 
-// SOLID Sub-components
+// Sub-components
 import { DeleteTarget, WorkTeam } from "./pizarra/types";
 import { PizarraHeader } from "./pizarra/PizarraHeader";
-import { BaseCard } from "./pizarra/BaseCard";
-import { RedanCard } from "./pizarra/RedanCard";
-import { TotalGeneralCard } from "./pizarra/TotalGeneralCard";
 import { WorkTeamsTab } from "./pizarra/WorkTeamsTab";
 import { DeleteConfirmModal } from "./pizarra/DeleteConfirmModal";
 import { EditWorkTeamModal } from "./pizarra/EditWorkTeamModal";
 import { CreateWorkTeamModal } from "./pizarra/CreateWorkTeamModal";
-import { OverwriteWarningModal } from "./pizarra/OverwriteWarningModal";
-import { AddBaseBanner } from "./pizarra/AddBaseBanner";
-import { EditModeBanner } from "./pizarra/EditModeBanner";
-import { AddCampEntryModal } from "./pizarra/AddCampEntryModal";
 import { ReportImageTab } from "./pizarra/ReportImageTab";
 
 export const PizarraOperacional: React.FC = () => {
@@ -43,48 +27,16 @@ export const PizarraOperacional: React.FC = () => {
   const isToday = selectedDate === getLocalDateStr();
   const canEditHistorical = isAdmin || (isOperador && !!permissions?.edit_historical_logs);
 
-  const canManageBases = isAdmin || (isOperador && !!permissions?.manage_campamentos && (isToday || canEditHistorical));
-  const canManageEntries = isAdmin || (isOperador && !!permissions?.manage_camp_entries && (isToday || canEditHistorical));
-
   // Edición de registros/equipos: admins siempre, operadores solo en la fecha actual (o histórica si tienen el permiso)
   const canEditLogs = isAdmin || (isOperador && !!permissions?.edit_logs && (isToday || canEditHistorical));
 
-  const canEdit = canManageBases || canManageEntries;
-  const [camps, setCamps] = useState<CampamentoEntry[]>([]);
   const [workTeams, setWorkTeams] = useState<WorkTeam[]>([]);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [newBaseName, setNewBaseName] = useState("");
-  const [showAddBase, setShowAddBase] = useState(false);
-  const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
-  const [addEntryTarget, setAddEntryTarget] = useState<{ campId: string; campName: string; entryToEdit?: StatePersonnelCount | null } | null>(null);
   const [deptFilter, setDeptFilter] = useState<"all" | "pc" | "bomberos">("all");
-  const [campDeptFilter, setCampDeptFilter] = useState<"all" | "pc" | "bomberos" | "otros">("all");
   const [refreshTeamsCounter, setRefreshTeamsCounter] = useState(0);
   const [editingTeam, setEditingTeam] = useState<WorkTeam | null>(null);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
   const [allFeatures, setAllFeatures] = useState<DrawnFeature[]>([]);
-
-  useEffect(() => {
-    if (!canEdit) {
-      setIsEditMode(false);
-    }
-  }, [canEdit]);
-
-  useEffect(() => {
-    if (!canAccess) return;
-    let isMounted = true;
-    fetchCampamentos(selectedDate).then((fetchedCamps) => {
-      if (isMounted && fetchedCamps) {
-        setCamps(fetchedCamps);
-      }
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedDate, canAccess]);
 
   useEffect(() => {
     if (!canAccess) return;
@@ -147,41 +99,6 @@ export const PizarraOperacional: React.FC = () => {
       activeDepartment: deptFilter === "all" ? "mixto" : (deptFilter as any),
     });
   }, [allFeatures, selectedDate, deptFilter]);
-
-  const executeSaveAll = async () => {
-    if (!canEdit) return;
-    setSaving(true);
-    setShowOverwriteWarning(false);
-    try {
-      const processedCamps = camps.map((c) => {
-        const total = (c.statesDetail || []).reduce((sum, s) => sum + (Number(s.officersCount) || 0), 0);
-        return { ...c, personnelCount: total };
-      });
-
-      await saveCampamentos(selectedDate, processedCamps);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2500);
-
-      const refetchedCamps = await fetchCampamentos(selectedDate);
-      if (refetchedCamps && refetchedCamps.length > 0) {
-        setCamps(refetchedCamps);
-      }
-    } catch (err) {
-      console.error("Error saving campamentos:", err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSaveAll = useCallback(async () => {
-    if (!canEdit) return;
-    const exists = await checkPizarraRecordExists(selectedDate);
-    if (exists) {
-      setShowOverwriteWarning(true);
-    } else {
-      await executeSaveAll();
-    }
-  }, [selectedDate, camps, canEdit]);
 
   const handleSaveTeam = async (updatedTeam: WorkTeam) => {
     try {
@@ -299,7 +216,7 @@ export const PizarraOperacional: React.FC = () => {
           fontFamily: "var(--sans-font)",
         }}
       >
-        Cargando Pizarra Operacional...
+        Cargando Consolidado Operacional...
       </div>
     );
   }
@@ -352,7 +269,7 @@ export const PizarraOperacional: React.FC = () => {
             Acceso Restringido
           </h2>
           <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.5, margin: "0 0 24px 0" }}>
-            La Pizarra Operacional es de acceso exclusivo para el personal autorizado (<strong>Administradores y Operadores</strong>). Inicia sesión con tus credenciales para acceder.
+            El Consolidado Operacional es de acceso exclusivo para el personal autorizado (<strong>Administradores y Operadores</strong>). Inicia sesión con tus credenciales para acceder.
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -409,52 +326,11 @@ export const PizarraOperacional: React.FC = () => {
       officersCount: String(t.officersCount),
       hasArrived: t.hasArrived ? "Sí" : "No",
     }));
-    exportWorkTeamsToExcel(exportRows, selectedDate, camps);
-  };
-
-  const handleAddCamp = () => {
-    if (!canEdit) return;
-    if (showAddBase && newBaseName.trim()) {
-      const newCamp: CampamentoEntry = {
-        id: crypto.randomUUID(),
-        campName: newBaseName.trim(),
-        capacity: 0,
-        personnelCount: 0,
-        status: "Activo",
-        statesDetail: [{ id: crypto.randomUUID(), stateName: "-", officersCount: 0 }],
-      };
-      setCamps((prev) => [...prev, newCamp]);
-      setNewBaseName("");
-      setShowAddBase(false);
-    } else {
-      setShowAddBase(!showAddBase);
-    }
-  };
-
-  const requestDeleteCamp = (campId: string, campName?: string) => {
-    if (!canEdit) return;
-    const name = campName?.trim() || "esta base";
-    setDeleteTarget({
-      type: "camp",
-      campId,
-      title: "Eliminar Base Operacional",
-      subtitle: `¿Estás seguro de que deseas eliminar permanentemente "${name}"?`,
-    });
-  };
-
-  const requestRemoveState = (campId: string, stateId: string, stateName?: string) => {
-    if (!canEdit) return;
-    setDeleteTarget({
-      type: "state",
-      campId,
-      stateIdTarget: stateId,
-      title: "Quitar Estado de la Base",
-      subtitle: `¿Deseas remover "${stateName || 'este estado'}" de esta base operacional?`,
-    });
+    exportWorkTeamsToExcel(exportRows, selectedDate);
   };
 
   const requestDeleteTeam = (team: WorkTeam) => {
-    if (!canEdit) return;
+    if (!canEditLogs) return;
     setDeleteTarget({
       type: "team",
       teamTarget: team,
@@ -493,148 +369,14 @@ export const PizarraOperacional: React.FC = () => {
   };
 
   const confirmExecuteDelete = async () => {
-    if (!deleteTarget || !canEdit) return;
+    if (!deleteTarget || !canEditLogs) return;
 
-    if (deleteTarget.type === "camp" && deleteTarget.campId) {
-      setCamps((prev) => prev.filter((c) => c.id !== deleteTarget.campId));
-      await deleteCampamento(deleteTarget.campId);
-    } else if (deleteTarget.type === "state" && deleteTarget.stateIdTarget) {
-      setCamps((prev) =>
-        prev.map((c) => {
-          if (c.id !== deleteTarget.campId) return c;
-          return {
-            ...c,
-            statesDetail: (c.statesDetail || []).filter((sd) => sd.id !== deleteTarget.stateIdTarget),
-          };
-        })
-      );
-    } else if (deleteTarget.type === "team" && deleteTarget.teamTarget) {
+    if (deleteTarget.type === "team" && deleteTarget.teamTarget) {
       await handleDeleteTeam(deleteTarget.teamTarget);
     }
 
     setDeleteTarget(null);
   };
-
-  const handleUpdateCampName = (campId: string, name: string) => {
-    if (!canManageBases) return;
-    setCamps((prev) => prev.map((c) => (c.id === campId ? { ...c, campName: name } : c)));
-  };
-
-  const handleAddStateToCamp = (campId: string) => {
-    if (!canManageEntries) return;
-    const targetCamp = camps.find((c) => c.id === campId);
-    if (targetCamp) {
-      setAddEntryTarget({ campId: targetCamp.id, campName: targetCamp.campName, entryToEdit: null });
-    }
-  };
-
-  const handleEditStateInCamp = (campId: string, entry: StatePersonnelCount) => {
-    if (!canManageEntries) return;
-    const targetCamp = camps.find((c) => c.id === campId);
-    if (targetCamp) {
-      setAddEntryTarget({ campId: targetCamp.id, campName: targetCamp.campName, entryToEdit: entry });
-    }
-  };
-
-  const handleConfirmSaveEntry = (
-    campId: string,
-    entry: { id?: string; stateName: string; officersCount: number; type: "pc" | "bomberos" | "otros" }
-  ) => {
-    if (!canManageEntries) return;
-    setCamps((prev) =>
-      prev.map((c) => {
-        if (c.id !== campId) return c;
-        const currentDetails = c.statesDetail || [];
-        if (entry.id) {
-          const updated = currentDetails.map((sd) =>
-            sd.id === entry.id
-              ? { ...sd, stateName: entry.stateName, officersCount: entry.officersCount, type: entry.type }
-              : sd
-          );
-          return { ...c, statesDetail: updated };
-        } else {
-          return {
-            ...c,
-            statesDetail: [
-              ...currentDetails,
-              {
-                id: crypto.randomUUID(),
-                stateName: entry.stateName,
-                officersCount: entry.officersCount,
-                type: entry.type,
-              },
-            ],
-          };
-        }
-      })
-    );
-  };
-
-  const handleUpdateStateInCamp = (
-    campId: string,
-    stateIdTarget: string,
-    field: "stateName" | "officersCount",
-    val: string | number
-  ) => {
-    if (!canEdit) return;
-    setCamps((prev) =>
-      prev.map((c) => {
-        if (c.id !== campId) return c;
-        const updated = (c.statesDetail || []).map((sd) => {
-          if (sd.id !== stateIdTarget) return sd;
-          if (field === "stateName") return { ...sd, stateName: String(val) };
-          if (val === "" || val === undefined || val === null) {
-            return { ...sd, officersCount: 0 };
-          }
-          const numVal = parseInt(String(val), 10);
-          return { ...sd, officersCount: isNaN(numVal) ? 0 : numVal };
-        });
-        return { ...c, statesDetail: updated };
-      })
-    );
-  };
-
-  let pcTotal = 0;
-  let bomberosTotal = 0;
-  let otrosTotal = 0;
-
-  const stateTotalsMap = new Map<string, number>();
-  camps.forEach((c) => {
-    (c.statesDetail || []).forEach((sd) => {
-      const cnt = Number(sd.officersCount) || 0;
-      const current = stateTotalsMap.get(sd.stateName) || 0;
-      stateTotalsMap.set(sd.stateName, current + cnt);
-
-      const entryType = getEntryType(sd.stateName, sd.type);
-      if (entryType === "pc") pcTotal += cnt;
-      else if (entryType === "bomberos") bomberosTotal += cnt;
-      else otrosTotal += cnt;
-    });
-  });
-
-  const getRegionTotalFromCamps = (regionStates: string[]): number => {
-    return regionStates.reduce((sum, st) => {
-      const exact = stateTotalsMap.get(st) || 0;
-      const cleanState = st.replace(/^PC\s+/i, "").toLowerCase();
-      let aliasSum = 0;
-      stateTotalsMap.forEach((cnt, sName) => {
-        if (sName !== st && sName.toLowerCase().includes(cleanState)) {
-          aliasSum += cnt;
-        }
-      });
-      return sum + exact + aliasSum;
-    }, 0);
-  };
-
-  const totalGeneralPersonnel = pcTotal + bomberosTotal + otrosTotal;
-
-  const displayedCamps = camps.map((c) => {
-    if (campDeptFilter === "all") return c;
-    const filteredStates = (c.statesDetail || []).filter(
-      (sd) => getEntryType(sd.stateName, sd.type) === campDeptFilter
-    );
-    return { ...c, statesDetail: filteredStates };
-  });
 
   return (
     <div
@@ -656,15 +398,7 @@ export const PizarraOperacional: React.FC = () => {
         setActiveTab={setActiveTab}
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
-        canEdit={canEdit}
-        canManageBases={canManageBases}
-        canManageEntries={canManageEntries}
-        isEditMode={isEditMode}
-        setIsEditMode={setIsEditMode}
-        saving={saving}
-        saveSuccess={saveSuccess}
-        handleSaveAll={handleSaveAll}
-        handleAddCamp={handleAddCamp}
+        canEdit={canEditLogs}
         handleExportTeamsExcel={handleExportTeamsExcel}
         handleExportReportImage={handleExportReportImage}
         workTeamsCount={workTeams.length}
@@ -706,24 +440,6 @@ export const PizarraOperacional: React.FC = () => {
           onSave={handleCreateTeam}
         />
       )}
-
-      <OverwriteWarningModal
-        open={showOverwriteWarning}
-        saving={saving}
-        date={selectedDate}
-        onCancel={() => setShowOverwriteWarning(false)}
-        onConfirm={executeSaveAll}
-      />
-
-      <AddCampEntryModal
-        key={addEntryTarget ? `${addEntryTarget.campId}-${addEntryTarget.entryToEdit?.id || 'new'}` : 'closed'}
-        isOpen={!!addEntryTarget}
-        campId={addEntryTarget?.campId || ""}
-        campName={addEntryTarget?.campName || ""}
-        entryToEdit={addEntryTarget?.entryToEdit}
-        onClose={() => setAddEntryTarget(null)}
-        onConfirm={handleConfirmSaveEntry}
-      />
     </div>
   );
 };
