@@ -137,17 +137,31 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     const showLabels = layerVisibility.basemapLabels !== false;
     view.map.basemap?.referenceLayers?.forEach((layer) => { layer.visible = showLabels; });
     view.map.basemap?.baseLayers?.forEach((layer: any) => {
-      if (layer.title?.toLowerCase().includes("label") || layer.id?.toLowerCase().includes("label")) layer.visible = showLabels;
+      if (
+        layer.title?.toLowerCase().includes("label") ||
+        layer.id?.toLowerCase().includes("label") ||
+        layer.title?.toLowerCase().includes("etiqueta") ||
+        layer.title?.toLowerCase().includes("calle") ||
+        layer.title?.toLowerCase().includes("place")
+      ) {
+        layer.visible = showLabels;
+      }
     });
-  }, [layerVisibility.basemapLabels, init.mapReady, viewRef]);
+  }, [layerVisibility.basemapLabels, activeBasemap, init.mapReady, viewRef]);
 
   useEffect(() => {
     const view = viewRef.current;
     if (!view || !view.map) return;
-    if (view.map.basemap?.id !== activeBasemap) {
-      view.map.basemap = getBasemapValue(activeBasemap);
+    const currentBmId = (view.map.basemap as any)?.id;
+    if (currentBmId !== activeBasemap) {
+      const newBm = getBasemapValue(activeBasemap);
+      view.map.basemap = newBm as any;
+      const showLabels = layerVisibility.basemapLabels !== false;
+      if (typeof newBm !== "string" && newBm?.referenceLayers) {
+        newBm.referenceLayers.forEach((layer) => { layer.visible = showLabels; });
+      }
     }
-  }, [activeBasemap, init.mapReady, viewRef]);
+  }, [activeBasemap, layerVisibility.basemapLabels, init.mapReady, viewRef]);
 
   useEffect(() => {
     if (sketchLayerRef.current) sketchLayerRef.current.visible = !layerVisibility.svgOverlay;

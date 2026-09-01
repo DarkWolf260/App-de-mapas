@@ -130,7 +130,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
   const mergedLogForDisplay = useMemo(() => {
     if (activeDepartment !== "mixto") return null;
     const allLogs = activeFeat.dailyLogs?.filter((l) => l.date === popupEditDate) || [];
-    if (allLogs.length <= 1) return null;
+    if (allLogs.length === 0) return null;
     return mergeLogs(allLogs);
   }, [activeDepartment, activeFeat.dailyLogs, popupEditDate]);
 
@@ -151,7 +151,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
     return aggregatePolygonLog(polygonOwnLog, polygonGroups, containedWithLogs);
   }, [isPolygon, dailyLog, containedWithLogs, polygonOwnLog, polygonGroups]);
 
-  const log = isPolygon ? aggregatedLog : (localLog || dailyLog || {});
+  const log = isPolygon ? aggregatedLog : (mergedLogForDisplay || localLog || dailyLog || {});
 
   const activeGroups = isPolygon ? polygonGroups : pointGroups;
 

@@ -75,8 +75,22 @@ export function useFeaturePopupSession({
     setGeneralSaveSuccess(false);
     setLogSaveSuccess(false);
 
-    const deptToUse: Department =
-      activeDepartment === "mixto" ? selectedDept : activeDepartment === "bomberos" ? "bomberos" : "pc";
+    let deptToUse: Department = selectedDept;
+    if (activeDepartment === "mixto") {
+      const hasPc = activeFeat.dailyLogs?.some(
+        (l) => l.date === popupEditDate && (l.department === "pc" || !l.department)
+      );
+      const hasBomberos = activeFeat.dailyLogs?.some(
+        (l) => l.date === popupEditDate && l.department === "bomberos"
+      );
+      if (!hasPc && hasBomberos && selectedDept === "pc") {
+        deptToUse = "bomberos";
+        setSelectedDept("bomberos");
+      }
+    } else {
+      deptToUse = activeDepartment === "bomberos" ? "bomberos" : "pc";
+    }
+
     const todayLogs =
       activeFeat.dailyLogs?.filter((l) =>
         l.date === popupEditDate &&

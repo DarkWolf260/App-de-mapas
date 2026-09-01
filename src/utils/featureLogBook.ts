@@ -368,8 +368,17 @@ export function mergeCustomActivities(listA: CustomActivity[] = [], listB: Custo
  * Merges multiple daily logs into a single aggregated daily log.
  */
 export function mergeLogs(logs: DailyLog[]): DailyLog | null {
-  if (logs.length === 0) return null;
-  if (logs.length === 1) return logs[0];
+  if (!logs || logs.length === 0) return null;
+  if (logs.length === 1) {
+    const singleGroups = (logs[0].groups || []).map((g) => ({
+      ...g,
+      department: g.department || logs[0].department || "pc",
+    }));
+    return {
+      ...logs[0],
+      groups: singleGroups,
+    };
+  }
   const firstGroups = (logs[0].groups || []).map((g) => ({
     ...g,
     department: g.department || logs[0].department || "pc",
@@ -386,6 +395,11 @@ export function mergeLogs(logs: DailyLog[]): DailyLog | null {
     merged.rescuedPetsCount = String((parseInt(merged.rescuedPetsCount || "0", 10) || 0) + (parseInt(other.rescuedPetsCount || "0", 10) || 0));
     merged.prehospitalCareCount = String((parseInt(merged.prehospitalCareCount || "0", 10) || 0) + (parseInt(other.prehospitalCareCount || "0", 10) || 0));
     merged.transfersCount = String((parseInt(merged.transfersCount || "0", 10) || 0) + (parseInt(other.transfersCount || "0", 10) || 0));
+    if (other.observations?.trim()) {
+      merged.observations = merged.observations
+        ? `${merged.observations}\n${other.observations.trim()}`
+        : other.observations.trim();
+    }
     if (other.novedades) allNovedades.push(...other.novedades);
     if (other.customActivities) {
       mergedCustomActivities = mergeCustomActivities(mergedCustomActivities, other.customActivities);
@@ -393,7 +407,7 @@ export function mergeLogs(logs: DailyLog[]): DailyLog | null {
     if (other.groups) {
       const otherGroups = other.groups.map((g) => ({
         ...g,
-        department: g.department || other.department || "pc",
+        department: g.department || other.department || "bomberos",
       }));
       allGroups.push(...otherGroups);
     }

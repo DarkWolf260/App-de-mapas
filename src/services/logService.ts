@@ -1,5 +1,5 @@
 import { supabase } from "../lib/supabaseClient";
-import { fromDatabaseRow, toDatabaseRow } from "../utils/featureLogBook";
+import { fromDatabaseRow, toDatabaseRow, FeatureLogBook } from "../utils/featureLogBook";
 import type { DailyLog } from "../types";
 
 export async function fetchLogs(date?: string): Promise<Map<string, DailyLog[]>> {
@@ -38,6 +38,16 @@ export async function saveDailyLog(featureId: number | string, log: DailyLog): P
     .eq("date", log.date)
     .eq("department", deptToUse)
     .maybeSingle();
+
+  const hasData = FeatureLogBook.hasAnyData(log);
+
+  if (!hasData) {
+    if (existingRecord?.id) {
+      const { error } = await supabase.from("daily_logs").delete().eq("id", existingRecord.id);
+      if (error) console.error("[logService] delete error on empty log:", error);
+    }
+    return;
+  }
 
   const payload = toDatabaseRow(featureId, log);
 

@@ -12,7 +12,25 @@ export const DEFAULT_ZOOM = 13;
 export const getBasemapValue = (key: string): string | Basemap => {
   if (key === "satellite-free") {
     return new Basemap({
-      baseLayers: [new TileLayer({ url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" })],
+      baseLayers: [
+        new TileLayer({
+          url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer",
+          title: "Satelital ArcGIS",
+          id: "arcgis-imagery-base",
+        }),
+      ],
+      referenceLayers: [
+        new TileLayer({
+          url: "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer",
+          title: "Calles y Carreteras",
+          id: "arcgis-reference-roads",
+        }),
+        new TileLayer({
+          url: "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer",
+          title: "Límites y Lugares",
+          id: "arcgis-reference-places",
+        }),
+      ],
       title: "Satelital ArcGIS",
       id: "satellite-free",
     });
@@ -25,6 +43,14 @@ export const getBasemapValue = (key: string): string | Basemap => {
           subDomains: ["0", "1", "2", "3"],
           title: "Google Satelital",
           id: "google-satellite-layer",
+        }),
+      ],
+      referenceLayers: [
+        new WebTileLayer({
+          urlTemplate: "https://mt{subDomain}.google.com/vt/lyrs=h&x={col}&y={row}&z={level}",
+          subDomains: ["0", "1", "2", "3"],
+          title: "Google Calles y Etiquetas",
+          id: "google-labels-layer",
         }),
       ],
       title: "Google Satelital",

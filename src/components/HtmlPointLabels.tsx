@@ -172,7 +172,7 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
             </span>
 
             {/* Solo la flecha al lado del título si hay notas generales */}
-            {lbl.activityNotes && lbl.activityNotes.length > 0 && !lbl.customActivities?.some((a) => !!a.description) && (
+            {!lbl.isAccumulated && lbl.activityNotes && lbl.activityNotes.length > 0 && !lbl.customActivities?.some((a) => !!a.description) && (
               <span
                 onClick={(e) => toggleExpanded(titleKey, e)}
                 style={{ cursor: "pointer", display: "inline-flex", color: "#c084fc", marginLeft: "2px" }}
@@ -184,7 +184,8 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
           </div>
 
           {/* Contenido Desplegable de Nota General */}
-          {lbl.activityNotes &&
+          {!lbl.isAccumulated &&
+            lbl.activityNotes &&
             lbl.activityNotes.length > 0 &&
             !lbl.customActivities?.some((a) => !!a.description) &&
             isTitleExpanded && (
@@ -210,7 +211,7 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
               </div>
             )}
 
-          {!!lbl.info && (
+          {!lbl.isAccumulated && !!lbl.info && (
             <div
               className="html-point-label-info"
               style={{
@@ -229,7 +230,7 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
           )}
 
           {/* Insignias de equipos desplegados */}
-          {isAuthenticated && lbl.teamNames && lbl.teamNames.length > 0 && (
+          {!lbl.isAccumulated && isAuthenticated && lbl.teamNames && lbl.teamNames.length > 0 && (
             <div
               className="html-point-label-teams"
               style={{

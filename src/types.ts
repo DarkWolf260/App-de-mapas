@@ -25,6 +25,7 @@ export interface HtmlLabel {
   teamNames?: string[];
   customActivities?: CustomActivity[];
   activityNotes?: string[];
+  isAccumulated?: boolean;
 }
 
 export interface MapPoint {

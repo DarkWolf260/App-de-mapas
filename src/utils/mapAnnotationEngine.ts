@@ -347,7 +347,7 @@ export function buildHtmlLabels(
         activeHtmlLabels.push({
           id: pid,
           title,
-          info,
+          info: accMode ? "" : info,
           x,
           y,
           themeColor: feat?.color,
@@ -360,9 +360,10 @@ export function buildHtmlLabels(
           rescuedPetsCount: rescuedPetsCount || undefined,
           isCollapsed: feat?.isCollapsed,
           collapsedCount: feat?.collapsedCount,
-          teamNames: teamNames.length > 0 ? teamNames : undefined,
+          teamNames: accMode ? undefined : (teamNames.length > 0 ? teamNames : undefined),
           customActivities: customActivitiesList.length > 0 ? customActivitiesList : undefined,
-          activityNotes: activityNotes.length > 0 ? activityNotes : undefined,
+          activityNotes: accMode ? undefined : (activityNotes.length > 0 ? activityNotes : undefined),
+          isAccumulated: accMode,
         });
       }
     } else {
