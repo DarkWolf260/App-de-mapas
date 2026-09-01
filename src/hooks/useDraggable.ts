@@ -11,7 +11,21 @@ function loadPosition(storage: IStorage): Position | null {
     const raw = storage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Position;
-    if (typeof parsed.x === "number" && typeof parsed.y === "number") return parsed;
+    if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+      if (typeof window !== "undefined") {
+        if (
+          isNaN(parsed.x) ||
+          isNaN(parsed.y) ||
+          parsed.x < 0 ||
+          parsed.x > window.innerWidth - 100 ||
+          parsed.y < 0 ||
+          parsed.y > window.innerHeight - 50
+        ) {
+          return null;
+        }
+      }
+      return parsed;
+    }
   } catch {}
   return null;
 }

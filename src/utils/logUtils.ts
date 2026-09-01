@@ -28,4 +28,4 @@ export type {
   PeriodStats,
 } from "./statsCalculator";
 
-export { featureMatchesSearch, isSectorFeature } from "./searchUtils";
+export { featureMatchesSearch, isSectorFeature, isStandardSector } from "./searchUtils";

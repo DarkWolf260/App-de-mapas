@@ -1,6 +1,6 @@
 import React from "react";
 import type { DrawnFeature } from "../types";
-import { Activity, Square, MapPin, Maximize2, Trash2, Lock, Unlock, ChevronUp, ChevronDown, ChevronRight, Calendar } from "lucide-react";
+import { Activity, Square, MapPin, Maximize2, Trash2, Lock, Unlock, ChevronUp, ChevronDown, ChevronRight, Calendar, BarChart2 } from "lucide-react";
 import { getGeometryHandler } from "../utils/geometryHandlers";
 
 const FEATURE_ICONS: Record<string, React.ReactNode> = {
@@ -172,7 +172,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             style={{
               background: "transparent",
               border: "none",
-              color: "var(--color-green)",
+              color: "#38bdf8",
               cursor: "pointer",
               fontSize: "0.68rem",
               display: "flex",
@@ -180,9 +180,9 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               gap: "2px",
               fontWeight: 600
             }}
-            title="Ver bitácora del 24 a hoy"
+            title="Ver estadísticas"
           >
-            <Calendar size={11} /> Rango (24-Hoy)
+            <BarChart2 size={11} /> Estadísticas
           </button>
         )}
         {feat.type === "polygon" && hasChildren && onToggleChildren && (

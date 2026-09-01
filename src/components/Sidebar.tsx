@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { DepartmentTabs } from './DepartmentTabs';
 import type { DepartmentView } from '../types';
 import { getLocalDateStr } from '../utils/dateUtils';
@@ -8,20 +8,12 @@ import {
   Download,
   Upload,
   Search,
-  ShieldAlert,
-  Home,
-  HeartPulse,
-  Layers,
   Map,
   Activity,
-  Info,
   ChevronDown,
   ChevronRight,
-  Building2,
-  Satellite,
   X,
 } from 'lucide-react';
-import Select from './ui/Select';
 import { RealtimeStatusBadge } from './RealtimeStatusBadge';
 import type { RealtimeChannelStatus } from '../repositories/interfaces';
 
@@ -96,46 +88,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleFeatureVisibility,
   realtimeStatus,
   layerVisibility,
-  onToggleLayer,
   onCloseMobile,
 }) => {
   const isInspeccionesMode = layerVisibility?.inspecciones ?? false;
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [isSwipeActive, setIsSwipeActive] = useState(false);
-
-  useEffect(() => {
-    const handleSwipeState = (e: CustomEvent<boolean>) => {
-      setIsSwipeActive(!!e.detail);
-    };
-    window.addEventListener("swipe-state-changed", handleSwipeState as EventListener);
-    return () => window.removeEventListener("swipe-state-changed", handleSwipeState as EventListener);
-  }, []);
-
-  const categories = [
-    { value: 'all', label: 'Todas las categorías', color: '#9ca3af', icon: Layers },
-    { value: 'riesgo', label: 'Zonas de Riesgo', color: '#ef4444', icon: ShieldAlert },
-    { value: 'refugio', label: 'Refugios / Albergues', color: '#10b981', icon: Home },
-    { value: 'salud', label: 'Puestos de Salud', color: '#3b82f6', icon: HeartPulse },
-    { value: 'operativo', label: 'Puestos de Control', color: '#f97316', icon: Activity },
-    { value: 'general', label: 'General / Otros', color: '#a855f7', icon: Info }
-  ];
 
   // Filtrado de elementos
   const filteredPoints = points.filter(p => {
     const term = searchTerm.toLowerCase();
-    const matchesSearch = p.name.toLowerCase().includes(term) ||
+    return p.name.toLowerCase().includes(term) ||
       p.description.toLowerCase().includes(term) ||
       (p.isCollapsed && ("colapsado".includes(term) || String(p.collapsedCount || "").includes(term)));
-    const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
-    return matchesSearch && matchesCategory;
   });
 
   const filteredAreas = areas.filter(a => {
-    const matchesSearch = a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || a.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const term = searchTerm.toLowerCase();
+    return a.name.toLowerCase().includes(term) ||
+      a.description.toLowerCase().includes(term);
   });
 
   // Exportar datos a JSON
@@ -173,13 +142,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }
       };
     }
-  };
-
-  // Obtener icono según categoría
-  const getCategoryIcon = (category: string) => {
-    const cat = categories.find(c => c.value === category);
-    const IconComponent = cat ? cat.icon : Info;
-    return <IconComponent size={16} style={{ color: cat?.color || '#a855f7' }} />;
   };
 
   return (
@@ -230,7 +192,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="sidebar-section" style={{ flexShrink: 0 }}>
           <div className="section-title">
             <Search size={14} />
-            <span>Búsqueda y Filtros</span>
+            <span>Búsqueda</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -252,15 +214,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               />
               <Search size={14} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
             </div>
-
-            <Select
-              options={categories.map(cat => {
-                const Icon = cat.icon;
-                return { value: cat.value, label: cat.label, color: cat.color, icon: <Icon size={13} color={cat.color} /> };
-              })}
-              value={categoryFilter}
-              onChange={setCategoryFilter}
-            />
           </div>
         </div>
 
@@ -327,8 +280,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       </div>
                       <span className="element-desc">{point.description || 'Sin descripción'}</span>
                       <div className="element-meta">
-                        {getCategoryIcon(point.category)}
-                        <span className="category-tag">{point.category}</span>
                         <span>• {point.coordinates.latitude.toFixed(4)}, {point.coordinates.longitude.toFixed(4)}</span>
                       </div>
                     </div>
@@ -384,8 +335,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                     <span className="element-desc">{area.description || 'Sin descripción'}</span>
                     <div className="element-meta">
-                      {getCategoryIcon(area.category)}
-                      <span className="category-tag">{area.category}</span>
                       <span>• {area.areaHectares.toFixed(2)} Ha</span>
                     </div>
                   </div>
@@ -416,92 +365,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {/* Botones de Acción al pie del Sidebar (Inspecciones y Antes / Después) */}
-      <div className="sidebar-action-buttons" style={{ padding: "12px 16px 16px 16px", borderTop: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "8px", flexShrink: 0, background: "rgba(10, 15, 28, 0.4)" }}>
-        <button
-          className={`swipe-toggle-btn ${isInspeccionesMode ? "active" : ""}`}
-          onClick={() => onToggleLayer?.("inspecciones")}
-          title={isInspeccionesMode ? "Desactivar Capa de Inspecciones Kobo" : "Activar Capa de Inspecciones Kobo"}
-          style={{
-            position: "static",
-            bottom: "auto",
-            left: "auto",
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            padding: "9px 12px",
-            borderRadius: "8px",
-            border: `1px solid ${isInspeccionesMode ? "rgba(99, 102, 241, 0.8)" : "var(--border-color)"}`,
-            backgroundColor: isInspeccionesMode ? "rgba(99, 102, 241, 0.25)" : "var(--bg-tertiary)",
-            color: isInspeccionesMode ? "#818cf8" : "var(--text-primary)",
-            cursor: "pointer",
-            fontWeight: 700,
-            fontSize: "11px",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            transition: "all 0.2s ease",
-          }}
-        >
-          <Building2 size={16} color={isInspeccionesMode ? "#818cf8" : "var(--text-muted)"} />
-          <span>Inspecciones</span>
-        </button>
-
-        <div style={{ display: "flex", gap: "8px", width: "100%" }}>
-          <button
-            className={`swipe-toggle-btn ${isSwipeActive ? "active" : ""}`}
-            onClick={() => window.dispatchEvent(new CustomEvent("toggle-swipe"))}
-            title={isSwipeActive ? "Cerrar comparación" : "Comparar antes/después"}
-            style={{
-              position: "static",
-              bottom: "auto",
-              left: "auto",
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              padding: "9px 12px",
-              borderRadius: "8px",
-              border: `1px solid ${isSwipeActive ? "rgba(56, 189, 248, 0.8)" : "var(--border-color)"}`,
-              backgroundColor: isSwipeActive ? "rgba(56, 189, 248, 0.25)" : "var(--bg-tertiary)",
-              color: isSwipeActive ? "#38bdf8" : "var(--text-primary)",
-              cursor: "pointer",
-              fontWeight: 700,
-              fontSize: "11px",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              transition: "all 0.2s ease",
-            }}
-          >
-            <Satellite size={16} color={isSwipeActive ? "#38bdf8" : "var(--text-muted)"} />
-            <span>{isSwipeActive ? "Cerrar" : "Antes / Después"}</span>
-          </button>
-
-          {isSwipeActive && (
-            <button
-              className="swipe-layer-toggle"
-              onClick={() => window.dispatchEvent(new CustomEvent("toggle-swipe-panel"))}
-              title="Seleccionar capas post-sismo"
-              style={{
-                position: "static",
-                top: "auto",
-                left: "auto",
-                padding: "9px 12px",
-                borderRadius: "8px",
-                border: "1px solid var(--border-color)",
-                background: "var(--bg-tertiary)",
-                color: "#f8fafc",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Layers size={16} />
-            </button>
-          )}
-        </div>
-      </div>
     </aside>
   );
 };

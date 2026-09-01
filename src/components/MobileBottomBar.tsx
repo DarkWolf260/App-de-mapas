@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, FileText, Settings, Search, Layers } from "lucide-react";
+import { Users, BarChart2, Settings, Search, Layers } from "lucide-react";
 
 export interface MobileBottomBarProps {
   onOpenPersonal: () => void;
@@ -77,8 +77,8 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
       )}
 
       <button style={tabStyle()} onClick={onOpenBitacora}>
-        <FileText size={18} />
-        <span style={labelStyle}>Bitácora</span>
+        <BarChart2 size={18} />
+        <span style={labelStyle}>Estadísticas</span>
       </button>
 
       <button style={tabStyle()} onClick={onOpenSettings}>

@@ -202,6 +202,8 @@ function App() {
         selectedItemId={state.selectedItemId}
         className={state.sidebarCollapsed ? 'collapsed' : ''}
         isMobile={isMobile}
+        activeDepartment={state.activeDepartment}
+        onDepartmentChange={state.setActiveDepartment}
         showPoints={state.showPoints}
         showAreas={state.showAreas}
         onToggleShowPoints={() => state.setShowPoints(!state.showPoints)}

@@ -24,3 +24,8 @@ export function isSectorFeature(feat?: { type?: string; featureType?: string; ge
   if (!feat) return false;
   return getFeatureHandler(feat).isSector;
 }
+
+export function isStandardSector(title?: string): boolean {
+  if (!title) return false;
+  return /^Sector\s+[A-F]\b/i.test(title.trim());
+}

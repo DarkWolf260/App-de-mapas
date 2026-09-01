@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { DrawnFeature } from "../../types";
 import { sectionBox } from "../popup/popupStyles";
-import { isSectorFeature } from "../../utils/logUtils";
+import { isSectorFeature, isStandardSector } from "../../utils/logUtils";
 
 interface GroupStat {
   groupName: string;
@@ -79,7 +79,7 @@ export const RangeReportStatsTab: React.FC<RangeReportStatsTabProps> = ({
   sortedIndependentGroups,
 }) => {
   return (
-    <div className="rr-list" style={{ gap: "14px" }}>
+    <div className="rr-list" style={{ gap: "20px", padding: "18px 24px" }}>
       {/* Global period totals */}
       <div className="rr-stats-cards-grid">
         <div className="rr-scard" style={{ borderColor: "rgba(34,197,94,0.3)" }}>
@@ -127,10 +127,10 @@ export const RangeReportStatsTab: React.FC<RangeReportStatsTabProps> = ({
       {/* Per-site statistics */}
       {periodStats.featureStats.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {periodStats.featureStats.some((fs) => isSectorFeature(fs)) && (
+          {periodStats.featureStats.some((fs) => isSectorFeature(fs) && isStandardSector(fs.featureTitle)) && (
             <div style={{ ...sectionBox, background: "rgba(56, 189, 248, 0.03)", borderColor: "rgba(56, 189, 248, 0.15)" }}>
               <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-                <Layers size={10} /> Sectores
+                <Layers size={10} /> Sectores (A - F)
               </div>
               <div className="rr-stats-table-wrap">
                 <table className="rr-stats-table">
@@ -146,29 +146,32 @@ export const RangeReportStatsTab: React.FC<RangeReportStatsTabProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {periodStats.featureStats.filter((fs) => isSectorFeature(fs)).map((fs, idx) => {
-                      const containedPoints = (allFeatures || []).filter((c) => String(parentsMap[c.id]) === String(fs.featureId));
+                    {periodStats.featureStats
+                      .filter((fs) => isSectorFeature(fs) && isStandardSector(fs.featureTitle))
+                      .sort((a, b) => a.featureTitle.localeCompare(b.featureTitle, "es", { sensitivity: "base" }))
+                      .map((fs, idx) => {
+                        const containedPoints = (allFeatures || []).filter((c) => String(parentsMap[c.id]) === String(fs.featureId));
 
-                      return (
-                        <tr key={fs.featureId} className={idx % 2 === 0 ? "rr-tr-even" : ""}>
-                          <td>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 700 }}>
-                              <span style={{ width: 8, height: 8, borderRadius: "50%", background: fs.featureColor || "var(--color-info)", flexShrink: 0 }} />
-                              <Layers size={11} style={{ color: "var(--color-info)", flexShrink: 0 }} />
-                              <span>{fs.featureTitle}</span>
-                            </div>
-                          </td>
-                          <td style={{ textAlign: "center", fontWeight: 700, color: containedPoints.length > 0 ? "#38bdf8" : "var(--text-muted)" }}>
-                            {containedPoints.length}
-                          </td>
-                          <td style={{ textAlign: "center", fontWeight: 700 }}>{fs.daysActive}</td>
-                          <td style={{ textAlign: "center", color: fs.totalRescued > 0 ? "var(--color-green)" : "var(--text-muted)" }}>{fs.totalRescued}</td>
-                          <td style={{ textAlign: "center", color: fs.totalRecovered > 0 ? "var(--color-high)" : "var(--text-muted)" }}>{fs.totalRecovered}</td>
-                          <td style={{ textAlign: "center", color: fs.totalPrehospitalCare > 0 ? "var(--color-info)" : "var(--text-muted)" }}>{fs.totalPrehospitalCare}</td>
-                          <td style={{ textAlign: "center", color: fs.totalTransfers > 0 ? "var(--color-purple)" : "var(--text-muted)" }}>{fs.totalTransfers}</td>
-                        </tr>
-                      );
-                    })}
+                        return (
+                          <tr key={fs.featureId} className={idx % 2 === 0 ? "rr-tr-even" : ""}>
+                            <td>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 700 }}>
+                                <span style={{ width: 8, height: 8, borderRadius: "50%", background: fs.featureColor || "var(--color-info)", flexShrink: 0 }} />
+                                <Layers size={11} style={{ color: "var(--color-info)", flexShrink: 0 }} />
+                                <span>{fs.featureTitle}</span>
+                              </div>
+                            </td>
+                            <td style={{ textAlign: "center", fontWeight: 700, color: containedPoints.length > 0 ? "#38bdf8" : "var(--text-muted)" }}>
+                              {containedPoints.length}
+                            </td>
+                            <td style={{ textAlign: "center", fontWeight: 700 }}>{fs.daysActive}</td>
+                            <td style={{ textAlign: "center", color: fs.totalRescued > 0 ? "var(--color-green)" : "var(--text-muted)" }}>{fs.totalRescued}</td>
+                            <td style={{ textAlign: "center", color: fs.totalRecovered > 0 ? "var(--color-high)" : "var(--text-muted)" }}>{fs.totalRecovered}</td>
+                            <td style={{ textAlign: "center", color: fs.totalPrehospitalCare > 0 ? "var(--color-info)" : "var(--text-muted)" }}>{fs.totalPrehospitalCare}</td>
+                            <td style={{ textAlign: "center", color: fs.totalTransfers > 0 ? "var(--color-purple)" : "var(--text-muted)" }}>{fs.totalTransfers}</td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>

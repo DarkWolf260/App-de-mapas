@@ -17,7 +17,7 @@ const CATEGORY_COLORS = {
 };
 
 export function useAppState(isAdmin: boolean) {
-  const [activeBasemap, setActiveBasemap] = useLocalStorageState<BasemapKey>('pc_active_basemap', 'google-satellite');
+  const [activeBasemap, setActiveBasemap] = useLocalStorageState<BasemapKey>('pc_active_basemap', 'satellite-free');
   const [layerVisibility, setLayerVisibility] = useLocalStorageState<LayerVisibility>('pc_layer_visibility', {
     sketch: true,
     polygonLabels: true,
@@ -31,7 +31,7 @@ export function useAppState(isAdmin: boolean) {
 
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toLocaleDateString('en-CA'));
   const [activeDepartment, setActiveDepartment] = useLocalStorageState<DepartmentView>('pc_active_department', 'pc');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [zoomToFeature, setZoomToFeature] = useState<DrawnFeature | null>(null);
   const [zoomToCoords, setZoomToCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [removeFeatureId, setRemoveFeatureId] = useState<RemoveFeatureId | null>(null);

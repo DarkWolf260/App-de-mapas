@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDown, ChevronRight, Calendar, FolderOpen } from "lucide-react";
+import { ChevronDown, ChevronRight, Calendar, FolderOpen, BarChart2 } from "lucide-react";
 import type { DrawnFeature } from "../types";
 import { FeatureCard } from "./FeatureCard";
 
@@ -305,10 +305,10 @@ export const DrawnFeaturesList: React.FC<DrawnFeaturesListProps> = ({
                         onOpenRangeReport("all");
                       }}
                       style={{
-                        background: "rgba(34, 197, 94, 0.08)",
-                        border: "1px solid rgba(34, 197, 94, 0.2)",
+                        background: "rgba(56, 189, 248, 0.08)",
+                        border: "1px solid rgba(56, 189, 248, 0.2)",
                         borderRadius: "4px",
-                        color: "var(--color-green)",
+                        color: "#38bdf8",
                         fontSize: "0.65rem",
                         fontWeight: 600,
                         padding: "2px 6px",
@@ -316,9 +316,9 @@ export const DrawnFeaturesList: React.FC<DrawnFeaturesListProps> = ({
                         marginLeft: "auto",
                         transition: "all 0.2s ease",
                       }}
-                      title="Ver bitácoras de todos los Sitios de Trabajo a la vez"
+                      title="Ver panel de estadísticas de todos los Sitios de Trabajo"
                     >
-                      <Calendar size={11} /> Ver Bitácoras
+                      <BarChart2 size={11} /> Estadísticas
                     </button>
                   )
                 }

@@ -20,6 +20,7 @@ import Select from "../ui/Select";
 import {
   formatDateFriendly,
   isSectorFeature,
+  isStandardSector,
   getGroupData,
   getNormalizedGroupList,
   logHasAnyData,
@@ -249,13 +250,13 @@ export const RangeReportRegisterTab: React.FC<RangeReportRegisterTabProps> = ({
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                {activePoints.some((pt) => isSectorFeature(pt)) && (
+                {activePoints.some((pt) => isSectorFeature(pt) && isStandardSector(pt.title)) && (
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.68rem", fontWeight: 800, color: "var(--color-info)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "6px" }}>
-                      <Layers size={12} /> Sectores ({activePoints.filter((pt) => isSectorFeature(pt)).length})
+                      <Layers size={12} /> Sectores ({activePoints.filter((pt) => isSectorFeature(pt) && isStandardSector(pt.title)).length})
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      {activePoints.filter((pt) => isSectorFeature(pt)).map((pt) => {
+                      {activePoints.filter((pt) => isSectorFeature(pt) && isStandardSector(pt.title)).map((pt) => {
                         const logs = pt.dailyLogs?.filter((l) =>
                           l.date === activeDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
                         ) || [];
@@ -452,8 +453,8 @@ export const RangeReportRegisterTab: React.FC<RangeReportRegisterTabProps> = ({
                 <Select
                   placeholder="-- Seleccionar Sitio o Sector --"
                   options={[
-                    ...(inactivePoints.some((pt) => isSectorFeature(pt))
-                      ? inactivePoints.filter((pt) => isSectorFeature(pt)).map((pt) => ({
+                    ...(inactivePoints.some((pt) => isSectorFeature(pt) && isStandardSector(pt.title))
+                      ? inactivePoints.filter((pt) => isSectorFeature(pt) && isStandardSector(pt.title)).map((pt) => ({
                           value: String(pt.id),
                           label: pt.title,
                           group: "🗺️ Sectores",

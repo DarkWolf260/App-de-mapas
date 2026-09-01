@@ -1,5 +1,5 @@
 import React, { ChangeEvent } from "react";
-import { Download, Upload, Calendar } from "lucide-react";
+import { Download, Upload, BarChart2 } from "lucide-react";
 
 interface DataToolsBarProps {
   onExportGeoJSON: () => void;
@@ -35,15 +35,15 @@ export const DataToolsBar: React.FC<DataToolsBarProps> = ({
             padding: "8px",
             fontSize: "0.75rem",
             width: "100%",
-            background: "rgba(34, 197, 94, 0.1)",
-            border: "1px solid rgba(34, 197, 94, 0.35)",
-            color: "var(--color-green)",
+            background: "rgba(56, 189, 248, 0.1)",
+            border: "1px solid rgba(56, 189, 248, 0.35)",
+            color: "#38bdf8",
             fontWeight: 600,
           }}
-          title="Abrir bitácora general de todos los puntos"
+          title="Abrir Panel de Estadísticas"
         >
-          <Calendar size={14} style={{ color: "var(--color-green)" }} />
-          Abrir Bitácora General
+          <BarChart2 size={14} style={{ color: "#38bdf8" }} />
+          Abrir Panel de Estadísticas
         </button>
       )}
       <div style={{ display: "flex", gap: "6px" }}>

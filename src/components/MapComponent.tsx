@@ -14,7 +14,7 @@ import { useDraggable } from "../hooks/useDraggable";
 import type { MapFeatureActions, MapUIContext } from "./mapTypes";
 import Point from "@arcgis/core/geometry/Point";
 import { DEFAULT_CENTER } from "../utils/mapUtils";
-import { Satellite, Calendar, MapPin, ExternalLink, Copy, Link2, Check, Building2, Layers } from "lucide-react";
+import { Satellite, Calendar, MapPin, ExternalLink, Copy, Link2, Check, Building2, Layers, BarChart2 } from "lucide-react";
 
 interface MapComponentProps {
   activeBasemap: BasemapKey | string;
@@ -61,7 +61,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const canEditMap = !!ui.permissions?.edit_map;
+  const canEditMap = ui.isAdmin || !ui.isAuthenticated || !!ui.permissions?.edit_map;
 
   const {
     mapDiv,
@@ -276,7 +276,8 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     return toolbarPos.y + 60 > vh / 2 ? "top" : "bottom";
   })();
 
-  const displayX = (ui.showSidebar && toolbarPos.x < 380) ? 396 : Math.max(16, toolbarPos.x);
+  const displayX = (ui.showSidebar && toolbarPos.x < 380) ? 396 : Math.max(16, Math.min(typeof window !== "undefined" ? window.innerWidth - 300 : 800, toolbarPos.x));
+  const displayY = Math.max(20, Math.min(typeof window !== "undefined" ? window.innerHeight - 80 : 600, toolbarPos.y));
 
   const handleSvgFeatureClick = React.useCallback((featId: number | string, screenPt: { x: number; y: number }) => {
     const feat = drawnFeatures.find((f) => String(f.id) === String(featId));
@@ -305,15 +306,15 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         interactive={!bare}
         onFeatureClick={handleSvgFeatureClick}
       />
-      {/* Floating Draggable Drawing Toolbar (Solo usuarios con permiso edit_map) */}
-      {!bare && canEditMap && layerVisibility.sketch && (
+      {/* Floating Draggable Drawing Toolbar */}
+      {!bare && layerVisibility.sketch && (
         <div
           className="draw-toolbar-wrapper"
           style={{
             position: "fixed",
             left: displayX,
-            top: toolbarPos.y,
-            zIndex: 150,
+            top: displayY,
+            zIndex: 9999,
             transition: isDragging ? "none" : "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
@@ -406,7 +407,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         pointerEvents: "none",
       }}
     >
-          {/* Botón Flotante Discreto de Bitácora General (Verde Neón) */}
+          {/* Botón Flotante Discreto de Panel de Estadísticas (Cyan Neón) */}
           {actions.onOpenRangeReport && (
             <button
               className="bitacora-floating-btn"
@@ -416,22 +417,22 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
                 height: "32px",
                 borderRadius: "50%",
                 background: "rgba(10, 15, 29, 0.85)",
-                border: "1px solid rgba(34, 197, 94, 0.45)",
-                color: "#4ade80",
+                border: "1px solid rgba(56, 189, 248, 0.45)",
+                color: "#38bdf8",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 backdropFilter: "blur(10px)",
                 WebkitBackdropFilter: "blur(10px)",
-                boxShadow: "0 4px 12px rgba(34, 197, 94, 0.25)",
+                boxShadow: "0 4px 12px rgba(56, 189, 248, 0.25)",
                 transition: "all 0.2s ease",
                 padding: 0,
                 pointerEvents: "auto",
               }}
-              title="Abrir Bitácora General de Novedades"
+              title="Abrir Panel de Estadísticas"
             >
-              <Calendar size={16} style={{ color: "#4ade80" }} />
+              <BarChart2 size={16} style={{ color: "#38bdf8" }} />
             </button>
           )}
 

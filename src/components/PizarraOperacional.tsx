@@ -5,7 +5,6 @@ import { fetchFeatures } from "../services/featureService";
 import { fetchLogs, saveDailyLog } from "../services/logService";
 import { getNormalizedGroupList, getLocalDateStr } from "../utils/logUtils";
 import { exportWorkTeamsToExcel, type WorkTeamExportRow } from "../utils/excelExporter";
-import { generateAndDownloadReportImage } from "../utils/reportImageExporter";
 import type { DrawnFeature } from "../types";
 
 // Sub-components
@@ -15,13 +14,11 @@ import { WorkTeamsTab } from "./pizarra/WorkTeamsTab";
 import { DeleteConfirmModal } from "./pizarra/DeleteConfirmModal";
 import { EditWorkTeamModal } from "./pizarra/EditWorkTeamModal";
 import { CreateWorkTeamModal } from "./pizarra/CreateWorkTeamModal";
-import { ReportImageTab } from "./pizarra/ReportImageTab";
 
 export const PizarraOperacional: React.FC = () => {
   const { isAdmin, isOperador, isAuthenticated, permissions, loading } = useAuth();
   const canAccess = isAuthenticated && (isAdmin || isOperador);
 
-  const [activeTab, setActiveTab] = useState<"equipos" | "imagen">("equipos");
   const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateStr());
 
   const isToday = selectedDate === getLocalDateStr();
@@ -90,15 +87,6 @@ export const PizarraOperacional: React.FC = () => {
       isMounted = false;
     };
   }, [selectedDate, canAccess, refreshTeamsCounter]);
-
-  const handleExportReportImage = useCallback(() => {
-    generateAndDownloadReportImage({
-      features: allFeatures,
-      startDate: selectedDate,
-      endDate: selectedDate,
-      activeDepartment: deptFilter === "all" ? "mixto" : (deptFilter as any),
-    });
-  }, [allFeatures, selectedDate, deptFilter]);
 
   const handleSaveTeam = async (updatedTeam: WorkTeam) => {
     try {
@@ -394,31 +382,21 @@ export const PizarraOperacional: React.FC = () => {
       }}
     >
       <PizarraHeader
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
         canEdit={canEditLogs}
         handleExportTeamsExcel={handleExportTeamsExcel}
-        handleExportReportImage={handleExportReportImage}
         workTeamsCount={workTeams.length}
         onAddTeam={() => setIsCreateTeamOpen(true)}
       />
 
-      {activeTab === "equipos" ? (
-        <WorkTeamsTab
-          workTeams={workTeams}
-          deptFilter={deptFilter}
-          setDeptFilter={setDeptFilter}
-          onEditTeam={canEditLogs ? setEditingTeam : undefined}
-          onDeleteTeam={canEditLogs ? requestDeleteTeam : undefined}
-        />
-      ) : (
-        <ReportImageTab
-          features={allFeatures}
-          selectedDate={selectedDate}
-        />
-      )}
+      <WorkTeamsTab
+        workTeams={workTeams}
+        deptFilter={deptFilter}
+        setDeptFilter={setDeptFilter}
+        onEditTeam={canEditLogs ? setEditingTeam : undefined}
+        onDeleteTeam={canEditLogs ? requestDeleteTeam : undefined}
+      />
 
       <DeleteConfirmModal
         deleteTarget={deleteTarget}

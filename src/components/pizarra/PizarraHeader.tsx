@@ -5,8 +5,6 @@ import { BitacoraCalendar } from "../BitacoraCalendar";
 import { getLocalDateStr } from "../../utils/dateUtils";
 
 export interface PizarraHeaderProps {
-  activeTab: "equipos" | "imagen";
-  setActiveTab: (tab: "equipos" | "imagen") => void;
   selectedDate: string;
   setSelectedDate: (date: string) => void;
   canEdit: boolean;
@@ -25,8 +23,6 @@ export interface PizarraHeaderProps {
 }
 
 export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
-  activeTab,
-  setActiveTab,
   selectedDate,
   setSelectedDate,
   canEdit,
@@ -38,7 +34,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
   handleSaveAll: _handleSaveAll,
   handleAddCamp: _handleAddCamp,
   handleExportTeamsExcel,
-  handleExportReportImage,
+  handleExportReportImage: _handleExportReportImage,
   workTeamsCount,
   onAddTeam,
 }) => {
@@ -59,7 +55,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
 
   return (
     <>
-      {/* HEADER PRINCIPAL CON MARCA, PESTAÑAS Y PERFIL */}
+      {/* HEADER PRINCIPAL CON MARCA Y PERFIL */}
       <header
         style={{
           minHeight: "56px",
@@ -98,65 +94,28 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
             <Activity size={17} />
           </div>
           <span style={{ color: "#f8fafc", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "-0.01em", fontFamily: "var(--sans-font)" }}>
-            COE La Guaira <span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Consolidado Operacional</span>
+            COE La Guaira <span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Consolidado de Equipos de Trabajo</span>
           </span>
         </div>
 
-        {/* PESTAÑAS DE NAVEGACIÓN DENTRO DEL HEADER */}
-        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", justifyContent: "center", zIndex: 10 }}>
-          <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.4)", padding: "3px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
-            <button
-              onClick={() => setActiveTab("equipos")}
-              style={{
-                background: activeTab === "equipos" ? "#a855f7" : "transparent",
-                color: activeTab === "equipos" ? "#fff" : "var(--text-muted)",
-                border: "none",
-                borderRadius: "6px",
-                padding: "5px 12px",
-                fontSize: "0.72rem",
-                fontWeight: 700,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                transition: "all 0.15s ease",
-                fontFamily: "var(--sans-font)",
-              }}
-            >
-              <Users size={13} /> Equipos de Trabajo
-              <span
-                style={{
-                  background: activeTab === "equipos" ? "rgba(255, 255, 255, 0.25)" : "rgba(168, 85, 247, 0.2)",
-                  color: activeTab === "equipos" ? "#fff" : "#c084fc",
-                  borderRadius: "10px",
-                  padding: "0 6px",
-                  fontSize: "0.6rem",
-                  fontWeight: 800,
-                }}
-              >
-                {workTeamsCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab("imagen")}
-              style={{
-                background: activeTab === "imagen" ? "var(--accent-orange)" : "transparent",
-                color: activeTab === "imagen" ? "#fff" : "var(--text-muted)",
-                border: "none",
-                borderRadius: "6px",
-                padding: "5px 12px",
-                fontSize: "0.72rem",
-                fontWeight: 700,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                transition: "all 0.15s ease",
-                fontFamily: "var(--sans-font)",
-              }}
-            >
-              <ImageIcon size={13} /> Reporte en Imagen
-            </button>
+        {/* CONTADOR DE EQUIPOS EN EL HEADER */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "rgba(168, 85, 247, 0.15)",
+              border: "1px solid rgba(168, 85, 247, 0.3)",
+              borderRadius: "8px",
+              padding: "4px 10px",
+              color: "#c084fc",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+            }}
+          >
+            <Users size={14} />
+            <span>{workTeamsCount} Equipos</span>
           </div>
         </div>
 
@@ -228,48 +187,40 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
           )}
         </div>
 
-        {/* BOTÓN REPORTE EN IMAGEN (EXCLUSIVO DE /CONSOLIDADO) */}
-        {handleExportReportImage && (
+        <div style={{ height: "18px", width: "1px", background: "rgba(255, 255, 255, 0.12)" }} />
+
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <button
-            type="button"
-            onClick={handleExportReportImage}
-            title="Generar y descargar reporte en imagen institucional (PNG) de la fecha seleccionada"
+            onClick={handleExportTeamsExcel}
             style={{
               height: "32px",
-              background: "rgba(234, 88, 12, 0.2)",
-              border: "1px solid rgba(234, 88, 12, 0.5)",
-              borderRadius: "8px",
-              color: "#ea580c",
+              background: "rgba(34, 197, 94, 0.15)",
+              border: "1px solid rgba(34, 197, 94, 0.4)",
+              borderRadius: "6px",
+              color: "#4ade80",
               fontSize: "0.72rem",
               fontWeight: 700,
-              fontFamily: "var(--sans-font)",
-              padding: "0 12px",
+              padding: "0 10px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              gap: "6px",
-              transition: "all 0.15s ease",
+              gap: "5px",
+              fontFamily: "var(--sans-font)",
             }}
           >
-            <Download size={14} />
-            <span>Descargar Imagen</span>
+            <FileSpreadsheet size={14} />
+            <span>Excel</span>
           </button>
-        )}
 
-        <div style={{ height: "18px", width: "1px", background: "rgba(255, 255, 255, 0.12)" }} />
-
-
-
-        {activeTab === "equipos" && (
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {canEdit && onAddTeam && (
             <button
-              onClick={handleExportTeamsExcel}
+              onClick={onAddTeam}
               style={{
                 height: "32px",
-                background: "rgba(34, 197, 94, 0.15)",
-                border: "1px solid rgba(34, 197, 94, 0.4)",
+                background: "rgba(168, 85, 247, 0.15)",
+                border: "1px solid rgba(168, 85, 247, 0.4)",
                 borderRadius: "6px",
-                color: "#4ade80",
+                color: "#c084fc",
                 fontSize: "0.72rem",
                 fontWeight: 700,
                 padding: "0 10px",
@@ -280,35 +231,11 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
                 fontFamily: "var(--sans-font)",
               }}
             >
-              <FileSpreadsheet size={14} />
-              <span>Excel</span>
+              <Plus size={14} />
+              <span>Agregar Equipo</span>
             </button>
-
-            {canEdit && onAddTeam && (
-              <button
-                onClick={onAddTeam}
-                style={{
-                  height: "32px",
-                  background: "rgba(168, 85, 247, 0.15)",
-                  border: "1px solid rgba(168, 85, 247, 0.4)",
-                  borderRadius: "6px",
-                  color: "#c084fc",
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  padding: "0 10px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  fontFamily: "var(--sans-font)",
-                }}
-              >
-                <Plus size={14} />
-                <span>Agregar Equipo</span>
-              </button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         {!canEdit && (
           <div
