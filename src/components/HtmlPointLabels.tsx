@@ -235,11 +235,14 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
               className="html-point-label-teams"
               style={{
                 display: "flex",
-                flexWrap: "wrap",
+                flexWrap: "nowrap",
+                alignItems: "center",
+                justifyContent: "center",
                 gap: "3px",
                 marginTop: "4px",
                 fontSize: "8px",
                 fontWeight: 700,
+                whiteSpace: "nowrap",
               }}
             >
               {lbl.teamNames.slice(0, 3).map((name, i) => (
@@ -251,6 +254,8 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
                     border: "1px solid rgba(148,163,184,0.30)",
                     padding: "1px 5px",
                     borderRadius: "4px",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
                   }}
                 >
                   {name}
@@ -264,6 +269,8 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
                     border: "1px solid rgba(255,255,255,0.15)",
                     padding: "1px 5px",
                     borderRadius: "4px",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
                   }}
                 >
                   ... {lbl.teamNames.length - 3} más
@@ -287,6 +294,7 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
                 alignItems: "center",
                 gap: "4px",
                 marginTop: "4px",
+                whiteSpace: "nowrap",
               }}
             >
               <div
@@ -295,8 +303,9 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
                   gap: "4px",
                   fontSize: "8.5px",
                   fontWeight: 700,
-                  flexWrap: "wrap",
+                  flexWrap: "nowrap",
                   justifyContent: "center",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {!!lbl.rescuedCount && (
@@ -307,6 +316,8 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
                       border: "1px solid rgba(34,197,94,0.35)",
                       padding: "1px 5px",
                       borderRadius: "4px",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
                     }}
                   >
                     Resc. {lbl.rescuedCount}
@@ -320,6 +331,8 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
                       border: "1px solid rgba(239,68,68,0.35)",
                       padding: "1px 5px",
                       borderRadius: "4px",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
                     }}
                   >
                     Recup. {lbl.recoveredCount}
@@ -333,6 +346,8 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
                       border: "1px solid rgba(249,115,22,0.35)",
                       padding: "1px 5px",
                       borderRadius: "4px",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
                     }}
                   >
                     Masc. {lbl.rescuedPetsCount}
@@ -346,6 +361,8 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
                       border: "1px solid rgba(56,189,248,0.35)",
                       padding: "1px 5px",
                       borderRadius: "4px",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
                     }}
                   >
                     Atenc. {lbl.prehospitalCount}
@@ -359,6 +376,8 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
                       border: "1px solid rgba(168,85,247,0.35)",
                       padding: "1px 5px",
                       borderRadius: "4px",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
                     }}
                   >
                     Trasl. {lbl.transfersCount}
@@ -383,10 +402,12 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
                         alignItems: "center",
                         gap: "3px",
                         cursor: hasDesc ? "pointer" : "default",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
                       }}
                       title={hasDesc ? (isActExpanded ? "Ocultar detalle" : "Ver detalle") : undefined}
                     >
-                      <span>
+                      <span style={{ whiteSpace: "nowrap" }}>
                         {act.name}: {act.value}
                       </span>
 
