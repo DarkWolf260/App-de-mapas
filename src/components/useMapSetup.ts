@@ -55,6 +55,9 @@ export const useMapSetup = (props: UseMapSetupProps) => {
       setSelectedGraphic(g);
       setEditMode("transform");
     },
+    onToolComplete: () => {
+      setActiveTool(null);
+    },
     getActiveColor: () => activeColorRef.current,
   });
 

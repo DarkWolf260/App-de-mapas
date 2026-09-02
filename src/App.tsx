@@ -87,7 +87,7 @@ function App() {
             top: 0,
             left: 0,
             right: 0,
-            height: "48px",
+            height: "58px",
             background: "rgba(10, 15, 29, 0.95)",
             backdropFilter: "blur(16px)",
             WebkitBackdropFilter: "blur(16px)",
@@ -96,22 +96,23 @@ function App() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "0 12px",
+            padding: "0 14px",
             color: "#ffffff",
             fontFamily: "var(--font-sans)",
             boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
           }}
         >
           {/* Botón Menú + Logo + Título */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <button
               onClick={() => state.setSidebarCollapsed(!state.sidebarCollapsed)}
               style={{
                 background: "rgba(255,255,255,0.06)",
                 border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: "6px",
+                borderRadius: "8px",
                 color: "#ffffff",
-                padding: "6px",
+                width: "36px",
+                height: "36px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -119,30 +120,30 @@ function App() {
               }}
               title="Abrir menú"
             >
-              <Menu size={16} />
+              <Menu size={20} />
             </button>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <div
                 style={{
-                  width: "26px",
-                  height: "26px",
+                  width: "34px",
+                  height: "34px",
                   borderRadius: "50%",
                   background: "linear-gradient(135deg, #f97316, #ea580c)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 0 10px rgba(249,115,22,0.4)",
+                  boxShadow: "0 0 12px rgba(249,115,22,0.45)",
                   flexShrink: 0,
                 }}
               >
-                <Activity size={15} color="#ffffff" />
+                <Activity size={19} color="#ffffff" />
               </div>
-              <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.15 }}>
-                <span style={{ fontWeight: 800, fontSize: "0.82rem", color: "#ffffff", letterSpacing: "0.02em" }}>
+              <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+                <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#ffffff", letterSpacing: "0.02em" }}>
                   COE La Guaira
                 </span>
-                <span style={{ fontSize: "0.58rem", color: "var(--accent-orange)", fontWeight: 700 }}>
+                <span style={{ fontSize: "0.68rem", color: "var(--accent-orange)", fontWeight: 700 }}>
                   SIG Protección Civil
                 </span>
               </div>
@@ -327,6 +328,7 @@ function App() {
           <MobileSettingsSheet
             layerVisibility={state.layerVisibility}
             onToggleLayer={state.handleToggleLayer}
+            canEditMap={isAuthenticated && (isAdmin || !!permissions?.edit_map)}
           />
         </Sheet>
       )}

@@ -1,5 +1,22 @@
 /* Responsive Design - Móviles y Tablets (<= 768px) */
 @media (max-width: 768px) {
+  /* Contenedor y Mapa a pantalla completa fluida */
+  .app-container {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    position: relative;
+    width: 100vw;
+  }
+
+  .map-wrapper {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
   /* Sidebar: full-screen overlay en móvil */
   .sidebar {
     position: fixed;
@@ -9,6 +26,7 @@
     min-width: 100vw;
     max-width: 100vw;
     height: 100vh;
+    height: 100dvh;
     z-index: 200;
     margin-left: 0;
   }
@@ -49,10 +67,78 @@
     }
   }
 
-  /* Bitácora modal: full-screen en móvil */
+  /* Modal de Estadísticas (RangeReportModal): pantalla completa y tablas adaptadas */
   .rr-backdrop {
-    width: 100vw;
-    max-width: 100vw;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .rr-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  .rr-header {
+    padding: 12px 14px 10px !important;
+  }
+
+  .rr-stats-list {
+    padding: 10px 8px !important;
+    gap: 12px !important;
+  }
+
+  .rr-stats-cards-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .rr-scard {
+    padding: 8px 6px !important;
+    border-radius: 8px !important;
+    gap: 2px !important;
+    text-align: center !important;
+    align-items: center !important;
+  }
+
+  .rr-scard-val {
+    font-size: 1.05rem !important;
+  }
+
+  .rr-scard-label {
+    font-size: 0.52rem !important;
+    letter-spacing: 0 !important;
+  }
+
+  .rr-stats-table-wrap {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin: 4px 0 !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .rr-stats-table {
+    min-width: 480px !important;
+    font-size: 0.68rem !important;
+  }
+
+  .rr-stats-table th {
+    padding: 6px 6px !important;
+    font-size: 0.58rem !important;
+    white-space: nowrap !important;
+  }
+
+  .rr-stats-table td {
+    padding: 6px 6px !important;
+    font-size: 0.68rem !important;
+    white-space: nowrap !important;
   }
 
   /* Ocultar zoom y brújula de ArcGIS en móvil */
@@ -144,34 +230,50 @@
     display: none !important;
   }
 
-  /* DateTimeline: más compacto */
+  /* DateTimeline: más grande, accesible y posicionado sobre la barra inferior */
   .date-timeline {
-    padding: 4px 8px;
-    gap: 4px;
-    bottom: 58px;
+    position: fixed !important;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 140 !important;
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    border-radius: 14px !important;
+    max-width: calc(100vw - 16px);
+    box-sizing: border-box;
+    pointer-events: auto;
   }
 
   .dt-nav-btn,
   .dt-calendar-btn,
   .dt-today-btn {
-    padding: 4px 8px;
-    font-size: 10px;
+    padding: 0 8px !important;
+    height: 38px !important;
+    min-width: 34px !important;
+    font-size: 11px !important;
+    border-radius: 8px !important;
   }
 
   .dt-date-btn {
-    padding: 2px 6px;
+    padding: 3px 7px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    border-radius: 8px !important;
   }
 
   .dt-date-day {
-    font-size: 11px;
+    font-size: 13px !important;
+    font-weight: 700 !important;
   }
 
   .dt-date-month {
-    font-size: 8px;
+    font-size: 9px !important;
+    font-weight: 600 !important;
   }
 
   .dt-dates {
-    gap: 3px;
+    gap: 4px !important;
   }
 
   /* UserNavMenu: mostrar solo icono en móvil */
@@ -191,26 +293,68 @@
     display: none;
   }
 
+  /* Drawing toolbar: en el centro vertical alineado a la derecha en móvil */
+  .draw-toolbar-wrapper {
+    position: fixed !important;
+    right: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    left: auto !important;
+    bottom: auto !important;
+    z-index: 150 !important;
+  }
 
-
-  /* Drawing toolbar: compacto */
   .draw-toolbar {
-    padding: 4px 6px;
-    gap: 3px;
+    flex-direction: column !important;
+    padding: 6px 4px !important;
+    gap: 4px !important;
+    border-radius: 10px !important;
   }
 
   .draw-tool-btn {
-    padding: 4px 7px;
-    font-size: 10px;
-    gap: 4px;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    border-radius: 8px !important;
+  }
+
+  .draw-tool-icon {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .draw-tool-label {
+    display: none !important;
   }
 
   .draw-toolbar-divider {
-    margin: 0 2px;
+    width: 22px !important;
+    height: 1px !important;
+    margin: 3px 0 !important;
   }
 
   .drag-handle {
-    padding: 2px;
+    display: none !important;
+  }
+
+  .color-picker-popover {
+    right: 100% !important;
+    left: auto !important;
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translateY(-50%) !important;
+    margin-right: 10px !important;
+    margin-bottom: 0 !important;
+    max-width: 220px !important;
+  }
+
+  .color-grid {
+    grid-template-columns: repeat(5, 24px) !important;
+    gap: 6px !important;
   }
 
   .swipe-label-bar {
@@ -295,19 +439,113 @@
   }
 
   .dt-calendar-popup {
-    width: calc(100vw - 32px);
-    max-width: 300px;
+    position: absolute !important;
+    bottom: calc(100% + 8px) !important;
+    right: 0 !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+    z-index: 10000 !important;
+  }
+
+  /* ==========================================================================
+     Consolidado / Pizarra Operacional - Móvil
+     ========================================================================== */
+  .pizarra-header {
+    padding: 8px 12px !important;
+    gap: 8px !important;
+  }
+
+  .pizarra-header-subtitle {
+    display: none !important;
+  }
+
+  .pizarra-bottom-bar {
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    width: calc(100vw - 20px) !important;
+    max-width: 440px !important;
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    justify-content: space-between !important;
+  }
+
+  .pizarra-main {
+    padding: 10px 10px 80px 10px !important;
+    gap: 10px !important;
+  }
+
+  .pizarra-toolbar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .pizarra-toolbar-search {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .pizarra-toolbar-dept {
+    width: 100% !important;
+  }
+
+  .pizarra-dept-switch {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .pizarra-dept-btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: 6px 4px !important;
+    font-size: 0.68rem !important;
+  }
+
+  .pizarra-toolbar-stats {
+    width: 100% !important;
+    margin-left: 0 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+  }
+
+  .pizarra-stat-pill {
+    padding: 4px 8px !important;
+    flex: 1 !important;
+    justify-content: center !important;
+  }
+
+  .pizarra-cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .pizarra-table-container {
+    width: 100% !important;
+    border-radius: 8px !important;
+  }
+
+  .pizarra-table {
+    min-width: 650px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .pizarra-table th,
+  .pizarra-table td {
+    padding: 8px 10px !important;
+    white-space: nowrap !important;
   }
 }
 
 /* Responsive - Móviles pequeños (<= 480px) */
 @media (max-width: 480px) {
-  .draw-tool-btn span {
-    display: none;
-  }
-
   .draw-tool-btn {
-    padding: 4px 6px;
+    width: 34px !important;
+    height: 34px !important;
+    padding: 0 !important;
   }
 
   .deployed-staff-widget {
@@ -316,24 +554,33 @@
   }
 
   .date-timeline {
-    padding: 3px 6px;
-    gap: 2px;
-    border-radius: 8px;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 5px 8px !important;
+    gap: 4px !important;
+    border-radius: 12px !important;
   }
 
   .dt-nav-btn,
   .dt-calendar-btn,
   .dt-today-btn {
-    padding: 3px 6px;
-    font-size: 9px;
+    padding: 0 6px !important;
+    height: 36px !important;
+    min-width: 32px !important;
+    font-size: 10px !important;
   }
 
   .dt-dates {
-    gap: 2px;
+    gap: 3px !important;
   }
 
   .dt-date-btn {
-    padding: 1px 4px;
+    padding: 2px 5px !important;
+    min-width: 34px !important;
+    min-height: 36px !important;
+  }
+
+  .dt-date-day {
+    font-size: 12px !important;
   }
 
   .dt-date-day {

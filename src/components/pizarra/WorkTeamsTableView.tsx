@@ -49,8 +49,8 @@ const SortableHeader: React.FC<SortableHeaderProps> = ({ label, alignCenter, fie
 };
 
 export const WorkTeamsTableView: React.FC<WorkTeamsTableViewProps> = ({ teams, sortField, sortDirection, onSort, searchQuery, onEditTeam, onDeleteTeam }) => (
-  <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "auto", flex: 1, minHeight: 0 }}>
-    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.74rem" }}>
+  <div className="pizarra-table-container">
+    <table className="pizarra-table">
       <thead>
         <tr style={{ color: "var(--text-muted)", textTransform: "uppercase", fontSize: "0.62rem", letterSpacing: "0.05em" }}>
           <SortableHeader label="Equipo de Trabajo" field="groupName" activeSortField={sortField} sortDirection={sortDirection} onSort={onSort} />

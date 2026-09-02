@@ -51,32 +51,23 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const tomorrowStr = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  })();
+
   const formattedDate = selectedDate ? selectedDate.split("-").reverse().join("/") : "";
 
   return (
     <>
       {/* HEADER PRINCIPAL CON MARCA Y PERFIL */}
-      <header
-        style={{
-          minHeight: "56px",
-          backgroundColor: "var(--bg-primary)",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "8px 24px",
-          position: "sticky",
-          top: 0,
-          zIndex: 50,
-          width: "100%",
-          boxSizing: "border-box",
-          flexShrink: 0,
-          flexWrap: "wrap",
-          gap: "12px",
-        }}
-      >
+      <header className="pizarra-header">
         {/* LOGO + MARCA */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
           <div
             style={{
               width: "32px",
@@ -93,36 +84,15 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
           >
             <Activity size={17} />
           </div>
-          <span style={{ color: "#f8fafc", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "-0.01em", fontFamily: "var(--sans-font)" }}>
-            COE La Guaira <span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Consolidado de Equipos de Trabajo</span>
+          <span style={{ color: "#f8fafc", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "-0.01em", fontFamily: "var(--sans-font)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            COE La Guaira <span className="pizarra-header-subtitle" style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Consolidado de Equipos de Trabajo</span>
           </span>
         </div>
         <UserNavMenu currentPage="consolidado" />
       </header>
 
       {/* BARRA FLOTANTE INFERIOR DE ACCIONES Y CALENDARIO */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: "16px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 1000,
-          background: "rgba(15, 23, 42, 0.94)",
-          border: "1px solid rgba(255, 255, 255, 0.14)",
-          borderRadius: "14px",
-          padding: "6px 14px",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          boxShadow: "0 10px 35px rgba(0, 0, 0, 0.6)",
-          maxWidth: "95vw",
-          flexWrap: "wrap",
-          justifyContent: "center",
-        }}
-      >
+      <div className="pizarra-bottom-bar">
         {/* CALENDARIO */}
         <div className="dt-calendar-wrapper" ref={calendarRef}>
           <button
@@ -155,7 +125,7 @@ export const PizarraHeader: React.FC<PizarraHeaderProps> = ({
               <BitacoraCalendar
                 selectedDate={selectedDate}
                 minDate="2026-06-24"
-                maxDate={getLocalDateStr()}
+                maxDate={tomorrowStr}
                 onSelectDate={(dateStr) => {
                   setSelectedDate(dateStr);
                   setShowCalendar(false);

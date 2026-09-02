@@ -61,7 +61,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const canEditMap = ui.isAdmin || !ui.isAuthenticated || !!ui.permissions?.edit_map;
+  const canEditMap = ui.isAuthenticated && (ui.isAdmin || !!ui.permissions?.edit_map);
 
   const {
     mapDiv,
@@ -307,16 +307,23 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         onFeatureClick={handleSvgFeatureClick}
       />
       {/* Floating Draggable Drawing Toolbar */}
-      {!bare && layerVisibility.sketch && (
+      {!bare && canEditMap && layerVisibility.sketch && (
         <div
           className="draw-toolbar-wrapper"
-          style={{
-            position: "fixed",
-            left: displayX,
-            top: displayY,
-            zIndex: 9999,
-            transition: isDragging ? "none" : "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          }}
+          style={
+            isMobile
+              ? {
+                  position: "fixed",
+                  zIndex: 150,
+                }
+              : {
+                  position: "fixed",
+                  left: displayX,
+                  top: displayY,
+                  zIndex: 150,
+                  transition: isDragging ? "none" : "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                }
+          }
         >
           <DrawingToolbar
             activeTool={activeTool}
@@ -328,7 +335,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
             hasSelection={!!selectedGraphic}
             activeColor={activeColor}
             onColorChange={handleColorChange}
-            dragHandleProps={dragHandleProps}
+            dragHandleProps={isMobile ? undefined : dragHandleProps}
             popoverDirection={popoverDirection}
           />
         </div>
@@ -436,17 +443,15 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
             </button>
           )}
 
-          {/* Botón Flotante Grupos de Trabajo */}
           {/* Map Settings & Layer Visibility Panel */}
           {props.onToggleLayer && (
             <div style={{ pointerEvents: "auto" }} className="map-settings-wrapper">
               <MapSettingsPanel
-                activeBasemap={props.activeBasemap}
-                onSelectBasemap={props.onSelectBasemap}
                 layerVisibility={layerVisibility}
                 onToggleLayer={props.onToggleLayer}
                 expanded={showMapSettings}
                 onToggle={() => setShowMapSettings((v) => !v)}
+                canEditMap={canEditMap}
               />
             </div>
           )}

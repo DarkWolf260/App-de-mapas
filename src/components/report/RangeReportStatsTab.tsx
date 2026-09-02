@@ -79,7 +79,7 @@ export const RangeReportStatsTab: React.FC<RangeReportStatsTabProps> = ({
   sortedIndependentGroups,
 }) => {
   return (
-    <div className="rr-list" style={{ gap: "20px", padding: "18px 24px" }}>
+    <div className="rr-list rr-stats-list">
       {/* Global period totals */}
       <div className="rr-stats-cards-grid">
         <div className="rr-scard" style={{ borderColor: "rgba(34,197,94,0.3)" }}>

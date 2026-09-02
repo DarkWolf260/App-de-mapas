@@ -7,6 +7,7 @@ interface MapSettingsPanelProps {
   onToggleLayer: (layerName: keyof LayerVisibility) => void;
   expanded: boolean;
   onToggle: () => void;
+  canEditMap?: boolean;
 }
 
 const TOGGLES: Array<{ key: keyof LayerVisibility; label: string }> = [
@@ -24,7 +25,9 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
   onToggleLayer,
   expanded,
   onToggle,
+  canEditMap = false,
 }) => {
+  const visibleToggles = TOGGLES.filter((t) => t.key !== "sketch" || canEditMap);
   if (!expanded) {
     return (
       <button
@@ -107,7 +110,7 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        {TOGGLES.map(({ key, label }) => (
+        {visibleToggles.map(({ key, label }) => (
           <div key={key} className="toggle-item">
             <span className="toggle-label" style={{ fontSize: "0.68rem" }}>
               {label}

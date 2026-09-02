@@ -3,6 +3,7 @@
   display: flex;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   position: relative;
   background-color: var(--bg-primary);
   font-family: var(--sans-font);

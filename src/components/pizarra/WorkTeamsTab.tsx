@@ -100,7 +100,7 @@ export const WorkTeamsTab: React.FC<WorkTeamsTabProps> = ({
   const totalOfficers = filteredTeams.reduce((sum, t) => sum + t.officersCount, 0);
 
   return (
-    <main style={{ padding: "16px 24px 80px 24px", flex: 1, minHeight: 0, width: "100%", maxWidth: "1600px", margin: "0 auto", boxSizing: "border-box", overflow: "hidden", display: "flex", flexDirection: "column", gap: "16px" }}>
+    <main className="pizarra-main">
       <style>{`
         .team-card-container {
           position: relative;
@@ -125,6 +125,13 @@ export const WorkTeamsTab: React.FC<WorkTeamsTabProps> = ({
         .team-table-row:hover .table-edit-btn {
           opacity: 1 !important;
           transform: scale(1) !important;
+        }
+        @media (hover: none), (max-width: 768px) {
+          .team-card-edit-btn,
+          .team-table-row .table-edit-btn {
+            opacity: 1 !important;
+            transform: scale(1) !important;
+          }
         }
       `}</style>
 
@@ -153,14 +160,7 @@ export const WorkTeamsTab: React.FC<WorkTeamsTabProps> = ({
               {teamSearchQuery ? "No se encontraron equipos que coincidan con la búsqueda." : "No hay equipos de trabajo registrados para la fecha seleccionada."}
             </div>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                gap: "16px",
-                width: "100%",
-              }}
-            >
+            <div className="pizarra-cards-grid">
               {sortedTeams.map((team) => (
                 <WorkTeamCard key={team.id} team={team} onEditTeam={onEditTeam} onDeleteTeam={onDeleteTeam} />
               ))}

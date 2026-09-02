@@ -137,6 +137,8 @@ export const CreateWorkTeamModal: React.FC<CreateWorkTeamModalProps> = ({
           borderRadius: "12px",
           width: "100%",
           maxWidth: "520px",
+          maxHeight: "90vh",
+          overflowY: "auto",
           display: "flex",
           flexDirection: "column",
           gap: "16px",

@@ -15,6 +15,7 @@ function formatDate(dateStr: string): { day: string; dayName: string } {
 function buildDateRange(startDate: string): string[] {
   const dates: string[] = [];
   const end = new Date();
+  end.setDate(end.getDate() + 1); // Mañana
   end.setHours(0, 0, 0, 0);
   const start = new Date(startDate + "T00:00:00");
   let current = new Date(start);
@@ -38,14 +39,36 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
 }) => {
   const allDates = useMemo(() => buildDateRange(startDate), [startDate]);
   const todayStr = useMemo(() => new Date().toLocaleDateString("en-CA"), []);
+  const tomorrowStr = useMemo(() => {
+    const t = new Date();
+    t.setDate(t.getDate() + 1);
+    return t.toLocaleDateString("en-CA");
+  }, []);
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  const calendarWrapperRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!calendarOpen) return;
+    const handleOutside = (e: MouseEvent | TouchEvent) => {
+      if (calendarWrapperRef.current && !calendarWrapperRef.current.contains(e.target as Node)) {
+        setCalendarOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("touchstart", handleOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+    };
+  }, [calendarOpen]);
 
   const selectedIndex = allDates.indexOf(selectedDate);
 
   const windowSize = 5;
   const half = Math.floor(windowSize / 2);
   const startIdx = Math.max(0, Math.min(selectedIndex - half, allDates.length - windowSize));
-  const visibleDates = allDates.slice(startIdx, startIdx + windowSize).filter((d) => d <= todayStr);
+  const visibleDates = allDates.slice(startIdx, startIdx + windowSize).filter((d) => d <= tomorrowStr);
 
   const handlePrev = () => {
     if (selectedIndex > 0) {
@@ -55,7 +78,10 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
 
   const handleNext = () => {
     if (selectedIndex < allDates.length - 1) {
-      onDateChange(allDates[selectedIndex + 1]);
+      const nextDate = allDates[selectedIndex + 1];
+      if (nextDate <= tomorrowStr) {
+        onDateChange(nextDate);
+      }
     }
   };
 
@@ -97,19 +123,19 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
       <button
         className="dt-nav-btn"
         onClick={handleNext}
-        disabled={selectedIndex >= allDates.length - 1}
+        disabled={selectedIndex >= allDates.length - 1 || allDates[selectedIndex] >= tomorrowStr}
         title="Día siguiente"
       >
         <ChevronRight size={14} />
       </button>
 
-      <div className="dt-calendar-wrapper">
+      <div className="dt-calendar-wrapper" ref={calendarWrapperRef}>
         <button
           className="dt-calendar-btn"
           onClick={() => setCalendarOpen((prev) => !prev)}
           title="Seleccionar fecha"
         >
-          <Calendar size={13} />
+          <Calendar size={14} />
         </button>
 
         {calendarOpen && (
@@ -121,6 +147,7 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
                 setCalendarOpen(false);
               }}
               minDate={startDate}
+              maxDate={tomorrowStr}
             />
           </div>
         )}

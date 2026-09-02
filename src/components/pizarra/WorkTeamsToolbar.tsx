@@ -51,10 +51,12 @@ const sortOptionStyle = (selected: boolean): React.CSSProperties => ({
 
 const SortDropdown: React.FC<SortDropdownProps> = ({ sortField, sortDirection, onSortField, onSortDirection, onClose }) => (
   <div
+    className="pizarra-sort-dropdown"
     style={{
       position: "absolute",
       top: "34px",
-      left: 0,
+      right: 0,
+      left: "auto",
       width: "200px",
       background: "rgba(13, 17, 24, 0.98)",
       border: "1px solid rgba(255, 255, 255, 0.12)",
@@ -118,26 +120,17 @@ export const WorkTeamsToolbar: React.FC<WorkTeamsToolbarProps> = ({
   totalOfficers,
 }) => {
   return (
-    <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", width: "100%", minHeight: "44px" }}>
-      <div style={{ display: "flex", gap: "10px", flex: 1, maxWidth: "520px", minWidth: "280px", flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ position: "relative", flex: 1.5, minWidth: "180px" }}>
+    <div className="pizarra-toolbar">
+      {/* Search + Sort */}
+      <div className="pizarra-toolbar-search">
+        <div style={{ position: "relative", flex: 1, minWidth: "140px" }}>
           <Search size={15} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
           <input
             type="text"
             placeholder="Buscar equipo, punto..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            style={{
-              width: "100%",
-              background: "rgba(0, 0, 0, 0.3)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "6px",
-              color: "#fff",
-              fontSize: "0.76rem",
-              padding: "6px 10px 6px 32px",
-              outline: "none",
-              fontFamily: "var(--sans-font)",
-            }}
+            className="pizarra-search-input"
           />
         </div>
 
@@ -146,28 +139,7 @@ export const WorkTeamsToolbar: React.FC<WorkTeamsToolbarProps> = ({
             <button
               type="button"
               onClick={onToggleSort}
-              style={{
-                width: "30px",
-                height: "30px",
-                background: "rgba(0, 0, 0, 0.4)",
-                border: "1px solid var(--border-color)",
-                borderRadius: "6px",
-                color: isSortOpen ? "var(--accent-orange)" : "#fff",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                outline: "none",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
-                if (!isSortOpen) e.currentTarget.style.color = "var(--accent-orange)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--border-color)";
-                if (!isSortOpen) e.currentTarget.style.color = "#fff";
-              }}
+              className={`pizarra-icon-btn ${isSortOpen ? "active" : ""}`}
               title="Filtros y Ordenación"
             >
               <Filter size={14} />
@@ -186,102 +158,50 @@ export const WorkTeamsToolbar: React.FC<WorkTeamsToolbarProps> = ({
         )}
       </div>
 
-      <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", justifyContent: "center", zIndex: 10 }}>
-        <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.4)", padding: "3px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+      {/* Dept Switcher */}
+      <div className="pizarra-toolbar-dept">
+        <div className="pizarra-dept-switch">
           <button
             type="button"
             onClick={() => onDeptFilterChange("pc")}
-            style={{
-              background: deptFilter === "pc" ? "var(--accent-orange)" : "transparent",
-              color: deptFilter === "pc" ? "#fff" : "var(--text-muted)",
-              border: "none",
-              borderRadius: "6px",
-              padding: "5px 12px",
-              fontSize: "0.72rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              transition: "all 0.15s ease",
-              fontFamily: "var(--sans-font)",
-            }}
+            className={`pizarra-dept-btn ${deptFilter === "pc" ? "active-pc" : ""}`}
           >
-            <Shield size={13} /> Protección Civil
+            <Shield size={13} /> <span>Protección Civil</span>
           </button>
           <button
             type="button"
             onClick={() => onDeptFilterChange("bomberos")}
-            style={{
-              background: deptFilter === "bomberos" ? "#ef4444" : "transparent",
-              color: deptFilter === "bomberos" ? "#fff" : "var(--text-muted)",
-              border: "none",
-              borderRadius: "6px",
-              padding: "5px 12px",
-              fontSize: "0.72rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              transition: "all 0.15s ease",
-              fontFamily: "var(--sans-font)",
-            }}
+            className={`pizarra-dept-btn ${deptFilter === "bomberos" ? "active-bomberos" : ""}`}
           >
-            <Flame size={13} /> Bomberos
+            <Flame size={13} /> <span>Bomberos</span>
           </button>
           <button
             type="button"
             onClick={() => onDeptFilterChange("all")}
-            style={{
-              background: deptFilter === "all" ? "#a855f7" : "transparent",
-              color: deptFilter === "all" ? "#fff" : "var(--text-muted)",
-              border: "none",
-              borderRadius: "6px",
-              padding: "5px 12px",
-              fontSize: "0.72rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              transition: "all 0.15s ease",
-              fontFamily: "var(--sans-font)",
-            }}
+            className={`pizarra-dept-btn ${deptFilter === "all" ? "active-all" : ""}`}
           >
-            <Users size={13} /> Ambos
+            <Users size={13} /> <span>Ambos</span>
           </button>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "10px", alignItems: "center", marginLeft: "auto" }}>
-        <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "6px", padding: "6px 12px", display: "flex", gap: "8px", alignItems: "center" }}>
-          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Equipos Registrados</span>
-          <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#c084fc", fontFamily: "var(--sans-font)" }}>{totalTeams}</span>
+      {/* Stats and View Toggle */}
+      <div className="pizarra-toolbar-stats">
+        <div className="pizarra-stat-pill">
+          <span className="pizarra-stat-label">Equipos</span>
+          <span className="pizarra-stat-val" style={{ color: "#c084fc" }}>{totalTeams}</span>
         </div>
 
-        <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "6px", padding: "6px 12px", display: "flex", gap: "8px", alignItems: "center" }}>
-          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Efectivos Totales</span>
-          <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "var(--accent-orange)", fontFamily: "var(--sans-font)" }}>
-            {totalOfficers}
-          </span>
+        <div className="pizarra-stat-pill">
+          <span className="pizarra-stat-label">Efectivos</span>
+          <span className="pizarra-stat-val" style={{ color: "var(--accent-orange)" }}>{totalOfficers}</span>
         </div>
 
-        <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.4)", padding: "2px", borderRadius: "6px", border: "1px solid var(--border-color)", height: "30px", boxSizing: "border-box" }}>
+        <div className="pizarra-view-switch">
           <button
             type="button"
             onClick={() => onViewModeChange("cards")}
-            style={{
-              background: viewMode === "cards" ? "rgba(255, 255, 255, 0.1)" : "transparent",
-              border: "none",
-              borderRadius: "4px",
-              color: viewMode === "cards" ? "#fff" : "var(--text-muted)",
-              cursor: "pointer",
-              padding: "2px 8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className={`pizarra-view-btn ${viewMode === "cards" ? "active" : ""}`}
             title="Vista de Tarjetas"
           >
             <LayoutGrid size={13} />
@@ -289,17 +209,7 @@ export const WorkTeamsToolbar: React.FC<WorkTeamsToolbarProps> = ({
           <button
             type="button"
             onClick={() => onViewModeChange("table")}
-            style={{
-              background: viewMode === "table" ? "rgba(255, 255, 255, 0.1)" : "transparent",
-              border: "none",
-              borderRadius: "4px",
-              color: viewMode === "table" ? "#fff" : "var(--text-muted)",
-              cursor: "pointer",
-              padding: "2px 8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className={`pizarra-view-btn ${viewMode === "table" ? "active" : ""}`}
             title="Vista de Tabla"
           >
             <Table size={13} />

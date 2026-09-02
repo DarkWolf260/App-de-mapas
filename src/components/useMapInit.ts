@@ -34,6 +34,7 @@ export interface MapInitCallbacks {
   onFeatureDeleted: (id: number) => void;
   onFeatureClick?: () => void;
   onGraphicSelected?: (graphic: Graphic) => void;
+  onToolComplete?: () => void;
   getActiveColor: () => Color;
 }
 
@@ -51,9 +52,11 @@ export function useMapInit(
   const deconflictGraphicsRef = useRef<() => void>(() => { });
   const onFeatureAddedRef = useRef(callbacks.onFeatureAdded);
   const onFeatureDeletedRef = useRef(callbacks.onFeatureDeleted);
+  const onToolCompleteRef = useRef(callbacks.onToolComplete);
 
   useEffect(() => { onFeatureAddedRef.current = callbacks.onFeatureAdded; }, [callbacks.onFeatureAdded]);
   useEffect(() => { onFeatureDeletedRef.current = callbacks.onFeatureDeleted; }, [callbacks.onFeatureDeleted]);
+  useEffect(() => { onToolCompleteRef.current = callbacks.onToolComplete; }, [callbacks.onToolComplete]);
 
   const drawnFeaturesRef = useRef<DrawnFeature[]>([]);
   const hiddenFeaturesRef = useRef<Record<string, boolean>>({});
@@ -143,6 +146,7 @@ export function useMapInit(
 
         svm.on("create", (evt: any) => {
           if (evt.state === "complete") {
+            onToolCompleteRef.current?.();
             const g = evt.graphic;
             const count = sketchLayer.graphics.filter((x) => !x.attributes?.isLabel && x.geometry?.type === g.geometry?.type).length + 1;
             const title = typeLabel(g.geometry.type) + " " + count;
@@ -180,7 +184,9 @@ export function useMapInit(
             }
             setTimeout(runDeconflict, 50);
           }
-          if (evt.state === "cancel") { /* handled externally */ }
+          if (evt.state === "cancel") {
+            onToolCompleteRef.current?.();
+          }
         });
 
         svm.on("update", (evt: any) => {

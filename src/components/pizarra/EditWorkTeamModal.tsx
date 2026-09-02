@@ -127,6 +127,8 @@ export const EditWorkTeamModal: React.FC<EditWorkTeamModalProps> = ({
           borderRadius: "12px",
           width: "100%",
           maxWidth: "520px",
+          maxHeight: "90vh",
+          overflowY: "auto",
           display: "flex",
           flexDirection: "column",
           gap: "16px",

@@ -788,7 +788,23 @@
   font-family: var(--font-mono, monospace);
 }
 
-/* Stats Table (used in MapInfoModal) */
+.rr-stats-list {
+  padding: 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+}
+
+/* Stats Table (used in MapInfoModal and RangeReport) */
+.rr-stats-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 8px;
+  background: rgba(10, 15, 29, 0.4);
+}
+
 .rr-stats-table {
   width: 100%;
   border-collapse: collapse;
@@ -796,14 +812,15 @@
 }
 
 .rr-stats-table th {
-  padding: 6px 8px;
+  padding: 8px 10px;
   text-align: left;
-  font-size: 0.62rem;
+  font-size: 0.64rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
 }
 
 .rr-stats-table td {
