@@ -106,7 +106,7 @@ export const UserNavMenu: React.FC<UserNavMenuProps> = ({ currentPage = "mapa" }
             {currentPage !== "mapa" && (
               <button
                 onClick={() => {
-                  window.open('/', '_self');
+                  window.location.href = '/';
                   setOpen(false);
                 }}
                 style={{
@@ -141,7 +141,7 @@ export const UserNavMenu: React.FC<UserNavMenuProps> = ({ currentPage = "mapa" }
             {currentPage !== "consolidado" && (
               <button
                 onClick={() => {
-                  window.open('/consolidado', '_blank');
+                  window.location.href = '/consolidado';
                   setOpen(false);
                 }}
                 style={{
@@ -176,7 +176,7 @@ export const UserNavMenu: React.FC<UserNavMenuProps> = ({ currentPage = "mapa" }
             {isAdmin && currentPage !== "admin" && (
               <button
                 onClick={() => {
-                  window.open('/admin', '_blank');
+                  window.location.href = '/admin';
                   setOpen(false);
                 }}
                 style={{

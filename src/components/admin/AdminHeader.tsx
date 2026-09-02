@@ -2,7 +2,7 @@ import React from "react";
 import { Shield, Users, Database, Layers, RefreshCw } from "lucide-react";
 import { UserNavMenu } from "../UserNavMenu";
 
-export type AdminSection = "usuarios" | "bases" | "capas";
+export type AdminSection = "usuarios" | "capas";
 
 interface AdminHeaderProps {
   activeSection: AdminSection;
@@ -36,88 +36,72 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   onRefresh,
 }) => {
   return (
-    <header
-      style={{
-        minHeight: "56px",
-        backgroundColor: "var(--bg-primary)",
-        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-        display: "grid",
-        gridTemplateColumns: "1fr auto 1fr",
-        alignItems: "center",
-        gap: "12px",
-        padding: "8px 24px",
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        width: "100%",
-        boxSizing: "border-box",
-        flexShrink: 0,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", justifySelf: "start", minWidth: 0 }}>
-        <div
-          style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "8px",
-            background: "linear-gradient(135deg, var(--accent-orange), #ea580c)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-            boxShadow: "0 2px 10px rgba(249, 115, 22, 0.3)",
-            flexShrink: 0,
-          }}
-        >
-          <Shield size={17} />
+    <>
+      {/* APPBAR IDÉNTICA AL CONSOLIDADO */}
+      <header className="pizarra-header">
+        {/* LOGO + MARCA */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+          <div
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "8px",
+              background: "linear-gradient(135deg, var(--accent-orange), #ea580c)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              boxShadow: "0 2px 10px rgba(249, 115, 22, 0.3)",
+              flexShrink: 0,
+            }}
+          >
+            <Shield size={17} />
+          </div>
+          <span style={{ color: "#f8fafc", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "-0.01em", fontFamily: "var(--sans-font)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            COE La Guaira <span className="pizarra-header-subtitle" style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Panel de Administración</span>
+          </span>
         </div>
-        <span style={{ color: "#f8fafc", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "-0.01em", fontFamily: "var(--sans-font)", whiteSpace: "nowrap" }}>
-          COE La Guaira <span style={{ color: "var(--text-muted)", fontWeight: 500, fontSize: "0.78rem" }}>— Panel de Administración</span>
-        </span>
-      </div>
+        <UserNavMenu currentPage="admin" />
+      </header>
 
-      <div style={{ display: "flex", background: "rgba(0, 0, 0, 0.4)", padding: "3px", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.08)", flexWrap: "wrap", gap: "2px", justifySelf: "center" }}>
-        <button onClick={() => onSectionChange("usuarios")} style={TAB_BUTTON_STYLE(activeSection === "usuarios")}>
-          <Users size={13} /> Usuarios, Roles y Solicitudes
-          {pendingCount > 0 && (
-            <span style={{ background: "#ef4444", color: "#fff", borderRadius: "10px", padding: "0 6px", fontSize: "0.6rem", fontWeight: 800 }}>
-              {pendingCount}
-            </span>
-          )}
-        </button>
-        <button onClick={() => onSectionChange("bases")} style={TAB_BUTTON_STYLE(activeSection === "bases")}>
-          <Database size={13} /> Bases
-        </button>
-        <button onClick={() => onSectionChange("capas")} style={TAB_BUTTON_STYLE(activeSection === "capas")}>
-          <Layers size={13} /> Capas & Registros
-        </button>
-      </div>
+      {/* BARRA DE PESTAÑAS Y ACCIONES (AFUERA DEL APPBAR) */}
+      <div className="admin-toolbar">
+        <div className="admin-tabs-switch">
+          <button
+            type="button"
+            onClick={() => onSectionChange("usuarios")}
+            className={`admin-tab-btn ${activeSection === "usuarios" ? "active" : ""}`}
+          >
+            <Users size={13} />
+            <span className="admin-tab-label-full">Usuarios, Roles y Solicitudes</span>
+            <span className="admin-tab-label-short">Usuarios</span>
+            {pendingCount > 0 && (
+              <span className="admin-tab-badge">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => onSectionChange("capas")}
+            className={`admin-tab-btn ${activeSection === "capas" ? "active" : ""}`}
+          >
+            <Layers size={13} />
+            <span>Capas & Registros</span>
+          </button>
+        </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", justifySelf: "end" }}>
         <button
+          type="button"
           onClick={onRefresh}
           disabled={refreshing}
           title="Actualizar Datos"
-          style={{
-            background: "rgba(255, 255, 255, 0.05)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
-            borderRadius: "6px",
-            color: "var(--text-muted)",
-            fontSize: "0.72rem",
-            fontWeight: 600,
-            padding: "5px 10px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "5px",
-            fontFamily: "var(--sans-font)",
-          }}
+          className="admin-refresh-btn"
         >
           <RefreshCw size={13} style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
           <span>Actualizar</span>
         </button>
-        <UserNavMenu currentPage="admin" />
       </div>
-    </header>
+    </>
   );
 };

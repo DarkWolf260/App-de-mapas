@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ShieldAlert } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-import { getLocalDateStr } from "../utils/dateUtils";
-import { fetchCampamentos, CampamentoEntry } from "../services/baseService";
+import { supabase } from "../lib/supabaseClient";
 import { fetchFeatures } from "../services/featureService";
 import { fetchLogs } from "../services/logService";
 import {
@@ -18,7 +17,6 @@ import {
 import { AdminHeader, AdminSection } from "./admin/AdminHeader";
 import { MetricCards } from "./admin/MetricCards";
 import { UsersTable } from "./admin/UsersTable";
-import { CampsSection } from "./admin/CampsSection";
 import { LayersSection } from "./admin/LayersSection";
 import { DeleteUserModal } from "./admin/DeleteUserModal";
 import { EditUserModal } from "./admin/EditUserModal";
@@ -27,7 +25,6 @@ export const AdminPanelPage: React.FC = () => {
   const { user, isAdmin, isAuthenticated, loading } = useAuth();
 
   const [activeSection, setActiveSection] = useState<AdminSection>("usuarios");
-  const [camps, setCamps] = useState<CampamentoEntry[]>([]);
   const [featuresCount, setFeaturesCount] = useState(0);
   const [logsCount, setLogsCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -38,19 +35,30 @@ export const AdminPanelPage: React.FC = () => {
   const [confirmDeleteUser, setConfirmDeleteUser] = useState<ManagedUser | null>(null);
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
   const [supabaseOk, setSupabaseOk] = useState(true);
-
-  const selectedDate = getLocalDateStr();
+  const [latencyMs, setLatencyMs] = useState<number | undefined>(undefined);
 
   const loadAdminData = async () => {
     setRefreshing(true);
     try {
-      const [fetchedCamps, fetchedFeats, fetchedLogsMap] = await Promise.all([
-        fetchCampamentos(selectedDate),
+      // Live ping to Supabase
+      const pingStart = performance.now();
+      let liveOk = false;
+      let liveLatency = 0;
+      try {
+        const { error } = await supabase.from("user_roles").select("id", { count: "exact", head: true });
+        liveLatency = Math.round(performance.now() - pingStart);
+        liveOk = !error || error.code === "PGRST116" || error.code === "42501";
+      } catch {
+        liveOk = false;
+      }
+      setSupabaseOk(liveOk);
+      setLatencyMs(liveLatency);
+
+      const [fetchedFeats, fetchedLogsMap] = await Promise.all([
         fetchFeatures(),
         fetchLogs(),
       ]);
 
-      if (fetchedCamps) setCamps(fetchedCamps);
       if (fetchedFeats) setFeaturesCount(fetchedFeats.length);
 
       try {
@@ -64,7 +72,6 @@ export const AdminPanelPage: React.FC = () => {
         totalLogs += logs.length;
       });
       setLogsCount(totalLogs);
-      setSupabaseOk(true);
     } catch (err) {
       console.error("Error al cargar datos administrativos:", err);
       setSupabaseOk(false);
@@ -284,8 +291,13 @@ export const AdminPanelPage: React.FC = () => {
         onRefresh={loadAdminData}
       />
 
-      <main style={{ padding: "20px 24px", flex: 1, display: "flex", flexDirection: "column", gap: "20px", width: "100%", maxWidth: "1600px", margin: "0 auto", boxSizing: "border-box" }}>
-        <MetricCards pendingCount={pendingCount} campsCount={camps.length} supabaseOk={supabaseOk} />
+      <main className="admin-main">
+        <MetricCards
+          usersCount={users.length}
+          logsCount={logsCount}
+          supabaseOk={supabaseOk}
+          latencyMs={latencyMs}
+        />
 
         {activeSection === "usuarios" && (
           <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden" }}>
@@ -300,8 +312,6 @@ export const AdminPanelPage: React.FC = () => {
             />
           </div>
         )}
-
-        {activeSection === "bases" && <CampsSection camps={camps} />}
 
         {activeSection === "capas" && <LayersSection featuresCount={featuresCount} logsCount={logsCount} />}
       </main>

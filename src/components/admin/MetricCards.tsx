@@ -1,10 +1,11 @@
 import React from "react";
-import { UserCheck, Users, Database, Server, CheckCircle, WifiOff } from "lucide-react";
+import { Users, Server, CheckCircle, WifiOff, FileText, UserCheck } from "lucide-react";
 
 interface MetricCardsProps {
-  pendingCount: number;
-  campsCount: number;
+  usersCount: number;
+  logsCount: number;
   supabaseOk: boolean;
+  latencyMs?: number;
 }
 
 interface MetricCardProps {
@@ -16,37 +17,37 @@ interface MetricCardProps {
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ icon, iconBg, iconColor, label, value }) => (
-  <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "10px", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}>
-    <div style={{ background: iconBg, border: `1px solid ${iconColor}`, color: iconColor, padding: "10px", borderRadius: "8px" }}>{icon}</div>
-    <div>
-      <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>{label}</div>
-      <div style={{ fontSize: "1rem", fontWeight: 800 }}>{value}</div>
+  <div className="admin-metric-card">
+    <div className="admin-metric-icon" style={{ background: iconBg, border: `1px solid ${iconColor}`, color: iconColor }}>{icon}</div>
+    <div style={{ minWidth: 0 }}>
+      <div className="admin-metric-label">{label}</div>
+      <div className="admin-metric-val">{value}</div>
     </div>
   </div>
 );
 
-export const MetricCards: React.FC<MetricCardsProps> = ({ pendingCount, campsCount, supabaseOk }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
-    <MetricCard
-      icon={<UserCheck size={20} />}
-      iconBg="rgba(249, 115, 22, 0.15)"
-      iconColor="var(--accent-orange)"
-      label="Usuarios Pendientes / Inactivos"
-      value={<span style={{ color: pendingCount > 0 ? "var(--accent-orange)" : "#4ade80" }}>{pendingCount} Por Activar</span>}
-    />
+export const MetricCards: React.FC<MetricCardsProps> = ({ usersCount, logsCount, supabaseOk, latencyMs }) => (
+  <div className="admin-metric-cards-grid">
     <MetricCard
       icon={<Users size={20} />}
+      iconBg="rgba(168, 85, 247, 0.15)"
+      iconColor="#c084fc"
+      label="Total Usuarios"
+      value={<span style={{ color: "#c084fc" }}>{usersCount} Registrados</span>}
+    />
+    <MetricCard
+      icon={<UserCheck size={20} />}
       iconBg="rgba(34, 197, 94, 0.15)"
       iconColor="#4ade80"
       label="Rol Actual"
       value={<span style={{ color: "#4ade80" }}>Administrador</span>}
     />
     <MetricCard
-      icon={<Database size={20} />}
+      icon={<FileText size={20} />}
       iconBg="rgba(56, 189, 248, 0.15)"
       iconColor="#38bdf8"
-      label="Bases Operacionales"
-      value={<span style={{ color: "#f8fafc" }}>{campsCount} Registradas</span>}
+      label="Registros Diarios"
+      value={<span style={{ color: "#f8fafc" }}>{logsCount} Sincronizados</span>}
     />
     <MetricCard
       icon={<Server size={20} />}
@@ -69,7 +70,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ pendingCount, campsCou
               fontWeight: 700,
             }}
           >
-            <CheckCircle size={13} /> En línea
+            <CheckCircle size={13} /> En línea {latencyMs !== undefined ? `(${latencyMs}ms)` : ""}
           </span>
         ) : (
           <span

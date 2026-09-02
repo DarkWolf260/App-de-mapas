@@ -104,8 +104,8 @@ export const UsersTable: React.FC<UsersTableProps> = ({
           No hay usuarios registrados en el sistema.
         </div>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.74rem", minWidth: "900px" }}>
+        <div className="admin-table-container">
+          <table className="admin-table" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.74rem" }}>
             <thead>
               <tr
                 style={{
