@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { DrawnFeature, DailyLog, Department, DepartmentView } from "../types";
+import { generateUUID } from "../utils/uuidUtils";
 import { FeatureLogBook } from "../utils/featureLogBook";
 
 const EMPTY_LOG: Omit<DailyLog, "date"> = {
@@ -168,7 +169,7 @@ export function useFeaturePopupSession({
   const handleAddNovedad = async (time: string, text: string) => {
     if (!canEditLog || !onSaveDailyLog || !activeFeat) return;
     const entry = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       timestamp: new Date().toISOString(),
       time,
       text,

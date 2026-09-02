@@ -4,6 +4,7 @@ import { Save, Check, Shield, Flame, Users, Calendar, Trash2, Plus } from "lucid
 import { GroupFields } from "../GroupFields";
 import { inputStyle, sectionBox, saveBtnStyle } from "./popupStyles";
 import { GROUP_COLORS, getGroupColor } from "./metricFields";
+import { generateUUID } from "../../utils/uuidUtils";
 
 import { CustomActivitiesSection } from "./CustomActivitiesSection";
 
@@ -35,14 +36,14 @@ export const OperationTab: React.FC<OperationTabProps> = ({
 
   const handleGroupFieldChange = (groupIdx: number, field: string, value: string | boolean) => {
     const groups = [...(localLog.groups || [])];
-    while (groups.length <= groupIdx) groups.push({ id: crypto.randomUUID(), groupName: "" });
+    while (groups.length <= groupIdx) groups.push({ id: generateUUID(), groupName: "" });
     groups[groupIdx] = { ...groups[groupIdx], [field]: value };
     onFieldChange("groups", groups as unknown as string | boolean);
   };
 
   const groupAt = (idx: number): GroupLogEntry => {
     const groups = localLog.groups || [];
-    return groups[idx] || { id: crypto.randomUUID(), groupName: "" };
+    return groups[idx] || { id: generateUUID(), groupName: "" };
   };
 
   const clearGroupSlot = (groupNum: number) => {

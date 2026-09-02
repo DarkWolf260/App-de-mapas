@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import type { CustomActivity } from "../../types";
 import { Activity, Plus, Trash2, Tag, Check, MessageSquare } from "lucide-react";
 import { sectionBox, inputStyle } from "./popupStyles";
+import { generateUUID } from "../../utils/uuidUtils";
 
 interface CustomActivitiesSectionProps {
   customActivities: CustomActivity[];
@@ -29,7 +30,7 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
     if (!name) return;
 
     const newActivity: CustomActivity = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name,
       value: val,
       description: description.trim() || undefined,

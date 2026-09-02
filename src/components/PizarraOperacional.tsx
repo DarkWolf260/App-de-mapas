@@ -11,9 +11,11 @@ import type { DrawnFeature } from "../types";
 import { DeleteTarget, WorkTeam } from "./pizarra/types";
 import { PizarraHeader } from "./pizarra/PizarraHeader";
 import { WorkTeamsTab } from "./pizarra/WorkTeamsTab";
+import { WorkTeamsTableView } from "./pizarra/WorkTeamsTableView";
 import { DeleteConfirmModal } from "./pizarra/DeleteConfirmModal";
 import { EditWorkTeamModal } from "./pizarra/EditWorkTeamModal";
 import { CreateWorkTeamModal } from "./pizarra/CreateWorkTeamModal";
+import { generateUUID } from "../utils/uuidUtils";
 
 export const PizarraOperacional: React.FC = () => {
   const { isAdmin, isOperador, isAuthenticated, permissions, loading } = useAuth();
@@ -113,7 +115,7 @@ export const PizarraOperacional: React.FC = () => {
       const groupIdx = updatedTeam.groupIndex;
 
       while (groups.length <= groupIdx) {
-        groups.push({ id: crypto.randomUUID(), groupName: "" });
+        groups.push({ id: generateUUID(), groupName: "" });
       }
 
       groups[groupIdx] = {
@@ -165,7 +167,7 @@ export const PizarraOperacional: React.FC = () => {
 
       const groups = Array.isArray(log.groups) ? [...log.groups] : [];
       groups.push({
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         groupName: newTeam.groupName,
         unitOut: newTeam.unitOut,
         managerName: newTeam.managerName,

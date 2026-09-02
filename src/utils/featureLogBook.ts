@@ -1,4 +1,5 @@
-import type { DailyLog, Department, DepartmentView, GroupLogEntry, CustomActivity, DrawnFeature, NovedadEntry } from "../types";
+import type { DailyLog, Department, DepartmentView, GroupLogEntry, NovedadEntry, CustomActivity, DrawnFeature } from "../types";
+import { generateUUID } from "./uuidUtils";
 import { METRIC_FIELDS, getMetricNumeric, COMMISSION_INDEPENDENT } from "../components/popup/metricFields";
 import { buildParentsMap } from "./spatialUtils";
 
@@ -88,7 +89,7 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
       if (hasData) {
         const autoArrived = isGroupOlderThan48Hours(log.date, g.departureTime);
         rawEntries.push({
-          id: g.id || crypto.randomUUID(),
+          id: g.id || generateUUID(),
           groupName: (g.groupName || "").trim(),
           managerName: g.managerName || "",
           managerPhone: g.managerPhone || "",
@@ -332,7 +333,7 @@ export function mergeCustomActivities(listA: CustomActivity[] = [], listB: Custo
 
     if (!map.has(key)) {
       map.set(key, {
-        id: item.id || crypto.randomUUID(),
+        id: item.id || generateUUID(),
         name: item.name.trim(),
         valNum: isNumber ? num : 0,
         isNum: isNumber,

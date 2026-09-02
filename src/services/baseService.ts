@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabaseClient";
+import { generateUUID } from "../utils/uuidUtils";
 
 export interface OperationalBaseItem {
   id: string;
@@ -279,7 +280,7 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
                   const count = Number(s.officersCount) || 0;
                   if (count > 0) {
                     activeStates.push({
-                      id: crypto.randomUUID(),
+                      id: generateUUID(),
                       stateName: s.stateName,
                       officersCount: count,
                       type: getEntryType(s.stateName, s.type),
@@ -289,7 +290,7 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
               }
 
               return {
-                id: (c.campId && c.campId.length === 36 && c.campId.includes("-")) ? c.campId : crypto.randomUUID(),
+                id: (c.campId && c.campId.length === 36 && c.campId.includes("-")) ? c.campId : generateUUID(),
                 date: dateStr,
                 campName: c.campName,
                 location: "",
@@ -318,7 +319,7 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
 
           result = latestCamps.map((row: any) => ({
             // UUID real desde el inicio: upsert lo insertará como nuevo registro del día actual
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             date: dateStr,
             campName: row.camp_name,
             location: row.location || "",
@@ -333,7 +334,7 @@ export async function fetchCampamentos(dateStr?: string): Promise<CampamentoEntr
               ? JSON.parse(row.states_detail)
               : []
             ).map((sd: any) => ({
-              id: crypto.randomUUID(),
+              id: generateUUID(),
               stateName: sd.stateName || VENEZUELA_STATES[0],
               officersCount: 0,
               type: getEntryType(sd.stateName || VENEZUELA_STATES[0], sd.type),
