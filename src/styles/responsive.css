@@ -410,6 +410,14 @@
     display: none;
   }
 
+  .custom-map-popup {
+    z-index: 500 !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
+    padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
   .rr-editor-input,
   .custom-map-popup input[type="text"],
   .custom-map-popup input[type="number"],

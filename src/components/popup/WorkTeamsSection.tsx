@@ -51,7 +51,7 @@ const DeptBadge: React.FC<{ department?: string; small?: boolean }> = ({ departm
     border: `1px solid ${isBomberos ? "rgba(239, 68, 68, 0.3)" : "rgba(56, 189, 248, 0.3)"}`,
   };
   return (
-    <span style={{ ...base, fontSize: small ? "0.46rem" : "0.52rem", padding: small ? "0px 3px" : "1px 4px", borderRadius: small ? "2px" : "3px", display: "inline-block", marginLeft: "4px" }}>
+    <span style={{ ...base, fontSize: small ? "0.52rem" : "0.58rem", padding: small ? "1px 4px" : "2px 5px", borderRadius: small ? "3px" : "4px", display: "inline-block", marginLeft: "4px" }}>
       {isBomberos ? "Bomberos" : "PC"}
     </span>
   );
@@ -64,27 +64,27 @@ const VolunteerToggle: React.FC<{
 }> = ({ isVolunteer, disabled, onChange }) => (
   <label
     style={{
-      fontSize: "0.5rem",
+      fontSize: "0.58rem",
       fontWeight: 700,
       color: isVolunteer ? "#c084fc" : "var(--text-muted)",
       display: "flex",
       alignItems: "center",
-      gap: "3px",
+      gap: "4px",
       cursor: disabled ? "default" : "pointer",
       background: isVolunteer ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.03)",
       border: `1px solid ${isVolunteer ? "rgba(168,85,247,0.4)" : "rgba(255,255,255,0.08)"}`,
-      borderRadius: "3px",
-      padding: "1px 4px",
+      borderRadius: "4px",
+      padding: "2px 5px",
       flexShrink: 0,
     }}
   >
-    <input type="checkbox" checked={!!isVolunteer} disabled={disabled} onChange={(e) => onChange(e.target.checked)} style={{ cursor: disabled ? "default" : "pointer", width: "10px", height: "10px", margin: 0 }} />
+    <input type="checkbox" checked={!!isVolunteer} disabled={disabled} onChange={(e) => onChange(e.target.checked)} style={{ cursor: disabled ? "default" : "pointer", width: "11px", height: "11px", margin: 0 }} />
     VOL
   </label>
 );
 
 const VolunteerBadge: React.FC = () => (
-  <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 4px", fontSize: "0.48rem", fontWeight: 800, textTransform: "uppercase" }}>VOL</span>
+  <span style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc", border: "1px solid rgba(168, 85, 247, 0.4)", borderRadius: "4px", padding: "1px 5px", fontSize: "0.54rem", fontWeight: 800, textTransform: "uppercase" }}>VOL</span>
 );
 
 const ArrivalCheckbox: React.FC<{
@@ -97,12 +97,12 @@ const ArrivalCheckbox: React.FC<{
   return (
     <label
       style={{
-        fontSize: "0.58rem",
+        fontSize: "0.64rem",
         fontWeight: 700,
         color: locked ? "var(--color-green)" : "#f97316",
         display: "flex",
         alignItems: "center",
-        gap: "5px",
+        gap: "6px",
         marginTop: "4px",
         cursor: locked ? "not-allowed" : "pointer",
         opacity: 1,

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { Copy, Check, Activity, Save, FileText } from "lucide-react";
+import { Copy, Check, Activity, Save, FileText, AlertTriangle, Tent, HeartPulse, Tag } from "lucide-react";
 import type { DrawnFeature, DailyLog, DepartmentView, Department, NovedadEntry } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
 import { getNormalizedGroupList, mergeLogs, logHasAnyData } from "../../utils/logUtils";
@@ -226,36 +226,46 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       {!isPolygon && (activeFeat.isCollapsed || activeFeat.isCampement || activeFeat.isHealthCenter || activeFeat.otherCategoryName) && canViewDetails && (
         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
           {activeFeat.isCollapsed && (
-            <div style={{ background: "rgba(239, 68, 68, 0.14)", border: "1px solid rgba(239, 68, 68, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#f87171", fontSize: "0.72rem", fontWeight: 700 }}>
-              <span>🔴 Estructura Colapsada</span>
-              <span style={{ background: "#ef4444", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontSize: "0.68rem", fontWeight: 800 }}>
+            <div style={{ background: "rgba(239, 68, 68, 0.14)", border: "1px solid rgba(239, 68, 68, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#f87171", fontSize: "0.74rem", fontWeight: 700 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+                <span>Estructura Colapsada</span>
+              </div>
+              <span style={{ background: "#ef4444", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontSize: "0.7rem", fontWeight: 800 }}>
                 Cantidad: {activeFeat.collapsedCount || "1"}
               </span>
             </div>
           )}
           {activeFeat.isCampement && (
-            <div style={{ background: "rgba(245, 158, 11, 0.14)", border: "1px solid rgba(245, 158, 11, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#fbbf24", fontSize: "0.72rem", fontWeight: 700 }}>
-              <span>⛺ Campamento / Refugio</span>
+            <div style={{ background: "rgba(245, 158, 11, 0.14)", border: "1px solid rgba(245, 158, 11, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#fbbf24", fontSize: "0.74rem", fontWeight: 700 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <Tent size={14} style={{ flexShrink: 0 }} />
+                <span>Campamento / Refugio</span>
+              </div>
               {activeFeat.campementCount && (
-                <span style={{ background: "#f59e0b", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontSize: "0.68rem", fontWeight: 800 }}>
+                <span style={{ background: "#f59e0b", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontSize: "0.7rem", fontWeight: 800 }}>
                   Personas: {activeFeat.campementCount}
                 </span>
               )}
             </div>
           )}
           {activeFeat.isHealthCenter && (
-            <div style={{ background: "rgba(56, 189, 248, 0.14)", border: "1px solid rgba(56, 189, 248, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#38bdf8", fontSize: "0.72rem", fontWeight: 700 }}>
-              <span>🏥 Centro Asistencial / Salud</span>
+            <div style={{ background: "rgba(56, 189, 248, 0.14)", border: "1px solid rgba(56, 189, 248, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#38bdf8", fontSize: "0.74rem", fontWeight: 700 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <HeartPulse size={14} style={{ flexShrink: 0 }} />
+                <span>Centro Asistencial / Salud</span>
+              </div>
               {activeFeat.healthCenterType && (
-                <span style={{ background: "#0284c7", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontSize: "0.68rem", fontWeight: 800 }}>
+                <span style={{ background: "#0284c7", color: "#ffffff", padding: "2px 8px", borderRadius: "10px", fontSize: "0.7rem", fontWeight: 800 }}>
                   {activeFeat.healthCenterType}
                 </span>
               )}
             </div>
           )}
           {activeFeat.otherCategoryName && (
-            <div style={{ background: "rgba(168, 85, 247, 0.14)", border: "1px solid rgba(168, 85, 247, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", gap: "6px", color: "#c084fc", fontSize: "0.72rem", fontWeight: 700 }}>
-              <span>📍 Clasificación:</span>
+            <div style={{ background: "rgba(168, 85, 247, 0.14)", border: "1px solid rgba(168, 85, 247, 0.35)", borderRadius: "6px", padding: "6px 10px", display: "flex", alignItems: "center", gap: "6px", color: "#c084fc", fontSize: "0.74rem", fontWeight: 700 }}>
+              <Tag size={14} style={{ flexShrink: 0 }} />
+              <span>Clasificación:</span>
               <span style={{ fontWeight: 800, color: "#ffffff" }}>{activeFeat.otherCategoryName}</span>
             </div>
           )}
@@ -280,18 +290,18 @@ export const InfoTab: React.FC<InfoTabProps> = ({
         <>
           {canEdit && (
             <div style={{ ...sectionBox, background: "rgba(16, 185, 129, 0.04)", borderColor: "rgba(16, 185, 129, 0.2)" }}>
-              <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#10b981", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-                <Activity size={10} /> Estadistica del Sector
-                <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontWeight: 400, marginLeft: "auto" }}>Independiente de grupos</span>
+              <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#10b981", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "3px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                <Activity size={12} /> Estadistica del Sector
+                <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 400, marginLeft: "auto" }}>Independiente de grupos</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
                 {METRIC_FIELDS.map(({ label, field, color }) => (
                   <div key={field} style={{ textAlign: "center" }}>
-                    <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block", marginBottom: "2px" }}>{label}</span>
+                    <span style={{ fontSize: "0.56rem", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "2px" }}>{label}</span>
                     {canEdit && onGeneralFieldChange ? (
-                      <input type="number" min="0" placeholder="0" value={getMetricValue(polygonOwnLog, field) || ""} onChange={(e) => onGeneralFieldChange(field, e.target.value)} style={{ textAlign: "center", padding: "2px 2px", fontSize: "0.68rem", color, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "4px", width: "100%", outline: "none", fontFamily: "inherit" }} />
+                      <input type="number" min="0" placeholder="0" value={getMetricValue(polygonOwnLog, field) || ""} onChange={(e) => onGeneralFieldChange(field, e.target.value)} style={{ textAlign: "center", padding: "3px 2px", fontSize: "0.74rem", color, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "4px", width: "100%", outline: "none", fontFamily: "inherit" }} />
                     ) : (
-                      <span style={{ fontSize: "0.8rem", fontWeight: 800, color }}>{getMetricValue(polygonOwnLog, field) || "0"}</span>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 800, color }}>{getMetricValue(polygonOwnLog, field) || "0"}</span>
                     )}
                   </div>
                 ))}
@@ -324,24 +334,24 @@ export const InfoTab: React.FC<InfoTabProps> = ({
             const reportedPoints = containedWithLogs.filter(({ log }) => getPointReportSummary(log).hasAnyLogData);
             return (
               <div style={sectionBox}>
-                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "4px", marginBottom: "6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--color-info)", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "4px", marginBottom: "6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>Puntos con reporte ({reportedPoints.length} de {containedPoints.length})</span>
                 </div>
                 {reportedPoints.length === 0 ? (
-                  <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontStyle: "italic", padding: "4px 0" }}>
+                  <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontStyle: "italic", padding: "4px 0" }}>
                     No hay puntos con actividad registrada en esta fecha
                   </div>
                 ) : (
                   <div style={{ width: "100%", overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.62rem" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.68rem" }}>
                       <thead>
                         <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                          <th style={{ textAlign: "left", padding: "3px 4px", color: "var(--text-muted)", fontWeight: 600 }}>Punto</th>
-                          <th style={{ textAlign: "center", padding: "3px 4px", color: "var(--color-info)", fontWeight: 700, minWidth: "30px" }}>Resc.</th>
-                          <th style={{ textAlign: "center", padding: "3px 4px", color: "#ef4444", fontWeight: 700, minWidth: "30px" }}>Recup.</th>
-                          <th style={{ textAlign: "center", padding: "3px 4px", color: "var(--color-green)", fontWeight: 700, minWidth: "30px" }}>Masc.</th>
-                          <th style={{ textAlign: "center", padding: "3px 4px", color: "#0ea5e9", fontWeight: 700, minWidth: "30px" }}>Atenc.</th>
-                          <th style={{ textAlign: "center", padding: "3px 4px", color: "var(--color-purple)", fontWeight: 700, minWidth: "30px" }}>Trasl.</th>
+                          <th style={{ textAlign: "left", padding: "4px 5px", color: "var(--text-muted)", fontWeight: 600 }}>Punto</th>
+                          <th style={{ textAlign: "center", padding: "4px 5px", color: "var(--color-info)", fontWeight: 700, minWidth: "30px" }}>Resc.</th>
+                          <th style={{ textAlign: "center", padding: "4px 5px", color: "#ef4444", fontWeight: 700, minWidth: "30px" }}>Recup.</th>
+                          <th style={{ textAlign: "center", padding: "4px 5px", color: "var(--color-green)", fontWeight: 700, minWidth: "30px" }}>Masc.</th>
+                          <th style={{ textAlign: "center", padding: "4px 5px", color: "#0ea5e9", fontWeight: 700, minWidth: "30px" }}>Atenc.</th>
+                          <th style={{ textAlign: "center", padding: "4px 5px", color: "var(--color-purple)", fontWeight: 700, minWidth: "30px" }}>Trasl.</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -349,29 +359,29 @@ export const InfoTab: React.FC<InfoTabProps> = ({
                           const summary = getPointReportSummary(ptLog);
                           return (
                             <tr key={point.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                              <td style={{ textAlign: "left", padding: "4px 4px", color: "var(--text-main)", fontWeight: 600 }}>
+                              <td style={{ textAlign: "left", padding: "5px 5px", color: "var(--text-main)", fontWeight: 600 }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                                   {summary.hasArrived && (
                                     <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", display: "inline-block", boxShadow: "0 0 4px #22c55e", flexShrink: 0 }} title="Personal en el sitio" />
                                   )}
-                                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "115px", display: "inline-block" }}>
+                                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "120px", display: "inline-block" }}>
                                     {point.title}
                                   </span>
                                 </div>
                               </td>
-                              <td style={{ textAlign: "center", padding: "4px 4px", color: summary.totalRescued > 0 ? "var(--color-info)" : "var(--text-muted)", fontWeight: summary.totalRescued > 0 ? 700 : 400 }}>
+                              <td style={{ textAlign: "center", padding: "5px 5px", color: summary.totalRescued > 0 ? "var(--color-info)" : "var(--text-muted)", fontWeight: summary.totalRescued > 0 ? 700 : 400 }}>
                                 {summary.totalRescued > 0 ? summary.totalRescued : "-"}
                               </td>
-                              <td style={{ textAlign: "center", padding: "4px 4px", color: summary.totalRecovered > 0 ? "#ef4444" : "var(--text-muted)", fontWeight: summary.totalRecovered > 0 ? 700 : 400 }}>
+                              <td style={{ textAlign: "center", padding: "5px 5px", color: summary.totalRecovered > 0 ? "#ef4444" : "var(--text-muted)", fontWeight: summary.totalRecovered > 0 ? 700 : 400 }}>
                                 {summary.totalRecovered > 0 ? summary.totalRecovered : "-"}
                               </td>
-                              <td style={{ textAlign: "center", padding: "4px 4px", color: summary.totalPets > 0 ? "var(--color-green)" : "var(--text-muted)", fontWeight: summary.totalPets > 0 ? 700 : 400 }}>
+                              <td style={{ textAlign: "center", padding: "5px 5px", color: summary.totalPets > 0 ? "var(--color-green)" : "var(--text-muted)", fontWeight: summary.totalPets > 0 ? 700 : 400 }}>
                                 {summary.totalPets > 0 ? summary.totalPets : "-"}
                               </td>
-                              <td style={{ textAlign: "center", padding: "4px 4px", color: summary.totalPrehospital > 0 ? "#0ea5e9" : "var(--text-muted)", fontWeight: summary.totalPrehospital > 0 ? 700 : 400 }}>
+                              <td style={{ textAlign: "center", padding: "5px 5px", color: summary.totalPrehospital > 0 ? "#0ea5e9" : "var(--text-muted)", fontWeight: summary.totalPrehospital > 0 ? 700 : 400 }}>
                                 {summary.totalPrehospital > 0 ? summary.totalPrehospital : "-"}
                               </td>
-                              <td style={{ textAlign: "center", padding: "4px 4px", color: summary.totalTransfers > 0 ? "var(--color-purple)" : "var(--text-muted)", fontWeight: summary.totalTransfers > 0 ? 700 : 400 }}>
+                              <td style={{ textAlign: "center", padding: "5px 5px", color: summary.totalTransfers > 0 ? "var(--color-purple)" : "var(--text-muted)", fontWeight: summary.totalTransfers > 0 ? 700 : 400 }}>
                                 {summary.totalTransfers > 0 ? summary.totalTransfers : "-"}
                               </td>
                             </tr>
@@ -386,14 +396,14 @@ export const InfoTab: React.FC<InfoTabProps> = ({
           })()}
 
           <div style={sectionBox}>
-            <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
-              <Activity size={10} /> Total del Sector
+            <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "3px", marginBottom: "3px", display: "flex", alignItems: "center", gap: "4px" }}>
+              <Activity size={12} /> Total del Sector
             </div>
             <MetricDisplayGrid source={aggregatedLog} />
           </div>
 
           {polygonGroups.length === 0 && !hasGeneralStats && !(polygonOwnLog.customActivities && polygonOwnLog.customActivities.length > 0) && !(log.customActivities && log.customActivities.length > 0) && containedWithLogs.length === 0 && (
-            <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
+            <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
               No hay grupos ni datos cargados en esta zona
             </div>
           )}
@@ -401,25 +411,25 @@ export const InfoTab: React.FC<InfoTabProps> = ({
       )}
 
       {!isPolygon && pointGroups.length === 0 && !pointHasMetrics && !canEdit && (
-        <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
+        <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
           Sin datos registrados para hoy
         </div>
       )}
 
       {!isPolygon && canEdit && (
         <div style={{ ...sectionBox, background: "rgba(249, 115, 22, 0.04)", borderColor: "rgba(249, 115, 22, 0.2)" }}>
-          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#f97316", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-            <Activity size={10} /> Estadisticas del Area de Trabajo
-            <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontWeight: 400, marginLeft: "auto" }}>Independiente de grupos</span>
+          <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#f97316", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "3px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <Activity size={12} /> Estadisticas del Area de Trabajo
+            <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 400, marginLeft: "auto" }}>Independiente de grupos</span>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
             {METRIC_FIELDS.map(({ label, field, color }) => (
               <div key={field} style={{ textAlign: "center" }}>
-                <span style={{ fontSize: "0.48rem", color: "var(--text-muted)", display: "block", marginBottom: "2px" }}>{label}</span>
+                <span style={{ fontSize: "0.56rem", fontWeight: 700, color: "var(--text-muted)", display: "block", marginBottom: "2px" }}>{label}</span>
                 {onGeneralFieldChange ? (
-                  <input type="number" min="0" placeholder="0" value={getMetricValue(localLog || {}, field) || ""} onChange={(e) => onGeneralFieldChange(field, e.target.value)} style={{ textAlign: "center", padding: "2px 2px", fontSize: "0.68rem", color, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "4px", width: "100%", outline: "none", fontFamily: "inherit" }} />
+                  <input type="number" min="0" placeholder="0" value={getMetricValue(localLog || {}, field) || ""} onChange={(e) => onGeneralFieldChange(field, e.target.value)} style={{ textAlign: "center", padding: "3px 2px", fontSize: "0.74rem", color, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "4px", width: "100%", outline: "none", fontFamily: "inherit" }} />
                 ) : (
-                  <span style={{ fontSize: "0.8rem", fontWeight: 800, color }}>{getMetricValue(localLog || {}, field) || "0"}</span>
+                  <span style={{ fontSize: "0.82rem", fontWeight: 800, color }}>{getMetricValue(localLog || {}, field) || "0"}</span>
                 )}
               </div>
             ))}
@@ -459,8 +469,8 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 
       {!isPolygon && pointHasMetrics && pointGroups.length === 0 && canViewDetails && (
         <div style={sectionBox}>
-          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
-            <Activity size={10} /> Reportes de Hoy
+          <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--color-green)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "3px", marginBottom: "3px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <Activity size={12} /> Reportes de Hoy
           </div>
           <MetricDisplayGrid source={log} />
         </div>
@@ -468,11 +478,11 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 
       {canEdit && onGeneralFieldChange && (
         <div style={{ ...sectionBox, background: "rgba(168, 85, 247, 0.03)", borderColor: "rgba(168, 85, 247, 0.12)" }}>
-          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#a855f7", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-            <FileText size={10} /> Observación / Notas del Día
+          <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#a855f7", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "3px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <FileText size={12} /> Observación / Notas del Día
           </div>
           <textarea
-            style={{ ...inputStyle, minHeight: "45px", resize: "vertical" }}
+            style={{ ...inputStyle, minHeight: "48px", resize: "vertical", fontSize: "0.76rem" }}
             placeholder="Notas u observaciones del día..."
             value={localLog?.observations || log.observations || ""}
             onChange={(e) => onGeneralFieldChange("observations", e.target.value)}
@@ -482,20 +492,22 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 
       {!canEdit && log.observations && (
         <div style={{ ...sectionBox, background: "rgba(168, 85, 247, 0.03)", borderColor: "rgba(168, 85, 247, 0.12)" }}>
-          <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#a855f7", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "2px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-            <FileText size={10} /> Observaciones del Día
+          <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#a855f7", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "3px", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <FileText size={12} /> Observaciones del Día
           </div>
-          <div style={{ fontSize: "0.68rem", color: "var(--text-main)", whiteSpace: "pre-wrap" }}>
+          <div style={{ fontSize: "0.72rem", color: "var(--text-main)", whiteSpace: "pre-wrap" }}>
             {log.observations}
           </div>
         </div>
       )}
 
       {canEdit && onSaveStats && (
-        <button type="button" onClick={onSaveStats} style={{ width: "100%", background: saveSuccess ? "rgba(34, 197, 94, 0.18)" : "rgba(56, 189, 248, 0.12)", border: `1px solid ${saveSuccess ? "rgba(34, 197, 94, 0.5)" : "rgba(56, 189, 248, 0.35)"}`, borderRadius: "7px", color: saveSuccess ? "#22c55e" : "#38bdf8", fontSize: "0.72rem", fontWeight: 700, padding: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "all 0.2s ease" }}>
-          {saveSuccess ? <Check size={13} /> : <Save size={13} />}
-          {saveSuccess ? "¡Estadísticas Guardadas!" : "Guardar Estadísticas"}
-        </button>
+        <div style={{ marginTop: "6px", marginBottom: "40px", width: "100%" }}>
+          <button type="button" onClick={onSaveStats} style={{ width: "100%", background: saveSuccess ? "rgba(34, 197, 94, 0.18)" : "rgba(56, 189, 248, 0.12)", border: `1px solid ${saveSuccess ? "rgba(34, 197, 94, 0.5)" : "rgba(56, 189, 248, 0.35)"}`, borderRadius: "7px", color: saveSuccess ? "#22c55e" : "#38bdf8", fontSize: "0.76rem", fontWeight: 700, padding: "10px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "all 0.2s ease" }}>
+            {saveSuccess ? <Check size={14} /> : <Save size={14} />}
+            {saveSuccess ? "¡Estadísticas Guardadas!" : "Guardar Estadísticas"}
+          </button>
+        </div>
       )}
 
     </div>

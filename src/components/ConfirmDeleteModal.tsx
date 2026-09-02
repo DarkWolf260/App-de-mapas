@@ -129,7 +129,8 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
               lineHeight: 1.35,
             }}
           >
-            ⚠️ Esta acción es permanente y eliminará todas las métricas, observaciones y registros de personal vinculados en la base de datos de Supabase.
+            <AlertTriangle size={13} style={{ verticalAlign: "middle", marginRight: "5px", display: "inline-block" }} />
+            Esta acción es permanente y eliminará todas las métricas, observaciones y registros de personal vinculados en la base de datos de Supabase.
           </div>
         </div>
 

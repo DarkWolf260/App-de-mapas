@@ -30,7 +30,7 @@ export const mapPointToGraphic = (p: MapPoint, isSelected: boolean): Graphic => 
   });
 
   const popupTemplate = {
-    title: `📍 ${p.name}`,
+    title: p.name,
     content: `
       <div style="font-family: var(--sans-font); padding: 8px 0; color: #f3f4f6;">
         <p style="font-size: 13px; line-height: 1.4; color: #d1d5db; margin-bottom: 8px;">${p.description || 'Sin descripción.'}</p>
@@ -74,7 +74,7 @@ export const mapAreaToGraphic = (a: MapArea, isSelected: boolean): Graphic => {
   });
 
   const popupTemplate = {
-    title: `📐 ${a.name}`,
+    title: a.name,
     content: `
       <div style="font-family: var(--sans-font); padding: 8px 0; color: #f3f4f6;">
         <p style="font-size: 13px; line-height: 1.4; color: #d1d5db; margin-bottom: 8px;">${a.description || 'Sin descripción.'}</p>

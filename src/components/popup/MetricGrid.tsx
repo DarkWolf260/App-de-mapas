@@ -1,4 +1,5 @@
 import React from "react";
+import { MessageSquare } from "lucide-react";
 import type { GroupLogEntry, DailyLog } from "../../types";
 import { METRIC_FIELDS, getMetricValue } from "./metricFields";
 import { metricInputStyle } from "./popupStyles";
@@ -138,8 +139,9 @@ export function MetricDisplayGrid({ source, showZero = true, smallFont = false }
                 <span style={{ fontWeight: 800 }}>{act.value}</span>
               </div>
               {act.description && (
-                <div style={{ fontSize: "0.58rem", color: "#e2e8f0", fontStyle: "italic", opacity: 0.9 }}>
-                  💬 {act.description}
+                <div style={{ fontSize: "0.58rem", color: "#e2e8f0", fontStyle: "italic", opacity: 0.9, display: "flex", alignItems: "center", gap: "4px" }}>
+                  <MessageSquare size={10} style={{ flexShrink: 0, opacity: 0.8 }} />
+                  <span>{act.description}</span>
                 </div>
               )}
             </div>

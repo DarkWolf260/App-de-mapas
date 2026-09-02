@@ -27,7 +27,7 @@ export const inputStyle: React.CSSProperties = {
 };
 
 export const labelStyle: React.CSSProperties = {
-  fontSize: "0.62rem",
+  fontSize: "0.66rem",
   fontWeight: 700,
   color: "var(--text-muted)",
   textTransform: "uppercase",
@@ -68,7 +68,7 @@ export const sectionBox: React.CSSProperties = {
 };
 
 export const sectionHeader = (color: string): React.CSSProperties => ({
-  fontSize: "0.66rem",
+  fontSize: "0.72rem",
   fontWeight: 800,
   color,
   borderBottom: "1px solid rgba(255,255,255,0.06)",
@@ -79,7 +79,7 @@ export const sectionHeader = (color: string): React.CSSProperties => ({
 export const TAB_BTN_BASE: React.CSSProperties = {
   flex: 1,
   border: "none",
-  fontSize: "0.68rem",
+  fontSize: "0.7rem",
   fontWeight: 700,
   padding: "5px 8px",
   borderRadius: "5px",
@@ -96,7 +96,7 @@ export const metricInputStyle: React.CSSProperties = {
   border: "1px solid rgba(56, 189, 248, 0.3)",
   borderRadius: "6px",
   color: "#f8fafc",
-  fontSize: "0.74rem",
+  fontSize: "0.76rem",
   fontWeight: 700,
   padding: "3px 6px",
   width: "100%",
@@ -112,17 +112,17 @@ export const readRowStyle: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  padding: "3px 0",
+  padding: "4px 0",
   borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
 };
 
 export const readLabelStyle: React.CSSProperties = {
-  fontSize: "0.64rem",
+  fontSize: "0.68rem",
   color: "var(--text-muted)",
 };
 
 export const readValueStyle: React.CSSProperties = {
-  fontSize: "0.68rem",
+  fontSize: "0.72rem",
   color: "#f8fafc",
   fontWeight: 600,
   textAlign: "right",

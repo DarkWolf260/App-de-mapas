@@ -52,8 +52,9 @@ const CONTAINER_STYLE: React.CSSProperties = {
   width: "440px",
   maxWidth: "90vw",
   height: "100vh",
-  zIndex: 140,
+  zIndex: 300,
   padding: "20px 22px",
+  paddingBottom: "calc(100px + env(safe-area-inset-bottom, 0px))",
   display: "flex",
   flexDirection: "column",
   gap: "12px",
@@ -65,6 +66,7 @@ const CONTAINER_STYLE: React.CSSProperties = {
   color: "var(--text-main)",
   overflowY: "auto",
   pointerEvents: "auto",
+  WebkitOverflowScrolling: "touch",
 };
 
 const TAB_BAR_STYLE: React.CSSProperties = {

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import type { CustomActivity } from "../../types";
-import { Activity, Plus, Trash2, Tag, Check } from "lucide-react";
+import { Activity, Plus, Trash2, Tag, Check, MessageSquare } from "lucide-react";
 import { sectionBox, inputStyle } from "./popupStyles";
 
 interface CustomActivitiesSectionProps {
@@ -170,8 +170,9 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                 />
               ) : (
                 !!act.description && (
-                  <div style={{ fontSize: "0.62rem", color: "#e2e8f0", fontStyle: "italic", padding: "3px 6px", background: "rgba(168, 85, 247, 0.12)", borderRadius: "4px", marginTop: "2px", borderLeft: "2px solid #c084fc" }}>
-                    💬 {act.description}
+                  <div style={{ fontSize: "0.62rem", color: "#e2e8f0", fontStyle: "italic", padding: "3px 6px", background: "rgba(168, 85, 247, 0.12)", borderRadius: "4px", marginTop: "2px", borderLeft: "2px solid #c084fc", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <MessageSquare size={11} style={{ flexShrink: 0, opacity: 0.8 }} />
+                    <span>{act.description}</span>
                   </div>
                 )
               )}
