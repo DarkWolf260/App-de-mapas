@@ -241,7 +241,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
               <FileText size={12} /> Editar Grupos
             </button>
           )}
-          {isPoint && (
+          {(isPoint || isPolygon) && (
             <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}>
               <History size={12} /> Historial
             </button>
@@ -261,7 +261,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
             <FileText size={12} /> Editar Grupos
           </button>
-          {isPoint && (
+          {(isPoint || isPolygon) && (
             <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}>
               <History size={12} /> Historial
             </button>
@@ -299,6 +299,9 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
             <FileText size={12} /> Editar Grupos
           </button>
+          <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}>
+            <History size={12} /> Historial
+          </button>
         </div>
       )}
 
@@ -316,6 +319,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         <InfoTab
           activeFeat={activeFeat}
           dailyLog={session.localLog}
+          localLog={session.localLog}
+          mergedLog={session.mergedLog}
           onEdit={() => canEditLog && setActiveTab("operation")}
           drawnFeatures={drawnFeatures}
           popupEditDate={popupEditDate}
@@ -323,7 +328,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           canEdit={canEditLog}
           canToggleArrival={canToggleArrival}
           onToggleArrivalGroup={session.handleToggleArrivalGroup}
-          localLog={session.localLog}
           onGroupFieldChange={session.handleGroupFieldChange}
           onGeneralFieldChange={session.handleGeneralFieldChange}
           onSaveStats={session.handleLogSave}
@@ -337,6 +341,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           activeDepartment={activeDepartment}
           selectedDept={session.selectedDept}
           onDepartmentSelect={session.setSelectedDept}
+          onViewHistory={() => setActiveTab("history")}
         />
       )}
 
@@ -387,9 +392,9 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
       {/* Tab Content — History */}
       {activeTab === "history" && (
         <HistoryTab
-          logs={activeFeat.dailyLogs?.filter(
-            (l) => activeDepartment === "mixto" || l.department === activeDepartment || !l.department
-          )}
+          logs={activeFeat.dailyLogs}
+          featureTitle={activeFeat.title}
+          isPolygon={isPolygon}
         />
       )}
     </div>

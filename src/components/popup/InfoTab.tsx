@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { Copy, Check, Activity, Save, FileText, AlertTriangle, Tent, HeartPulse, Tag } from "lucide-react";
+import { Copy, Check, Activity, Save, FileText, AlertTriangle, Tent, HeartPulse, Tag, History } from "lucide-react";
 import type { DrawnFeature, DailyLog, DepartmentView, Department, NovedadEntry } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
 import { getNormalizedGroupList, mergeLogs, logHasAnyData } from "../../utils/logUtils";
@@ -61,13 +61,19 @@ interface InfoTabProps {
   dailyLog: Partial<DailyLog> | undefined;
   localLog?: Partial<DailyLog>;
   onEdit: () => void;
-  drawnFeatures: DrawnFeature[];
+  mergedLog?: Partial<DailyLog>;
   popupEditDate: string;
   isAdmin?: boolean;
   canEdit?: boolean;
   canToggleArrival?: boolean;
   onToggleArrivalGroup?: (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => Promise<void>;
-  onGroupFieldChange?: (groupIdx: number, field: string, value: string | boolean) => void;
+  onGroupFieldChange?: (
+    groupIdx: number,
+    field: string,
+    value: string | boolean,
+    dept?: "pc" | "bomberos",
+    groupId?: string
+  ) => void;
   onGeneralFieldChange?: (field: string, value: any) => void;
   onSaveStats?: () => void;
   saveSuccess?: boolean;
@@ -80,15 +86,17 @@ interface InfoTabProps {
   activeDepartment?: DepartmentView;
   selectedDept?: Department;
   onDepartmentSelect?: (dept: Department) => void;
+  onViewHistory?: () => void;
 }
 
 export const InfoTab: React.FC<InfoTabProps> = ({
-  activeFeat, dailyLog, localLog, drawnFeatures, popupEditDate,
+  activeFeat, dailyLog, localLog, mergedLog, drawnFeatures, popupEditDate,
   isAdmin = false, canEdit = false, canToggleArrival = false, onToggleArrivalGroup,
   onGroupFieldChange, onGeneralFieldChange, onSaveStats, saveSuccess,
   activeDepartment = "pc",
   selectedDept = "pc",
   onDepartmentSelect,
+  onViewHistory,
 }) => {
   const showArrivalCheckbox = isAdmin || canToggleArrival;
   const canViewDetails = isAdmin || canEdit || canToggleArrival;
@@ -129,10 +137,11 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 
   const mergedLogForDisplay = useMemo(() => {
     if (activeDepartment !== "mixto") return null;
+    if (mergedLog) return mergedLog;
     const allLogs = activeFeat.dailyLogs?.filter((l) => l.date === popupEditDate) || [];
     if (allLogs.length === 0) return null;
     return mergeLogs(allLogs);
-  }, [activeDepartment, activeFeat.dailyLogs, popupEditDate]);
+  }, [activeDepartment, mergedLog, activeFeat.dailyLogs, popupEditDate]);
 
   const polygonGroups = useMemo(() => {
     if (!isPolygon) return [];
@@ -155,42 +164,20 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 
   const activeGroups = isPolygon ? polygonGroups : pointGroups;
 
-  const editGroups = useMemo(() => {
-    if (activeDepartment !== "mixto" || !mergedLogForDisplay) return null;
-    return getNormalizedGroupList(localLog || dailyLog || {});
-  }, [activeDepartment, mergedLogForDisplay, localLog, dailyLog]);
-
-  const translateGroupIdx = (displayIdx: number): number => {
-    if (!editGroups) return displayIdx;
-    const displayGroup = activeGroups[displayIdx];
-    if (!displayGroup) return displayIdx;
-    const localIdx = editGroups.findIndex((g) => g.id === displayGroup.id);
-    return localIdx >= 0 ? localIdx : displayIdx;
-  };
-
   const onGroupEdit = useCallback((displayIdx: number, field: string, value: string | boolean) => {
     const displayGroup = activeGroups[displayIdx];
-    if (displayGroup && displayGroup.department && displayGroup.department !== selectedDept) {
-      onDepartmentSelect?.(displayGroup.department as Department);
-      setTimeout(() => {
-        onGroupFieldChange?.(translateGroupIdx(displayIdx), field, value);
-      }, 0);
-    } else {
-      onGroupFieldChange?.(translateGroupIdx(displayIdx), field, value);
-    }
-  }, [onGroupFieldChange, editGroups, activeGroups, selectedDept, onDepartmentSelect]);
+    onGroupFieldChange?.(
+      displayIdx,
+      field,
+      value,
+      displayGroup?.department as any,
+      displayGroup?.id
+    );
+  }, [onGroupFieldChange, activeGroups]);
 
   const onToggleArrival = useCallback((displayIdx: number, hasArrived: boolean) => {
-    const displayGroup = activeGroups[displayIdx];
-    if (displayGroup && displayGroup.department && displayGroup.department !== selectedDept) {
-      onDepartmentSelect?.(displayGroup.department as Department);
-      setTimeout(() => {
-        onToggleArrivalGroup?.((translateGroupIdx(displayIdx) + 1) as 1 | 2 | 3 | 4, hasArrived);
-      }, 0);
-    } else {
-      onToggleArrivalGroup?.((translateGroupIdx(displayIdx) + 1) as 1 | 2 | 3 | 4, hasArrived);
-    }
-  }, [onToggleArrivalGroup, editGroups, activeGroups, selectedDept, onDepartmentSelect]);
+    onToggleArrivalGroup?.((displayIdx + 1) as 1 | 2 | 3 | 4, hasArrived);
+  }, [onToggleArrivalGroup]);
 
   const { groupingMode, setGroupingMode, selectedIndices, handleGroupSelected, handleUngroup, toggleSelect, exitGroupingMode } = useGrouping({
     polygonGroups: activeGroups,
@@ -279,11 +266,54 @@ export const InfoTab: React.FC<InfoTabProps> = ({
             <span style={{ fontSize: "0.72rem", color: "var(--color-info)", fontFamily: "var(--font-mono, monospace)", background: "rgba(0, 0, 0, 0.3)", padding: "4px 8px", borderRadius: "4px", border: "1px solid var(--border-subtle)", flex: 1 }}>
               {coords}
             </span>
-            <button onClick={handleCopy} style={{ background: copied ? "#22c55e" : "rgba(255, 255, 255, 0.08)", border: "1px solid " + (copied ? "#22c55e" : "var(--border-subtle)"), borderRadius: "4px", padding: "4px 6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", transition: "all 0.2s ease" }} title={copied ? "\u00a1Copiado!" : "Copiar coordenadas"}>
+            <button onClick={handleCopy} style={{ background: copied ? "#22c55e" : "rgba(255, 255, 255, 0.08)", border: "1px solid " + (copied ? "#22c55e" : "var(--border-subtle)"), borderRadius: "4px", padding: "4px 6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", transition: "all 0.2s ease" }} title={copied ? "¡Copiado!" : "Copiar coordenadas"}>
               {copied ? <Check size={12} /> : <Copy size={12} />}
             </button>
           </div>
         </div>
+      )}
+
+      {activeFeat.dailyLogs && activeFeat.dailyLogs.length > 0 && onViewHistory && (
+        <button
+          type="button"
+          onClick={onViewHistory}
+          style={{
+            background: "linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(14, 165, 233, 0.04) 100%)",
+            border: "1px solid rgba(56, 189, 248, 0.25)",
+            borderRadius: "6px",
+            padding: "6px 10px",
+            color: "var(--color-info, #38bdf8)",
+            fontSize: "0.68rem",
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            transition: "all 0.18s ease",
+            marginTop: "2px",
+            marginBottom: "2px",
+            width: "100%",
+            boxSizing: "border-box",
+            fontFamily: "inherit",
+          }}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <History size={13} />
+            <span>{isPolygon ? "Ver Historial del Sector" : "Ver Historial del Punto"}</span>
+          </span>
+          <span
+            style={{
+              background: "rgba(56, 189, 248, 0.2)",
+              padding: "1px 7px",
+              borderRadius: "10px",
+              fontSize: "0.6rem",
+              fontWeight: 800,
+              border: "1px solid rgba(56, 189, 248, 0.35)",
+            }}
+          >
+            {activeFeat.dailyLogs.length} {activeFeat.dailyLogs.length === 1 ? "registro" : "registros"}
+          </span>
+        </button>
       )}
 
       {isPolygon && (
