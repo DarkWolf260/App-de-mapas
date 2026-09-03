@@ -61,6 +61,7 @@ interface InfoTabProps {
   dailyLog: Partial<DailyLog> | undefined;
   localLog?: Partial<DailyLog>;
   onEdit: () => void;
+  drawnFeatures?: DrawnFeature[];
   mergedLog?: Partial<DailyLog>;
   popupEditDate: string;
   isAdmin?: boolean;
@@ -90,7 +91,7 @@ interface InfoTabProps {
 }
 
 export const InfoTab: React.FC<InfoTabProps> = ({
-  activeFeat, dailyLog, localLog, mergedLog, drawnFeatures, popupEditDate,
+  activeFeat, dailyLog, localLog, mergedLog, drawnFeatures = [], popupEditDate,
   isAdmin = false, canEdit = false, canToggleArrival = false, onToggleArrivalGroup,
   onGroupFieldChange, onGeneralFieldChange, onSaveStats, saveSuccess,
   activeDepartment = "pc",
