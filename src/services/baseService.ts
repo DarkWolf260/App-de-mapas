@@ -180,47 +180,14 @@ export function sanitizeOperationalBases(bases: OperationalBase[]): OperationalB
   }));
 }
 
-/**
- * Fetches operational bases dynamically from dedicated Supabase table `operational_bases`
- */
-export async function fetchOperationalBases(dateStr: string): Promise<OperationalBase[]> {
-  try {
-    const { data, error } = await supabase
-      .from("operational_bases")
-      .select("bases")
-      .eq("date", dateStr)
-      .maybeSingle();
-
-    if (!error && data?.bases && Array.isArray(data.bases)) {
-      return sanitizeOperationalBases(data.bases as OperationalBase[]);
-    }
-  } catch (err) {
-    console.warn("Supabase fetch operational_bases error:", err);
-  }
-
+// Las bases operacionales fueron removidas en una actualización previa.
+// Funciones no-op mantenidas solo por compatibilidad de tipos si fuere necesario.
+export async function fetchOperationalBases(_dateStr: string): Promise<OperationalBase[]> {
   return [];
 }
 
-/**
- * Saves operational bases directly to dedicated Supabase table `operational_bases`
- */
-export async function saveOperationalBases(dateStr: string, bases: OperationalBase[]): Promise<void> {
-  const { data: existing } = await supabase
-    .from("operational_bases")
-    .select("id")
-    .eq("date", dateStr)
-    .maybeSingle();
-
-  if (existing?.id) {
-    await supabase
-      .from("operational_bases")
-      .update({ bases, updated_at: new Date().toISOString() })
-      .eq("id", existing.id);
-  } else {
-    await supabase
-      .from("operational_bases")
-      .insert({ date: dateStr, bases, updated_at: new Date().toISOString() });
-  }
+export async function saveOperationalBases(_dateStr: string, _bases: OperationalBase[]): Promise<void> {
+  // No-op: tabla eliminada
 }
 
 /**

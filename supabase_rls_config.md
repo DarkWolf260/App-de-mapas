@@ -81,6 +81,12 @@ CREATE TRIGGER on_auth_user_created_auto_confirm
   - `SELECT`: Lectura permitida para usuarios autenticados (`CREATE POLICY user_profiles_select ON public.user_profiles FOR SELECT TO authenticated USING (true)`).
   - `INSERT` / `UPDATE` / `DELETE`: Restringidos a administradores. La modificación de roles y permisos se gestiona directamente desde la tabla de usuarios en el Panel de Administración.
 
+### Tablas Operacionales (`daily_logs`, `novedades`, `daily_activities`):
+- **Políticas RLS de Modificación (`UPDATE` / `DELETE`)**:
+  - Exigen que el usuario sea `admin` O BIEN que tenga `has_perm('edit_logs')` y la fecha de la fila coincida con `CURRENT_DATE::text` (fecha de hoy).
+  - Para fechas históricas anteriores a hoy, se requiere obligatoriamente poseer el permiso granular `edit_historical_logs` (`has_perm('edit_historical_logs')`) o ser `admin`.
+  - Impide de forma estricta a nivel de base de datos que cualquier operador modifique registros de días pasados sin autorización.
+
 ---
 
 ## 4. Edge Function: `admin-users` (`/functions/v1/admin-users`)

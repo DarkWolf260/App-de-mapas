@@ -65,6 +65,7 @@ export function useMapInit(
   const activeDepartmentRef = useRef<DepartmentView>("pc");
   const showAccumulatedRef = useRef<boolean>(false);
   const canEditRef = useRef<boolean>(false);
+  const isAuthenticatedRef = useRef<boolean>(false);
 
   const [mapReady, setMapReady] = useState(false);
   const [customPopup, setCustomPopup] = useState<{ mapPoint: any; feat: DrawnFeature } | null>(null);
@@ -250,6 +251,10 @@ export function useMapInit(
             (r: any) => "graphic" in r && r.graphic?.layer === inspeccionesLayerRef.current
           );
           if (inspeccionResult) {
+            // Solo los usuarios autenticados / registrados pueden abrir la tarjeta con la descripción
+            if (!isAuthenticatedRef.current) {
+              return;
+            }
             const g = (inspeccionResult as any).graphic;
             if (view.popup) {
               view.popup.visibleElements = {
@@ -320,6 +325,7 @@ export function useMapInit(
     activeDepartmentRef,
     showAccumulatedRef,
     canEditRef,
+    isAuthenticatedRef,
     deconflictGraphicsRef,
     onFeatureAddedRef,
     onFeatureDeletedRef,

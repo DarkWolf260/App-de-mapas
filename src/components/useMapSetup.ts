@@ -31,6 +31,7 @@ export interface UseMapSetupProps {
   bitacoraOpen?: boolean;
   bare?: boolean;
   canEditMap?: boolean;
+  isAuthenticated?: boolean;
 }
 
 export const useMapSetup = (props: UseMapSetupProps) => {
@@ -40,6 +41,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     importedFeatures, hiddenFeatures, selectedDate, zoomToCoords,
     activeDepartment = "pc", onFeatureClick,
     showAccumulated, sidebarOpen, bitacoraOpen, bare, canEditMap,
+    isAuthenticated,
   } = props;
 
   const [activeColor, setActiveColor] = useState<Color>(PALETTE[0]);
@@ -69,6 +71,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
   init.activeDepartmentRef.current = activeDepartment;
   init.showAccumulatedRef.current = showAccumulated ?? false;
   init.canEditRef.current = canEditMap === true;
+  init.isAuthenticatedRef.current = isAuthenticated === true;
 
   useEffect(() => { init.layerVisibilityRef.current = layerVisibility; }, [layerVisibility, init]);
   useEffect(() => { init.drawnFeaturesRef.current = drawnFeatures; }, [drawnFeatures, init]);
@@ -77,6 +80,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
   useEffect(() => { init.activeDepartmentRef.current = activeDepartment; }, [activeDepartment, init]);
   useEffect(() => { init.showAccumulatedRef.current = showAccumulated ?? false; }, [showAccumulated, init]);
   useEffect(() => { init.canEditRef.current = canEditMap === true; }, [canEditMap, init]);
+  useEffect(() => { init.isAuthenticatedRef.current = isAuthenticated === true; }, [isAuthenticated, init]);
 
   const { runDeconflict, deconflictGraphicsRef, viewRef, sketchLayerRef, sketchVMRef } = init;
   const onFeatureAddedRef = init.onFeatureAddedRef;

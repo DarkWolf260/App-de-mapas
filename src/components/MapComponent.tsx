@@ -109,6 +109,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     sidebarOpen: ui.sidebarOpen,
     bitacoraOpen: ui.bitacoraOpen,
     canEditMap,
+    isAuthenticated: ui.isAuthenticated,
   });
 
   React.useEffect(() => {

@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Arquitectura - App de Mapas & Pizarra Operacional",
+    "output": "architecture-app-de-mapas.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "operational-flow",
+        "label": "Flujo Operativo en Tiempo Real",
+        "focus": ["users", "ui_app", "pizarra_ops", "client_services", "realtime_engine", "postgres_db"],
+        "note": "Interacción de los operadores con la pizarra y sincronización en tiempo real."
+      },
+      {
+        "id": "mapping-engine",
+        "label": "Motor Cartográfico & Capas",
+        "focus": ["tiles_provider", "maps_engine", "ui_app"],
+        "note": "Carga de teselas y renderizado de coordenadas geoespaciales."
+      },
+      {
+        "id": "security-auth",
+        "label": "Autenticación & Seguridad RLS",
+        "focus": ["users", "ui_app", "client_services", "auth_service", "postgres_db"],
+        "note": "Validación de roles administrativos y políticas de seguridad a nivel de fila (RLS)."
+      }
+    ]
+  },
+  "components": [
+    { "id": "users", "type": "external", "label": "Operadores", "sublabel": "Navegador / Campo", "pos": [40, 280], "size": [130, 60] },
+    { "id": "tiles_provider", "type": "external", "label": "Servidor de Teselas", "sublabel": "OpenStreetMap / Carto", "pos": [40, 400], "size": [140, 60] },
+    { "id": "pizarra_ops", "type": "frontend", "label": "Pizarra Operacional", "sublabel": "Gestión de Campamentos", "pos": [250, 160], "size": [150, 60] },
+    { "id": "ui_app", "type": "frontend", "label": "React Application", "sublabel": "Vite + TypeScript", "brand": "react", "pos": [250, 280], "size": [150, 60] },
+    { "id": "maps_engine", "type": "frontend", "label": "Visor Geoespacial", "sublabel": "Leaflet / Capas", "pos": [250, 400], "size": [150, 60] },
+    { "id": "client_services", "type": "backend", "label": "Capa de Servicios", "sublabel": "baseService / SDK", "pos": [480, 280], "size": [140, 60] },
+    { "id": "auth_service", "type": "security", "label": "Supabase Auth", "sublabel": "JWT & RBAC", "brand": "supabase", "pos": [700, 160], "size": [140, 60], "tag": "RLS Policies" },
+    { "id": "realtime_engine", "type": "messagebus", "label": "Realtime Engine", "sublabel": "WebSockets Channels", "brand": "supabase", "pos": [700, 280], "size": [140, 60] },
+    { "id": "postgres_db", "type": "database", "label": "PostgreSQL DB", "sublabel": "Tablas & Storage", "brand": "postgresql", "pos": [920, 280], "size": [140, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Cliente Web (React SPA)", "wraps": ["pizarra_ops", "ui_app", "maps_engine", "client_services"] },
+    { "kind": "region", "label": "Plataforma Supabase Backend", "wraps": ["auth_service", "realtime_engine", "postgres_db"] }
+  ],
+  "connections": [
+    { "id": "users-to-app", "from": "users", "to": "ui_app", "label": "HTTPS / UI", "variant": "emphasis" },
+    { "id": "tiles-to-maps", "from": "tiles_provider", "to": "maps_engine", "label": "Teselas", "variant": "dashed" },
+    { "id": "pizarra-to-app", "from": "pizarra_ops", "to": "ui_app" },
+    { "id": "maps-to-app", "from": "maps_engine", "to": "ui_app" },
+    { "id": "app-to-services", "from": "ui_app", "to": "client_services", "label": "Llamadas SDK" },
+    { "id": "services-to-auth", "from": "client_services", "to": "auth_service", "label": "Validar Sesión", "variant": "security", "fromSide": "top", "toSide": "left", "via": [[550, 190]] },
+    { "id": "services-to-realtime", "from": "client_services", "to": "realtime_engine", "label": "Suscripción WS" },
+    { "id": "realtime-to-db", "from": "realtime_engine", "to": "postgres_db", "label": "Replicación WAL" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Frontend & Cartografía", "items": ["SPA en React 18 y TypeScript", "Pizarra operativa para gestión de cuadrillas y campamentos", "Renderizado cartográfico interactivo con Leaflet y OSM"] },
+    { "dot": "emerald", "title": "Capa de Datos & Servicios", "items": ["Servicio unificado `baseService` para consultas y mutaciones", "Comunicación bidireccional en tiempo real vía WebSockets con Supabase Realtime"] },
+    { "dot": "rose", "title": "Seguridad & Backend", "items": ["Autenticación mediante Supabase Auth con tokens JWT", "Seguridad a nivel de fila (RLS) en PostgreSQL", "Control de roles y permisos de usuario para administradores y operadores"] }
+  ]
+}
