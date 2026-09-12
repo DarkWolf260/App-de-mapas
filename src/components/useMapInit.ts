@@ -7,7 +7,7 @@ import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import GeoJSON from "ol/format/GeoJSON";
 import { fromLonLat, toLonLat } from "ol/proj";
-import Feature from "ol/Feature";
+import Feature, { type FeatureLike } from "ol/Feature";
 import Point from "ol/geom/Point";
 import { fromCircle } from "ol/geom/Polygon";
 import Draw, { createBox } from "ol/interaction/Draw";
@@ -169,13 +169,13 @@ export function useMapInit(
           }),
           text: showText
             ? new Text({
-                text: title,
-                font: "bold 11px Inter, system-ui, -apple-system, sans-serif",
-                fill: new Fill({ color: "#ffffff" }),
-                stroke: new Stroke({ color: "rgba(10, 15, 29, 0.95)", width: 3.5 }),
-                offsetY: isPoint ? -14 : 0,
-                overflow: true,
-              })
+              text: title,
+              font: "bold 11px Inter, system-ui, -apple-system, sans-serif",
+              fill: new Fill({ color: "#ffffff" }),
+              stroke: new Stroke({ color: "rgba(10, 15, 29, 0.95)", width: 3.5 }),
+              offsetY: isPoint ? -14 : 0,
+              overflow: true,
+            })
             : undefined,
         });
       },
@@ -261,11 +261,27 @@ export function useMapInit(
     map.on("singleclick", (evt) => {
       if (drawInteractionRef.current) return;
 
-      const feature = map.forEachFeatureAtPixel(
+      const matchedFeatures: FeatureLike[] = [];
+      map.forEachFeatureAtPixel(
         evt.pixel,
-        (f) => f,
+        (f) => {
+          matchedFeatures.push(f);
+          return false;
+        },
         { hitTolerance: 8 }
       );
+
+      // Priorizar Point/Inspección > LineString > Polygon para evitar que el polígono contenedor capture el clic del punto
+      const feature =
+        matchedFeatures.find((f) => {
+          const type = f.getGeometry()?.getType();
+          return type === "Point" || type === "MultiPoint" || f.get("tipo") === "inspeccion";
+        }) ||
+        matchedFeatures.find((f) => {
+          const type = f.getGeometry()?.getType();
+          return type === "LineString" || type === "MultiLineString";
+        }) ||
+        matchedFeatures[0];
 
       if (feature) {
         const featId = feature.get("id");

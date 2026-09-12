@@ -5,6 +5,7 @@ import { CustomMapPopup } from "./CustomMapPopup";
 import { DeploymentSummaryCard } from "./DeploymentSummaryCard";
 import { MapSettingsPanel } from "./MapSettingsPanel";
 import { MapSwipeControl } from "./MapSwipeControl";
+import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 import { useMapSetup } from "./useMapSetup";
 import { useDraggable } from "../hooks/useDraggable";
 import type { MapFeatureActions, MapUIContext } from "./mapTypes";
@@ -82,6 +83,9 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     setPopupEditDate,
     handleSelectTool,
     handleCancel,
+    deleteConfirmOpen,
+    handleConfirmDelete,
+    handleCancelDelete,
     handleDeleteSelected,
     handleToggleEditMode,
     handleColorChange,
@@ -104,6 +108,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     bitacoraOpen: ui.bitacoraOpen,
     canEditMap,
     isAuthenticated: ui.isAuthenticated,
+    isMobile,
   });
 
   React.useEffect(() => {
@@ -286,16 +291,16 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
           style={
             isMobile
               ? {
-                  position: "fixed",
-                  zIndex: 150,
-                }
+                position: "fixed",
+                zIndex: 150,
+              }
               : {
-                  position: "fixed",
-                  left: displayX,
-                  top: displayY,
-                  zIndex: 150,
-                  transition: isDragging ? "none" : "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                }
+                position: "fixed",
+                left: displayX,
+                top: displayY,
+                zIndex: 150,
+                transition: isDragging ? "none" : "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              }
           }
         >
           <DrawingToolbar
@@ -330,6 +335,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
             onUpdateFeatureDescription,
             onUpdateFeatureColor,
             onUpdateFeatureCollapsed,
+            onDeleteFeature: handleDeleteSelected,
           }}
           sketchLayer={sketchLayer}
           onClose={() => setCustomPopup(null)}
@@ -456,6 +462,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
           position={swipePosition}
           onPositionChange={(pos) => setSwipePosition(pos)}
           onClose={deactivateSwipe}
+          orientation={isMobile ? "vertical" : "horizontal"}
           beforeLabel="Antes (Esri Satelital)"
           afterLabel="Después (Google Satelital HD)"
         />
@@ -604,6 +611,14 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
           </button>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={deleteConfirmOpen}
+        itemTitle={selectedGraphic?.title}
+        itemType={selectedGraphic?.type}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 };

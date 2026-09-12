@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, NovedadEntry } from "../types";
 import { computeContainedItems } from "../utils/spatialUtils";
-import { Lock, Unlock, FileText, Settings, History, Info, X } from "lucide-react";
+import { Lock, Unlock, FileText, Settings, History, Info, X, Trash2 } from "lucide-react";
 import type { UserPermissions } from "../services/adminUsersService";
 import { TAB_BTN_BASE } from "./popup/popupStyles";
 import { GeneralTab } from "./popup/GeneralTab";
@@ -16,6 +16,7 @@ interface FeatureEditActions {
   onUpdateFeatureColor?: (id: number | string, newColor: string) => Promise<void>;
   onUpdateFeatureCollapsed?: (id: number | string, isCollapsed: boolean, collapsedCount: string | number) => Promise<void>;
   onToggleFeatureLock?: (id: number | string, locked: boolean) => void;
+  onDeleteFeature?: (feat: DrawnFeature) => void;
 }
 
 interface CustomMapPopupProps {
@@ -99,6 +100,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     onUpdateFeatureDescription,
     onUpdateFeatureColor,
     onUpdateFeatureCollapsed,
+    onDeleteFeature,
   },
   sketchLayer,
   onClose,
@@ -190,21 +192,44 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
             {activeFeat.title}
           </span>
           {canEditMap && (
-            <button
-              onClick={() => onToggleFeatureLock?.(activeFeat.id, !activeFeat.locked)}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: activeFeat.locked ? "var(--color-high)" : "var(--text-muted)",
-                cursor: "pointer",
-                padding: 0,
-                display: "flex",
-                alignItems: "center",
-              }}
-              title={activeFeat.locked ? "Desbloquear edición del elemento" : "Bloquear edición del elemento"}
-            >
-              {activeFeat.locked ? <Lock size={14} /> : <Unlock size={14} style={{ opacity: 0.4 }} />}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <button
+                onClick={() => onToggleFeatureLock?.(activeFeat.id, !activeFeat.locked)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: activeFeat.locked ? "var(--color-high)" : "var(--text-muted)",
+                  cursor: "pointer",
+                  padding: "2px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+                title={activeFeat.locked ? "Desbloquear edición del elemento" : "Bloquear edición del elemento"}
+              >
+                {activeFeat.locked ? <Lock size={14} /> : <Unlock size={14} style={{ opacity: 0.4 }} />}
+              </button>
+              {!activeFeat.locked && onDeleteFeature && (
+                <button
+                  onClick={() => onDeleteFeature(activeFeat)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#ef4444",
+                    opacity: 0.6,
+                    cursor: "pointer",
+                    padding: "2px",
+                    display: "flex",
+                    alignItems: "center",
+                    transition: "opacity 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.6")}
+                  title="Eliminar este elemento"
+                >
+                  <Trash2 size={13} />
+                </button>
+              )}
+            </div>
           )}
         </div>
         <button

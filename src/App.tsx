@@ -15,7 +15,6 @@ import { MobileSettingsSheet } from './components/MobileSettingsSheet';
 import { MobileLayersSheet } from './components/MobileLayersSheet';
 import { Sheet } from './components/Sheet';
 import { UserNavMenu } from './components/UserNavMenu';
-import { FpsCounter } from './components/FpsCounter';
 import { Activity, Menu } from 'lucide-react';
 import { fetchInspecciones } from './services/inspeccionService';
 import type { InspeccionRecord } from './types';
@@ -153,7 +152,6 @@ function App() {
 
           {/* Menú de Usuario / Perfil */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <FpsCounter compact />
             <UserNavMenu />
           </div>
         </div>
@@ -161,7 +159,6 @@ function App() {
 
       {!isMobile && (
         <div style={{ position: "absolute", top: "16px", right: "65px", zIndex: 130, pointerEvents: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
-          <FpsCounter />
           <UserNavMenu />
         </div>
       )}

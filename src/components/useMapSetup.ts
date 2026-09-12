@@ -10,6 +10,7 @@ import Snap from "ol/interaction/Snap";
 import TileLayer from "ol/layer/Tile";
 import XYZ from "ol/source/XYZ";
 import Overlay from "ol/Overlay";
+import { getRenderPixel } from "ol/render";
 import type { Color } from "../utils/colorUtils";
 import { PALETTE } from "../utils/colorUtils";
 import { ToolId } from "./DrawingToolbar";
@@ -44,6 +45,7 @@ export interface UseMapSetupProps {
   bare?: boolean;
   canEditMap?: boolean;
   isAuthenticated?: boolean;
+  isMobile?: boolean;
 }
 
 export const useMapSetup = (props: UseMapSetupProps) => {
@@ -62,10 +64,15 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     zoomToCoords,
     activeDepartment = "pc",
     onFeatureClick,
-    showAccumulated,
-    bare,
-    canEditMap,
-    isAuthenticated,
+    showAccumulated = false,
+    showPoints = true,
+    showAreas = true,
+    sidebarOpen = true,
+    bitacoraOpen = false,
+    bare = false,
+    canEditMap = false,
+    isAuthenticated = false,
+    isMobile = false,
   } = props;
 
   const [activeColor, setActiveColor] = useState<Color>(PALETTE[0]);
@@ -75,8 +82,9 @@ export const useMapSetup = (props: UseMapSetupProps) => {
   }, [activeColor]);
 
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
-  const [selectedGraphic, setSelectedGraphic] = useState<any | null>(null);
+  const [selectedGraphic, setSelectedGraphic] = useState<DrawnFeature | null>(null);
   const [editMode, setEditMode] = useState<"transform" | "reshape">("transform");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [popupEditDate, setPopupEditDate] = useState(selectedDate);
   const [popupTick, setPopupTick] = useState(0);
   const [swipeActive, setSwipeActive] = useState(false);
@@ -87,12 +95,37 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     swipePositionRef.current = swipePosition;
   }, [swipePosition]);
 
+  const isMobileRef = useRef(isMobile);
+  useEffect(() => {
+    isMobileRef.current = isMobile;
+  }, [isMobile]);
+
   const swipeLayerRef = useRef<TileLayer<XYZ> | null>(null);
+  const translateInteractionRef = useRef<Translate | null>(null);
+
+  const onSelectGraphicForEdit = useCallback(
+    (g: DrawnFeature | null) => {
+      if (!g) {
+        setSelectedGraphic(null);
+        return;
+      }
+      if (canEditMap !== true || !layerVisibility.sketch) return;
+      const feat = drawnFeatures.find((f) => String(f.id) === String(g.id));
+      if (feat?.locked) {
+        setSelectedGraphic(null);
+        return;
+      }
+      setActiveTool(null);
+      setSelectedGraphic(feat || g);
+    },
+    [canEditMap, layerVisibility.sketch, drawnFeatures]
+  );
 
   const init = useMapInit(activeBasemap, layerVisibility, {
     onFeatureAdded,
     onFeatureDeleted,
     onFeatureClick,
+    onSelectFeature: onSelectGraphicForEdit,
     onToolComplete: () => {
       setActiveTool(null);
     },
@@ -146,7 +179,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     );
   }, [activeBasemap, baseLayerRef]);
 
-  // 2. Manejo de Herramientas de Dibujo (Draw interaction)
+  // 2. Manejo de Herramientas de Dibujo
   useEffect(() => {
     const map = mapRef.current;
     const source = featuresSourceRef.current;
@@ -157,66 +190,58 @@ export const useMapSetup = (props: UseMapSetupProps) => {
       drawInteractionRef.current = null;
     }
 
-    if (!activeTool || !canEditMap) return;
-
-    let draw: Draw;
-    if (activeTool === "point") {
-      draw = new Draw({ source, type: "Point" });
-    } else if (activeTool === "polyline") {
-      draw = new Draw({ source, type: "LineString" });
-    } else if (activeTool === "polygon") {
-      draw = new Draw({ source, type: "Polygon" });
-    } else if (activeTool === "rectangle") {
-      draw = new Draw({ source, type: "Circle", geometryFunction: createBox() });
-    } else if (activeTool === "circle") {
-      draw = new Draw({ source, type: "Circle" });
-    } else {
-      return;
-    }
-
-    draw.on("drawend", (evt) => {
-      let geom = evt.feature.getGeometry();
-      if (!geom) return;
-
-      let standardGeom: any = geom;
-      if (geom.getType() === "Circle") {
-        standardGeom = fromCircle(geom as any, 64);
+    if (activeTool && canEditMap) {
+      let draw: Draw;
+      if (activeTool === "point") {
+        draw = new Draw({ source, type: "Point" });
+      } else if (activeTool === "polyline") {
+        draw = new Draw({ source, type: "LineString" });
+      } else if (activeTool === "polygon") {
+        draw = new Draw({ source, type: "Polygon" });
+      } else if (activeTool === "rectangle") {
+        draw = new Draw({ source, type: "Circle", geometryFunction: createBox() });
+      } else if (activeTool === "circle") {
+        draw = new Draw({ source, type: "Circle" });
+      } else {
+        return;
       }
 
-      const format = new GeoJSON();
-      const geojsonObj = format.writeGeometryObject(standardGeom, {
-        dataProjection: "EPSG:4326",
-        featureProjection: "EPSG:3857",
+      draw.on("drawend", (evt) => {
+        const feature = evt.feature;
+        let geom = feature.getGeometry();
+        if (geom && geom.getType() === "Circle") {
+          geom = fromCircle(geom as any, 64);
+        }
+
+        if (geom) {
+          const format = new GeoJSON();
+          const geojsonObj = format.writeGeometryObject(geom, {
+            dataProjection: "EPSG:4326",
+            featureProjection: "EPSG:3857",
+          });
+
+          const newFeat: DrawnFeature = {
+            id: Date.now(),
+            title: `Elemento ${activeTool}`,
+            type: activeTool === "point" ? "point" : activeTool === "polyline" ? "polyline" : "polygon",
+            color: activeColorRef.current.hex,
+            geojsonGeometry: geojsonObj as any,
+            dailyLogs: [],
+          };
+
+          onFeatureAddedRef.current?.(newFeat);
+        }
+
+        setTimeout(() => {
+          map.removeInteraction(draw);
+          drawInteractionRef.current = null;
+          setActiveTool(null);
+        }, 50);
       });
 
-      const toolType = (activeTool === "rectangle" || activeTool === "circle") ? "polygon" : activeTool;
-      const defaultTitles: Record<string, string> = {
-        point: "Punto de Control",
-        polyline: "Ruta de Evacuación",
-        polygon: "Zona de Afectación",
-        rectangle: "Sector Cuadrante",
-        circle: "Perímetro de Seguridad",
-      };
-
-      const newFeat: DrawnFeature = {
-        id: Date.now(),
-        title: defaultTitles[activeTool] || "Elemento Operativo",
-        type: toolType as any,
-        color: activeColorRef.current.hex,
-        geojsonGeometry: geojsonObj as any,
-        dailyLogs: [],
-      };
-
-      onFeatureAddedRef.current?.(newFeat);
-
-      // Limpiar tool
-      map.removeInteraction(draw);
-      drawInteractionRef.current = null;
-      setActiveTool(null);
-    });
-
-    map.addInteraction(draw);
-    drawInteractionRef.current = draw;
+      map.addInteraction(draw);
+      drawInteractionRef.current = draw;
+    }
 
     return () => {
       if (drawInteractionRef.current) {
@@ -226,57 +251,98 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     };
   }, [activeTool, canEditMap, mapRef, featuresSourceRef, drawInteractionRef, onFeatureAddedRef]);
 
-  // 3. Manejo de Modificación y Snapping
+  // 3. Manejo de Modificación / Translate Exclusivo para la Figura Seleccionada (No bloqueada)
   useEffect(() => {
     const map = mapRef.current;
     const source = featuresSourceRef.current;
     if (!map || !source) return;
 
-    if (canEditMap && layerVisibility.sketch) {
-      if (!modifyInteractionRef.current) {
-        const modify = new Modify({ source });
-        modify.on("modifyend", (evt) => {
-          const features = evt.features.getArray();
-          const format = new GeoJSON();
-          features.forEach((f) => {
-            const featId = f.getId();
-            const originalFeat = drawnFeaturesRef.current.find((df) => String(df.id) === String(featId));
-            if (originalFeat && !originalFeat.locked) {
-              const geom = f.getGeometry();
-              if (geom) {
-                const geojsonObj = format.writeGeometryObject(geom, {
-                  dataProjection: "EPSG:4326",
-                  featureProjection: "EPSG:3857",
-                });
-                onFeatureAddedRef.current?.({
-                  ...originalFeat,
-                  geojsonGeometry: geojsonObj as any,
-                  _isUpdate: true,
-                });
-              }
-            }
-          });
-        });
-        map.addInteraction(modify);
-        modifyInteractionRef.current = modify;
-      }
+    // Limpiar interacciones anteriores
+    if (modifyInteractionRef.current) {
+      map.removeInteraction(modifyInteractionRef.current);
+      modifyInteractionRef.current = null;
+    }
+    if (translateInteractionRef.current) {
+      map.removeInteraction(translateInteractionRef.current);
+      translateInteractionRef.current = null;
+    }
 
+    if (canEditMap && layerVisibility.sketch) {
+      // Snapping para dibujo preciso
       if (!snapInteractionRef.current) {
         const snap = new Snap({ source });
         map.addInteraction(snap);
         snapInteractionRef.current = snap;
       }
-    } else {
-      if (modifyInteractionRef.current) {
-        map.removeInteraction(modifyInteractionRef.current);
-        modifyInteractionRef.current = null;
+
+      // Solo habilitar modificación o traslación si hay un elemento seleccionado y NO está bloqueado
+      if (selectedGraphic && !selectedGraphic.locked) {
+        const featId = selectedGraphic.id;
+        const olFeature =
+          source.getFeatureById(featId) ||
+          source.getFeatures().find((f) => String(f.get("id")) === String(featId));
+
+        if (olFeature) {
+          const featureCollection = new Collection([olFeature]);
+
+          if (editMode === "reshape") {
+            const modify = new Modify({ features: featureCollection });
+            modify.on("modifyend", () => {
+              const geom = olFeature.getGeometry();
+              if (geom) {
+                const format = new GeoJSON();
+                const geojsonObj = format.writeGeometryObject(geom, {
+                  dataProjection: "EPSG:4326",
+                  featureProjection: "EPSG:3857",
+                });
+                onFeatureAddedRef.current?.({
+                  ...selectedGraphic,
+                  geojsonGeometry: geojsonObj as any,
+                  _isUpdate: true,
+                });
+              }
+            });
+            map.addInteraction(modify);
+            modifyInteractionRef.current = modify;
+          } else if (editMode === "transform") {
+            const translate = new Translate({ features: featureCollection });
+            translate.on("translateend", () => {
+              const geom = olFeature.getGeometry();
+              if (geom) {
+                const format = new GeoJSON();
+                const geojsonObj = format.writeGeometryObject(geom, {
+                  dataProjection: "EPSG:4326",
+                  featureProjection: "EPSG:3857",
+                });
+                onFeatureAddedRef.current?.({
+                  ...selectedGraphic,
+                  geojsonGeometry: geojsonObj as any,
+                  _isUpdate: true,
+                });
+              }
+            });
+            map.addInteraction(translate);
+            translateInteractionRef.current = translate;
+          }
+        }
       }
+    } else {
       if (snapInteractionRef.current) {
         map.removeInteraction(snapInteractionRef.current);
         snapInteractionRef.current = null;
       }
     }
-  }, [canEditMap, layerVisibility.sketch, mapRef, featuresSourceRef, modifyInteractionRef, snapInteractionRef, drawnFeaturesRef, onFeatureAddedRef]);
+  }, [
+    canEditMap,
+    layerVisibility.sketch,
+    selectedGraphic,
+    editMode,
+    mapRef,
+    featuresSourceRef,
+    modifyInteractionRef,
+    snapInteractionRef,
+    onFeatureAddedRef,
+  ]);
 
   const handleSelectTool = (toolId: ToolId) => {
     if (!canEditMap) return;
@@ -294,35 +360,36 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     setSelectedGraphic(null);
   };
 
-  const handleDeleteSelected = () => {
-    if (!selectedGraphic) return;
-    const featId = selectedGraphic.id || selectedGraphic.get?.("id");
-    const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-    if (feat?.locked) return;
-    if (onFeatureDeletedRef.current && featId) {
-      onFeatureDeletedRef.current(Number(featId));
-      setSelectedGraphic(null);
+  const handleDeleteSelected = (targetFeat?: DrawnFeature) => {
+    const target = targetFeat || selectedGraphic;
+    if (!target || target.locked) return;
+    setSelectedGraphic(target);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedGraphic && onFeatureDeletedRef.current) {
+      onFeatureDeletedRef.current(Number(selectedGraphic.id));
+      if (init.customPopup?.feat && String(init.customPopup.feat.id) === String(selectedGraphic.id)) {
+        init.setCustomPopup(null);
+      }
     }
+    setDeleteConfirmOpen(false);
+    setSelectedGraphic(null);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmOpen(false);
   };
 
   const handleToggleEditMode = (mode: "transform" | "reshape") => {
     setEditMode(mode);
   };
 
-  const onSelectGraphicForEdit = useCallback((g: any) => {
-    if (canEditMap !== true || !layerVisibility.sketch) return;
-    const featId = g.id || g.get?.("id");
-    const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-    if (feat?.locked) return;
-
-    setActiveTool(null);
-    setSelectedGraphic(g);
-  }, [canEditMap, layerVisibility.sketch, drawnFeaturesRef]);
-
   const handleColorChange = (color: Color) => {
     setActiveColor(color);
     if (selectedGraphic) {
-      const featId = selectedGraphic.id || selectedGraphic.get?.("id");
+      const featId = selectedGraphic.id;
       const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
       if (feat && onFeatureAddedRef.current) {
         onFeatureAddedRef.current({ ...feat, color: color.hex, _isUpdate: true });
@@ -435,6 +502,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
           () => {
             onFeatureClick?.();
             init.setCustomPopup({ mapPoint: fromLonLat([labelData.lng, labelData.lat]), feat });
+            onSelectGraphicForEdit(feat);
           },
           currentZoom
         );
@@ -444,7 +512,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
           position: fromLonLat([labelData.lng, labelData.lat]),
           positioning: "bottom-center",
           offset: isCard ? (isPoint ? [0, -12] : [0, 0]) : [0, 0],
-          stopEvent: false,
+          stopEvent: true,
         });
 
         map.addOverlay(overlay);
@@ -528,7 +596,7 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     if (swipeActive) {
       if (!swipeLayerRef.current) {
         const swipeLayer = new TileLayer({
-          preload: 4,
+          preload: 0,
           source: new XYZ({
             url: "https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
             maxZoom: 20,
@@ -543,12 +611,41 @@ export const useMapSetup = (props: UseMapSetupProps) => {
           const width = mapSize[0];
           const height = mapSize[1];
           const pos = swipePositionRef.current;
-          const clipX = width * (pos / 100);
+          const mobile = isMobileRef.current;
 
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(clipX, 0, width - clipX, height);
-          ctx.clip();
+          if (mobile) {
+            // En móvil: deslizamiento vertical (de arriba a abajo)
+            const clipY = height * (pos / 100);
+            const tl = getRenderPixel(event, [0, clipY]);
+            const tr = getRenderPixel(event, [width, clipY]);
+            const bl = getRenderPixel(event, [0, height]);
+            const br = getRenderPixel(event, [width, height]);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(tl[0], tl[1]);
+            ctx.lineTo(tr[0], tr[1]);
+            ctx.lineTo(br[0], br[1]);
+            ctx.lineTo(bl[0], bl[1]);
+            ctx.closePath();
+            ctx.clip();
+          } else {
+            // En escritorio: deslizamiento horizontal (de izquierda a derecha)
+            const clipX = width * (pos / 100);
+            const tl = getRenderPixel(event, [clipX, 0]);
+            const tr = getRenderPixel(event, [width, 0]);
+            const bl = getRenderPixel(event, [clipX, height]);
+            const br = getRenderPixel(event, [width, height]);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(tl[0], tl[1]);
+            ctx.lineTo(tr[0], tr[1]);
+            ctx.lineTo(br[0], br[1]);
+            ctx.lineTo(bl[0], bl[1]);
+            ctx.closePath();
+            ctx.clip();
+          }
         });
 
         swipeLayer.on("postrender", (event: any) => {
@@ -609,6 +706,9 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     setPopupEditDate,
     handleSelectTool,
     handleCancel,
+    deleteConfirmOpen,
+    handleConfirmDelete,
+    handleCancelDelete,
     handleDeleteSelected,
     handleToggleEditMode,
     handleColorChange,

@@ -517,6 +517,14 @@ export function buildHtmlLabelElement(data: CustomLabelData, onClick?: () => voi
   container.style.cursor = "pointer";
   container.innerHTML = buildAdaptiveLabelString(data, zoom).trim();
 
+  const stopProp = (e: Event) => {
+    e.stopPropagation();
+  };
+  container.addEventListener("pointerdown", stopProp);
+  container.addEventListener("mousedown", stopProp);
+  container.addEventListener("touchstart", stopProp, { passive: true });
+  container.addEventListener("dblclick", stopProp);
+
   // Activar interactividad para las descripciones de actividades personalizadas
   const activityBadges = container.querySelectorAll<HTMLElement>(".custom-activity-badge[data-act-target]");
   activityBadges.forEach((badge) => {
@@ -526,6 +534,7 @@ export function buildHtmlLabelElement(data: CustomLabelData, onClick?: () => voi
     if (descEl) {
       badge.addEventListener("click", (e) => {
         e.stopPropagation();
+        e.preventDefault();
         const isHidden = descEl.style.display === "none" || !descEl.style.display;
         descEl.style.display = isHidden ? "block" : "none";
       });
@@ -535,6 +544,7 @@ export function buildHtmlLabelElement(data: CustomLabelData, onClick?: () => voi
   if (onClick) {
     container.addEventListener("click", (e) => {
       e.stopPropagation();
+      e.preventDefault();
       onClick();
     });
   }
