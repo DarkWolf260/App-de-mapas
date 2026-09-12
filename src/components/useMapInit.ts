@@ -1,31 +1,45 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import Map from "@arcgis/core/Map";
-import MapView from "@arcgis/core/views/MapView";
-import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
-import Graphic from "@arcgis/core/Graphic";
-import SketchViewModel from "@arcgis/core/widgets/Sketch/SketchViewModel";
-import Zoom from "@arcgis/core/widgets/Zoom";
-import Compass from "@arcgis/core/widgets/Compass";
-import TextSymbol from "@arcgis/core/symbols/TextSymbol";
-import { execute as centroidExecute } from "@arcgis/core/geometry/operators/centroidOperator";
-import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
+import Map from "ol/Map";
+import View from "ol/View";
+import TileLayer from "ol/layer/Tile";
+import XYZ from "ol/source/XYZ";
+import VectorLayer from "ol/layer/Vector";
+import VectorSource from "ol/source/Vector";
+import GeoJSON from "ol/format/GeoJSON";
+import { fromLonLat, toLonLat } from "ol/proj";
+import Feature from "ol/Feature";
+import Point from "ol/geom/Point";
+import { fromCircle } from "ol/geom/Polygon";
+import Draw, { createBox } from "ol/interaction/Draw";
+import Modify from "ol/interaction/Modify";
+import Snap from "ol/interaction/Snap";
+import DragRotate from "ol/interaction/DragRotate";
+import PinchRotate from "ol/interaction/PinchRotate";
+import { altKeyOnly, altShiftKeysOnly } from "ol/events/condition";
+import { Circle as CircleStyle, Fill, Stroke, Style, Text } from "ol/style";
+import Overlay from "ol/Overlay";
+import { defaults as defaultControls, Rotate } from "ol/control";
+import { defaults as defaultInteractions } from "ol/interaction";
+import "ol/ol.css";
 import type { Color } from "../utils/colorUtils";
-import { geoToJSON } from "../utils/spatialUtils";
-import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapValue, typeLabel, makeSymbols } from "../utils/mapUtils";
-import { deconflictGraphics } from "../utils/labelDeconfliction";
-import type { DrawnFeature, HtmlLabel, LayerVisibility, DepartmentView } from "../types";
+import { PALETTE, hexToRgb } from "../utils/colorUtils";
+import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapUrl, getBasemapMaxZoom } from "../utils/mapUtils";
+import { featureToLabelData, buildHtmlLabelElement, LABEL_ZOOM_THRESHOLD } from "../utils/htmlLabelBuilder";
+import { buildParentsMap } from "../utils/spatialUtils";
+import type { DrawnFeature, HtmlLabel, LayerVisibility, DepartmentView, InspeccionRecord } from "../types";
 
 export interface MapInitRefs {
-  viewRef: React.MutableRefObject<MapView | null>;
-  sketchLayerRef: React.MutableRefObject<GraphicsLayer | null>;
-  sketchVMRef: React.MutableRefObject<SketchViewModel | null>;
+  mapRef: React.MutableRefObject<Map | null>;
+  featuresSourceRef: React.MutableRefObject<VectorSource | null>;
+  featuresLayerRef: React.MutableRefObject<VectorLayer<VectorSource> | null>;
+  inspeccionesSourceRef: React.MutableRefObject<VectorSource | null>;
+  inspeccionesLayerRef: React.MutableRefObject<VectorLayer<VectorSource> | null>;
   drawnFeaturesRef: React.MutableRefObject<DrawnFeature[]>;
   hiddenFeaturesRef: React.MutableRefObject<Record<string, boolean>>;
   layerVisibilityRef: React.MutableRefObject<LayerVisibility>;
   selectedDateRef: React.MutableRefObject<string>;
   activeDepartmentRef: React.MutableRefObject<DepartmentView>;
   showAccumulatedRef: React.MutableRefObject<boolean>;
-  /** Solo los administradores pueden entrar en modo edición/transformación. */
   canEditRef: React.MutableRefObject<boolean>;
 }
 
@@ -33,9 +47,21 @@ export interface MapInitCallbacks {
   onFeatureAdded: (feat: DrawnFeature) => void;
   onFeatureDeleted: (id: number) => void;
   onFeatureClick?: () => void;
-  onGraphicSelected?: (graphic: Graphic) => void;
   onToolComplete?: () => void;
   getActiveColor: () => Color;
+}
+
+function toRgba(hex: any, alpha = 1): string {
+  if (!hex || typeof hex !== "string") return `rgba(249, 115, 22, ${alpha})`;
+  let c = hex.trim().replace("#", "");
+  if (c.length === 3) {
+    c = c.split("").map((x) => x + x).join("");
+  }
+  if (c.length === 6) {
+    const num = parseInt(c, 16);
+    return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+  }
+  return `rgba(249, 115, 22, ${alpha})`;
 }
 
 export function useMapInit(
@@ -44,12 +70,17 @@ export function useMapInit(
   callbacks: MapInitCallbacks,
 ) {
   const mapDiv = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<MapView | null>(null);
-  const sketchLayerRef = useRef<GraphicsLayer | null>(null);
-  const inspeccionesLayerRef = useRef<GraphicsLayer | null>(null);
-  const sketchVMRef = useRef<SketchViewModel | null>(null);
+  const mapRef = useRef<Map | null>(null);
+  const baseLayerRef = useRef<TileLayer<XYZ> | null>(null);
+  const featuresSourceRef = useRef<VectorSource | null>(null);
+  const featuresLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
+  const inspeccionesSourceRef = useRef<VectorSource | null>(null);
+  const inspeccionesLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
+  const labelOverlaysRef = useRef<Overlay[]>([]);
+  const drawInteractionRef = useRef<Draw | null>(null);
+  const modifyInteractionRef = useRef<Modify | null>(null);
+  const snapInteractionRef = useRef<Snap | null>(null);
 
-  const deconflictGraphicsRef = useRef<() => void>(() => { });
   const onFeatureAddedRef = useRef(callbacks.onFeatureAdded);
   const onFeatureDeletedRef = useRef(callbacks.onFeatureDeleted);
   const onToolCompleteRef = useRef(callbacks.onToolComplete);
@@ -69,255 +100,240 @@ export function useMapInit(
 
   const [mapReady, setMapReady] = useState(false);
   const [customPopup, setCustomPopup] = useState<{ mapPoint: any; feat: DrawnFeature } | null>(null);
+  const [popupScreenPos, setPopupScreenPos] = useState<{ x: number; y: number } | null>(null);
   const [currentZoom, setCurrentZoom] = useState<number>(DEFAULT_ZOOM);
-  const [currentScale, setCurrentScale] = useState<number>(0);
+  const [currentScale, setCurrentScale] = useState<number>(50000);
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: DEFAULT_CENTER[1], lng: DEFAULT_CENTER[0] });
-  const [htmlLabels, setHtmlLabels] = useState<HtmlLabel[]>([]);
-  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number; visible: boolean }>({
-    text: "", x: 0, y: 0, visible: false,
-  });
 
-  const runDeconflict = () => {
-    const sl = sketchLayerRef.current;
-    const v = viewRef.current;
-    if (sl && v) {
-      deconflictGraphics(sl, v, {
-        drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef,
-        selectedDateRef, activeDepartmentRef, showAccumulatedRef,
-      }, setHtmlLabels);
-    }
-  };
-
-  useEffect(() => { deconflictGraphicsRef.current = runDeconflict; });
-
+  // Inicialización del Mapa de OpenLayers
   useEffect(() => {
     if (!mapDiv.current) return;
     mapDiv.current.innerHTML = "";
 
-    const map = new Map({ basemap: getBasemapValue(activeBasemap || "satellite-free") });
-    const view = new MapView({
-      container: mapDiv.current,
-      map,
-      center: DEFAULT_CENTER,
-      zoom: DEFAULT_ZOOM,
-      popupEnabled: false,
-      ui: { components: [] },
-    });
-    viewRef.current = view;
+    const basemapUrl = getBasemapUrl(activeBasemap);
+    const maxZoom = getBasemapMaxZoom(activeBasemap);
 
-    const inspeccionesLayer = new GraphicsLayer({ title: "Inspecciones de Edificaciones" });
-    map.add(inspeccionesLayer);
+    const baseLayer = new TileLayer({
+      preload: 4,
+      source: new XYZ({
+        url: basemapUrl,
+        maxZoom,
+        interpolate: true,
+        crossOrigin: "anonymous",
+      }),
+    });
+    baseLayerRef.current = baseLayer;
+
+    const featuresSource = new VectorSource();
+    featuresSourceRef.current = featuresSource;
+
+    const featuresLayer = new VectorLayer({
+      source: featuresSource,
+      renderBuffer: 1200,
+      style: (feature, resolution) => {
+        const rawColor = feature.get("color") || "#f97316";
+        const strokeColor = toRgba(rawColor, 0.95);
+        const fillColor = toRgba(rawColor, 0.25);
+        const title = feature.get("title") || "";
+        const hasOverlay = feature.get("hasOverlay") === true;
+        const geomType = feature.getGeometry()?.getType();
+        const isPoint = geomType === "Point" || geomType === "MultiPoint";
+
+        // Obtener zoom actual a partir de la vista o resolución
+        const view = mapRef.current?.getView();
+        const currentZoom = view
+          ? (view.getZoom() ?? (resolution ? view.getZoomForResolution(resolution) ?? 15 : 15))
+          : 15;
+
+        // Puntos visibles a partir de zoom 16, polígonos/líneas a partir de zoom 13
+        const zoomThreshold = isPoint ? 16 : 13;
+        const passesZoom = currentZoom >= zoomThreshold;
+
+        // Verificar visibilidad de labels según configuración
+        const passesVisibility = isPoint
+          ? (layerVisibilityRef.current?.pointLabels ?? true)
+          : (layerVisibilityRef.current?.polygonLabels ?? true);
+
+        const showText = !hasOverlay && !!title && passesZoom && passesVisibility;
+
+        return new Style({
+          fill: new Fill({ color: fillColor }),
+          stroke: new Stroke({ color: strokeColor, width: 2, lineCap: "round", lineJoin: "round" }),
+          image: new CircleStyle({
+            radius: 5,
+            fill: new Fill({ color: strokeColor }),
+            stroke: new Stroke({ color: "#ffffff", width: 1.5 }),
+          }),
+          text: showText
+            ? new Text({
+                text: title,
+                font: "bold 11px Inter, system-ui, -apple-system, sans-serif",
+                fill: new Fill({ color: "#ffffff" }),
+                stroke: new Stroke({ color: "rgba(10, 15, 29, 0.95)", width: 3.5 }),
+                offsetY: isPoint ? -14 : 0,
+                overflow: true,
+              })
+            : undefined,
+        });
+      },
+    });
+    featuresLayerRef.current = featuresLayer;
+
+    const inspeccionesSource = new VectorSource();
+    inspeccionesSourceRef.current = inspeccionesSource;
+
+    const inspeccionesLayer = new VectorLayer({
+      source: inspeccionesSource,
+      renderBuffer: 1200,
+      style: (feature) => {
+        const rawColor = feature.get("color") || "#22c55e";
+        const fillColor = toRgba(rawColor, 0.95);
+        return new Style({
+          image: new CircleStyle({
+            radius: 4,
+            fill: new Fill({ color: fillColor }),
+            stroke: new Stroke({ color: "rgba(15, 23, 42, 0.8)", width: 1 }),
+          }),
+        });
+      },
+    });
     inspeccionesLayerRef.current = inspeccionesLayer;
 
-    const sketchLayer = new GraphicsLayer({ title: "Dibujos y Trazados" });
-    map.add(sketchLayer);
-    sketchLayerRef.current = sketchLayer;
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    const targetElement = mapDiv.current;
+    targetElement.addEventListener("contextmenu", handleContextMenu);
 
-    view.when(
-      () => {
-        const zoomWidget = new Zoom({ view });
-        const compassWidget = new Compass({ view });
-        view.ui.add([zoomWidget, compassWidget], "top-right");
+    const isRightClick = (mapBrowserEvent: any) => {
+      const orig = mapBrowserEvent?.originalEvent;
+      if (!orig) return false;
+      return orig.button === 2 || (orig.buttons & 2) === 2 || orig.which === 3;
+    };
 
-        const svm = new SketchViewModel({
-          view,
-          layer: sketchLayer,
-          updateOnGraphicClick: false,
-          defaultUpdateOptions: {
-            tool: "transform",
-            enableRotation: true,
-            enableScaling: true,
-            toggleToolOnClick: false,
-            multipleSelectionEnabled: true,
-          },
-        });
-        sketchVMRef.current = svm;
+    const map = new Map({
+      target: mapDiv.current,
+      layers: [baseLayer, featuresLayer, inspeccionesLayer],
+      controls: defaultControls({ rotate: false, attribution: false }).extend([
+        new Rotate({
+          autoHide: false,
+          tipLabel: "Restablecer orientación al Norte",
+        }),
+      ]),
+      interactions: defaultInteractions().extend([
+        new DragRotate({
+          condition: (e) => isRightClick(e) || altKeyOnly(e) || altShiftKeysOnly(e),
+        }),
+        new PinchRotate(),
+      ]),
+      view: new View({
+        center: fromLonLat(DEFAULT_CENTER),
+        zoom: DEFAULT_ZOOM,
+        maxZoom: 20,
+        minZoom: 3,
+      }),
+    });
+    mapRef.current = map;
 
-        runDeconflict();
+    // Rastrear posición del puntero y zoom
+    map.on("pointermove", (evt) => {
+      const lonLat = toLonLat(evt.coordinate);
+      setCoords({ lat: lonLat[1], lng: lonLat[0] });
+    });
 
-        reactiveUtils.watch(() => view.extent, () => { runDeconflict(); });
-        reactiveUtils.watch(() => view.zoom, (z) => { if (typeof z === "number") setCurrentZoom(z); });
-        reactiveUtils.watch(() => view.scale, (s) => { if (typeof s === "number") setCurrentScale(Math.round(s)); });
-        reactiveUtils.watch(() => view.stationary, (isStationary) => { if (isStationary) runDeconflict(); });
+    const updateZoomAndScale = () => {
+      const view = map.getView();
+      if (!view) return;
+      const z = view.getZoom() || DEFAULT_ZOOM;
+      setCurrentZoom(Math.round(z * 10) / 10);
+      const res = view.getResolution() || 1;
+      setCurrentScale(Math.round(res * 39.37 * 72));
+    };
 
-        view.on("pointer-move", (evt: any) => {
-          const point = view.toMap({ x: evt.x, y: evt.y });
-          if (point) setCoords({ lat: point.latitude ?? 0, lng: point.longitude ?? 0 });
-        });
+    map.on("moveend", updateZoomAndScale);
+    map.getView().on("change:resolution", updateZoomAndScale);
+    updateZoomAndScale();
 
-        svm.on("create", (evt: any) => {
-          if (evt.state === "complete") {
-            onToolCompleteRef.current?.();
-            const g = evt.graphic;
-            const count = sketchLayer.graphics.filter((x) => !x.attributes?.isLabel && x.geometry?.type === g.geometry?.type).length + 1;
-            const title = typeLabel(g.geometry.type) + " " + count;
-            g.attributes = { title };
+    // Detección de clics en geometrías
+    map.on("singleclick", (evt) => {
+      if (drawInteractionRef.current) return;
 
-            if (g.geometry.type === "point" || g.geometry.type === "polygon") {
-              const isPolyLabel = g.geometry.type === "polygon";
-              const labelSym = new TextSymbol({
-                text: title,
-                color: "white",
-                haloColor: "black",
-                haloSize: "1px",
-                font: { size: 11, family: "sans-serif", weight: "bold" },
-                yoffset: g.geometry.type === "point" ? 12 : 0,
-              });
-              const currentZ = view.zoom;
-              const requiredZoom = isPolyLabel ? 14 : 16;
-              const isZoomOk = currentZ !== undefined && !isNaN(currentZ) && currentZ >= requiredZoom;
-              sketchLayer.add(new Graphic({
-                geometry: isPolyLabel ? centroidExecute(g.geometry!) : g.geometry!.clone(),
-                symbol: labelSym,
-                visible: isZoomOk && (isPolyLabel ? layerVisibilityRef.current.polygonLabels : layerVisibilityRef.current.pointLabels),
-                attributes: { isLabel: true, parentId: (g as any).uid, isPolygonLabel: isPolyLabel },
-              }));
-            }
+      const feature = map.forEachFeatureAtPixel(
+        evt.pixel,
+        (f) => f,
+        { hitTolerance: 8 }
+      );
 
-            if (onFeatureAddedRef.current) {
-              onFeatureAddedRef.current({
-                id: (g as any).uid,
-                title,
-                type: g.geometry.type as DrawnFeature["type"],
-                color: callbacks.getActiveColor().hex,
-                geojsonGeometry: geoToJSON(g.geometry),
-              });
-            }
-            setTimeout(runDeconflict, 50);
-          }
-          if (evt.state === "cancel") {
-            onToolCompleteRef.current?.();
-          }
-        });
+      if (feature) {
+        const featId = feature.get("id");
+        const isInsp = feature.get("tipo") === "inspeccion";
 
-        svm.on("update", (evt: any) => {
-          // Verificar si algún elemento está bloqueado (locked)
-          const hasLocked = evt.graphics?.some((g: any) => {
-            const featId = g.attributes?.id || g.uid;
-            const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-            return feat?.locked === true;
+        if (isInsp) {
+          // Inspección Kobo
+          callbacks.onFeatureClick?.();
+          const props = feature.getProperties();
+          const lonLat = toLonLat(evt.coordinate);
+          setCustomPopup({
+            mapPoint: evt.coordinate,
+            feat: {
+              id: Number(feature.getId()) || Date.now(),
+              title: props.nombre || "Edificación Inspeccionada",
+              type: "point",
+              color: props.color || "#22c55e",
+              description: `${props.lugar || ""}\nRiesgo: ${props.riesgo || ""}\nFecha: ${props.fecha || ""}`,
+              geojsonGeometry: {
+                type: "Point",
+                coordinates: [lonLat[0], lonLat[1]],
+              },
+              dailyLogs: [],
+            },
           });
+          setPopupScreenPos({ x: evt.pixel[0], y: evt.pixel[1] });
+          return;
+        }
 
-          if (hasLocked) {
-            svm.cancel();
-            return;
-          }
+        // Trazado dibujado
+        const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
+        if (feat) {
+          callbacks.onFeatureClick?.();
+          setCustomPopup({ mapPoint: evt.coordinate, feat });
+          setPopupScreenPos({ x: evt.pixel[0], y: evt.pixel[1] });
+        } else {
+          setCustomPopup(null);
+          setPopupScreenPos(null);
+        }
+      } else {
+        setCustomPopup(null);
+        setPopupScreenPos(null);
+      }
+    });
 
-          evt.graphics?.forEach((g: any) => {
-            const label = sketchLayer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
-            if (label) {
-              label.geometry = g.geometry?.type === "polygon" ? centroidExecute(g.geometry!) : g.geometry!.clone();
-            }
-          });
-          if (evt.state === "complete") {
-            evt.graphics?.forEach((g: any) => {
-              if (onFeatureAddedRef.current && g.geometry) {
-                const featId = g.attributes?.id || g.uid;
-                const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-                onFeatureAddedRef.current({
-                  id: featId,
-                  title: g.attributes?.title || "Elemento",
-                  type: g.geometry.type as DrawnFeature["type"],
-                  color: feat?.color || callbacks.getActiveColor().hex,
-                  geojsonGeometry: geoToJSON(g.geometry),
-                  _isUpdate: true,
-                });
-              }
-            });
-            runDeconflict();
-          }
-        });
+    const resizeTimer = setTimeout(() => {
+      map.updateSize();
+    }, 80);
 
-        svm.on("delete", (evt: any) => {
-          evt.graphics?.forEach((g: any) => {
-            const featId = g.attributes?.id || g.uid;
-            const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-            if (feat?.locked) return;
-
-            const label = sketchLayer.graphics.find((x) => x.attributes?.isLabel && (x.attributes?.parentId === g.uid || x.attributes?.parentId === g.attributes?.id));
-            if (label) sketchLayer.remove(label);
-            if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(featId);
-          });
-          runDeconflict();
-        });
-
-        view.on("click", async (evt: any) => {
-          if (sketchVMRef.current?.activeTool) return;
-          // En modo SVG el overlay maneja los clics (hit-test propio); con la capa
-          // oculta hitTest() no encuentra nada y cerraría el popup recién abierto.
-          if (layerVisibilityRef.current.svgOverlay) return;
-          const hit = await view.hitTest(evt);
-          const inspeccionResult = hit.results.find(
-            (r: any) => "graphic" in r && r.graphic?.layer === inspeccionesLayerRef.current
-          );
-          if (inspeccionResult) {
-            // Solo los usuarios autenticados / registrados pueden abrir la tarjeta con la descripción
-            if (!isAuthenticatedRef.current) {
-              return;
-            }
-            const g = (inspeccionResult as any).graphic;
-            if (view.popup) {
-              view.popup.visibleElements = {
-                actionBar: false,
-                closeButton: true,
-              };
-            }
-            view.openPopup({
-              location: g.geometry,
-              features: [g],
-            });
-            return;
-          }
-
-          const result = hit.results.find(
-            (r: any) => "graphic" in r && r.graphic?.layer === sketchLayerRef.current && !r.graphic?.attributes?.isLabel
-          );
-          if (result) {
-            const g = (result as any).graphic;
-            const featId = g.attributes?.id || (g as any).uid;
-            const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-            if (feat) {
-              callbacks.onFeatureClick?.();
-              setCustomPopup({ mapPoint: view.toMap(evt), feat });
-
-              const svm = sketchVMRef.current;
-              // Solo entrar en modo edición/transformación si las herramientas de
-              // dibujo están activas, el elemento NO está bloqueado y el usuario es admin.
-              const canEdit =
-                layerVisibilityRef.current.sketch &&
-                !feat.locked &&
-                canEditRef.current;
-              if (svm && svm.state !== "active" && callbacks.onGraphicSelected && canEdit) {
-                callbacks.onGraphicSelected(g);
-                svm.update([g], { tool: "transform" });
-              }
-            } else {
-              setCustomPopup(null);
-            }
-          } else {
-            setCustomPopup(null);
-          }
-        });
-
-        setMapReady(true);
-      },
-      (err) => {
-        console.error("[map] view.when() failed:", err);
-        setMapReady(true);
-      });
+    setMapReady(true);
 
     return () => {
-      if (sketchVMRef.current) { sketchVMRef.current.destroy(); sketchVMRef.current = null; }
-      if (viewRef.current) { viewRef.current.destroy(); viewRef.current = null; }
+      clearTimeout(resizeTimer);
+      targetElement?.removeEventListener("contextmenu", handleContextMenu);
+      map.setTarget(undefined);
+      mapRef.current = null;
     };
-  }, [activeBasemap]);
+  }, []);
 
   return {
     mapDiv,
-    viewRef,
-    sketchLayerRef,
+    mapRef,
+    baseLayerRef,
+    featuresSourceRef,
+    featuresLayerRef,
+    inspeccionesSourceRef,
     inspeccionesLayerRef,
-    sketchVMRef,
+    labelOverlaysRef,
+    drawInteractionRef,
+    modifyInteractionRef,
+    snapInteractionRef,
     drawnFeaturesRef,
     hiddenFeaturesRef,
     layerVisibilityRef,
@@ -326,18 +342,15 @@ export function useMapInit(
     showAccumulatedRef,
     canEditRef,
     isAuthenticatedRef,
-    deconflictGraphicsRef,
     onFeatureAddedRef,
     onFeatureDeletedRef,
     mapReady,
     customPopup,
     setCustomPopup,
+    popupScreenPos,
+    setPopupScreenPos,
     currentZoom,
     currentScale,
     coords,
-    htmlLabels,
-    tooltip,
-    setTooltip,
-    runDeconflict,
   };
 }

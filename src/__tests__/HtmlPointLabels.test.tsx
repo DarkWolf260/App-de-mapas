@@ -140,4 +140,52 @@ describe("HtmlPointLabels", () => {
     );
     expect(screen.getByText("Recup. 4")).toBeInTheDocument();
   });
+
+  it("renders compact green pin when zoom <= 16 and hasArrived is true", () => {
+    const onSelect = vi.fn();
+    const { container } = render(
+      <HtmlPointLabels
+        labels={[{ ...baseLabel, hasArrived: true }]}
+        zoom={16}
+        onSelectLabel={onSelect}
+      />
+    );
+    const pinEl = container.querySelector(".html-point-compact-pin") as HTMLElement;
+    expect(pinEl).toBeInTheDocument();
+    expect(pinEl.getAttribute("title")).toBe("Puesto Alpha");
+    expect(pinEl.style.left).toBe("100px");
+    expect(pinEl.style.top).toBe("200px");
+
+    // Pin shape with green background
+    const teardrop = pinEl.firstElementChild as HTMLElement;
+    expect(teardrop.style.background).toBe("rgb(34, 197, 94)");
+
+    // Click works on compact pin
+    pinEl.click();
+    expect(onSelect).toHaveBeenCalledWith(baseLabel.id);
+  });
+
+  it("renders compact orange pin when zoom <= 16 and hasArrived is false", () => {
+    const { container } = render(
+      <HtmlPointLabels
+        labels={[{ ...baseLabel, hasArrived: false }]}
+        zoom={14}
+      />
+    );
+    const pinEl = container.querySelector(".html-point-compact-pin") as HTMLElement;
+    expect(pinEl).toBeInTheDocument();
+    const teardrop = pinEl.firstElementChild as HTMLElement;
+    expect(teardrop.style.background).toBe("rgb(249, 115, 22)");
+  });
+
+  it("renders full card when zoom >= 17", () => {
+    render(
+      <HtmlPointLabels
+        labels={[baseLabel]}
+        zoom={17}
+      />
+    );
+    expect(screen.getByText("Puesto Alpha")).toBeInTheDocument();
+    expect(screen.getByText("5 funcs.")).toBeInTheDocument();
+  });
 });

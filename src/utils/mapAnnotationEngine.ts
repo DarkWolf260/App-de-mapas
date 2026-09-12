@@ -1,10 +1,11 @@
-import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
-import MapView from "@arcgis/core/views/MapView";
-import Graphic from "@arcgis/core/Graphic";
-import TextSymbol from "@arcgis/core/symbols/TextSymbol";
 import { buildParentsMap } from "./spatialUtils";
 import { FeatureLogBook } from "./featureLogBook";
 import type { DrawnFeature, LayerVisibility, DepartmentView, CustomActivity, HtmlLabel } from "../types";
+
+type GraphicsLayer = any;
+type MapView = any;
+type Graphic = any;
+type TextSymbol = any;
 
 export interface DeconflictRefs {
   drawnFeaturesRef: React.MutableRefObject<DrawnFeature[]>;
@@ -59,7 +60,7 @@ export function filterCandidateLabels(
     const pid = lbl.attributes?.parentId;
     const isPolygonLabel = !!lbl.attributes?.isPolygonLabel;
     const parentGraphic = sketchLayer.graphics.find(
-      (x) => !x.attributes?.isLabel && (String((x as any).uid) === String(pid) || String(x.attributes?.id) === String(pid))
+      (x: any) => !x.attributes?.isLabel && (String((x as any).uid) === String(pid) || String(x.attributes?.id) === String(pid))
     );
     if (!parentGraphic || !parentGraphic.visible || !parentGraphic.geometry) return false;
     if (refs.hiddenFeaturesRef.current[String(pid)]) return false;
@@ -387,16 +388,16 @@ export function deconflictGraphics(
   try {
     if (!sketchLayer || !view) return;
 
-    const points = sketchLayer.graphics.filter((x) => x.geometry?.type === "point" && !x.attributes?.isLabel).toArray();
-    const labels = sketchLayer.graphics.filter((x) => !!x.attributes?.isLabel).toArray();
+    const points = sketchLayer.graphics.filter((x: any) => x.geometry?.type === "point" && !x.attributes?.isLabel).toArray();
+    const labels = sketchLayer.graphics.filter((x: any) => !!x.attributes?.isLabel).toArray();
 
-    points.forEach((g) => {
+    points.forEach((g: any) => {
       const pid = g.attributes?.id || (g as any).uid;
       g.visible = !refs.hiddenFeaturesRef.current[String(pid)];
     });
 
     const candidateLabels = filterCandidateLabels(labels, sketchLayer, view, refs);
-    labels.forEach((lbl) => {
+    labels.forEach((lbl: any) => {
       if (!candidateLabels.includes(lbl)) lbl.visible = false;
     });
 

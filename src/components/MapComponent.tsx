@@ -1,20 +1,16 @@
 import React from "react";
-import "@arcgis/core/assets/esri/themes/dark/main.css";
 import type { BasemapKey, DrawnFeature, LayerVisibility, RemoveFeatureId } from "../types";
 import { DrawingToolbar } from "./DrawingToolbar";
 import { CustomMapPopup } from "./CustomMapPopup";
 import { DeploymentSummaryCard } from "./DeploymentSummaryCard";
-import { GlobalStatsWidget } from "./GlobalStatsWidget";
 import { MapSettingsPanel } from "./MapSettingsPanel";
-import { HtmlPointLabels } from "./HtmlPointLabels";
-import { SwipeComparison } from "./SwipeComparison";
-import { FeatureSvgOverlay } from "./FeatureSvgOverlay";
+import { MapSwipeControl } from "./MapSwipeControl";
 import { useMapSetup } from "./useMapSetup";
 import { useDraggable } from "../hooks/useDraggable";
 import type { MapFeatureActions, MapUIContext } from "./mapTypes";
-import Point from "@arcgis/core/geometry/Point";
 import { DEFAULT_CENTER } from "../utils/mapUtils";
-import { Satellite, Calendar, MapPin, ExternalLink, Copy, Link2, Check, Building2, Layers, BarChart2 } from "lucide-react";
+import { fromLonLat, toLonLat } from "ol/proj";
+import { Satellite, Copy, Link2, Check, Building2, Layers, BarChart2, ExternalLink } from "lucide-react";
 
 interface MapComponentProps {
   activeBasemap: BasemapKey | string;
@@ -69,19 +65,17 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     editMode,
     selectedGraphic,
     activeColor,
-    tooltip,
     customPopup,
     popupScreenPos,
     popupEditDate,
     sketchLayer,
-    sketchVMRef,
-    onSelectGraphicForEdit,
     currentZoom,
     currentScale,
     coords,
-    htmlLabels,
     swipeActive,
-    viewRef,
+    swipePosition,
+    setSwipePosition,
+    mapRef,
     activateSwipe,
     deactivateSwipe,
     setCustomPopup,
@@ -194,15 +188,16 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
 
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-      const view = viewRef.current;
-      if (!view) return;
+      const map = mapRef.current;
+      if (!map) return;
 
       const rect = container.getBoundingClientRect();
       const screenX = e.clientX - rect.left;
       const screenY = e.clientY - rect.top;
-      const mapPoint = view.toMap({ x: screenX, y: screenY });
+      const coordinate = map.getCoordinateFromPixel([screenX, screenY]);
 
-      if (mapPoint && typeof mapPoint.latitude === "number" && typeof mapPoint.longitude === "number") {
+      if (coordinate) {
+        const [lon, lat] = toLonLat(coordinate);
         const menuWidth = 190;
         const menuHeight = 120;
         const posX = Math.min(e.clientX, window.innerWidth - menuWidth - 10);
@@ -211,8 +206,8 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         setContextMenu({
           x: Math.max(10, posX),
           y: Math.max(10, posY),
-          lat: mapPoint.latitude,
-          lng: mapPoint.longitude,
+          lat,
+          lng: lon,
         });
         setCopiedType(null);
       }
@@ -222,7 +217,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     return () => {
       container.removeEventListener("contextmenu", handleContextMenu, true);
     };
-  }, [mapDiv, viewRef]);
+  }, [mapDiv, mapRef]);
 
   React.useEffect(() => {
     if (!contextMenu) return;
@@ -241,25 +236,25 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
   }, [contextMenu]);
 
   const handleNavigateToFeature = React.useCallback((feat: DrawnFeature) => {
-    let mapPoint: Point | null = null;
+    let lon = DEFAULT_CENTER[0];
+    let lat = DEFAULT_CENTER[1];
+
     if (feat.geojsonGeometry && feat.type === "point" && Array.isArray(feat.geojsonGeometry.coordinates)) {
-      const [lng, lat] = feat.geojsonGeometry.coordinates as number[];
-      mapPoint = new Point({ longitude: lng, latitude: lat });
+      lon = (feat.geojsonGeometry.coordinates as number[])[0];
+      lat = (feat.geojsonGeometry.coordinates as number[])[1];
     }
-    if (!mapPoint) mapPoint = new Point({ longitude: DEFAULT_CENTER[0], latitude: DEFAULT_CENTER[1] });
+
     ui.onFeatureClick?.();
-    setCustomPopup({ mapPoint, feat });
-    // Also fly the map to the feature's location
-    if (viewRef.current) {
-      const padding = {
-        left: ui.sidebarOpen ? 380 : 0,
-        right: ui.bitacoraOpen ? 480 : 440,
-      };
-      const target: any = { target: mapPoint };
-      if (feat.type === "point") target.zoom = Math.max(viewRef.current.zoom, 18);
-      viewRef.current.goTo(target, { duration: 400, padding } as any);
+    setCustomPopup({ mapPoint: fromLonLat([lon, lat]), feat });
+
+    if (mapRef.current) {
+      mapRef.current.getView().animate({
+        center: fromLonLat([lon, lat]),
+        zoom: Math.max(mapRef.current.getView().getZoom() || 13, 18),
+        duration: 500,
+      });
     }
-  }, [setCustomPopup, viewRef, ui.sidebarOpen, ui.bitacoraOpen, ui.onFeatureClick]);
+  }, [setCustomPopup, mapRef, ui]);
 
   const handlePopupDateChange = React.useCallback((date: string) => {
     setPopupEditDate(date);
@@ -280,33 +275,10 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
   const displayX = (ui.showSidebar && toolbarPos.x < 380) ? 396 : Math.max(16, Math.min(typeof window !== "undefined" ? window.innerWidth - 300 : 800, toolbarPos.x));
   const displayY = Math.max(20, Math.min(typeof window !== "undefined" ? window.innerHeight - 80 : 600, toolbarPos.y));
 
-  const handleSvgFeatureClick = React.useCallback((featId: number | string, screenPt: { x: number; y: number }) => {
-    const feat = drawnFeatures.find((f) => String(f.id) === String(featId));
-    if (!feat || !viewRef.current) return;
-    const mapPoint = viewRef.current.toMap(screenPt);
-    ui.onFeatureClick?.();
-    setCustomPopup({ mapPoint, feat });
-    const g = sketchLayer?.graphics.find((gr) => {
-      const fid = gr.attributes?.id ?? (gr as any).uid;
-      return String(fid) === String(featId);
-    });
-    if (g && !feat.locked && onSelectGraphicForEdit) onSelectGraphicForEdit(g);
-  }, [drawnFeatures, viewRef, ui, setCustomPopup, sketchLayer, onSelectGraphicForEdit]);
-
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
       <div className="map-view-container" ref={mapDiv} style={{ width: "100%", height: "100%" }} />
-      {/* Capa de dibujo SVG alternativa (modo compatible con PCs antiguas) */}
-      <FeatureSvgOverlay
-        view={viewRef.current}
-        sketchLayer={sketchLayer}
-        sketchVMRef={sketchVMRef}
-        enabled={!!layerVisibility.svgOverlay}
-        drawnFeatures={layerVisibility.inspecciones ? drawnFeatures.filter((f) => f.type === "polygon") : drawnFeatures}
-        htmlLabels={layerVisibility.inspecciones ? [] : htmlLabels}
-        interactive={!bare}
-        onFeatureClick={handleSvgFeatureClick}
-      />
+
       {/* Floating Draggable Drawing Toolbar */}
       {!bare && canEditMap && layerVisibility.sketch && (
         <div
@@ -370,51 +342,22 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         />
       )}
 
-      {/* Floating hover tooltip for lines and polygons */}
-      {!bare && tooltip.visible && (
-        <div
-          style={{
-            position: "absolute",
-            left: `${tooltip.x + 15}px`,
-            top: `${tooltip.y + 15}px`,
-            background: "rgba(10, 15, 29, 0.95)",
-            border: "1px solid rgba(56, 189, 248, 0.4)",
-            color: "#f8fafc",
-            padding: "6px 12px",
-            borderRadius: "8px",
-            fontSize: "11px",
-            fontWeight: 600,
-            textTransform: "none",
-            letterSpacing: "0.03em",
-            pointerEvents: "none",
-            zIndex: 40,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
-            fontFamily: "var(--font-sans)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          {tooltip.text}
-        </div>
-      )}
-
       {/* Floating Bottom-Right Container (Map Settings Panel + Deployment Summary Card - Solo Escritorio) */}
       {!bare && !isMobile && (
         <div
           className="floating-bottom-right-container"
-      style={{
-        position: "absolute",
-        bottom: "52px",
-        right: "16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        alignItems: "flex-end",
-        zIndex: 100,
-        pointerEvents: "none",
-      }}
-    >
+          style={{
+            position: "absolute",
+            bottom: "52px",
+            right: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            alignItems: "flex-end",
+            zIndex: 100,
+            pointerEvents: "none",
+          }}
+        >
           {/* Botón Flotante Discreto de Panel de Estadísticas (Cyan Neón) */}
           {actions.onOpenRangeReport && (
             <button
@@ -468,14 +411,14 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
               }}
               onZoomToFeature={onZoomToFeature}
               onOpenEditFeature={(feat) => {
-                let mapPoint: Point | null = null;
+                let lon = DEFAULT_CENTER[0];
+                let lat = DEFAULT_CENTER[1];
                 if (feat.geojsonGeometry && feat.type === "point" && Array.isArray(feat.geojsonGeometry.coordinates)) {
-                  const [lng, lat] = feat.geojsonGeometry.coordinates as number[];
-                  mapPoint = new Point({ longitude: lng, latitude: lat });
+                  lon = (feat.geojsonGeometry.coordinates as number[])[0];
+                  lat = (feat.geojsonGeometry.coordinates as number[])[1];
                 }
-                if (!mapPoint) mapPoint = new Point({ longitude: DEFAULT_CENTER[0], latitude: DEFAULT_CENTER[1] });
                 ui.onFeatureClick?.();
-                setCustomPopup({ mapPoint, feat });
+                setCustomPopup({ mapPoint: fromLonLat([lon, lat]), feat });
               }}
               selectedDate={ui.selectedDate}
               activeDepartment={ui.activeDepartment}
@@ -484,11 +427,12 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
               inspeccionesRecords={inspeccionesRecords}
               selectedColorFilter={selectedColorFilter}
               onZoomToInspeccion={(rec) => {
-                if (viewRef.current && rec.latitude && rec.longitude) {
-                  viewRef.current.goTo(
-                    { center: [rec.longitude, rec.latitude], zoom: 17 },
-                    { duration: 1200, easing: "ease-in-out" } as any
-                  );
+                if (mapRef.current && rec.latitude && rec.longitude) {
+                  mapRef.current.getView().animate({
+                    center: fromLonLat([Number(rec.longitude), Number(rec.latitude)]),
+                    zoom: 17,
+                    duration: 1200,
+                  });
                 }
               }}
             />
@@ -501,33 +445,20 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         <div className="status-bar-coordinates">
           <div><span>LAT:</span> {coords.lat.toFixed(6)}</div>
           <div><span>LNG:</span> {coords.lng.toFixed(6)}</div>
-          <div><span>ZOOM:</span> {Math.round(currentZoom)}</div>
+          <div><span>ZOOM:</span> {currentZoom.toFixed(1)}</div>
           {currentScale > 0 && <div><span>ESCALA:</span> 1:{currentScale.toLocaleString()}</div>}
         </div>
       )}
 
-      {/* HTML point labels with background (personnel info) */}
-      <HtmlPointLabels
-        labels={layerVisibility.inspecciones ? [] : htmlLabels}
-        isAuthenticated={ui.isAuthenticated ?? false}
-        onSelectLabel={(lblId) => {
-          const feat = drawnFeatures.find((f) => String(f.id) === String(lblId));
-          if (feat) {
-            let mapPoint: Point | null = null;
-            if (feat.geojsonGeometry && feat.type === "point" && Array.isArray(feat.geojsonGeometry.coordinates)) {
-              const [lng, lat] = feat.geojsonGeometry.coordinates as number[];
-              mapPoint = new Point({ longitude: lng, latitude: lat });
-            }
-            if (!mapPoint) mapPoint = new Point({ longitude: DEFAULT_CENTER[0], latitude: DEFAULT_CENTER[1] });
-            ui.onFeatureClick?.();
-            setCustomPopup({ mapPoint, feat });
-          }
-        }}
-      />
-
-      {/* Satellite Swipe Comparison */}
-      {!bare && swipeActive && viewRef.current && (
-        <SwipeComparison view={viewRef.current} onClose={deactivateSwipe} />
+      {/* Satellite Swipe Comparison Slider */}
+      {!bare && swipeActive && (
+        <MapSwipeControl
+          position={swipePosition}
+          onPositionChange={(pos) => setSwipePosition(pos)}
+          onClose={deactivateSwipe}
+          beforeLabel="Antes (Esri Satelital)"
+          afterLabel="Después (Google Satelital HD)"
+        />
       )}
 
       {/* Floating Action Buttons — Bottom Left (Solo Escritorio cuando el sidebar está colapsado) */}
@@ -550,7 +481,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
             <span className="swipe-toggle-label">Inspecciones</span>
           </button>
 
-          {/* Fila Inferior: Botón Antes / Después + Capas (Sín hueco) */}
+          {/* Fila Inferior: Botón Antes / Después */}
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <button
               className={`swipe-toggle-btn ${swipeActive ? "active" : ""}`}
@@ -561,22 +492,9 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
               <Satellite size={16} />
               <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Después"}</span>
             </button>
-
-            {swipeActive && (
-              <button
-                className="swipe-layer-toggle"
-                onClick={() => window.dispatchEvent(new CustomEvent("toggle-swipe-panel"))}
-                title="Seleccionar capas post-sismo"
-                style={{ position: "relative", top: "auto", left: "auto" }}
-              >
-                <Layers size={16} />
-              </button>
-            )}
           </div>
         </div>
       )}
-
-
 
       {/* Context Menu */}
       {contextMenu && (

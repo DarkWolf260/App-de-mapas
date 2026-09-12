@@ -12,30 +12,32 @@ export const UserNavMenu: React.FC<UserNavMenuProps> = ({ currentPage = "mapa" }
 
   if (!isAuthenticated) {
     return (
-      <button
-        onClick={() => window.location.href = '/login'}
-        title="Iniciar sesion"
-        style={{
-          height: "34px",
-          padding: "0 14px",
-          borderRadius: "10px",
-          border: "1px solid rgba(249, 115, 22, 0.4)",
-          background: "rgba(10, 15, 28, 0.9)",
-          color: "#f97316",
-          fontSize: "0.76rem",
-          fontWeight: 700,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
-        }}
-      >
-        <LogOut size={14} style={{ transform: "rotate(180deg)" }} />
-        <span>Iniciar Sesion</span>
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <button
+          onClick={() => (window.location.href = "/login")}
+          title="Iniciar sesion"
+          style={{
+            height: "34px",
+            padding: "0 14px",
+            borderRadius: "10px",
+            border: "1px solid rgba(249, 115, 22, 0.4)",
+            background: "rgba(10, 15, 28, 0.9)",
+            color: "#f97316",
+            fontSize: "0.76rem",
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
+          }}
+        >
+          <LogOut size={14} style={{ transform: "rotate(180deg)" }} />
+          <span>Iniciar Sesion</span>
+        </button>
+      </div>
     );
   }
 

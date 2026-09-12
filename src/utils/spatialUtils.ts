@@ -1,35 +1,36 @@
-import * as webMercatorUtils from "@arcgis/core/geometry/support/webMercatorUtils";
-import { execute as containsExecute } from "@arcgis/core/geometry/operators/containsOperator";
 import type { DrawnFeature } from "../types";
 
 /**
- * Convierte una geometría de ArcGIS en una estructura GeoJSON compatible
- * proyectando al vuelo de Web Mercator a coordenadas geográficas (WGS84)
+ * Convierte una estructura de geometría en GeoJSON estándar
  */
-export const geoToJSON = (geometry: any): any => {
-  if (!geometry) return null;
-  
-  const geo = geometry.spatialReference?.isWebMercator
-    ? webMercatorUtils.webMercatorToGeographic(geometry)
-    : geometry;
+export const geoToJSON = (geom: any): { type: string; coordinates: any } | null => {
+  if (!geom || typeof geom !== "object") return null;
 
-  if (geo.type === "point") {
-    const pt = geo as any;
-    return { type: "Point", coordinates: [pt.longitude, pt.latitude] };
+  if (typeof geom.getCoordinates === "function" && typeof geom.getType === "function") {
+    return {
+      type: geom.getType(),
+      coordinates: geom.getCoordinates(),
+    };
   }
-  
-  if (geo.type === "polyline") {
-    const pl = geo as any;
-    const cleanCoords = JSON.parse(JSON.stringify(pl.paths[0] || []));
-    return { type: "LineString", coordinates: cleanCoords };
+
+  if (geom.type === "point" || geom.type === "Point") {
+    if (geom.coordinates) return { type: "Point", coordinates: geom.coordinates };
+    if (typeof geom.longitude === "number" && typeof geom.latitude === "number") {
+      return { type: "Point", coordinates: [geom.longitude, geom.latitude] };
+    }
   }
-  
-  if (geo.type === "polygon") {
-    const pg = geo as any;
-    const cleanCoords = JSON.parse(JSON.stringify(pg.rings || []));
-    return { type: "Polygon", coordinates: cleanCoords };
+  if (geom.type === "polyline" || geom.type === "LineString") {
+    if (geom.coordinates) return { type: "LineString", coordinates: geom.coordinates };
+    if (Array.isArray(geom.paths)) {
+      return { type: "LineString", coordinates: geom.paths[0] || [] };
+    }
   }
-  
+  if (geom.type === "polygon" || geom.type === "Polygon") {
+    if (geom.coordinates) return { type: "Polygon", coordinates: geom.coordinates };
+    if (Array.isArray(geom.rings)) {
+      return { type: "Polygon", coordinates: geom.rings };
+    }
+  }
   return null;
 };
 
@@ -214,41 +215,6 @@ export function computeContainedItems(
     return items;
   }
 
-  const polyGraphic = sketchLayer?.graphics?.find((x: any) => {
-    if (x.attributes?.isLabel) return false;
-    const xId = x.attributes?.id || x.uid;
-    return String(xId) === String(activeFeat.id);
-  });
-
-  if (!polyGraphic?.geometry) return items;
-
-  const polyGeom = polyGraphic.geometry.spatialReference?.isWebMercator
-    ? webMercatorUtils.webMercatorToGeographic(polyGraphic.geometry)
-    : polyGraphic.geometry;
-
-  if (!polyGeom) return items;
-
-  const others = sketchLayer.graphics
-    .filter((x: any) => {
-      if (x.attributes?.isLabel) return false;
-      const xId = x.attributes?.id || x.uid;
-      return String(xId) !== String(activeFeat.id);
-    })
-    .toArray();
-
-  for (const g of others) {
-    if (!g.geometry) continue;
-    const gGeom = g.geometry.spatialReference?.isWebMercator
-      ? webMercatorUtils.webMercatorToGeographic(g.geometry)
-      : g.geometry;
-    if (gGeom && containsExecute(polyGeom, gGeom)) {
-      const gId = g.attributes?.id || g.uid;
-      const feat = drawnFeatures.find((f) => String(f.id) === String(gId));
-      if (feat) {
-        items.push(feat);
-      }
-    }
-  }
-
   return items;
 }
+

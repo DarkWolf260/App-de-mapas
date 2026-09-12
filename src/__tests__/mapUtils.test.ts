@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { typeLabel, symbolForType, makeSymbols, formatFeatureLabelText, getLabelText, getBasemapValue, DEFAULT_CENTER, DEFAULT_ZOOM } from "../utils/mapUtils";
+import { typeLabel, symbolForType, makeSymbols, formatFeatureLabelText, getLabelText, getBasemapValue, getBasemapMaxZoom, DEFAULT_CENTER, DEFAULT_ZOOM } from "../utils/mapUtils";
 
 describe("typeLabel", () => {
   it("returns 'Poligono' for polygon", () => {
@@ -185,5 +185,23 @@ describe("DEFAULT_CENTER and DEFAULT_ZOOM", () => {
 
   it("DEFAULT_ZOOM is a positive number", () => {
     expect(DEFAULT_ZOOM).toBeGreaterThan(0);
+  });
+});
+
+describe("getBasemapMaxZoom", () => {
+  it("returns 19 for arcgis satellite and hybrid layers to prevent 'Data not yet available'", () => {
+    expect(getBasemapMaxZoom("satellite")).toBe(19);
+    expect(getBasemapMaxZoom("satellite-free")).toBe(19);
+    expect(getBasemapMaxZoom("hybrid")).toBe(19);
+    expect(getBasemapMaxZoom("topo")).toBe(19);
+  });
+
+  it("returns 20 for google satellite layers", () => {
+    expect(getBasemapMaxZoom("google-satellite")).toBe(20);
+    expect(getBasemapMaxZoom("google-hybrid")).toBe(20);
+  });
+
+  it("returns 19 for osm", () => {
+    expect(getBasemapMaxZoom("osm")).toBe(19);
   });
 });

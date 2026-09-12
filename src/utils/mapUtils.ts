@@ -1,6 +1,3 @@
-import Basemap from "@arcgis/core/Basemap";
-import TileLayer from "@arcgis/core/layers/TileLayer";
-import WebTileLayer from "@arcgis/core/layers/WebTileLayer";
 import type { DrawnFeature, DepartmentView } from "../types";
 import { hexToRgb } from "./colorUtils";
 import { getNormalizedGroupList } from "./logUtils";
@@ -9,55 +6,34 @@ import { getGeometryHandler } from "./geometryHandlers";
 export const DEFAULT_CENTER: [number, number] = [-66.9303, 10.6011];
 export const DEFAULT_ZOOM = 13;
 
-export const getBasemapValue = (key: string): string | Basemap => {
-  if (key === "satellite-free") {
-    return new Basemap({
-      baseLayers: [
-        new TileLayer({
-          url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer",
-          title: "Satelital ArcGIS",
-          id: "arcgis-imagery-base",
-        }),
-      ],
-      referenceLayers: [
-        new TileLayer({
-          url: "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer",
-          title: "Calles y Carreteras",
-          id: "arcgis-reference-roads",
-        }),
-        new TileLayer({
-          url: "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer",
-          title: "Límites y Lugares",
-          id: "arcgis-reference-places",
-        }),
-      ],
-      title: "Satelital ArcGIS",
-      id: "satellite-free",
-    });
+export const getBasemapUrl = (key: string): string => {
+  if (key === "satellite" || key === "satellite-free" || key === "hybrid" || key === "imagery") {
+    return "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
   }
   if (key === "google-satellite") {
-    return new Basemap({
-      baseLayers: [
-        new WebTileLayer({
-          urlTemplate: "https://mt{subDomain}.google.com/vt/lyrs=s&x={col}&y={row}&z={level}",
-          subDomains: ["0", "1", "2", "3"],
-          title: "Google Satelital",
-          id: "google-satellite-layer",
-        }),
-      ],
-      referenceLayers: [
-        new WebTileLayer({
-          urlTemplate: "https://mt{subDomain}.google.com/vt/lyrs=h&x={col}&y={row}&z={level}",
-          subDomains: ["0", "1", "2", "3"],
-          title: "Google Calles y Etiquetas",
-          id: "google-labels-layer",
-        }),
-      ],
-      title: "Google Satelital",
-      id: "google-satellite",
-    });
+    return "https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}";
   }
-  return key;
+  if (key === "google-hybrid") {
+    return "https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}";
+  }
+  if (key === "topo" || key === "topographic") {
+    return "https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}";
+  }
+  return "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+};
+
+export const getBasemapMaxZoom = (key: string): number => {
+  if (key === "google-satellite" || key === "google-hybrid") {
+    return 20;
+  }
+  // Para ArcGIS (World Imagery, Topo) y OSM, el nivel máximo de teselas nativas es 19.
+  // Al limitar maxZoom a 19 en la fuente XYZ, OpenLayers sobremuestrea (estira) la tesela
+  // de nivel 19 cuando se visualiza en zoom 20 o superior, evitando el mensaje "Data not yet available".
+  return 19;
+};
+
+export const getBasemapValue = (key: string): string => {
+  return getBasemapUrl(key);
 };
 
 export const typeLabel = (type: string): string => getGeometryHandler(type).typeLabel;

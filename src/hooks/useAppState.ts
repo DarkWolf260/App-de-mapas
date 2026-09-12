@@ -25,7 +25,6 @@ export function useAppState(isAdmin: boolean) {
     basemapLabels: false,
     hideNestedAreas: true,
     allowLabelOverlap: true,
-    svgOverlay: false,
     inspecciones: false,
   });
 

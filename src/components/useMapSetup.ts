@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import Graphic from "@arcgis/core/Graphic";
+import GeoJSON from "ol/format/GeoJSON";
+import { fromLonLat, toLonLat } from "ol/proj";
+import { fromCircle } from "ol/geom/Polygon";
+import Draw, { createBox } from "ol/interaction/Draw";
+import Modify from "ol/interaction/Modify";
+import Snap from "ol/interaction/Snap";
+import TileLayer from "ol/layer/Tile";
+import XYZ from "ol/source/XYZ";
+import Overlay from "ol/Overlay";
 import type { Color } from "../utils/colorUtils";
-import { PALETTE, hexToRgb } from "../utils/colorUtils";
+import { PALETTE } from "../utils/colorUtils";
 import { ToolId } from "./DrawingToolbar";
-import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapValue, makeSymbols } from "../utils/mapUtils";
+import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapUrl, getBasemapMaxZoom } from "../utils/mapUtils";
 import { syncDrawnFeaturesToGraphics, syncImportedFeatures, syncInspeccionesToGraphics } from "../utils/graphicsSync";
 import { fetchInspecciones } from "../services/inspeccionService";
 import { useMapInit } from "./useMapInit";
+import { featureToLabelData, buildHtmlLabelElement, LABEL_ZOOM_THRESHOLD } from "../utils/htmlLabelBuilder";
+import { buildParentsMap } from "../utils/spatialUtils";
 import type { DrawnFeature, LayerVisibility, RemoveFeatureId, DepartmentView, InspeccionRecord } from "../types";
 
 export interface UseMapSetupProps {
@@ -36,34 +46,58 @@ export interface UseMapSetupProps {
 
 export const useMapSetup = (props: UseMapSetupProps) => {
   const {
-    activeBasemap, activeCity, layerVisibility, drawnFeatures,
-    onFeatureAdded, onFeatureDeleted, zoomToFeature, removeFeatureId,
-    importedFeatures, hiddenFeatures, selectedDate, zoomToCoords,
-    activeDepartment = "pc", onFeatureClick,
-    showAccumulated, sidebarOpen, bitacoraOpen, bare, canEditMap,
+    activeBasemap,
+    activeCity,
+    layerVisibility,
+    drawnFeatures,
+    onFeatureAdded,
+    onFeatureDeleted,
+    zoomToFeature,
+    removeFeatureId,
+    importedFeatures,
+    hiddenFeatures,
+    selectedDate,
+    zoomToCoords,
+    activeDepartment = "pc",
+    onFeatureClick,
+    showAccumulated,
+    bare,
+    canEditMap,
     isAuthenticated,
   } = props;
 
   const [activeColor, setActiveColor] = useState<Color>(PALETTE[0]);
   const activeColorRef = useRef(activeColor);
-  useEffect(() => { activeColorRef.current = activeColor; }, [activeColor]);
+  useEffect(() => {
+    activeColorRef.current = activeColor;
+  }, [activeColor]);
+
+  const [activeTool, setActiveTool] = useState<ToolId | null>(null);
+  const [selectedGraphic, setSelectedGraphic] = useState<any | null>(null);
+  const [editMode, setEditMode] = useState<"transform" | "reshape">("transform");
+  const [popupEditDate, setPopupEditDate] = useState(selectedDate);
+  const [popupTick, setPopupTick] = useState(0);
+  const [swipeActive, setSwipeActive] = useState(false);
+  const [swipePosition, setSwipePosition] = useState(50);
+
+  const swipePositionRef = useRef(swipePosition);
+  useEffect(() => {
+    swipePositionRef.current = swipePosition;
+  }, [swipePosition]);
+
+  const swipeLayerRef = useRef<TileLayer<XYZ> | null>(null);
 
   const init = useMapInit(activeBasemap, layerVisibility, {
     onFeatureAdded,
     onFeatureDeleted,
     onFeatureClick,
-    onGraphicSelected: (g) => {
-      setActiveTool(null);
-      setSelectedGraphic(g);
-      setEditMode("transform");
-    },
     onToolComplete: () => {
       setActiveTool(null);
     },
     getActiveColor: () => activeColorRef.current,
   });
 
-  // Sincronización inmediata de refs para evitar condiciones de carrera en el render
+  // Sincronizar refs del init
   init.layerVisibilityRef.current = layerVisibility;
   init.drawnFeaturesRef.current = drawnFeatures;
   init.hiddenFeaturesRef.current = hiddenFeatures;
@@ -73,233 +107,250 @@ export const useMapSetup = (props: UseMapSetupProps) => {
   init.canEditRef.current = canEditMap === true;
   init.isAuthenticatedRef.current = isAuthenticated === true;
 
-  useEffect(() => { init.layerVisibilityRef.current = layerVisibility; }, [layerVisibility, init]);
-  useEffect(() => { init.drawnFeaturesRef.current = drawnFeatures; }, [drawnFeatures, init]);
-  useEffect(() => { init.hiddenFeaturesRef.current = hiddenFeatures; }, [hiddenFeatures, init]);
-  useEffect(() => { init.selectedDateRef.current = selectedDate; }, [selectedDate, init]);
-  useEffect(() => { init.activeDepartmentRef.current = activeDepartment; }, [activeDepartment, init]);
-  useEffect(() => { init.showAccumulatedRef.current = showAccumulated ?? false; }, [showAccumulated, init]);
-  useEffect(() => { init.canEditRef.current = canEditMap === true; }, [canEditMap, init]);
-  useEffect(() => { init.isAuthenticatedRef.current = isAuthenticated === true; }, [isAuthenticated, init]);
+  const {
+    mapRef,
+    baseLayerRef,
+    featuresSourceRef,
+    featuresLayerRef,
+    inspeccionesSourceRef,
+    drawInteractionRef,
+    modifyInteractionRef,
+    snapInteractionRef,
+    onFeatureAddedRef,
+    onFeatureDeletedRef,
+    drawnFeaturesRef,
+  } = init;
 
-  const { runDeconflict, deconflictGraphicsRef, viewRef, sketchLayerRef, sketchVMRef } = init;
-  const onFeatureAddedRef = init.onFeatureAddedRef;
-  const onFeatureDeletedRef = init.onFeatureDeletedRef;
-  const { drawnFeaturesRef, hiddenFeaturesRef, layerVisibilityRef, selectedDateRef, activeDepartmentRef, showAccumulatedRef } = init;
+  useEffect(() => {
+    setPopupEditDate(selectedDate);
+  }, [selectedDate]);
 
-  useEffect(() => { deconflictGraphicsRef.current = runDeconflict; }, [runDeconflict, deconflictGraphicsRef]);
-
-  const [activeTool, setActiveTool] = useState<ToolId | null>(null);
-  const [selectedGraphic, setSelectedGraphic] = useState<Graphic | null>(null);
-  const [editMode, setEditMode] = useState<"transform" | "reshape">("transform");
-  const [popupEditDate, setPopupEditDate] = useState(selectedDate);
-  const [popupTick, setPopupTick] = useState(0);
-  const [swipeActive, setSwipeActive] = useState(false);
-
-  useEffect(() => { setPopupEditDate(selectedDate); }, [selectedDate]);
-  useEffect(() => { setPopupTick((t) => t + 1); }, []);
-
-  const customPopupRef = useRef(init.customPopup);
-  useEffect(() => { customPopupRef.current = init.customPopup; }, [init.customPopup]);
-
-  const sidebarOpenRef = useRef(sidebarOpen);
-  useEffect(() => { sidebarOpenRef.current = sidebarOpen; }, [sidebarOpen]);
-  const bitacoraOpenRef = useRef(bitacoraOpen);
-  useEffect(() => { bitacoraOpenRef.current = bitacoraOpen; }, [bitacoraOpen]);
-
-  const getViewPadding = () => ({
-    left: sidebarOpenRef.current ? 380 : 0,
-    right: customPopupRef.current ? 440 : (bitacoraOpenRef.current ? 480 : 0),
-  });
-
-  const applyColorToVM = useCallback((color: Color) => {
-    const svm = sketchVMRef.current;
-    if (!svm) return;
-    const syms = makeSymbols(hexToRgb(color.hex));
-    svm.pointSymbol = syms.point;
-    svm.polylineSymbol = syms.polyline;
-    svm.polygonSymbol = syms.polygon;
-  }, [sketchVMRef]);
-
-  const applyColorToGraphic = useCallback((graphic: Graphic, color: Color) => {
-    if (!graphic?.geometry) return;
-    const syms = makeSymbols(hexToRgb(color.hex));
-    if (graphic.geometry.type === "point") graphic.symbol = syms.point;
-    else if (graphic.geometry.type === "polyline") graphic.symbol = syms.polyline;
-    else graphic.symbol = syms.polygon;
+  useEffect(() => {
+    setPopupTick((t) => t + 1);
   }, []);
 
+  // 1. Manejo de Basemap
   useEffect(() => {
-    if (sketchVMRef.current && init.mapReady) {
-      const syms = makeSymbols(hexToRgb(activeColor.hex));
-      sketchVMRef.current.pointSymbol = syms.point;
-      sketchVMRef.current.polylineSymbol = syms.polyline;
-      sketchVMRef.current.polygonSymbol = syms.polygon;
+    if (!baseLayerRef.current) return;
+    const url = getBasemapUrl(activeBasemap);
+    const maxZoom = getBasemapMaxZoom(activeBasemap);
+    baseLayerRef.current.setSource(
+      new XYZ({
+        url,
+        maxZoom,
+        interpolate: true,
+        crossOrigin: "anonymous",
+      })
+    );
+  }, [activeBasemap, baseLayerRef]);
+
+  // 2. Manejo de Herramientas de Dibujo (Draw interaction)
+  useEffect(() => {
+    const map = mapRef.current;
+    const source = featuresSourceRef.current;
+    if (!map || !source) return;
+
+    if (drawInteractionRef.current) {
+      map.removeInteraction(drawInteractionRef.current);
+      drawInteractionRef.current = null;
     }
-  }, [init.mapReady, activeColor, sketchVMRef]);
 
-  useEffect(() => {
-    const view = viewRef.current;
-    if (!view || !view.map) return;
-    const showLabels = layerVisibility.basemapLabels !== false;
-    view.map.basemap?.referenceLayers?.forEach((layer) => { layer.visible = showLabels; });
-    view.map.basemap?.baseLayers?.forEach((layer: any) => {
-      if (
-        layer.title?.toLowerCase().includes("label") ||
-        layer.id?.toLowerCase().includes("label") ||
-        layer.title?.toLowerCase().includes("etiqueta") ||
-        layer.title?.toLowerCase().includes("calle") ||
-        layer.title?.toLowerCase().includes("place")
-      ) {
-        layer.visible = showLabels;
-      }
-    });
-  }, [layerVisibility.basemapLabels, activeBasemap, init.mapReady, viewRef]);
+    if (!activeTool || !canEditMap) return;
 
-  useEffect(() => {
-    const view = viewRef.current;
-    if (!view || !view.map) return;
-    const currentBmId = (view.map.basemap as any)?.id;
-    if (currentBmId !== activeBasemap) {
-      const newBm = getBasemapValue(activeBasemap);
-      view.map.basemap = newBm as any;
-      const showLabels = layerVisibility.basemapLabels !== false;
-      if (typeof newBm !== "string" && newBm?.referenceLayers) {
-        newBm.referenceLayers.forEach((layer) => { layer.visible = showLabels; });
-      }
+    let draw: Draw;
+    if (activeTool === "point") {
+      draw = new Draw({ source, type: "Point" });
+    } else if (activeTool === "polyline") {
+      draw = new Draw({ source, type: "LineString" });
+    } else if (activeTool === "polygon") {
+      draw = new Draw({ source, type: "Polygon" });
+    } else if (activeTool === "rectangle") {
+      draw = new Draw({ source, type: "Circle", geometryFunction: createBox() });
+    } else if (activeTool === "circle") {
+      draw = new Draw({ source, type: "Circle" });
+    } else {
+      return;
     }
-  }, [activeBasemap, layerVisibility.basemapLabels, init.mapReady, viewRef]);
 
-  useEffect(() => {
-    if (sketchLayerRef.current) sketchLayerRef.current.visible = !layerVisibility.svgOverlay;
-    if (!layerVisibility.sketch) {
+    draw.on("drawend", (evt) => {
+      let geom = evt.feature.getGeometry();
+      if (!geom) return;
+
+      let standardGeom: any = geom;
+      if (geom.getType() === "Circle") {
+        standardGeom = fromCircle(geom as any, 64);
+      }
+
+      const format = new GeoJSON();
+      const geojsonObj = format.writeGeometryObject(standardGeom, {
+        dataProjection: "EPSG:4326",
+        featureProjection: "EPSG:3857",
+      });
+
+      const toolType = (activeTool === "rectangle" || activeTool === "circle") ? "polygon" : activeTool;
+      const defaultTitles: Record<string, string> = {
+        point: "Punto de Control",
+        polyline: "Ruta de Evacuación",
+        polygon: "Zona de Afectación",
+        rectangle: "Sector Cuadrante",
+        circle: "Perímetro de Seguridad",
+      };
+
+      const newFeat: DrawnFeature = {
+        id: Date.now(),
+        title: defaultTitles[activeTool] || "Elemento Operativo",
+        type: toolType as any,
+        color: activeColorRef.current.hex,
+        geojsonGeometry: geojsonObj as any,
+        dailyLogs: [],
+      };
+
+      onFeatureAddedRef.current?.(newFeat);
+
+      // Limpiar tool
+      map.removeInteraction(draw);
+      drawInteractionRef.current = null;
       setActiveTool(null);
-      setSelectedGraphic(null);
-      if (sketchVMRef.current?.state === "active") sketchVMRef.current.cancel();
+    });
+
+    map.addInteraction(draw);
+    drawInteractionRef.current = draw;
+
+    return () => {
+      if (drawInteractionRef.current) {
+        map.removeInteraction(drawInteractionRef.current);
+        drawInteractionRef.current = null;
+      }
+    };
+  }, [activeTool, canEditMap, mapRef, featuresSourceRef, drawInteractionRef, onFeatureAddedRef]);
+
+  // 3. Manejo de Modificación y Snapping
+  useEffect(() => {
+    const map = mapRef.current;
+    const source = featuresSourceRef.current;
+    if (!map || !source) return;
+
+    if (canEditMap && layerVisibility.sketch) {
+      if (!modifyInteractionRef.current) {
+        const modify = new Modify({ source });
+        modify.on("modifyend", (evt) => {
+          const features = evt.features.getArray();
+          const format = new GeoJSON();
+          features.forEach((f) => {
+            const featId = f.getId();
+            const originalFeat = drawnFeaturesRef.current.find((df) => String(df.id) === String(featId));
+            if (originalFeat && !originalFeat.locked) {
+              const geom = f.getGeometry();
+              if (geom) {
+                const geojsonObj = format.writeGeometryObject(geom, {
+                  dataProjection: "EPSG:4326",
+                  featureProjection: "EPSG:3857",
+                });
+                onFeatureAddedRef.current?.({
+                  ...originalFeat,
+                  geojsonGeometry: geojsonObj as any,
+                  _isUpdate: true,
+                });
+              }
+            }
+          });
+        });
+        map.addInteraction(modify);
+        modifyInteractionRef.current = modify;
+      }
+
+      if (!snapInteractionRef.current) {
+        const snap = new Snap({ source });
+        map.addInteraction(snap);
+        snapInteractionRef.current = snap;
+      }
+    } else {
+      if (modifyInteractionRef.current) {
+        map.removeInteraction(modifyInteractionRef.current);
+        modifyInteractionRef.current = null;
+      }
+      if (snapInteractionRef.current) {
+        map.removeInteraction(snapInteractionRef.current);
+        snapInteractionRef.current = null;
+      }
     }
-    if (layerVisibility.sketch) setSwipeActive(false);
-  }, [layerVisibility.sketch, layerVisibility.svgOverlay, sketchLayerRef, sketchVMRef]);
+  }, [canEditMap, layerVisibility.sketch, mapRef, featuresSourceRef, modifyInteractionRef, snapInteractionRef, drawnFeaturesRef, onFeatureAddedRef]);
 
   const handleSelectTool = (toolId: ToolId) => {
-    const svm = sketchVMRef.current;
-    if (!svm) return;
-    if (activeTool) svm.cancel();
-    if (sketchVMRef.current?.state === "active") svm.cancel();
+    if (!canEditMap) return;
     setSelectedGraphic(null);
     setActiveTool(toolId);
-    svm.create(toolId);
   };
 
   const handleCancel = () => {
-    if (sketchVMRef.current) sketchVMRef.current.cancel();
+    const map = mapRef.current;
+    if (map && drawInteractionRef.current) {
+      map.removeInteraction(drawInteractionRef.current);
+      drawInteractionRef.current = null;
+    }
     setActiveTool(null);
+    setSelectedGraphic(null);
   };
 
   const handleDeleteSelected = () => {
-    const svm = sketchVMRef.current;
-    if (!svm || !selectedGraphic) return;
-    const featId = selectedGraphic.attributes?.id || (selectedGraphic as any).uid;
+    if (!selectedGraphic) return;
+    const featId = selectedGraphic.id || selectedGraphic.get?.("id");
     const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
     if (feat?.locked) return;
-    if (onFeatureDeletedRef.current) onFeatureDeletedRef.current(featId);
+    if (onFeatureDeletedRef.current && featId) {
+      onFeatureDeletedRef.current(Number(featId));
+      setSelectedGraphic(null);
+    }
   };
 
   const handleToggleEditMode = (mode: "transform" | "reshape") => {
-    if (!selectedGraphic) return;
-    const featId = selectedGraphic.attributes?.id || (selectedGraphic as any).uid;
-    const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
-    if (feat?.locked) return;
-
     setEditMode(mode);
-    const svm = sketchVMRef.current;
-    if (!svm) return;
-    svm.update([selectedGraphic], { tool: mode });
   };
 
-  const onSelectGraphicForEdit = useCallback((g: Graphic) => {
-    // Solo usuarios con permiso de edición de mapa y herramientas de dibujo activas.
-    if (canEditMap !== true || !layerVisibilityRef.current.sketch) return;
-    const featId = g.attributes?.id || (g as any).uid;
+  const onSelectGraphicForEdit = useCallback((g: any) => {
+    if (canEditMap !== true || !layerVisibility.sketch) return;
+    const featId = g.id || g.get?.("id");
     const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
     if (feat?.locked) return;
 
     setActiveTool(null);
     setSelectedGraphic(g);
-    setEditMode("transform");
-    const svm = sketchVMRef.current;
-    if (svm && svm.state !== "active") {
-      svm.update([g], { tool: "transform" });
-    }
-  }, [sketchVMRef, canEditMap, layerVisibilityRef, drawnFeaturesRef]);
+  }, [canEditMap, layerVisibility.sketch, drawnFeaturesRef]);
 
   const handleColorChange = (color: Color) => {
     setActiveColor(color);
-    applyColorToVM(color);
     if (selectedGraphic) {
-      applyColorToGraphic(selectedGraphic, color);
-      const featId = selectedGraphic.attributes?.id || (selectedGraphic as any).uid;
+      const featId = selectedGraphic.id || selectedGraphic.get?.("id");
       const feat = drawnFeaturesRef.current.find((f) => String(f.id) === String(featId));
       if (feat && onFeatureAddedRef.current) {
         onFeatureAddedRef.current({ ...feat, color: color.hex, _isUpdate: true });
       }
-      const svm = sketchVMRef.current;
-      if (svm?.state === "active") svm.update([selectedGraphic], { tool: editMode });
     }
   };
 
+  // 4. Sincronización de features dibujadas e importadas
   useEffect(() => {
-    const layer = sketchLayerRef.current;
-    if (zoomToFeature && viewRef.current && layer) {
-      const g = layer.graphics.find((x) => (x as any).uid === zoomToFeature.id || x.attributes?.id === zoomToFeature.id);
-      if (g?.geometry) {
-        const opts: any = { target: g.geometry, ...(zoomToFeature?.type === "point" ? { zoom: 18 } : {}) };
-        viewRef.current.goTo(opts, { duration: 400, padding: getViewPadding() } as any);
-      }
-    }
-  }, [zoomToFeature, viewRef, sketchLayerRef]);
+    const source = featuresSourceRef.current;
+    if (!source) return;
 
-  useEffect(() => {
-    if (zoomToCoords && viewRef.current) {
-      viewRef.current.goTo(
-        { center: [zoomToCoords.lon, zoomToCoords.lat], zoom: 20 },
-        { duration: 800, easing: "ease-in-out", padding: getViewPadding() } as any,
-      ).catch(() => { });
-    }
-  }, [zoomToCoords, viewRef]);
-
-  useEffect(() => {
-    const layer = sketchLayerRef.current;
-    if (removeFeatureId && layer) {
-      const g = layer.graphics.find((x) => (x as any).uid === removeFeatureId.id || x.attributes?.id === removeFeatureId.id);
-      if (g) layer.remove(g);
-      const label = layer.graphics.find((x) => x.attributes?.isLabel && x.attributes?.parentId === removeFeatureId.id);
-      if (label) layer.remove(label);
-    }
-  }, [removeFeatureId, sketchLayerRef]);
-
-  useEffect(() => {
-    const layer = sketchLayerRef.current;
-    if (!layer) return;
     if (layerVisibility.inspecciones) {
       const polygonFeatures = drawnFeatures.filter((f) => f.type === "polygon");
-      syncDrawnFeaturesToGraphics(polygonFeatures, hiddenFeatures, layerVisibility, init.currentZoom, layer, selectedDate, activeDepartment, bare);
-      deconflictGraphicsRef.current?.();
-      return;
+      syncDrawnFeaturesToGraphics(polygonFeatures, hiddenFeatures, layerVisibility, init.currentZoom, source, selectedDate, activeDepartment, bare);
+    } else {
+      syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, init.currentZoom, source, selectedDate, activeDepartment, bare);
     }
-    syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, init.currentZoom, layer, selectedDate, activeDepartment, bare);
-    deconflictGraphicsRef.current?.();
-  }, [drawnFeatures, hiddenFeatures, layerVisibility.polygonLabels, layerVisibility.pointLabels, layerVisibility.inspecciones, layerVisibility.hideNestedAreas, init.mapReady, init.currentZoom, selectedDate, activeDepartment, showAccumulated, sketchLayerRef, deconflictGraphicsRef, bare]);
+  }, [drawnFeatures, hiddenFeatures, layerVisibility, init.currentZoom, selectedDate, activeDepartment, bare, featuresSourceRef]);
 
   useEffect(() => {
-    const layer = sketchLayerRef.current;
-    if (!layer) return;
+    const source = featuresSourceRef.current;
+    if (!source || !importedFeatures) return;
     const targetImported = layerVisibility.inspecciones
-      ? (importedFeatures || []).filter((f) => f.type === "polygon" || f.geojsonGeometry?.type === "Polygon")
-      : (importedFeatures || []);
-    syncImportedFeatures(targetImported, layerVisibility, viewRef, layer);
-    deconflictGraphicsRef.current?.();
-  }, [importedFeatures, init.mapReady, layerVisibility.pointLabels, layerVisibility.inspecciones, sketchLayerRef, viewRef, deconflictGraphicsRef]);
+      ? importedFeatures.filter((f) => f.type === "polygon" || f.geojsonGeometry?.type === "Polygon")
+      : importedFeatures;
+    syncImportedFeatures(targetImported, layerVisibility, mapRef, source);
+  }, [importedFeatures, layerVisibility, mapRef, featuresSourceRef]);
 
+  // 5. Carga y filtrado de inspecciones Kobo
   const [inspeccionesRecords, setInspeccionesRecords] = useState<InspeccionRecord[]>([]);
   const [selectedColorFilter, setSelectedColorFilter] = useState<"all" | "rojo" | "amarillo" | "verde">("all");
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>("");
@@ -312,7 +363,6 @@ export const useMapSetup = (props: UseMapSetupProps) => {
 
   const filteredInspeccionesRecords = useMemo(() => {
     return inspeccionesRecords.filter((r) => {
-      // Si está en modo ACUMULADO (showAccumulated === true), no se filtra por fecha (se muestran todos los puntos de la historia)
       if (!showAccumulated && !selectedDateFilter) {
         if (selectedDate && selectedDate.trim().length >= 8 && r.fecha) {
           if (!r.fecha.startsWith(selectedDate)) {
@@ -341,37 +391,192 @@ export const useMapSetup = (props: UseMapSetupProps) => {
   }, [inspeccionesRecords, selectedDateFilter, selectedDate, showAccumulated, selectedColorFilter]);
 
   useEffect(() => {
-    const layer = init.inspeccionesLayerRef.current;
-    if (!layer) return;
-    syncInspeccionesToGraphics(layer, filteredInspeccionesRecords, layerVisibility.inspecciones ?? false);
-  }, [filteredInspeccionesRecords, layerVisibility.inspecciones, init.mapReady, init.inspeccionesLayerRef]);
+    const source = inspeccionesSourceRef.current;
+    if (!source) return;
+    syncInspeccionesToGraphics(source, filteredInspeccionesRecords, layerVisibility.inspecciones ?? false);
+  }, [filteredInspeccionesRecords, layerVisibility.inspecciones, inspeccionesSourceRef]);
+
+  // 5.1 Sincronización de Overlays HTML Nativos de OpenLayers (Pines en zoom < 14, Tarjetas en zoom >= 14)
+  const labelOverlaysRef = useRef<Overlay[]>([]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    let lastZoomBucket = -1;
+
+    const renderOverlays = () => {
+      const view = map.getView();
+      const currentZoom = view.getZoom() || 13;
+      const isCard = currentZoom >= 16;
+      const zoomBucket = isCard ? 1 : 0;
+
+      if (lastZoomBucket === zoomBucket && labelOverlaysRef.current.length > 0) return;
+      lastZoomBucket = zoomBucket;
+
+      labelOverlaysRef.current.forEach((ov) => map.removeOverlay(ov));
+      labelOverlaysRef.current = [];
+
+      const showLabels = layerVisibility.pointLabels !== false && !layerVisibility.inspecciones;
+      if (!showLabels) return;
+
+      const { parentsMap } = buildParentsMap(drawnFeatures);
+
+      drawnFeatures.forEach((feat) => {
+        if (!feat.geojsonGeometry) return;
+        if (hiddenFeatures[String(feat.id)]) return;
+        const labelData = featureToLabelData(feat, parentsMap, selectedDate, drawnFeatures);
+        if (!labelData) return;
+
+        const isPoint = feat.type === "point" || feat.geojsonGeometry?.type === "Point";
+        const el = buildHtmlLabelElement(
+          labelData,
+          () => {
+            onFeatureClick?.();
+            init.setCustomPopup({ mapPoint: fromLonLat([labelData.lng, labelData.lat]), feat });
+          },
+          currentZoom
+        );
+
+        const overlay = new Overlay({
+          element: el,
+          position: fromLonLat([labelData.lng, labelData.lat]),
+          positioning: "bottom-center",
+          offset: isCard ? (isPoint ? [0, -12] : [0, 0]) : [0, 0],
+          stopEvent: false,
+        });
+
+        map.addOverlay(overlay);
+        labelOverlaysRef.current.push(overlay);
+      });
+    };
+
+    renderOverlays();
+    const listener = () => renderOverlays();
+    map.getView().on("change:resolution", listener);
+
+    return () => {
+      map.getView().un("change:resolution", listener);
+      labelOverlaysRef.current.forEach((ov) => map.removeOverlay(ov));
+      labelOverlaysRef.current = [];
+    };
+  }, [drawnFeatures, hiddenFeatures, selectedDate, layerVisibility.pointLabels, layerVisibility.inspecciones, mapRef]);
+
+  // 6. Navegación / Zoom
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (zoomToFeature && zoomToFeature.geojsonGeometry) {
+      try {
+        const format = new GeoJSON();
+        const featOrFeats = format.readFeature(
+          {
+            type: "Feature",
+            geometry: zoomToFeature.geojsonGeometry,
+            properties: {},
+          },
+          {
+            dataProjection: "EPSG:4326",
+            featureProjection: "EPSG:3857",
+          }
+        );
+        const singleFeat: any = Array.isArray(featOrFeats) ? featOrFeats[0] : featOrFeats;
+        const geom = singleFeat?.getGeometry();
+        if (geom) {
+          if (geom.getType() === "Point") {
+            const coord = (geom as any).getCoordinates();
+            map.getView().animate({ center: coord, zoom: 18, duration: 500 });
+          } else {
+            const extent = geom.getExtent();
+            map.getView().fit(extent, { padding: [60, 60, 60, 60], duration: 500, maxZoom: 18 });
+          }
+        }
+      } catch (err) {
+        console.warn("[OpenLayers] Error al hacer zoom a feature:", err);
+      }
+    }
+  }, [zoomToFeature, mapRef]);
 
   useEffect(() => {
-    if (viewRef.current) {
-      viewRef.current.goTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM }, { duration: 1500, easing: "ease-in-out", padding: getViewPadding() } as any);
+    const map = mapRef.current;
+    if (zoomToCoords && map) {
+      map.getView().animate({
+        center: fromLonLat([zoomToCoords.lon, zoomToCoords.lat]),
+        zoom: 20,
+        duration: 800,
+      });
     }
-  }, [activeCity, viewRef]);
+  }, [zoomToCoords, mapRef]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map) {
+      map.getView().animate({
+        center: fromLonLat(DEFAULT_CENTER),
+        zoom: DEFAULT_ZOOM,
+        duration: 1200,
+      });
+    }
+  }, [activeCity, mapRef]);
 
+  // 7. Manejo de Swipe (Antes y Después con Google Satelital)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (swipeActive) {
+      if (!swipeLayerRef.current) {
+        const swipeLayer = new TileLayer({
+          preload: 4,
+          source: new XYZ({
+            url: "https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+            maxZoom: 20,
+          }),
+        });
+
+        swipeLayer.on("prerender", (event: any) => {
+          const ctx = event.context as CanvasRenderingContext2D;
+          if (!ctx) return;
+          const mapSize = map.getSize();
+          if (!mapSize) return;
+          const width = mapSize[0];
+          const height = mapSize[1];
+          const pos = swipePositionRef.current;
+          const clipX = width * (pos / 100);
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(clipX, 0, width - clipX, height);
+          ctx.clip();
+        });
+
+        swipeLayer.on("postrender", (event: any) => {
+          const ctx = event.context as CanvasRenderingContext2D;
+          if (ctx) ctx.restore();
+        });
+
+        const layers = map.getLayers();
+        layers.insertAt(1, swipeLayer);
+        swipeLayerRef.current = swipeLayer;
+      }
+      map.render();
+    } else {
+      if (swipeLayerRef.current) {
+        map.removeLayer(swipeLayerRef.current);
+        swipeLayerRef.current = null;
+        map.render();
+      }
+    }
+  }, [swipeActive, swipePosition, mapRef]);
 
   const activateSwipe = useCallback(() => {
-    if (layerVisibilityRef.current.sketch) {
-      setActiveTool(null);
-      setSelectedGraphic(null);
-      if (sketchVMRef.current?.state === "active") sketchVMRef.current.cancel();
-    }
+    setActiveTool(null);
+    setSelectedGraphic(null);
     setSwipeActive(true);
-  }, [sketchVMRef, layerVisibilityRef]);
+  }, []);
 
   const deactivateSwipe = useCallback(() => {
     setSwipeActive(false);
   }, []);
-
-  let popupScreenPos = null;
-  if (init.customPopup && viewRef.current) {
-    const screenPt = viewRef.current.toScreen(init.customPopup.mapPoint);
-    if (screenPt) popupScreenPos = { x: screenPt.x, y: screenPt.y };
-  }
 
   return {
     mapDiv: init.mapDiv,
@@ -379,20 +584,23 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     editMode,
     selectedGraphic,
     activeColor,
-    tooltip: init.tooltip,
+    tooltip: null,
     customPopup: init.customPopup,
     popupTick,
-    popupScreenPos,
+    popupScreenPos: init.popupScreenPos,
     popupEditDate,
-    sketchLayer: sketchLayerRef.current,
-    sketchVMRef,
+    sketchLayer: featuresLayerRef.current,
+    sketchVMRef: { current: null },
     onSelectGraphicForEdit,
     currentZoom: init.currentZoom,
     currentScale: init.currentScale,
     coords: init.coords,
-    htmlLabels: init.htmlLabels,
+    htmlLabels: [],
     swipeActive,
-    viewRef,
+    swipePosition,
+    setSwipePosition,
+    viewRef: mapRef,
+    mapRef,
     activateSwipe,
     deactivateSwipe,
     setCustomPopup: init.setCustomPopup,

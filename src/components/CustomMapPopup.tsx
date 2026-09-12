@@ -10,9 +10,6 @@ import { HistoryTab } from "./popup/HistoryTab";
 import { InfoTab } from "./popup/InfoTab";
 import { useFeaturePopupSession } from "../hooks/useFeaturePopupSession";
 
-import Point from "@arcgis/core/geometry/Point";
-import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
-
 interface FeatureEditActions {
   onRenameFeature?: (id: number | string, newTitle: string) => Promise<void>;
   onUpdateFeatureDescription?: (id: number | string, newDesc: string) => Promise<void>;
@@ -22,7 +19,7 @@ interface FeatureEditActions {
 }
 
 interface CustomMapPopupProps {
-  customPopup: { mapPoint: Point; feat: DrawnFeature } | null;
+  customPopup: { mapPoint?: any; feat: DrawnFeature } | null;
   popupScreenPos: { x: number; y: number } | null;
   drawnFeatures: DrawnFeature[];
   layerVisibility: LayerVisibility;
@@ -31,7 +28,7 @@ interface CustomMapPopupProps {
   onSaveDailyLog?: (featureId: number | string, log: DailyLog) => Promise<void>;
   onRefreshFeatures?: () => Promise<void>;
   featureActions: FeatureEditActions;
-  sketchLayer: GraphicsLayer | null;
+  sketchLayer?: any;
   onClose: () => void;
   onNavigateToFeature?: (feat: DrawnFeature) => void;
   activeDepartment?: DepartmentView;

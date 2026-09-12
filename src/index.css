@@ -1,4 +1,4 @@
-@import '@arcgis/core/assets/esri/themes/dark/main.css';
+@import 'ol/ol.css';
 
 :root {
   --bg-primary: #090d16;
@@ -84,67 +84,57 @@ body {
   overflow: hidden;
 }
 
-/* Override ArcGIS popups and widgets to blend with our custom premium UI */
-.esri-ui .esri-component {
-  box-shadow: var(--shadow-lg) !important;
+/* OpenLayers UI controls styling */
+.ol-control {
+  background-color: rgba(10, 15, 29, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
   border-radius: 8px !important;
-  overflow: hidden;
+  padding: 2px !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
 }
 
-.esri-view-surface:focus::after {
-  outline: none !important;
+.ol-control button {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f8fafc !important;
+  font-weight: 700 !important;
+  font-family: var(--sans-font) !important;
+  border-radius: 6px !important;
+  margin: 2px !important;
+  width: 28px !important;
+  height: 28px !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
 }
 
-.esri-popup__main-container {
-  background-color: #111827 !important;
-  color: var(--text-primary) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(12px);
-  box-shadow: var(--shadow-lg) !important;
+.ol-control button:hover {
+  background-color: rgba(249, 115, 22, 0.8) !important;
+  color: #ffffff !important;
 }
 
-.esri-popup__header {
-  background-color: rgba(249, 115, 22, 0.1) !important;
-  border-bottom: 1px solid var(--border-color) !important;
+.ol-zoom {
+  top: 20px !important;
+  bottom: auto !important;
+  right: 18px !important;
+  left: auto !important;
 }
 
-.esri-popup__header-title {
-  color: var(--text-primary) !important;
-  font-weight: 600 !important;
+.ol-rotate {
+  top: 94px !important;
+  bottom: auto !important;
+  right: 18px !important;
+  left: auto !important;
 }
 
-.esri-popup__content {
-  background-color: #111827 !important;
-  color: var(--text-secondary) !important;
+.ol-rotate .ol-compass {
+  font-weight: 800 !important;
+  color: #38bdf8 !important;
 }
 
-.esri-popup__button {
-  color: var(--text-secondary) !important;
-}
-
-.esri-popup__button:hover {
-  color: var(--accent-orange) !important;
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-.esri-popup__actions,
-.esri-popup__inline-actions,
-.esri-popup__action,
-.esri-popup__action-text,
-.esri-popup__footer,
-.esri-popup__action-toggle,
-.esri-popup__feature-menu-button,
-[class*="esri-popup__action"],
-[class*="esri-popup__inline-actions"] {
+.ol-attribution {
   display: none !important;
-  visibility: hidden !important;
-  height: 0 !important;
-  min-height: 0 !important;
-  max-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
 }
 
 .user-action-icon {
@@ -257,4 +247,30 @@ select::-ms-expand {
 .info-details-list .info-value-meta {
   font-size: 0.65rem;
   color: #cbd5e1;
+}
+
+.custom-compact-pin-wrapper:hover {
+  transform: scale(1.18);
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6));
+}
+
+.html-point-compact-pin {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  outline: none !important;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.html-point-compact-pin:hover {
+  transform: translate(-50%, -100%) scale(1.22) !important;
+  z-index: 10 !important;
+}
+
+.html-point-compact-pin:hover > div {
+  filter: brightness(1.1) drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
 }

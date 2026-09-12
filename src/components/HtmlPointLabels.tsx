@@ -2,10 +2,13 @@ import React, { useState, memo } from "react";
 import type { HtmlLabel } from "../types";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+export const LABEL_ZOOM_THRESHOLD = 17;
+
 interface HtmlPointLabelsProps {
   labels: HtmlLabel[];
   isAuthenticated?: boolean;
   onSelectLabel?: (id: number | string) => void;
+  zoom?: number;
 }
 
 interface ArrowStyle {
@@ -98,13 +101,89 @@ interface HtmlPointLabelItemProps {
   onSelectLabel?: (id: number | string) => void;
   expandedNotes: Record<string, boolean>;
   toggleExpanded: (key: string, e: React.MouseEvent) => void;
+  zoom?: number;
 }
 
 const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
-  ({ lbl, isAuthenticated, onSelectLabel, expandedNotes, toggleExpanded }) => {
+  ({ lbl, isAuthenticated, onSelectLabel, expandedNotes, toggleExpanded, zoom }) => {
+    const isCompact = typeof zoom === "number" && zoom < LABEL_ZOOM_THRESHOLD;
+    const statusColor = lbl.hasArrived ? "#22c55e" : "#f97316";
+    const glowColor = lbl.hasArrived ? "rgba(34, 197, 94, 0.45)" : "rgba(249, 115, 22, 0.45)";
+
+    if (isCompact) {
+      return (
+        <div
+          className="html-point-compact-pin"
+          title={lbl.title}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectLabel?.(lbl.id);
+          }}
+          style={{
+            position: "absolute",
+            left: `${lbl.x}px`,
+            top: `${lbl.y}px`,
+            transform: "translate(-50%, -100%)",
+            willChange: "transform, left, top",
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            boxShadow: "none",
+            backdropFilter: "none",
+            WebkitBackdropFilter: "none",
+            WebkitTapHighlightColor: "transparent",
+            outline: "none",
+            pointerEvents: "auto",
+            cursor: "pointer",
+            userSelect: "none",
+            WebkitUserSelect: "none",
+            zIndex: 2,
+            display: "inline-flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              width: "22px",
+              height: "22px",
+              borderRadius: "50% 50% 50% 0",
+              transform: "rotate(-45deg)",
+              background: statusColor,
+              boxShadow: `0 4px 12px ${glowColor}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease",
+            }}
+          >
+            <div
+              style={{
+                transform: "rotate(45deg)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span
+                style={{
+                  width: "7px",
+                  height: "7px",
+                  borderRadius: "50%",
+                  background: "#ffffff",
+                  boxShadow: "0 0 6px rgba(255, 255, 255, 0.9)",
+                  display: "inline-block",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const borderStyle = `1px solid ${lbl.themeColor ? `${lbl.themeColor}90` : "rgba(56, 189, 248, 0.5)"}`;
     const { top, left, transform, arrowStyle } = computePlacement(lbl, borderStyle);
-    const statusColor = lbl.hasArrived ? "#22c55e" : "#f97316";
 
     const titleKey = `title_${lbl.id}`;
     const isTitleExpanded = !!expandedNotes[titleKey];
@@ -472,7 +551,7 @@ const HtmlPointLabelItem = memo<HtmlPointLabelItemProps>(
 
 HtmlPointLabelItem.displayName = "HtmlPointLabelItem";
 
-export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, isAuthenticated, onSelectLabel }) => {
+export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, isAuthenticated, onSelectLabel, zoom }) => {
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
 
   const toggleExpanded = (key: string, e: React.MouseEvent) => {
@@ -492,6 +571,7 @@ export const HtmlPointLabels: React.FC<HtmlPointLabelsProps> = ({ labels, isAuth
             onSelectLabel={onSelectLabel}
             expandedNotes={expandedNotes}
             toggleExpanded={toggleExpanded}
+            zoom={zoom}
           />
         ))}
     </>
