@@ -115,26 +115,6 @@ export const MobileSettingsSheet: React.FC<MobileSettingsSheetProps> = ({
           }} />
         </span>
       </div>
-
-      <div style={toggleStyle} onClick={() => onToggleLayer("allowLabelOverlap")}>
-        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {layerVisibility.allowLabelOverlap ? <Eye size={16} color="#22c55e" /> : <EyeOff size={16} color="var(--text-muted)" />}
-          Permitir Solapamiento Etiquetas
-        </span>
-        <span style={{
-          width: "32px", height: "18px", borderRadius: "9px",
-          background: layerVisibility.allowLabelOverlap ? "rgba(34,197,94,0.3)" : "var(--bg-tertiary)",
-          border: `1px solid ${layerVisibility.allowLabelOverlap ? "rgba(34,197,94,0.5)" : "var(--border-color)"}`,
-          position: "relative", transition: "all 0.2s",
-        }}>
-          <span style={{
-            position: "absolute", top: "2px", left: layerVisibility.allowLabelOverlap ? "16px" : "2px",
-            width: "12px", height: "12px", borderRadius: "50%",
-            background: layerVisibility.allowLabelOverlap ? "#22c55e" : "var(--text-muted)",
-            transition: "left 0.2s",
-          }} />
-        </span>
-      </div>
     </div>
   );
 };

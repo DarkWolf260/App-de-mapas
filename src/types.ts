@@ -120,7 +120,7 @@ export interface LayerVisibility {
   polygonLabels: boolean;
   pointLabels: boolean;
   hideNestedAreas: boolean;
-  allowLabelOverlap: boolean;
+  allowLabelOverlap?: boolean;
   basemapLabels?: boolean;
   inspecciones?: boolean;
 }

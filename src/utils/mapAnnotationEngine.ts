@@ -403,7 +403,7 @@ export function deconflictGraphics(
 
     const dateStr = refs.selectedDateRef.current;
     const screenLabels = computeScreenLabels(candidateLabels, view, refs.drawnFeaturesRef, dateStr, refs.activeDepartmentRef?.current, refs.showAccumulatedRef);
-    const allowOverlapSetting = refs.layerVisibilityRef.current.allowLabelOverlap;
+    const allowOverlapSetting = refs.layerVisibilityRef.current?.allowLabelOverlap ?? true;
 
     deconflictNativeNoPersonnelLabels(screenLabels);
 

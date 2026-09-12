@@ -47,6 +47,7 @@ export interface MapInitCallbacks {
   onFeatureAdded: (feat: DrawnFeature) => void;
   onFeatureDeleted: (id: number) => void;
   onFeatureClick?: () => void;
+  onSelectFeature?: (feat: DrawnFeature | null) => void;
   onToolComplete?: () => void;
   getActiveColor: () => Color;
 }
@@ -84,10 +85,12 @@ export function useMapInit(
   const onFeatureAddedRef = useRef(callbacks.onFeatureAdded);
   const onFeatureDeletedRef = useRef(callbacks.onFeatureDeleted);
   const onToolCompleteRef = useRef(callbacks.onToolComplete);
+  const onSelectFeatureRef = useRef(callbacks.onSelectFeature);
 
   useEffect(() => { onFeatureAddedRef.current = callbacks.onFeatureAdded; }, [callbacks.onFeatureAdded]);
   useEffect(() => { onFeatureDeletedRef.current = callbacks.onFeatureDeleted; }, [callbacks.onFeatureDeleted]);
   useEffect(() => { onToolCompleteRef.current = callbacks.onToolComplete; }, [callbacks.onToolComplete]);
+  useEffect(() => { onSelectFeatureRef.current = callbacks.onSelectFeature; }, [callbacks.onSelectFeature]);
 
   const drawnFeaturesRef = useRef<DrawnFeature[]>([]);
   const hiddenFeaturesRef = useRef<Record<string, boolean>>({});
@@ -269,6 +272,7 @@ export function useMapInit(
         const isInsp = feature.get("tipo") === "inspeccion";
 
         if (isInsp) {
+          onSelectFeatureRef.current?.(null);
           // Inspección Kobo
           callbacks.onFeatureClick?.();
           const props = feature.getProperties();
@@ -298,13 +302,20 @@ export function useMapInit(
           callbacks.onFeatureClick?.();
           setCustomPopup({ mapPoint: evt.coordinate, feat });
           setPopupScreenPos({ x: evt.pixel[0], y: evt.pixel[1] });
+          if (canEditRef.current && layerVisibilityRef.current.sketch && !feat.locked) {
+            onSelectFeatureRef.current?.(feat);
+          } else {
+            onSelectFeatureRef.current?.(null);
+          }
         } else {
           setCustomPopup(null);
           setPopupScreenPos(null);
+          onSelectFeatureRef.current?.(null);
         }
       } else {
         setCustomPopup(null);
         setPopupScreenPos(null);
+        onSelectFeatureRef.current?.(null);
       }
     });
 
