@@ -249,11 +249,76 @@ select::-ms-expand {
   color: #cbd5e1;
 }
 
-.custom-compact-pin-wrapper:hover {
-  transform: scale(1.18);
-  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6));
+/* ==========================================================================
+   Animaciones fluidas para transición entre Pines y Tarjetas
+   ========================================================================== */
+
+@keyframes pinToCardPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.35) translateY(12px);
+    filter: blur(3px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.04) translateY(-2px);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
 }
 
+@keyframes cardToPinPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.4) translateY(-10px);
+    filter: blur(3px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.92) translateY(2px);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+.custom-html-label-card-wrapper {
+  animation: pinToCardPopIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: 50% 100%;
+}
+
+.custom-html-label-card {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.custom-html-label-card:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75), 0 0 14px rgba(56, 189, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+.custom-compact-pin-wrapper {
+  animation: cardToPinPopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: 50% 100%;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
+}
+
+.custom-compact-pin-wrapper:hover {
+  transform: scale(1.22);
+  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.7));
+}
+
+.custom-compact-pin-wrapper:hover > div {
+  filter: brightness(1.15) drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
+}
+
+/* Soporte para componente React HtmlPointLabels */
 .html-point-compact-pin {
   background: transparent !important;
   border: none !important;
@@ -263,14 +328,26 @@ select::-ms-expand {
   -webkit-backdrop-filter: none !important;
   -webkit-tap-highlight-color: transparent !important;
   outline: none !important;
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: cardToPinPopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: 50% 100%;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .html-point-compact-pin:hover {
-  transform: translate(-50%, -100%) scale(1.22) !important;
+  transform: translate(-50%, -100%) scale(1.24) !important;
   z-index: 10 !important;
 }
 
 .html-point-compact-pin:hover > div {
-  filter: brightness(1.1) drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
+  filter: brightness(1.15) drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+}
+
+.html-point-label {
+  animation: pinToCardPopIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: 50% 100%;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.html-point-label:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75), 0 0 14px rgba(56, 189, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 }

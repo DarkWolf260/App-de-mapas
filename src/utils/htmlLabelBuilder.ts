@@ -344,7 +344,7 @@ export function buildHtmlLabelString(data: CustomLabelData): string {
       : "";
 
     return `
-      <div style="position: relative; width: max-content; min-width: max-content; max-width: max-content; padding-bottom: 4px; pointer-events: auto; user-select: none; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box;">
+      <div class="custom-html-label-card-wrapper" style="position: relative; width: max-content; min-width: max-content; max-width: max-content; padding-bottom: 4px; pointer-events: auto; user-select: none; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box;">
         <div class="custom-html-label-card" style="
           background: rgba(10, 15, 29, 0.94);
           border: 1px solid ${color}99;
