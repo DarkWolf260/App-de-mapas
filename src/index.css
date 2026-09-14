@@ -259,11 +259,13 @@ select::-ms-expand {
     transform: scale(0.35) translateY(12px);
     filter: blur(3px);
   }
+
   65% {
     opacity: 1;
     transform: scale(1.04) translateY(-2px);
     filter: blur(0);
   }
+
   100% {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -277,11 +279,13 @@ select::-ms-expand {
     transform: scale(1.4) translateY(-10px);
     filter: blur(3px);
   }
+
   60% {
     opacity: 1;
     transform: scale(0.92) translateY(2px);
     filter: blur(0);
   }
+
   100% {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -314,7 +318,7 @@ select::-ms-expand {
   filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.7));
 }
 
-.custom-compact-pin-wrapper:hover > div {
+.custom-compact-pin-wrapper:hover>div {
   filter: brightness(1.15) drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
 }
 
@@ -338,7 +342,7 @@ select::-ms-expand {
   z-index: 10 !important;
 }
 
-.html-point-compact-pin:hover > div {
+.html-point-compact-pin:hover>div {
   filter: brightness(1.15) drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
 }
 

@@ -77,7 +77,7 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     } catch (err) {
       console.error("[fetch] exception:", err);
     }
-  }, [featureRepo, logRepo, opts.selectedDate]);
+  }, [featureRepo, logRepo]);
 
   const syncLocalRxDBToSupabase = useCallback(async () => {
     await migrationRepo.run(fetchFromSupabase);

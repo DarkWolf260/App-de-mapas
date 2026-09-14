@@ -65,7 +65,7 @@ export function useAppState(isAdmin: boolean) {
     refreshFeatures,
     realtimeStatus,
     isRealtimeConnected,
-  } = useFeatureDB({ selectedDate });
+  } = useFeatureDB();
 
   const { hiddenFeatures, handleToggleFeatureVisibility } = useFeatureVisibility();
   const { sortedDrawnFeatures } = useFeatureOrder(drawnFeatures);
