@@ -157,7 +157,7 @@ const IndependentGroupCard: React.FC<IndependentGroupCardProps> = ({
         <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(groupIdx)} style={{ cursor: "pointer", width: "12px", height: "12px", flexShrink: 0, accentColor: "#38bdf8" }} title="Seleccionar para agrupar" />
       )}
       <span style={{ fontSize: "0.63rem", fontWeight: 700, color }}>{group.groupName || `Equipo ${groupIdx + 1}`}</span>
-      {group.department && activeDepartment === "mixto" && <DeptBadge department={group.department} />}
+      {activeDepartment === "mixto" && <DeptBadge department={group.department || "pc"} />}
       {canEdit && onGroupEdit && (
         <VolunteerToggle isVolunteer={group.isVolunteer} onChange={(v) => onGroupEdit(groupIdx, "isVolunteer", v)} />
       )}
@@ -213,11 +213,12 @@ const JointGroupCard: React.FC<JointGroupCardProps> = ({
     <div key={`joint-${commissionId}`} style={{ background: "rgba(56, 189, 248, 0.05)", border: "2px dashed rgba(56, 189, 248, 0.35)", borderRadius: "8px", padding: "6px 8px", position: "relative" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "2px" }}>
         <Link2 size={10} style={{ color: "#38bdf8", flexShrink: 0 }} />
-        <span style={{ fontSize: "0.63rem", fontWeight: 700, color: "#38bdf8" }}>
+        <span style={{ fontSize: "0.63rem", fontWeight: 700, color: "#38bdf8", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "3px" }}>
           {groups.map((g, i) => (
-            <span key={i}>
-              {i > 0 && <span style={{ color: "var(--text-muted)" }}> + </span>}
+            <span key={i} style={{ display: "inline-flex", alignItems: "center" }}>
+              {i > 0 && <span style={{ color: "var(--text-muted)", margin: "0 4px" }}>+</span>}
               {g.groupName || `Equipo ${groupIndices[i] + 1}`}
+              {activeDepartment === "mixto" && <DeptBadge department={g.department || "pc"} small />}
             </span>
           ))}
         </span>
@@ -236,7 +237,7 @@ const JointGroupCard: React.FC<JointGroupCardProps> = ({
             <div key={i} style={{ padding: "2px 0", borderBottom: i < groups.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "var(--text-secondary)" }}>{g.groupName || `Equipo ${groupIndices[i] + 1}`}</span>
-                {g.department && activeDepartment === "mixto" && <DeptBadge department={g.department} small />}
+                {activeDepartment === "mixto" && <DeptBadge department={g.department || "pc"} small />}
               </div>
               <ReadRow label="Unidad" value={g.unitOut} />
               <ReadRow label="Encargado" value={g.managerName} />

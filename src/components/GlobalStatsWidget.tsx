@@ -66,7 +66,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
       ...f,
       dailyLogs: f.dailyLogs?.filter((l) =>
         l.date === todayStr &&
-        (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+        (activeDepartment === "mixto" || !activeDepartment || (l.department || "pc") === activeDepartment)
       ) || [],
     }));
   }, [drawnFeatures, todayStr, activeDepartment]);

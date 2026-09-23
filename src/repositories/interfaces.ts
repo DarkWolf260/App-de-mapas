@@ -4,11 +4,11 @@ export interface IFeatureRepository {
   fetchAll(): Promise<DrawnFeature[]>;
   upsert(feat: DrawnFeature): Promise<void>;
   updateTitle(id: number | string, title: string): Promise<void>;
-  updateDescription(id: number | string, desc: string): Promise<void>;
-  updateColor(id: number | string, color: string): Promise<void>;
-  updateLock(id: number | string, locked: boolean): Promise<void>;
-  updateCollapsed(id: number | string, isCollapsed: boolean, collapsedCount: string | number): Promise<void>;
-  delete(id: number | string): Promise<void>;
+  updateDescription(id: number | string, desc: string, title?: string): Promise<void>;
+  updateColor(id: number | string, color: string, title?: string): Promise<void>;
+  updateLock(id: number | string, locked: boolean, title?: string): Promise<void>;
+  updateCollapsed(id: number | string, isCollapsed: boolean, collapsedCount: string | number, title?: string): Promise<void>;
+  delete(id: number | string, title?: string): Promise<void>;
 }
 
 export interface ILogRepository {

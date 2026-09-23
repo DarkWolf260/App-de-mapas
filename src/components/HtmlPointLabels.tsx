@@ -2,7 +2,7 @@ import React, { useState, memo } from "react";
 import type { HtmlLabel } from "../types";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-export const LABEL_ZOOM_THRESHOLD = 16;
+export const LABEL_ZOOM_THRESHOLD = 17;
 
 interface HtmlPointLabelsProps {
   labels: HtmlLabel[];

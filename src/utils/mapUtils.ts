@@ -61,7 +61,7 @@ export const makeSymbols = ([r, g, b]: [number, number, number]) => ({
 export const formatFeatureLabelText = (feat: DrawnFeature, todayStr: string, activeDepartment?: DepartmentView): string => {
   const handler = getGeometryHandler(feat.type);
   const todayLogs = feat.dailyLogs?.filter((l) =>
-    l.date === todayStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+    l.date === todayStr && (activeDepartment === "mixto" || !activeDepartment || (l.department || "pc") === activeDepartment)
   ) || [];
 
   const parts: string[] = [];

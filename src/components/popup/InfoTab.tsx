@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import { Copy, Check, Activity, Save, FileText, AlertTriangle, Tent, HeartPulse, Tag, History } from "lucide-react";
 import type { DrawnFeature, DailyLog, DepartmentView, Department, NovedadEntry } from "../../types";
 import { isPointInPolygon } from "../../utils/spatialUtils";
-import { getNormalizedGroupList, mergeLogs, logHasAnyData } from "../../utils/logUtils";
+import { getNormalizedGroupList, mergeLogs, mergeDepartmentLogs, extractActiveGroups, logHasAnyData } from "../../utils/logUtils";
 import { labelStyle, sectionBox, inputStyle } from "./popupStyles";
 import { formatCoordinates, getCoordLabel, METRIC_FIELDS, getMetricValue } from "./metricFields";
 import { MetricDisplayGrid } from "./MetricGrid";
@@ -67,7 +67,7 @@ interface InfoTabProps {
   isAdmin?: boolean;
   canEdit?: boolean;
   canToggleArrival?: boolean;
-  onToggleArrivalGroup?: (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => Promise<void>;
+  onToggleArrivalGroup?: (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean, dept?: "pc" | "bomberos", groupId?: string) => Promise<void>;
   onGroupFieldChange?: (
     groupIdx: number,
     field: string,
@@ -126,7 +126,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
     return containedPoints.map((pt) => {
       const logs = pt.dailyLogs?.filter((l) =>
         l.date === popupEditDate &&
-        (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+        (activeDepartment === "mixto" || !activeDepartment || (l.department || "pc") === activeDepartment)
       ) || [];
       const log: Partial<DailyLog> = logs.length > 1 ? (mergeLogs(logs) || {}) : (logs[0] || {});
       return { point: pt, log };
@@ -141,20 +141,22 @@ export const InfoTab: React.FC<InfoTabProps> = ({
     if (mergedLog) return mergedLog;
     const allLogs = activeFeat.dailyLogs?.filter((l) => l.date === popupEditDate) || [];
     if (allLogs.length === 0) return null;
-    return mergeLogs(allLogs);
+    const pc = allLogs.find((l) => (l.department || "pc") === "pc");
+    const bomberos = allLogs.find((l) => l.department === "bomberos");
+    return mergeDepartmentLogs(pc, bomberos, popupEditDate);
   }, [activeDepartment, mergedLog, activeFeat.dailyLogs, popupEditDate]);
 
   const polygonGroups = useMemo(() => {
     if (!isPolygon) return [];
     const src = mergedLogForDisplay || polygonOwnLog;
-    return getNormalizedGroupList(src);
-  }, [isPolygon, polygonOwnLog, mergedLogForDisplay]);
+    return extractActiveGroups(src, (selectedDept || "pc") as Department);
+  }, [isPolygon, polygonOwnLog, mergedLogForDisplay, selectedDept]);
 
   const pointGroups = useMemo(() => {
     if (isPolygon) return [];
     const src = mergedLogForDisplay || localLog || dailyLog || {};
-    return getNormalizedGroupList(src);
-  }, [isPolygon, localLog, dailyLog, mergedLogForDisplay]);
+    return extractActiveGroups(src, (selectedDept || "pc") as Department);
+  }, [isPolygon, localLog, dailyLog, mergedLogForDisplay, selectedDept]);
 
   const aggregatedLog = useMemo(() => {
     if (!isPolygon) return dailyLog || {};
@@ -167,22 +169,29 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 
   const onGroupEdit = useCallback((displayIdx: number, field: string, value: string | boolean) => {
     const displayGroup = activeGroups[displayIdx];
+    const dept = (displayGroup?.department || (activeDepartment === "bomberos" ? "bomberos" : "pc")) as "pc" | "bomberos";
     onGroupFieldChange?.(
       displayIdx,
       field,
       value,
-      displayGroup?.department as any,
+      dept,
       displayGroup?.id
     );
-  }, [onGroupFieldChange, activeGroups]);
+  }, [onGroupFieldChange, activeGroups, activeDepartment]);
 
   const onToggleArrival = useCallback((displayIdx: number, hasArrived: boolean) => {
-    onToggleArrivalGroup?.((displayIdx + 1) as 1 | 2 | 3 | 4, hasArrived);
-  }, [onToggleArrivalGroup]);
+    const displayGroup = activeGroups[displayIdx];
+    const dept = (displayGroup?.department || (activeDepartment === "bomberos" ? "bomberos" : "pc")) as "pc" | "bomberos";
+    onToggleArrivalGroup?.((displayIdx + 1) as 1 | 2 | 3 | 4, hasArrived, dept, displayGroup?.id);
+  }, [onToggleArrivalGroup, activeGroups, activeDepartment]);
+
+  const handleGroupingFieldChange = useCallback((idx: number, field: string, value: string) => {
+    onGroupEdit(idx, field, value);
+  }, [onGroupEdit]);
 
   const { groupingMode, setGroupingMode, selectedIndices, handleGroupSelected, handleUngroup, toggleSelect, exitGroupingMode } = useGrouping({
     polygonGroups: activeGroups,
-    onGroupFieldChange: onGroupFieldChange as ((idx: number, field: string, value: string) => void) | undefined,
+    onGroupFieldChange: handleGroupingFieldChange,
     onSaveStats,
   });
 

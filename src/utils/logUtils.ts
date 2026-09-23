@@ -14,7 +14,7 @@ export {
 } from "./groupParser";
 export type { GroupData } from "./groupParser";
 
-export { mergeLogs, mergeCustomActivities } from "./logMerge";
+export { mergeLogs, mergeCustomActivities, mergeDepartmentLogs, extractActiveGroups } from "./logMerge";
 
 export {
   getDayStats,

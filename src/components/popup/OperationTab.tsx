@@ -34,16 +34,18 @@ export const OperationTab: React.FC<OperationTabProps> = ({
   const groupsArray = localLog.groups || [];
   const [activeGroupCount, setActiveGroupCount] = useState<number>(() => Math.max(1, groupsArray.length || 1));
 
+  const currentDept = localLog.department || selectedDept || "pc";
+
   const handleGroupFieldChange = (groupIdx: number, field: string, value: string | boolean) => {
     const groups = [...(localLog.groups || [])];
-    while (groups.length <= groupIdx) groups.push({ id: generateUUID(), groupName: "" });
-    groups[groupIdx] = { ...groups[groupIdx], [field]: value };
+    while (groups.length <= groupIdx) groups.push({ id: generateUUID(), groupName: "", department: currentDept });
+    groups[groupIdx] = { ...groups[groupIdx], department: groups[groupIdx]?.department || currentDept, [field]: value };
     onFieldChange("groups", groups as unknown as string | boolean);
   };
 
   const groupAt = (idx: number): GroupLogEntry => {
     const groups = localLog.groups || [];
-    return groups[idx] || { id: generateUUID(), groupName: "" };
+    return groups[idx] || { id: generateUUID(), groupName: "", department: currentDept };
   };
 
   const clearGroupSlot = (groupNum: number) => {
@@ -55,8 +57,6 @@ export const OperationTab: React.FC<OperationTabProps> = ({
     }
     setActiveGroupCount((c) => Math.max(1, c - 1));
   };
-
-  const currentDept = localLog.department || selectedDept || "pc";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>

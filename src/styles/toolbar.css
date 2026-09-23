@@ -178,7 +178,7 @@ input:checked+.slider:before {
 /* Draggable Drawing Toolbar */
 .draw-toolbar-wrapper {
   position: fixed !important;
-  z-index: 150 !important;
+  z-index: 40 !important;
 }
 
 .draw-toolbar {

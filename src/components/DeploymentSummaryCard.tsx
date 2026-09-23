@@ -47,7 +47,7 @@ function computeActivePoints(drawnFeatures: DrawnFeature[], targetDate: string, 
   return drawnFeatures
     .map((f) => {
       const logs = f.dailyLogs?.filter((l) =>
-        l.date === targetDate && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+        l.date === targetDate && (activeDepartment === "mixto" || !activeDepartment || (l.department || "pc") === activeDepartment)
       ) || [];
       const log = mergeLogs(logs);
       if (!log) return null;
@@ -70,7 +70,7 @@ function computeTeams(drawnFeatures: DrawnFeature[], targetDate: string, activeD
   const teams: TeamEntry[] = [];
   drawnFeatures.forEach((f) => {
     const logs = f.dailyLogs?.filter((l) =>
-      l.date === targetDate && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+      l.date === targetDate && (activeDepartment === "mixto" || !activeDepartment || (l.department || "pc") === activeDepartment)
     ) || [];
     const log = mergeLogs(logs);
     if (!log) return;

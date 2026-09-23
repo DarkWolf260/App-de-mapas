@@ -2,6 +2,9 @@ import type { DailyLog, Department, DepartmentView, GroupLogEntry, NovedadEntry,
 import { generateUUID } from "./uuidUtils";
 import { METRIC_FIELDS, getMetricNumeric, COMMISSION_INDEPENDENT } from "../components/popup/metricFields";
 import { buildParentsMap } from "./spatialUtils";
+import { mergeCustomActivities, mergeLogs } from "./logMerge";
+
+export { mergeCustomActivities, mergeLogs };
 
 /**
  * Split comma/slash/plus/and-separated group names into individual names.
@@ -106,59 +109,11 @@ export function getNormalizedGroupList(log?: Partial<DailyLog>): GroupLogEntry[]
           hasArrived: !!g.hasArrived || autoArrived,
           commissionId: g.commissionId || "independiente",
           isVolunteer: !!g.isVolunteer,
-          department: g.department || log.department,
+          department: g.department || log.department || "pc",
           customActivities: g.customActivities,
         });
       }
     });
-  } else {
-    // Support legacy flat fields if any exist
-    const legacyG1 = (log as any).groupName || (log as any).officersCount || (log as any).unitOut;
-    const legacyG2 = (log as any).group2Name || (log as any).group2OfficersCount || (log as any).group2UnitOut;
-    if (legacyG1) {
-      const autoArrivedG1 = isGroupOlderThan48Hours(log.date, (log as any).departureTime);
-      rawEntries.push({
-        id: "g1",
-        groupName: (log as any).groupName || "",
-        managerName: (log as any).managerName || "",
-        managerPhone: (log as any).managerPhone || "",
-        unitOut: (log as any).unitOut || "",
-        departureTime: (log as any).departureTime || "",
-        arrivalTime: (log as any).arrivalTime || "",
-        officersCount: (log as any).officersCount || "",
-        rescuedCount: (log as any).rescuedCount || "",
-        recoveredCount: (log as any).recoveredCount || "",
-        rescuedPetsCount: (log as any).rescuedPetsCount || "",
-        prehospitalCareCount: (log as any).prehospitalCareCount || "",
-        transfersCount: (log as any).transfersCount || "",
-        edanCount: (log as any).edanCount || "",
-        hasArrived: !!(log as any).hasArrived || autoArrivedG1,
-        commissionId: (log as any).commissionId || "independiente",
-        isVolunteer: !!(log as any).isVolunteer,
-      });
-    }
-    if (legacyG2) {
-      const autoArrivedG2 = isGroupOlderThan48Hours(log.date, (log as any).group2DepartureTime);
-      rawEntries.push({
-        id: "g2",
-        groupName: (log as any).group2Name || "",
-        managerName: (log as any).group2ManagerName || "",
-        managerPhone: (log as any).group2ManagerPhone || "",
-        unitOut: (log as any).group2UnitOut || "",
-        departureTime: (log as any).group2DepartureTime || "",
-        arrivalTime: (log as any).group2ArrivalTime || "",
-        officersCount: (log as any).group2OfficersCount || "",
-        rescuedCount: (log as any).group2RescuedCount || "",
-        recoveredCount: (log as any).group2RecoveredCount || "",
-        rescuedPetsCount: (log as any).group2RescuedPetsCount || "",
-        prehospitalCareCount: (log as any).group2PrehospitalCareCount || "",
-        transfersCount: (log as any).group2TransfersCount || "",
-        edanCount: (log as any).group2EdanCount || "",
-        hasArrived: !!(log as any).group2HasArrived || autoArrivedG2,
-        commissionId: (log as any).group2CommissionId || "independiente",
-        isVolunteer: !!(log as any).group2IsVolunteer,
-      });
-    }
   }
 
   const commMetricsMap = new Map<string, { rescued?: string; recovered?: string; pets?: string; prehospital?: string; transfers?: string }>();
@@ -317,108 +272,7 @@ export function getGroupData(log: DailyLog, groupIndex: number): GroupData {
   };
 }
 
-/**
- * Merge two lists of custom activities combining counts for numeric values
- * and concatenating descriptive text.
- */
-export function mergeCustomActivities(listA: CustomActivity[] = [], listB: CustomActivity[] = []): CustomActivity[] {
-  const map = new Map<string, { id: string; name: string; valNum: number; isNum: boolean; valStr: string; descriptions: string[] }>();
 
-  const processItem = (item: CustomActivity) => {
-    const key = item.name.trim().toLowerCase();
-    if (!key) return;
-    const num = parseFloat(item.value);
-    const isNumber = !isNaN(num) && isFinite(num) && String(num) === item.value.trim();
-    const desc = item.description?.trim();
-
-    if (!map.has(key)) {
-      map.set(key, {
-        id: item.id || generateUUID(),
-        name: item.name.trim(),
-        valNum: isNumber ? num : 0,
-        isNum: isNumber,
-        valStr: item.value.trim(),
-        descriptions: desc ? [desc] : [],
-      });
-    } else {
-      const existing = map.get(key)!;
-      if (existing.isNum && isNumber) {
-        existing.valNum += num;
-      } else {
-        existing.isNum = false;
-        existing.valStr = existing.valStr ? `${existing.valStr}, ${item.value.trim()}` : item.value.trim();
-      }
-      if (desc && !existing.descriptions.includes(desc)) {
-        existing.descriptions.push(desc);
-      }
-    }
-  };
-
-  listA.forEach(processItem);
-  listB.forEach(processItem);
-
-  return Array.from(map.values()).map((entry) => ({
-    id: entry.id,
-    name: entry.name,
-    value: entry.isNum ? String(entry.valNum) : entry.valStr,
-    description: entry.descriptions.length > 0 ? entry.descriptions.join(" • ") : undefined,
-  }));
-}
-
-/**
- * Merges multiple daily logs into a single aggregated daily log.
- */
-export function mergeLogs(logs: DailyLog[]): DailyLog | null {
-  if (!logs || logs.length === 0) return null;
-  if (logs.length === 1) {
-    const singleGroups = (logs[0].groups || []).map((g) => ({
-      ...g,
-      department: g.department || logs[0].department || "pc",
-    }));
-    return {
-      ...logs[0],
-      groups: singleGroups,
-    };
-  }
-  const firstGroups = (logs[0].groups || []).map((g) => ({
-    ...g,
-    department: g.department || logs[0].department || "pc",
-  }));
-  const merged: DailyLog = { ...logs[0], groups: firstGroups };
-  const allNovedades: NovedadEntry[] = [...(merged.novedades || [])];
-  const allGroups = [...firstGroups];
-  let mergedCustomActivities = [...(logs[0].customActivities || [])];
-
-  for (let i = 1; i < logs.length; i++) {
-    const other = logs[i];
-    merged.rescuedCount = String((parseInt(merged.rescuedCount || "0", 10) || 0) + (parseInt(other.rescuedCount || "0", 10) || 0));
-    merged.recoveredCount = String((parseInt(merged.recoveredCount || "0", 10) || 0) + (parseInt(other.recoveredCount || "0", 10) || 0));
-    merged.rescuedPetsCount = String((parseInt(merged.rescuedPetsCount || "0", 10) || 0) + (parseInt(other.rescuedPetsCount || "0", 10) || 0));
-    merged.prehospitalCareCount = String((parseInt(merged.prehospitalCareCount || "0", 10) || 0) + (parseInt(other.prehospitalCareCount || "0", 10) || 0));
-    merged.transfersCount = String((parseInt(merged.transfersCount || "0", 10) || 0) + (parseInt(other.transfersCount || "0", 10) || 0));
-    if (other.observations?.trim()) {
-      merged.observations = merged.observations
-        ? `${merged.observations}\n${other.observations.trim()}`
-        : other.observations.trim();
-    }
-    if (other.novedades) allNovedades.push(...other.novedades);
-    if (other.customActivities) {
-      mergedCustomActivities = mergeCustomActivities(mergedCustomActivities, other.customActivities);
-    }
-    if (other.groups) {
-      const otherGroups = other.groups.map((g) => ({
-        ...g,
-        department: g.department || other.department || "bomberos",
-      }));
-      allGroups.push(...otherGroups);
-    }
-  }
-  merged.novedades = allNovedades;
-  merged.groups = allGroups;
-  merged.customActivities = mergedCustomActivities;
-  merged.department = undefined;
-  return merged;
-}
 
 export interface ContainedPointItem {
   point: DrawnFeature;
@@ -561,7 +415,7 @@ export function getDayStats(
 
   for (const f of features) {
     const logs = f.dailyLogs?.filter((l) =>
-      l.date === dateStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+      l.date === dateStr && (activeDepartment === "mixto" || !activeDepartment || (l.department || "pc") === activeDepartment)
     ) || [];
     if (logs.length === 0) continue;
 

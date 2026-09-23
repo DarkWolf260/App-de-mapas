@@ -30,8 +30,9 @@ export function syncDrawnFeaturesToGraphics(
   _currentZoom: number,
   sourceOrLayer: VectorSource | VectorLayer<VectorSource> | any,
   dateStr?: string,
-  _activeDepartment?: DepartmentView,
+  activeDepartment?: DepartmentView,
   _bare?: boolean,
+  precomputedParentsMap?: Record<string | number, string | number>,
 ): void {
   const source: VectorSource = sourceOrLayer instanceof VectorSource
     ? sourceOrLayer
@@ -39,10 +40,12 @@ export function syncDrawnFeaturesToGraphics(
 
   if (!source) return;
 
-  source.clear();
-
-  const { parentsMap } = buildParentsMap(drawnFeatures);
+  const parentsMap = precomputedParentsMap || buildParentsMap(drawnFeatures).parentsMap;
   const format = new GeoJSON();
+
+  // 1. Filtrar las features deseadas que deben estar presentes en el mapa
+  const desiredFeatures: { feat: DrawnFeature; hasOverlay: boolean }[] = [];
+  const desiredIds = new Set<string>();
 
   drawnFeatures.forEach((feat) => {
     if (!feat.geojsonGeometry) return;
@@ -52,35 +55,77 @@ export function syncDrawnFeaturesToGraphics(
 
     if (isHidden || shouldHideNested) return;
 
-    const hasOverlay = isWorkFeatureActive(feat, parentsMap, dateStr, drawnFeatures);
+    const hasOverlay = isWorkFeatureActive(feat, parentsMap, dateStr, drawnFeatures, activeDepartment);
+    desiredFeatures.push({ feat, hasOverlay });
+    desiredIds.add(String(feat.id));
+  });
 
-    try {
-      const parsedFeatures = format.readFeatures(
-        {
-          type: "Feature",
-          geometry: feat.geojsonGeometry,
-          properties: {
-            id: feat.id,
-            title: feat.title || "",
-            color: feat.color || "#f97316",
-            type: feat.type,
-            tipo: "drawn",
-            hasOverlay,
-            feat,
+  // 2. Eliminar features que ya no deben estar en el source
+  const existingFeatures = source.getFeatures();
+  existingFeatures.forEach((existing) => {
+    const tipo = existing.get("tipo");
+    if (tipo !== "inspeccion" && tipo !== "imported") {
+      const id = String(existing.getId() ?? existing.get("id") ?? "");
+      if (!id || !desiredIds.has(id)) {
+        source.removeFeature(existing);
+      }
+    }
+  });
+
+  // 3. Insertar nuevas features o actualizar propiedades in-situ de las existentes
+  desiredFeatures.forEach(({ feat, hasOverlay }) => {
+    if (feat.id == null) return;
+    const existing = source.getFeatureById(feat.id) || source.getFeatureById(String(feat.id));
+
+    if (!existing) {
+      try {
+        const featOrFeats = format.readFeature(
+          {
+            type: "Feature",
+            geometry: feat.geojsonGeometry,
+            properties: {
+              id: feat.id,
+              title: feat.title || "",
+              color: feat.color || "#f97316",
+              type: feat.type,
+              tipo: "drawn",
+              hasOverlay,
+              feat,
+            },
           },
-        },
-        {
-          dataProjection: "EPSG:4326",
-          featureProjection: "EPSG:3857",
+          {
+            dataProjection: "EPSG:4326",
+            featureProjection: "EPSG:3857",
+          }
+        );
+        const singleFeat: any = Array.isArray(featOrFeats) ? featOrFeats[0] : featOrFeats;
+        if (singleFeat) {
+          singleFeat.setId(feat.id);
+          source.addFeature(singleFeat);
         }
-      );
+      } catch (err) {
+        console.warn("[OpenLayers Sync] Error al crear feature:", feat.id, err);
+      }
+    } else {
+      // Actualización diferencial de propiedades
+      let changed = false;
+      if (existing.get("title") !== (feat.title || "")) {
+        existing.set("title", feat.title || "");
+        changed = true;
+      }
+      if (existing.get("color") !== (feat.color || "#f97316")) {
+        existing.set("color", feat.color || "#f97316");
+        changed = true;
+      }
+      if (existing.get("hasOverlay") !== hasOverlay) {
+        existing.set("hasOverlay", hasOverlay);
+        changed = true;
+      }
+      existing.set("feat", feat);
 
-      parsedFeatures.forEach((f) => {
-        f.setId(feat.id);
-        source.addFeature(f);
-      });
-    } catch (err) {
-      console.warn("[OpenLayers Sync] Error al parsear feature:", feat.id, err);
+      if (changed) {
+        existing.changed();
+      }
     }
   });
 }

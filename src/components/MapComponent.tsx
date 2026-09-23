@@ -292,13 +292,13 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
             isMobile
               ? {
                 position: "fixed",
-                zIndex: 150,
+                zIndex: 40,
               }
               : {
                 position: "fixed",
                 left: displayX,
                 top: displayY,
-                zIndex: 150,
+                zIndex: 40,
                 transition: isDragging ? "none" : "left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               }
           }

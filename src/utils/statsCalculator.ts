@@ -30,7 +30,7 @@ export function getDayStats(
 
   for (const f of features) {
     const logs = f.dailyLogs?.filter((l) =>
-      l.date === dateStr && (activeDepartment === "mixto" || !activeDepartment || l.department === activeDepartment || !l.department)
+      l.date === dateStr && (activeDepartment === "mixto" || !activeDepartment || (l.department || "pc") === activeDepartment)
     ) || [];
     if (logs.length === 0) continue;
 
@@ -211,7 +211,8 @@ export function getPeriodStats(
 
   for (const feat of features) {
     for (const log of feat.dailyLogs || []) {
-      if (activeDepartment && activeDepartment !== "mixto" && log.department && log.department !== activeDepartment) continue;
+      const logDept = log.department || "pc";
+      if (activeDepartment && activeDepartment !== "mixto" && logDept !== activeDepartment) continue;
       if (!logHasAnyData(log)) continue;
 
       activeDates.add(log.date);
@@ -308,7 +309,8 @@ export function getPeriodStats(
 
     for (const fItem of allRelevantFeatures) {
       for (const log of fItem.dailyLogs || []) {
-        if (activeDepartment && activeDepartment !== "mixto" && log.department && log.department !== activeDepartment) continue;
+        const logDept = log.department || "pc";
+        if (activeDepartment && activeDepartment !== "mixto" && logDept !== activeDepartment) continue;
         if (!logHasAnyData(log)) continue;
 
         featDates.add(log.date);
@@ -391,7 +393,8 @@ export function getPeriodStats(
 
   for (const feat of features) {
     for (const log of feat.dailyLogs || []) {
-      if (activeDepartment && activeDepartment !== "mixto" && log.department && log.department !== activeDepartment) continue;
+      const logDept = log.department || "pc";
+      if (activeDepartment && activeDepartment !== "mixto" && logDept !== activeDepartment) continue;
       if (!logHasAnyData(log)) continue;
 
       const groupList = getNormalizedGroupList(log).filter((g) => g.groupName.trim());

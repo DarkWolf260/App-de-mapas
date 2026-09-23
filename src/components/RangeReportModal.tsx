@@ -142,11 +142,11 @@ const RangeReportModal: React.FC<RangeReportModalProps> = ({
     return dates.reduce((acc, dateStr) => {
       if (isAllMode) {
         return acc + (allFeatures.some((f) => f.dailyLogs?.some((l) =>
-          l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department) && logHasAnyData(l)
+          l.date === dateStr && (activeDepartment === "mixto" || !activeDepartment || (l.department || "pc") === activeDepartment) && logHasAnyData(l)
         )) ? 1 : 0);
       }
       const logs = feat.dailyLogs?.filter((l) =>
-        l.date === dateStr && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+        l.date === dateStr && (activeDepartment === "mixto" || !activeDepartment || (l.department || "pc") === activeDepartment)
       ) || [];
       return acc + (logs.some((l) => logHasAnyData(l)) ? 1 : 0);
     }, 0);

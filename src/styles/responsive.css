@@ -311,7 +311,7 @@
     transform: translateY(-50%) !important;
     left: auto !important;
     bottom: auto !important;
-    z-index: 150 !important;
+    z-index: 40 !important;
   }
 
   .draw-toolbar {

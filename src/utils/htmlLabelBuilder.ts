@@ -1,4 +1,4 @@
-import type { DrawnFeature, CustomActivity } from "../types";
+import type { DrawnFeature, CustomActivity, DepartmentView } from "../types";
 import { FeatureLogBook } from "./featureLogBook";
 import { isStandardSector } from "./searchUtils";
 
@@ -32,34 +32,34 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
-/**
- * Calcula el centroide geométrico de un polígono (área de trabajo) o coordenada geográfica
- */
-export function getFeatureCoordinates(feat: DrawnFeature): [number, number] | null {
-  if (!feat.geojsonGeometry) return null;
+function getFeatureCoordinates(feat: DrawnFeature): [number, number] | null {
   const geom = feat.geojsonGeometry;
+  if (!geom) return null;
 
-  // Polígonos (Áreas de trabajo) -> Centroide del anillo exterior
-  if (geom.type === "Polygon" && Array.isArray(geom.coordinates) && geom.coordinates[0]?.length > 0) {
-    const ring = geom.coordinates[0];
-    let sumX = 0;
-    let sumY = 0;
-    for (const pt of ring) {
-      sumX += pt[0];
-      sumY += pt[1];
+  if (geom.type === "Point") {
+    const [lng, lat] = geom.coordinates as number[];
+    return [lng, lat];
+  }
+
+  if (geom.type === "Polygon") {
+    const coords = (geom.coordinates as number[][][])[0];
+    if (coords && coords.length > 0) {
+      let sumX = 0;
+      let sumY = 0;
+      coords.forEach(([x, y]) => {
+        sumX += x;
+        sumY += y;
+      });
+      return [sumX / coords.length, sumY / coords.length];
     }
-    return [sumX / ring.length, sumY / ring.length];
   }
 
-  // Puntos individuales (Sitios de trabajo)
-  if (geom.type === "Point" && Array.isArray(geom.coordinates) && geom.coordinates.length >= 2) {
-    return [geom.coordinates[0], geom.coordinates[1]];
-  }
-
-  // Líneas -> Punto medio
-  if (geom.type === "LineString" && Array.isArray(geom.coordinates) && geom.coordinates.length > 0) {
-    const mid = Math.floor(geom.coordinates.length / 2);
-    return [geom.coordinates[mid][0], geom.coordinates[mid][1]];
+  if (geom.type === "LineString") {
+    const coords = geom.coordinates as number[][];
+    if (coords && coords.length > 0) {
+      const mid = coords[Math.floor(coords.length / 2)];
+      return [mid[0], mid[1]];
+    }
   }
 
   return null;
@@ -72,13 +72,20 @@ export function isWorkFeatureActive(
   feat: DrawnFeature,
   _parentsMap?: Record<string | number, string | number>,
   dateStr?: string,
-  _allFeatures?: DrawnFeature[]
+  _allFeatures?: DrawnFeature[],
+  activeDepartment?: DepartmentView,
 ): boolean {
   const rawLogs = feat.dailyLogs || [];
+  const deptFilter = (l: any) => {
+    if (!activeDepartment || activeDepartment === "mixto") return true;
+    const d = l.department || "pc";
+    return d === activeDepartment;
+  };
+
   if (dateStr) {
-    return rawLogs.some((l) => l.date === dateStr && FeatureLogBook.hasAnyData(l));
+    return rawLogs.some((l) => l.date === dateStr && deptFilter(l) && FeatureLogBook.hasAnyData(l));
   }
-  return rawLogs.some((l) => FeatureLogBook.hasAnyData(l));
+  return rawLogs.some((l) => deptFilter(l) && FeatureLogBook.hasAnyData(l));
 }
 
 export const isAreaActive = isWorkFeatureActive;
@@ -90,9 +97,10 @@ export function featureToLabelData(
   feat: DrawnFeature,
   parentsMap?: Record<string | number, string | number>,
   dateStr?: string,
-  allFeatures?: DrawnFeature[]
+  allFeatures?: DrawnFeature[],
+  activeDepartment?: DepartmentView,
 ): CustomLabelData | null {
-  const active = isWorkFeatureActive(feat, parentsMap, dateStr, allFeatures);
+  const active = isWorkFeatureActive(feat, parentsMap, dateStr, allFeatures, activeDepartment);
   if (!active) return null;
 
   const coords = getFeatureCoordinates(feat);
@@ -100,9 +108,16 @@ export function featureToLabelData(
 
   const color = (feat.color || "#38bdf8").trim();
 
-  // Usar exclusivamente las bitácoras añadidas directamente al elemento
+  // Usar exclusivamente las bitácoras del departamento activo
   const rawLogs = feat.dailyLogs || [];
-  const logs = dateStr ? rawLogs.filter((l) => l.date === dateStr) : rawLogs;
+  const logs = rawLogs.filter((l) => {
+    if (dateStr && l.date !== dateStr) return false;
+    if (activeDepartment && activeDepartment !== "mixto") {
+      const d = l.department || "pc";
+      return d === activeDepartment;
+    }
+    return true;
+  });
 
   const teamNames: string[] = [];
   const seenTeams = new Set<string>();
@@ -504,26 +519,13 @@ export function buildAdaptiveLabelString(data: CustomLabelData, zoom: number): s
   return buildCompactPinString(data);
 }
 
-/**
- * Crea el elemento DOM real (para OpenLayers, MapLibre, etc.)
- */
-export function buildHtmlLabelElement(data: CustomLabelData, onClick?: () => void, zoom: number = 16): HTMLDivElement {
-  const container = document.createElement("div");
-  container.className = "custom-html-label-overlay-item";
-  container.style.display = "inline-flex";
-  container.style.alignItems = "center";
-  container.style.justifyContent = "center";
-  container.style.pointerEvents = "auto";
-  container.style.cursor = "pointer";
-  container.innerHTML = buildAdaptiveLabelString(data, zoom).trim();
-
-  const stopProp = (e: Event) => {
-    e.stopPropagation();
-  };
-  container.addEventListener("pointerdown", stopProp);
-  container.addEventListener("mousedown", stopProp);
-  container.addEventListener("touchstart", stopProp, { passive: true });
-  container.addEventListener("dblclick", stopProp);
+export function updateHtmlLabelElementContent(container: HTMLElement, data: CustomLabelData, zoom: number = 16): void {
+  const html = buildAdaptiveLabelString(data, zoom).trim();
+  if (container.dataset.renderedHtml === html) {
+    return;
+  }
+  container.dataset.renderedHtml = html;
+  container.innerHTML = html;
 
   // Activar interactividad para las descripciones de actividades personalizadas
   const activityBadges = container.querySelectorAll<HTMLElement>(".custom-activity-badge[data-act-target]");
@@ -540,6 +542,29 @@ export function buildHtmlLabelElement(data: CustomLabelData, onClick?: () => voi
       });
     }
   });
+}
+
+/**
+ * Crea el elemento DOM real (para OpenLayers, MapLibre, etc.)
+ */
+export function buildHtmlLabelElement(data: CustomLabelData, onClick?: () => void, zoom: number = 16): HTMLDivElement {
+  const container = document.createElement("div");
+  container.className = "custom-html-label-overlay-item";
+  container.style.display = "inline-flex";
+  container.style.alignItems = "center";
+  container.style.justifyContent = "center";
+  container.style.pointerEvents = "auto";
+  container.style.cursor = "pointer";
+
+  updateHtmlLabelElementContent(container, data, zoom);
+
+  const stopProp = (e: Event) => {
+    e.stopPropagation();
+  };
+  container.addEventListener("pointerdown", stopProp);
+  container.addEventListener("mousedown", stopProp);
+  container.addEventListener("touchstart", stopProp, { passive: true });
+  container.addEventListener("dblclick", stopProp);
 
   if (onClick) {
     container.addEventListener("click", (e) => {

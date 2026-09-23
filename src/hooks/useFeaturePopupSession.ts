@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import type { DrawnFeature, DailyLog, Department, DepartmentView, GroupLogEntry } from "../types";
 import { generateUUID } from "../utils/uuidUtils";
 import { FeatureLogBook } from "../utils/featureLogBook";
-import { mergeLogs, logHasAnyData } from "../utils/logUtils";
+import { mergeLogs, mergeDepartmentLogs, logHasAnyData } from "../utils/logUtils";
 
 const EMPTY_LOG: Omit<DailyLog, "date"> = {
   groups: [],
@@ -89,12 +89,20 @@ export function useFeaturePopupSession({
 
     setPcLog(
       existingPc
-        ? { ...existingPc, department: "pc" }
+        ? {
+            ...existingPc,
+            department: "pc",
+            groups: (existingPc.groups || []).map((g) => ({ ...g, department: g.department || "pc" })),
+          }
         : { date: popupEditDate, department: "pc", ...EMPTY_LOG }
     );
     setBomberosLog(
       existingBomberos
-        ? { ...existingBomberos, department: "bomberos" }
+        ? {
+            ...existingBomberos,
+            department: "bomberos",
+            groups: (existingBomberos.groups || []).map((g) => ({ ...g, department: g.department || "bomberos" })),
+          }
         : { date: popupEditDate, department: "bomberos", ...EMPTY_LOG }
     );
 
@@ -116,22 +124,7 @@ export function useFeaturePopupSession({
 
   // Merged log for display in mixto mode
   const mergedLog = useMemo(() => {
-    const hasPcData = logHasAnyData(pcLog);
-    const hasBomberosData = logHasAnyData(bomberosLog);
-
-    if (!hasPcData && !hasBomberosData) {
-      return { date: popupEditDate, ...EMPTY_LOG, groups: [] };
-    }
-    if (hasPcData && !hasBomberosData) {
-      return { ...pcLog, groups: (pcLog.groups || []).map((g) => ({ ...g, department: "pc" })) };
-    }
-    if (!hasPcData && hasBomberosData) {
-      return { ...bomberosLog, groups: (bomberosLog.groups || []).map((g) => ({ ...g, department: "bomberos" })) };
-    }
-    return mergeLogs([
-      { ...pcLog, department: "pc" },
-      { ...bomberosLog, department: "bomberos" },
-    ]) || { date: popupEditDate, ...EMPTY_LOG };
+    return mergeDepartmentLogs(pcLog, bomberosLog, popupEditDate);
   }, [pcLog, bomberosLog, popupEditDate]);
 
   const handleGeneralSave = async () => {
@@ -143,11 +136,32 @@ export function useFeaturePopupSession({
       activeFeat.healthCenterType = localHealthCenterType;
       activeFeat.otherCategoryName = localOtherCategoryName;
 
-      if (onRenameFeature) await onRenameFeature(activeFeat.id, localTitle);
-      if (onUpdateFeatureDescription) await onUpdateFeatureDescription(activeFeat.id, localDescription);
-      if (onUpdateFeatureColor) await onUpdateFeatureColor(activeFeat.id, localColor);
-      if (onUpdateFeatureCollapsed)
+      let hasRunAny = false;
+      if (onRenameFeature && localTitle !== activeFeat.title) {
+        await onRenameFeature(activeFeat.id, localTitle);
+        hasRunAny = true;
+      }
+      if (onUpdateFeatureDescription && localDescription !== (activeFeat.description || "")) {
+        await onUpdateFeatureDescription(activeFeat.id, localDescription);
+        hasRunAny = true;
+      }
+      if (onUpdateFeatureColor && localColor !== (activeFeat.color || "#3b82f6")) {
+        await onUpdateFeatureColor(activeFeat.id, localColor);
+        hasRunAny = true;
+      }
+      if (
+        onUpdateFeatureCollapsed &&
+        (localIsCollapsed !== !!activeFeat.isCollapsed ||
+          String(localCollapsedCount || "") !== String(activeFeat.collapsedCount || ""))
+      ) {
         await onUpdateFeatureCollapsed(activeFeat.id, localIsCollapsed, localCollapsedCount);
+        hasRunAny = true;
+      }
+
+      // Si no cambió título, descripción, color ni colapso pero sí clasificación especial, actualizar estado
+      if (!hasRunAny && onUpdateFeatureDescription) {
+        await onUpdateFeatureDescription(activeFeat.id, localDescription || activeFeat.description || "");
+      }
       setGeneralSaveSuccess(true);
       setTimeout(() => setGeneralSaveSuccess(false), 2000);
     } catch (err) {
@@ -357,24 +371,32 @@ export function useFeaturePopupSession({
     await onRefreshFeatures?.();
   };
 
-  const handleToggleArrivalGroup = async (groupIndex: 1 | 2 | 3 | 4, hasArrived: boolean) => {
+  const handleToggleArrivalGroup = async (
+    groupIndex: 1 | 2 | 3 | 4,
+    hasArrived: boolean,
+    dept?: "pc" | "bomberos",
+    groupId?: string
+  ) => {
     if (!canToggleArrival || !onSaveDailyLog || !activeFeat) return;
-    const deptToUse = selectedDept || "pc";
+    const deptToUse = dept || selectedDept || "pc";
     const targetIdx = groupIndex - 1;
 
+    const updateGroupArrival = (groups: GroupLogEntry[]): GroupLogEntry[] => {
+      const list = [...groups];
+      let idx = -1;
+      if (groupId) idx = list.findIndex((g) => g.id === groupId);
+      if (idx === -1 && targetIdx >= 0 && targetIdx < list.length) idx = targetIdx;
+      if (idx !== -1) list[idx] = { ...list[idx], hasArrived };
+      return list;
+    };
+
     if (deptToUse === "bomberos") {
-      const updatedGroups = [...(bomberosLog.groups || [])];
-      if (targetIdx < updatedGroups.length) {
-        updatedGroups[targetIdx] = { ...updatedGroups[targetIdx], hasArrived };
-      }
+      const updatedGroups = updateGroupArrival(bomberosLog.groups || []);
       const updatedLog = { ...bomberosLog, department: "bomberos" as const, groups: updatedGroups };
       setBomberosLog(updatedLog);
       await onSaveDailyLog(activeFeat.id, updatedLog);
     } else {
-      const updatedGroups = [...(pcLog.groups || [])];
-      if (targetIdx < updatedGroups.length) {
-        updatedGroups[targetIdx] = { ...updatedGroups[targetIdx], hasArrived };
-      }
+      const updatedGroups = updateGroupArrival(pcLog.groups || []);
       const updatedLog = { ...pcLog, department: "pc" as const, groups: updatedGroups };
       setPcLog(updatedLog);
       await onSaveDailyLog(activeFeat.id, updatedLog);

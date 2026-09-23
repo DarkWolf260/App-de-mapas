@@ -1,6 +1,7 @@
 import { supabase } from "../lib/supabaseClient";
 import { fromDatabaseRow, toDatabaseRow, FeatureLogBook } from "../utils/featureLogBook";
 import type { DailyLog } from "../types";
+import { enqueueSyncItem, markItemStatus } from "./syncQueueService";
 
 export async function fetchLogs(date?: string): Promise<Map<string, DailyLog[]>> {
   let query = supabase.from("daily_logs").select("*").range(0, 50000);
@@ -31,31 +32,46 @@ export async function saveDailyLog(featureId: number | string, log: DailyLog): P
   }
   const deptToUse = log.department || "pc";
 
-  const { data: existingRecord } = await supabase
-    .from("daily_logs")
-    .select("id")
-    .eq("feature_id", fidStr)
-    .eq("date", log.date)
-    .eq("department", deptToUse)
-    .maybeSingle();
+  const queueItem = enqueueSyncItem({
+    entityType: "log",
+    entityId: `${fidStr}_${log.date}_${deptToUse}`,
+    action: "upsert",
+    title: `Bitácora ${log.date} (${deptToUse.toUpperCase()})`,
+    details: `Elemento ID: ${fidStr} | ${log.groups?.length || 0} grupos`,
+    payload: { featureId: fidStr, log },
+  });
 
-  const hasData = FeatureLogBook.hasAnyData(log);
+  try {
+    const { data: existingRecord } = await supabase
+      .from("daily_logs")
+      .select("id")
+      .eq("feature_id", fidStr)
+      .eq("date", log.date)
+      .eq("department", deptToUse)
+      .maybeSingle();
 
-  if (!hasData) {
-    if (existingRecord?.id) {
-      const { error } = await supabase.from("daily_logs").delete().eq("id", existingRecord.id);
-      if (error) console.error("[logService] delete error on empty log:", error);
+    const hasData = FeatureLogBook.hasAnyData(log);
+
+    if (!hasData) {
+      if (existingRecord?.id) {
+        const { error } = await supabase.from("daily_logs").delete().eq("id", existingRecord.id);
+        if (error) throw error;
+      }
+    } else {
+      const payload = toDatabaseRow(featureId, log);
+
+      if (existingRecord?.id) {
+        const { error } = await supabase.from("daily_logs").update(payload).eq("id", existingRecord.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("daily_logs").insert(payload);
+        if (error) throw error;
+      }
     }
-    return;
-  }
 
-  const payload = toDatabaseRow(featureId, log);
-
-  if (existingRecord?.id) {
-    const { error } = await supabase.from("daily_logs").update(payload).eq("id", existingRecord.id);
-    if (error) console.error("[logService] update error:", error);
-  } else {
-    const { error } = await supabase.from("daily_logs").insert(payload);
-    if (error) console.error("[logService] insert error:", error);
+    markItemStatus(queueItem.id, "synced");
+  } catch (err: any) {
+    console.warn("[logService] Error al guardar bitácora en Supabase, guardado en cola:", err);
+    markItemStatus(queueItem.id, "failed", err?.message || "Sin conexión con el servidor");
   }
 }

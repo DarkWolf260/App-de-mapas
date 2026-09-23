@@ -156,7 +156,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
               l.date === popupEditDate &&
               (activeDepartment === "mixto"
                 ? true
-                : l.department === (activeDepartment === "bomberos" ? "bomberos" : "pc") || !l.department)
+                : (l.department || "pc") === (activeDepartment === "bomberos" ? "bomberos" : "pc"))
             );
             const novedades = log?.novedades || [];
             const observations = log?.observations?.trim() || "";

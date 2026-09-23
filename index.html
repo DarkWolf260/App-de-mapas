@@ -4,6 +4,25 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <script>
+      (function() {
+        function patchContext(proto) {
+          if (!proto || !proto.getContext) return;
+          var original = proto.getContext;
+          proto.getContext = function(type, options) {
+            if (type === '2d') {
+              var opts = (typeof options === 'object' && options !== null)
+                ? Object.assign({}, options, { willReadFrequently: true })
+                : { willReadFrequently: true };
+              return original.call(this, type, opts);
+            }
+            return original.call(this, type, options);
+          };
+        }
+        if (typeof HTMLCanvasElement !== 'undefined') patchContext(HTMLCanvasElement.prototype);
+        if (typeof OffscreenCanvas !== 'undefined') patchContext(OffscreenCanvas.prototype);
+      })();
+    </script>
     <title>COE La Guaira</title>
     <!-- ArcGIS Maps SDK Theme -->
     <link rel="stylesheet" href="https://js.arcgis.com/5.1/esri/themes/dark/main.css" />

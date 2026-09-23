@@ -45,7 +45,7 @@ export interface MapInitRefs {
 
 export interface MapInitCallbacks {
   onFeatureAdded: (feat: DrawnFeature) => void;
-  onFeatureDeleted: (id: number) => void;
+  onFeatureDeleted: (id: number | string) => void;
   onFeatureClick?: () => void;
   onSelectFeature?: (feat: DrawnFeature | null) => void;
   onToolComplete?: () => void;
@@ -238,12 +238,6 @@ export function useMapInit(
     });
     mapRef.current = map;
 
-    // Rastrear posición del puntero y zoom
-    map.on("pointermove", (evt) => {
-      const lonLat = toLonLat(evt.coordinate);
-      setCoords({ lat: lonLat[1], lng: lonLat[0] });
-    });
-
     const updateZoomAndScale = () => {
       const view = map.getView();
       if (!view) return;
@@ -268,7 +262,10 @@ export function useMapInit(
           matchedFeatures.push(f);
           return false;
         },
-        { hitTolerance: 8 }
+        {
+          hitTolerance: 8,
+          layerFilter: (layer) => layer === featuresLayer || layer === inspeccionesLayer,
+        }
       );
 
       // Priorizar Point/Inspección > LineString > Polygon para evitar que el polígono contenedor capture el clic del punto

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { setToastListener } from "../utils/toast";
-import { AlertTriangle, CheckCircle } from "lucide-react";
+import { setToastListener, type ToastType } from "../utils/toast";
+import { AlertTriangle, CheckCircle, Info } from "lucide-react";
 
 export function Toast() {
-  const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -16,6 +16,30 @@ export function Toast() {
 
   if (!toast) return null;
 
+  const getBackground = () => {
+    switch (toast.type) {
+      case "error":
+        return "rgba(239, 68, 68, 0.95)";
+      case "success":
+        return "rgba(34, 197, 94, 0.95)";
+      case "info":
+      default:
+        return "rgba(30, 41, 59, 0.96)";
+    }
+  };
+
+  const getIcon = () => {
+    switch (toast.type) {
+      case "error":
+        return <AlertTriangle size={16} />;
+      case "success":
+        return <CheckCircle size={16} />;
+      case "info":
+      default:
+        return <Info size={16} style={{ color: "#38bdf8" }} />;
+    }
+  };
+
   return (
     <div
       style={{
@@ -26,7 +50,8 @@ export function Toast() {
         zIndex: 9999,
         padding: "10px 22px",
         borderRadius: "10px",
-        background: toast.type === "error" ? "rgba(239, 68, 68, 0.95)" : "rgba(34, 197, 94, 0.95)",
+        background: getBackground(),
+        border: toast.type === "info" ? "1px solid rgba(56, 189, 248, 0.3)" : "none",
         color: "#fff",
         fontWeight: 700,
         fontSize: "0.78rem",
@@ -39,7 +64,7 @@ export function Toast() {
         pointerEvents: "none",
       }}
     >
-      {toast.type === "error" ? <AlertTriangle size={16} /> : <CheckCircle size={16} />}
+      {getIcon()}
       {toast.message}
     </div>
   );

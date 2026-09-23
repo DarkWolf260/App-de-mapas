@@ -37,7 +37,7 @@ export function useAppState(isAdmin: boolean) {
   const [rangeReportFeature, setRangeReportFeature] = useState<DrawnFeature | 'all' | null>(null);
   const [importPreview, setImportPreview] = useState<ParsedFeature[] | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string; type?: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number | string; title: string; type?: string } | null>(null);
   const [showAccumulated, setShowAccumulated] = useState(false);
   const [showPoints, setShowPoints] = useState(true);
   const [showAreas, setShowAreas] = useState(true);
@@ -118,11 +118,9 @@ export function useAppState(isAdmin: boolean) {
   };
 
   const handleDeleteItem = (id: string | number, _type?: 'point' | 'area') => {
-    if (!isAdmin) return;
-    const numId = Number(id);
     const feat = sortedDrawnFeatures.find((f) => String(f.id) === String(id));
     setDeleteTarget({
-      id: isNaN(numId) ? (id as unknown as number) : numId,
+      id: feat?.id ?? id,
       title: feat?.title || 'este elemento',
       type: feat?.type || _type,
     });

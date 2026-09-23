@@ -21,7 +21,7 @@ function getRelevantLog(feat: DrawnFeature, dateStr: string, activeDept?: Depart
   if (!feat.dailyLogs) return undefined;
   const deptToUse: Department | undefined = activeDept === "mixto" ? undefined : (activeDept as Department);
   const logs = feat.dailyLogs.filter((l) =>
-    l.date === dateStr && (activeDept === "mixto" ? true : (deptToUse ? (l.department === deptToUse || !l.department) : true))
+    l.date === dateStr && (activeDept === "mixto" ? true : (deptToUse ? (l.department || "pc") === deptToUse : true))
   );
   if (logs.length === 0) return undefined;
   if (logs.length === 1) return logs[0];

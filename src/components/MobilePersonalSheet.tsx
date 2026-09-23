@@ -22,7 +22,7 @@ export const MobilePersonalSheet: React.FC<MobilePersonalSheetProps> = ({
     return drawnFeatures
       .map((f) => {
         const logs = f.dailyLogs?.filter((l) =>
-          l.date === selectedDate && (activeDepartment === "mixto" || l.department === activeDepartment || !l.department)
+          l.date === selectedDate && (activeDepartment === "mixto" || !activeDepartment || (l.department || "pc") === activeDepartment)
         ) || [];
         const log = mergeLogs(logs);
         if (!log) return null;

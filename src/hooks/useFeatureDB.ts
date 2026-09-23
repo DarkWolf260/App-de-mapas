@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { initDatabase } from "../db/database";
-import { showToast } from "../utils/toast";
 import {
   supabaseFeatureRepo,
   supabaseLogRepo,
@@ -17,7 +16,8 @@ import type {
   RealtimeChannelStatus,
 } from "../repositories/interfaces";
 import type { DailyLog, DrawnFeature, NovedadEntry } from "../types";
-import { fetchDailyActivity, saveDailyActivity, type DailyActivity } from "../services/activityService";
+import { useNovedades } from "./useNovedades";
+import { useDailyActivity } from "./useDailyActivity";
 
 interface UseFeatureDBOptions {
   featureRepo?: IFeatureRepository;
@@ -37,6 +37,23 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
 
   const [drawnFeatures, setDrawnFeatures] = useState<DrawnFeature[]>([]);
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeChannelStatus>("CONNECTING");
+
+  // Novedades sub-hook
+  const {
+    globalNovedades,
+    setGlobalNovedades,
+    fetchGlobalNovedades,
+    saveGlobalNovedad,
+    deleteGlobalNovedad,
+    updateGlobalNovedad,
+  } = useNovedades({ novedadRepo });
+
+  // Daily Activity sub-hook
+  const {
+    dailyActivity,
+    fetchDailyActivity,
+    saveDailyActivity,
+  } = useDailyActivity();
 
   const fetchFromSupabase = useCallback(async () => {
     try {
@@ -138,7 +155,7 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
       unsubAuth();
       unsubRealtime();
     };
-  }, [fetchFromSupabase, syncLocalRxDBToSupabase, realtime]);
+  }, [fetchFromSupabase, syncLocalRxDBToSupabase, realtime, setGlobalNovedades]);
 
   const handleFeatureAdded = async (feat: DrawnFeature) => {
     setDrawnFeatures((prev) => [...prev.filter((f) => String(f.id) !== String(feat.id)), feat]);
@@ -151,21 +168,25 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
   };
 
   const handleUpdateFeatureDescription = async (id: number | string, desc: string) => {
+    const feat = drawnFeatures.find((f) => String(f.id) === String(id));
     setDrawnFeatures((prev) => prev.map((f) => (String(f.id) === String(id) ? { ...f, description: desc } : f)));
-    await featureRepo.updateDescription(id, desc);
+    await featureRepo.updateDescription(id, desc, feat?.title);
   };
 
   const handleUpdateFeatureColor = async (id: number | string, color: string) => {
+    const feat = drawnFeatures.find((f) => String(f.id) === String(id));
     setDrawnFeatures((prev) => prev.map((f) => (String(f.id) === String(id) ? { ...f, color } : f)));
-    await featureRepo.updateColor(id, color);
+    await featureRepo.updateColor(id, color, feat?.title);
   };
 
   const handleToggleFeatureLock = async (id: number | string, locked: boolean) => {
+    const feat = drawnFeatures.find((f) => String(f.id) === String(id));
     setDrawnFeatures((prev) => prev.map((f) => (String(f.id) === String(id) ? { ...f, locked } : f)));
-    await featureRepo.updateLock(id, locked);
+    await featureRepo.updateLock(id, locked, feat?.title);
   };
 
   const handleUpdateFeatureCollapsed = async (id: number | string, isCollapsed: boolean, collapsedCount: string | number) => {
+    const feat = drawnFeatures.find((f) => String(f.id) === String(id));
     setDrawnFeatures((prev) =>
       prev.map((f) =>
         String(f.id) === String(id)
@@ -173,7 +194,7 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
           : f
       )
     );
-    await featureRepo.updateCollapsed(id, isCollapsed, collapsedCount);
+    await featureRepo.updateCollapsed(id, isCollapsed, collapsedCount, feat?.title);
   };
 
   const handleSaveDailyLog = async (featureId: number | string, log: DailyLog) => {
@@ -181,78 +202,12 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
   };
 
   const handleFeatureDeleted = async (id: number | string) => {
-    setDrawnFeatures((prev) => prev.filter((f) => String(f.id) !== String(id)));
-    await featureRepo.delete(id);
+    const idStr = String(id ?? "").trim();
+    if (!idStr || idStr === "NaN" || idStr === "undefined") return;
+    const feat = drawnFeatures.find((f) => String(f.id) === idStr);
+    setDrawnFeatures((prev) => prev.filter((f) => String(f.id) !== idStr));
+    await featureRepo.delete(id, feat?.title);
   };
-
-  const [globalNovedades, setGlobalNovedades] = useState<NovedadEntry[]>([]);
-
-  const fetchGlobalNovedades = useCallback(async (date: string, department?: string) => {
-    const entries = await novedadRepo.fetch(date, department);
-    setGlobalNovedades(entries);
-  }, [novedadRepo]);
-
-  const saveGlobalNovedad = useCallback(async (entry: NovedadEntry, date: string, department = "pc") => {
-    setGlobalNovedades((prev) => [...prev, entry]);
-    try {
-      await novedadRepo.insert(entry, date, department);
-    } catch {
-      setGlobalNovedades((prev) => prev.filter((n) => n.id !== entry.id));
-      showToast("Error al guardar novedad. Verifique su conexión.", "error");
-    }
-  }, [novedadRepo]);
-
-  const deleteGlobalNovedad = useCallback(async (entryId: string) => {
-    let removed: NovedadEntry | undefined;
-    setGlobalNovedades((prev) => {
-      removed = prev.find((n) => n.id === entryId);
-      return prev.filter((n) => n.id !== entryId);
-    });
-    try {
-      await novedadRepo.delete(entryId);
-    } catch {
-      if (removed) setGlobalNovedades((prev) => [...prev, removed!]);
-      showToast("Error al eliminar novedad. Verifique su conexión.", "error");
-    }
-  }, [novedadRepo]);
-
-  const updateGlobalNovedad = useCallback(async (entryId: string, newText: string, newTime?: string) => {
-    let previous: NovedadEntry | undefined;
-    setGlobalNovedades((prev) => {
-      const idx = prev.findIndex((n) => n.id === entryId);
-      if (idx === -1) return prev;
-      previous = prev[idx];
-      const updated = [...prev];
-      updated[idx] = { ...prev[idx], text: newText, ...(newTime !== undefined ? { time: newTime } : {}) };
-      return updated;
-    });
-    try {
-      const payload: Record<string, string> = { text: newText };
-      if (newTime !== undefined) payload.time = newTime;
-      await novedadRepo.update(entryId, payload);
-    } catch {
-      if (previous) setGlobalNovedades((prev) => prev.map((n) => n.id === entryId ? previous! : n));
-      showToast("Error al editar novedad. Verifique su conexión.", "error");
-    }
-  }, [novedadRepo]);
-
-  const [dailyActivity, setDailyActivity] = useState<DailyActivity>({ date: "", activities: "", description: "" });
-
-  const fetchDailyActivityState = useCallback(async (date: string) => {
-    const entry = await fetchDailyActivity(date);
-    setDailyActivity(entry);
-  }, []);
-
-  const saveDailyActivityState = useCallback(async (date: string, activities: string, description: string) => {
-    const previous = dailyActivity;
-    setDailyActivity({ date, activities, description });
-    try {
-      await saveDailyActivity(date, activities, description);
-    } catch {
-      setDailyActivity(previous);
-      showToast("Error al guardar actividades. Verifique su conexión.", "error");
-    }
-  }, [dailyActivity]);
 
   return {
     drawnFeatures,
@@ -270,8 +225,8 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     deleteGlobalNovedad,
     updateGlobalNovedad,
     dailyActivity,
-    fetchDailyActivity: fetchDailyActivityState,
-    saveDailyActivity: saveDailyActivityState,
+    fetchDailyActivity,
+    saveDailyActivity,
     refreshFeatures: fetchFromSupabase,
     realtimeStatus,
     isRealtimeConnected: realtimeStatus === "SUBSCRIBED",

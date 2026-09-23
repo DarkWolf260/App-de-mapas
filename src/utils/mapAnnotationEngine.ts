@@ -70,7 +70,7 @@ export function filterCandidateLabels(
 
     const hasPersonnel = !!feat && (feat.dailyLogs?.some((l) =>
       (accMode || !dateStr || l.date === dateStr) &&
-      (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) &&
+      (activeDept === "mixto" || !activeDept || (l.department || "pc") === activeDept) &&
       FeatureLogBook.hasAnyData(l)
     ) || false);
 
@@ -108,16 +108,16 @@ export function computeScreenLabels(
     if (feat) {
       if (accMode) {
         hasPersonnel = feat.dailyLogs?.some((l) =>
-          (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) &&
+          (activeDept === "mixto" || !activeDept || (l.department || "pc") === activeDept) &&
           FeatureLogBook.hasAnyData(l)
         ) || false;
       } else {
         const todayLogs = feat.dailyLogs?.filter((l) =>
-          l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
+          l.date === dateStr && (activeDept === "mixto" || !activeDept || (l.department || "pc") === activeDept)
         ) || [];
         if (todayLogs.length > 0) {
           hasPersonnel = todayLogs.some((l) =>
-            (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) &&
+            (activeDept === "mixto" || !activeDept || (l.department || "pc") === activeDept) &&
             FeatureLogBook.hasAnyData(l)
           );
         }
@@ -234,12 +234,12 @@ export function buildHtmlLabels(
 
     const hasPersonnel = accMode
       ? (!!feat && (feat.dailyLogs?.some((l) =>
-        (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) &&
+        (activeDept === "mixto" || !activeDept || (l.department || "pc") === activeDept) &&
         FeatureLogBook.hasAnyData(l)
       ) || false))
       : (!!feat && (feat.dailyLogs?.some((l) =>
         l.date === dateStr &&
-        (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department) &&
+        (activeDept === "mixto" || !activeDept || (l.department || "pc") === activeDept) &&
         FeatureLogBook.hasAnyData(l)
       ) || false));
 
@@ -249,10 +249,10 @@ export function buildHtmlLabels(
       if (item.visible && item.x !== null && item.y !== null) {
         const statLogs = accMode
           ? (feat?.dailyLogs?.filter((l) =>
-            activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department
+            activeDept === "mixto" || !activeDept || (l.department || "pc") === activeDept
           ) || [])
           : (feat?.dailyLogs?.filter((l) =>
-            l.date === dateStr && (activeDept === "mixto" || !activeDept || l.department === activeDept || !l.department)
+            l.date === dateStr && (activeDept === "mixto" || !activeDept || (l.department || "pc") === activeDept)
           ) || []);
 
         let prehospitalCount = 0;

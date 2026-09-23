@@ -76,7 +76,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
           <span className="draw-tool-icon"><Pencil size={14} /></span>
           <span className="draw-tool-label">Vertices</span>
         </button>
-        <button className="draw-tool-btn danger" title="Eliminar seleccionado" onClick={onDelete}>
+        <button className="draw-tool-btn danger" title="Eliminar seleccionado" onClick={() => onDelete()}>
           <span className="draw-tool-icon"><Trash2 size={14} /></span>
           <span className="draw-tool-label">Eliminar</span>
         </button>
