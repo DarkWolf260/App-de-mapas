@@ -16,6 +16,7 @@ import type {
   RealtimeChannelStatus,
 } from "../repositories/interfaces";
 import type { DailyLog, DrawnFeature, NovedadEntry } from "../types";
+import { FeatureLogBook } from "../utils/featureLogBook";
 import { useNovedades } from "./useNovedades";
 import { useDailyActivity } from "./useDailyActivity";
 
@@ -198,6 +199,22 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
   };
 
   const handleSaveDailyLog = async (featureId: number | string, log: DailyLog) => {
+    const fidStr = String(featureId);
+    setDrawnFeatures((prev) =>
+      prev.map((f) => {
+        if (String(f.id) !== fidStr) return f;
+        const existingLogs = f.dailyLogs || [];
+        const deptToMatch = log.department || "pc";
+        const filtered = existingLogs.filter(
+          (l) => !(l.date === log.date && (l.department || "pc") === deptToMatch)
+        );
+        const hasData = FeatureLogBook.hasAnyData(log);
+        return {
+          ...f,
+          dailyLogs: hasData ? [...filtered, log] : filtered,
+        };
+      })
+    );
     await logRepo.save(featureId, log);
   };
 

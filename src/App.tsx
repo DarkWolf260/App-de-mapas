@@ -17,7 +17,6 @@ import { MobileSettingsSheet } from './components/MobileSettingsSheet';
 import { MobileLayersSheet } from './components/MobileLayersSheet';
 import { Sheet } from './components/Sheet';
 import { UserNavMenu } from './components/UserNavMenu';
-import { OfflineQueueButton } from './components/OfflineQueueButton';
 import { Activity, Menu } from 'lucide-react';
 import { fetchInspecciones } from './services/inspeccionService';
 import type { InspeccionRecord } from './types';
@@ -250,9 +249,6 @@ function App() {
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                {isAuthenticated && (isAdmin || isOperador || !!permissions?.edit_map) && (
-                  <OfflineQueueButton canEdit={isAuthenticated} />
-                )}
                 <UserNavMenu />
               </div>
             </div>
@@ -260,9 +256,6 @@ function App() {
 
           {!isMobile && (
             <div style={{ position: "absolute", top: "16px", right: "65px", zIndex: 130, pointerEvents: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
-              {isAuthenticated && (isAdmin || isOperador || !!permissions?.edit_map) && (
-                <OfflineQueueButton canEdit={isAuthenticated} />
-              )}
               <UserNavMenu />
             </div>
           )}

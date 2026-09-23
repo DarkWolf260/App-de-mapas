@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { LogOut, FileSpreadsheet, User, ChevronDown, Shield, MapPin, Cloud } from "lucide-react";
+import React, { useState } from "react";
+import { LogOut, FileSpreadsheet, User, ChevronDown, Shield, MapPin } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-import { subscribeToQueue, type SyncQueueItem } from "../services/syncQueueService";
-import { OfflineQueueModal } from "./OfflineQueueModal";
 
 export interface UserNavMenuProps {
   currentPage?: "mapa" | "consolidado" | "admin";
@@ -11,19 +9,6 @@ export interface UserNavMenuProps {
 export const UserNavMenu: React.FC<UserNavMenuProps> = ({ currentPage = "mapa" }) => {
   const { isAuthenticated, user, isAdmin, isOperador, permissions, logout } = useAuth();
   const [open, setOpen] = useState(false);
-  const [queueModalOpen, setQueueModalOpen] = useState(false);
-  const [queueItems, setQueueItems] = useState<SyncQueueItem[]>([]);
-
-  useEffect(() => {
-    const unsub = subscribeToQueue((items) => {
-      setQueueItems(items);
-    });
-    return unsub;
-  }, []);
-
-  const pendingCount = queueItems.filter(
-    (i) => i.status === "pending" || i.status === "failed" || i.status === "syncing"
-  ).length;
 
   const canEdit = isAuthenticated && (isAdmin || isOperador || !!permissions?.edit_map);
 
@@ -88,20 +73,6 @@ export const UserNavMenu: React.FC<UserNavMenuProps> = ({ currentPage = "mapa" }
           <span className="user-nav-label" style={{ maxWidth: "110px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {user?.email?.split("@")[0]}
           </span>
-          {pendingCount > 0 && (
-            <span
-              style={{
-                background: "#f97316",
-                color: "#ffffff",
-                borderRadius: "10px",
-                padding: "1px 6px",
-                fontSize: "0.62rem",
-                fontWeight: 800,
-              }}
-            >
-              {pendingCount}
-            </span>
-          )}
           <ChevronDown className="user-nav-chevron" size={14} style={{ color: "var(--text-muted)", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
         </button>
 
@@ -242,73 +213,6 @@ export const UserNavMenu: React.FC<UserNavMenuProps> = ({ currentPage = "mapa" }
                 </button>
               )}
 
-              {/* Botón Cola Local de Envíos */}
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  setQueueModalOpen(true);
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "8px 10px",
-                  background: "transparent",
-                  border: "none",
-                  borderRadius: "8px",
-                  color: "#f8fafc",
-                  fontSize: "0.74rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  textAlign: "left",
-                  width: "100%",
-                  fontFamily: "var(--font-sans)",
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(249, 115, 22, 0.12)"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div
-                    style={{
-                      background: pendingCount > 0 ? "rgba(249, 115, 22, 0.2)" : "rgba(255, 255, 255, 0.08)",
-                      border: pendingCount > 0 ? "1px solid rgba(249, 115, 22, 0.4)" : "1px solid rgba(255, 255, 255, 0.1)",
-                      color: pendingCount > 0 ? "#f97316" : "#94a3b8",
-                      padding: "6px",
-                      borderRadius: "6px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Cloud size={15} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, color: pendingCount > 0 ? "#fb923c" : "#f8fafc" }}>
-                      Cola Local de Envíos
-                    </div>
-                    <div style={{ fontSize: "0.62rem", color: "var(--text-muted)" }}>
-                      {pendingCount > 0 ? `${pendingCount} pendiente(s) de subir` : "Todo sincronizado"}
-                    </div>
-                  </div>
-                </div>
-
-                {pendingCount > 0 && (
-                  <span
-                    style={{
-                      background: "rgba(249, 115, 22, 0.25)",
-                      color: "#fb923c",
-                      border: "1px solid rgba(249, 115, 22, 0.4)",
-                      borderRadius: "10px",
-                      padding: "2px 7px",
-                      fontSize: "0.68rem",
-                      fontWeight: 800,
-                    }}
-                  >
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-
               <div style={{ height: "1px", background: "rgba(255, 255, 255, 0.08)", margin: "4px 0" }} />
 
               <button
@@ -344,12 +248,6 @@ export const UserNavMenu: React.FC<UserNavMenuProps> = ({ currentPage = "mapa" }
           </>
         )}
       </div>
-
-      <OfflineQueueModal
-        isOpen={queueModalOpen}
-        onClose={() => setQueueModalOpen(false)}
-        canEdit={canEdit}
-      />
     </>
   );
 };

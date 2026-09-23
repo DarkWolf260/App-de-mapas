@@ -1,5 +1,4 @@
 import { supabase } from "../lib/supabaseClient";
-import { enqueueSyncItem, markItemStatus } from "./syncQueueService";
 
 export interface DailyActivity {
   date: string;
@@ -25,15 +24,6 @@ export async function fetchDailyActivity(date: string): Promise<DailyActivity> {
 }
 
 export async function saveDailyActivity(date: string, activities: string, description: string): Promise<void> {
-  const queueItem = enqueueSyncItem({
-    entityType: "daily_activity",
-    entityId: date,
-    action: "upsert",
-    title: `Actividades del día ${date}`,
-    details: activities ? activities.substring(0, 50) + "..." : "Resumen de jornada",
-    payload: { date, activities, description },
-  });
-
   try {
     const { error } = await supabase
       .from("daily_activities")
@@ -42,10 +32,8 @@ export async function saveDailyActivity(date: string, activities: string, descri
         { onConflict: "date" },
       );
     if (error) throw error;
-    markItemStatus(queueItem.id, "synced");
   } catch (error: any) {
     console.error("[activityService] save error:", error);
-    markItemStatus(queueItem.id, "failed", error?.message || "Sin conexión");
     throw error;
   }
 }

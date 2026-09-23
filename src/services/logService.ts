@@ -1,21 +1,39 @@
 import { supabase } from "../lib/supabaseClient";
 import { fromDatabaseRow, toDatabaseRow, FeatureLogBook } from "../utils/featureLogBook";
 import type { DailyLog } from "../types";
-import { enqueueSyncItem, markItemStatus } from "./syncQueueService";
 
 export async function fetchLogs(date?: string): Promise<Map<string, DailyLog[]>> {
-  let query = supabase.from("daily_logs").select("*").range(0, 50000);
-  if (date) {
-    query = query.eq("date", date);
-  }
-  const { data, error } = await query;
-  if (error) {
-    console.error("[logService] fetch error:", error);
-    return new Map();
+  const allData: any[] = [];
+  let page = 0;
+  const pageSize = 1000;
+  let hasMore = true;
+
+  while (hasMore) {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+    let query = supabase.from("daily_logs").select("*").range(from, to);
+    if (date) {
+      query = query.eq("date", date);
+    }
+    const { data, error } = await query;
+    if (error) {
+      console.error("[logService] fetch error:", error);
+      break;
+    }
+    if (!data || data.length === 0) {
+      hasMore = false;
+    } else {
+      allData.push(...data);
+      if (data.length < pageSize) {
+        hasMore = false;
+      } else {
+        page++;
+      }
+    }
   }
 
   const logsMap = new Map<string, DailyLog[]>();
-  (data || []).forEach((row: any) => {
+  allData.forEach((row: any) => {
     const fid = String(row.feature_id);
     const log = fromDatabaseRow(row);
     if (!logsMap.has(fid)) logsMap.set(fid, []);
@@ -31,15 +49,6 @@ export async function saveDailyLog(featureId: number | string, log: DailyLog): P
     return;
   }
   const deptToUse = log.department || "pc";
-
-  const queueItem = enqueueSyncItem({
-    entityType: "log",
-    entityId: `${fidStr}_${log.date}_${deptToUse}`,
-    action: "upsert",
-    title: `Bitácora ${log.date} (${deptToUse.toUpperCase()})`,
-    details: `Elemento ID: ${fidStr} | ${log.groups?.length || 0} grupos`,
-    payload: { featureId: fidStr, log },
-  });
 
   try {
     const { data: existingRecord } = await supabase
@@ -68,10 +77,7 @@ export async function saveDailyLog(featureId: number | string, log: DailyLog): P
         if (error) throw error;
       }
     }
-
-    markItemStatus(queueItem.id, "synced");
   } catch (err: any) {
-    console.warn("[logService] Error al guardar bitácora en Supabase, guardado en cola:", err);
-    markItemStatus(queueItem.id, "failed", err?.message || "Sin conexión con el servidor");
+    console.warn("[logService] Error al guardar bitácora en Supabase:", err);
   }
 }
