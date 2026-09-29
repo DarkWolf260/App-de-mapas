@@ -250,17 +250,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* ── BARRA FLOTANTE DE BÚSQUEDA (SIEMPRE VISIBLE EN EL STACK) ── */}
       <div className="sidebar-search-card">
         <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
-          <Search
-            className="sidebar-search-icon"
-            size={15}
-            style={{ cursor: coords && onGoToCoords ? 'pointer' : 'default' }}
+          <span
+            style={{ display: "inline-flex", alignItems: "center", cursor: coords && onGoToCoords ? 'pointer' : 'default' }}
             title={coords && onGoToCoords ? 'Ir a las coordenadas' : undefined}
             onClick={() => {
               if (coords && onGoToCoords) {
                 onGoToCoords(coords.lat, coords.lon);
               }
             }}
-          />
+          >
+            <Search className="sidebar-search-icon" size={15} />
+          </span>
           <input
             type="text"
             placeholder="Buscar áreas, puntos o coords..."

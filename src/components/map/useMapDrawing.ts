@@ -76,6 +76,108 @@ export const useMapDrawing = (opts: UseMapDrawingOptions) => {
     [canEditMap, layerVisibility.sketch, drawnFeatures]
   );
 
+  // Referencia para rastrear los estados previos de bloqueo de cada elemento
+  const prevLockStatesRef = useRef<Record<string, boolean>>({});
+
+  // Sincronización automática de selección cuando un elemento se bloquea o desbloquea
+  useEffect(() => {
+    if (!canEditMap || !layerVisibility.sketch) {
+      if (selectedGraphic) setSelectedGraphic(null);
+      return;
+    }
+
+    const prevLocks = prevLockStatesRef.current;
+    let newlyUnlockedFeat: DrawnFeature | null = null;
+    let newlyLockedFeatId: string | null = null;
+
+    // Detectar transiciones de bloqueo / desbloqueo
+    for (const f of drawnFeatures) {
+      const fid = String(f.id);
+      const prevLocked = prevLocks[fid];
+      const isLocked = !!f.locked;
+
+      if (prevLocked === true && !isLocked) {
+        newlyUnlockedFeat = f;
+      } else if (prevLocked === false && isLocked) {
+        newlyLockedFeatId = fid;
+      }
+    }
+
+    // Actualizar mapa de estados para la siguiente renderización
+    const nextLocks: Record<string, boolean> = {};
+    for (const f of drawnFeatures) {
+      nextLocks[String(f.id)] = !!f.locked;
+    }
+    prevLockStatesRef.current = nextLocks;
+
+    // 1. Si un elemento acaba de ser desbloqueado:
+    // Lo seleccionamos automáticamente para que la barra de herramientas muestre
+    // de inmediato las opciones de editar ("Mover", "Vértices") y eliminar
+    if (newlyUnlockedFeat) {
+      setSelectedGraphic(newlyUnlockedFeat);
+      setActiveTool(null);
+      if (customPopup?.feat && String(customPopup.feat.id) === String(newlyUnlockedFeat.id)) {
+        setCustomPopup({ mapPoint: customPopup.mapPoint, feat: newlyUnlockedFeat });
+      }
+      return;
+    }
+
+    // 2. Si un elemento acaba de ser bloqueado:
+    // Si estaba seleccionado, se deselecciona para ocultar las opciones de editar y eliminar
+    if (newlyLockedFeatId) {
+      if (selectedGraphic && String(selectedGraphic.id) === newlyLockedFeatId) {
+        setSelectedGraphic(null);
+      }
+      if (customPopup?.feat && String(customPopup.feat.id) === newlyLockedFeatId) {
+        const lockedFeat = drawnFeatures.find((f) => String(f.id) === newlyLockedFeatId);
+        if (lockedFeat) {
+          setCustomPopup({ mapPoint: customPopup.mapPoint, feat: lockedFeat });
+        }
+      }
+      return;
+    }
+
+    // 3. Si hay un popup activo para un feature, mantener sincronizada la selección con su estado actual
+    if (!activeTool && customPopup?.feat) {
+      const currentFeat = drawnFeatures.find((f) => String(f.id) === String(customPopup.feat.id));
+      if (currentFeat) {
+        if (currentFeat.locked) {
+          if (selectedGraphic && String(selectedGraphic.id) === String(currentFeat.id)) {
+            setSelectedGraphic(null);
+          }
+        } else {
+          if (!selectedGraphic || String(selectedGraphic.id) !== String(currentFeat.id)) {
+            setSelectedGraphic(currentFeat);
+          }
+        }
+      }
+      return;
+    }
+
+    // 4. Si selectedGraphic está activo pero ya no existe o pasó a estar bloqueado en drawnFeatures
+    if (selectedGraphic) {
+      const currentFeat = drawnFeatures.find((f) => String(f.id) === String(selectedGraphic.id));
+      if (!currentFeat || currentFeat.locked) {
+        setSelectedGraphic(null);
+      } else if (
+        currentFeat.title !== selectedGraphic.title ||
+        currentFeat.color !== selectedGraphic.color ||
+        currentFeat.locked !== selectedGraphic.locked ||
+        currentFeat.geojsonGeometry !== selectedGraphic.geojsonGeometry
+      ) {
+        setSelectedGraphic(currentFeat);
+      }
+    }
+  }, [
+    drawnFeatures,
+    customPopup,
+    canEditMap,
+    layerVisibility.sketch,
+    selectedGraphic,
+    activeTool,
+    setCustomPopup,
+  ]);
+
   // 1. Manejo de Herramientas de Dibujo
   useEffect(() => {
     const map = mapRef.current;

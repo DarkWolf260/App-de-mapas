@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, NovedadEntry } from "../types";
 import { computeContainedItems } from "../utils/spatialUtils";
-import { Lock, Unlock, FileText, Settings, History, Info, X, Trash2 } from "lucide-react";
+import { Lock, Unlock, FileText, Settings, History, Info, X } from "lucide-react";
 import type { UserPermissions } from "../services/adminUsersService";
 import { TAB_BTN_BASE } from "./popup/popupStyles";
 import { GeneralTab } from "./popup/GeneralTab";
@@ -208,27 +208,6 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
               >
                 {activeFeat.locked ? <Lock size={14} /> : <Unlock size={14} style={{ opacity: 0.4 }} />}
               </button>
-              {!activeFeat.locked && onDeleteFeature && (
-                <button
-                  onClick={() => onDeleteFeature(activeFeat)}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "#ef4444",
-                    opacity: 0.6,
-                    cursor: "pointer",
-                    padding: "2px",
-                    display: "flex",
-                    alignItems: "center",
-                    transition: "opacity 0.15s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.6")}
-                  title="Eliminar este elemento"
-                >
-                  <Trash2 size={13} />
-                </button>
-              )}
             </div>
           )}
         </div>
