@@ -1,5 +1,5 @@
 import React from "react";
-import { Shield, Users, Database, Layers, RefreshCw } from "lucide-react";
+import { Shield, Users, Layers, RefreshCw } from "lucide-react";
 import { UserNavMenu } from "../UserNavMenu";
 
 export type AdminSection = "usuarios" | "capas";
@@ -11,22 +11,6 @@ interface AdminHeaderProps {
   refreshing: boolean;
   onRefresh: () => void;
 }
-
-const TAB_BUTTON_STYLE = (active: boolean): React.CSSProperties => ({
-  background: active ? "var(--accent-orange)" : "transparent",
-  color: active ? "#fff" : "var(--text-muted)",
-  border: "none",
-  borderRadius: "6px",
-  padding: "5px 12px",
-  fontSize: "0.72rem",
-  fontWeight: 700,
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  gap: "6px",
-  transition: "all 0.15s ease",
-  fontFamily: "var(--sans-font)",
-});
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({
   activeSection,

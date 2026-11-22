@@ -22,7 +22,7 @@ import { DeleteUserModal } from "./admin/DeleteUserModal";
 import { EditUserModal } from "./admin/EditUserModal";
 
 export const AdminPanelPage: React.FC = () => {
-  const { user, isAdmin, isAuthenticated, loading } = useAuth();
+  const { user, isAdmin, isAuthenticated, isSuspended, loading } = useAuth();
 
   const [activeSection, setActiveSection] = useState<AdminSection>("usuarios");
   const [featuresCount, setFeaturesCount] = useState(0);
@@ -45,7 +45,7 @@ export const AdminPanelPage: React.FC = () => {
       let liveOk = false;
       let liveLatency = 0;
       try {
-        const { error } = await supabase.from("user_roles").select("id", { count: "exact", head: true });
+        const { error } = await supabase.from("user_profiles").select("id", { count: "exact", head: true });
         liveLatency = Math.round(performance.now() - pingStart);
         liveOk = !error || error.code === "PGRST116" || error.code === "42501";
       } catch {
@@ -175,7 +175,7 @@ export const AdminPanelPage: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated || !isAdmin) {
+  if (!isAuthenticated || !isAdmin || isSuspended) {
     return (
       <div
         style={{

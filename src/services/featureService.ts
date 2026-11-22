@@ -48,6 +48,7 @@ export async function upsertFeature(feat: DrawnFeature): Promise<void> {
     if (error) throw error;
   } catch (err: any) {
     console.warn("[featureService] Error al subir a Supabase:", err);
+    throw err;
   }
 }
 
@@ -61,6 +62,7 @@ export async function updateFeatureTitle(id: number | string, title: string): Pr
     if (error) throw error;
   } catch (err: any) {
     console.warn("[featureService] Error al actualizar título en Supabase:", err);
+    throw err;
   }
 }
 
@@ -78,6 +80,7 @@ export async function updateFeatureDescription(
     if (error) throw error;
   } catch (err: any) {
     console.warn("[featureService] Error al actualizar descripción en Supabase:", err);
+    throw err;
   }
 }
 
@@ -95,6 +98,7 @@ export async function updateFeatureColor(
     if (error) throw error;
   } catch (err: any) {
     console.warn("[featureService] Error al actualizar color en Supabase:", err);
+    throw err;
   }
 }
 
@@ -112,6 +116,7 @@ export async function updateFeatureLock(
     if (error) throw error;
   } catch (err: any) {
     console.warn("[featureService] Error al actualizar bloqueo en Supabase:", err);
+    throw err;
   }
 }
 
@@ -136,6 +141,7 @@ export async function updateFeatureCollapsed(
     if (error) throw error;
   } catch (err: any) {
     console.warn("[featureService] Error al actualizar colapso en Supabase:", err);
+    throw err;
   }
 }
 
@@ -155,6 +161,7 @@ export async function deleteFeature(
     if (error) throw error;
   } catch (err: any) {
     console.warn("[featureService] Error al eliminar en Supabase:", err);
+    throw err;
   }
 }
 

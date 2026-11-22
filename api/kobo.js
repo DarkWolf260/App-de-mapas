@@ -3,10 +3,21 @@ export const config = {
 };
 
 export default async function handler(request) {
+  const token = process.env.KOBO || process.env.KOBO_API_TOKEN;
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Kobo API token not configured' }), {
+      status: 500,
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+  }
+
   const url = new URL(request.url);
-  const limit = url.searchParams.get('limit') || '100';
-  const start = url.searchParams.get('start') || '0';
-  const token = process.env.VITE_KOBOTOOLBOX_KEY || '6fbdfea0d2369d401459bf9a3a9fed106b456015';
+  const rawLimit = parseInt(url.searchParams.get('limit') || '1000', 10);
+  const rawStart = parseInt(url.searchParams.get('start') || '0', 10);
+  const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 1000) : 1000;
+  const start = Number.isFinite(rawStart) ? Math.max(rawStart, 0) : 0;
 
   const targetUrl = `https://kobo.unocha.org/api/v2/assets/a4AhiiXAhSZTwutXt2jTY3/data.json?limit=${limit}&start=${start}`;
 
@@ -22,7 +33,6 @@ export default async function handler(request) {
       status: koboRes.status,
       headers: {
         'content-type': 'application/json',
-        'access-control-allow-origin': '*',
         'cache-control': 'public, max-age=180, s-maxage=300, stale-while-revalidate=600',
       },
     });
@@ -31,7 +41,6 @@ export default async function handler(request) {
       status: 500,
       headers: {
         'content-type': 'application/json',
-        'access-control-allow-origin': '*',
       },
     });
   }

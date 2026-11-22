@@ -1,5 +1,4 @@
 import { supabase } from "../lib/supabaseClient";
-import { initDatabase } from "../db/database";
 
 export async function migrateRxDBToSupabase(onAfterMigration: () => Promise<void>): Promise<void> {
   try {
@@ -8,6 +7,7 @@ export async function migrateRxDBToSupabase(onAfterMigration: () => Promise<void
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
 
+    const { initDatabase } = await import("../db/database");
     const rxDb = await initDatabase();
     const rxDocs = await rxDb.features.find().exec();
     if (!rxDocs || rxDocs.length === 0) {

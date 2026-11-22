@@ -21,7 +21,10 @@ export const useMapInspecciones = ({
   const [selectedColorFilter, setSelectedColorFilter] = useState<"all" | "rojo" | "amarillo" | "verde">("all");
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>("");
 
+  const isInspeccionesVisible = !!layerVisibility.inspecciones;
+
   useEffect(() => {
+    if (!isInspeccionesVisible || inspeccionesRecords.length > 0) return;
     let isMounted = true;
     fetchInspecciones().then((records) => {
       if (isMounted) {
@@ -31,7 +34,7 @@ export const useMapInspecciones = ({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isInspeccionesVisible, inspeccionesRecords.length]);
 
   const filteredInspeccionesRecords = useMemo(() => {
     return inspeccionesRecords.filter((r) => {

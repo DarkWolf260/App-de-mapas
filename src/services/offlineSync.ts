@@ -1,8 +1,8 @@
-import { initDatabase } from "../db/database";
 import type { DrawnFeature } from "../types";
 
 export async function saveFeatureToLocalRxDB(feat: DrawnFeature): Promise<void> {
   try {
+    const { initDatabase } = await import("../db/database");
     const db = await initDatabase();
     const idStr = String(feat.id);
     const existing = await db.features.findOne(idStr).exec();
@@ -32,6 +32,7 @@ export async function saveFeatureToLocalRxDB(feat: DrawnFeature): Promise<void> 
 
 export async function deleteFeatureFromLocalRxDB(id: string | number): Promise<void> {
   try {
+    const { initDatabase } = await import("../db/database");
     const db = await initDatabase();
     const idStr = String(id);
     const existing = await db.features.findOne(idStr).exec();

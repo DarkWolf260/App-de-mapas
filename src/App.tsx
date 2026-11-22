@@ -25,16 +25,26 @@ import './App.css';
 function App() {
   const activeCity = 'venezuela';
   const { isAdmin, isOperador, isAuthenticated, isSuspended, permissions, loading } = useAuth();
-  const canEdit = isAuthenticated && (isAdmin || isOperador || !!permissions?.edit_map);
-  const state = useAppState(canEdit);
+  const canEditMap = isAuthenticated && !isSuspended && (isAdmin || !!permissions?.edit_map);
+  const canEditLogs = isAuthenticated && !isSuspended && (isAdmin || !!permissions?.edit_logs);
+  const state = useAppState(canEditMap);
+  const { setSidebarCollapsed, setActiveDepartment } = state;
 
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
   const [mobilePanel, setMobilePanel] = useState<'personal' | 'settings' | 'layers' | null>(null);
   const [inspeccionesRecords, setInspeccionesRecords] = useState<InspeccionRecord[]>([]);
+  const isInspeccionesEnabled = !!state.layerVisibility.inspecciones;
 
   useEffect(() => {
-    fetchInspecciones().then((records) => setInspeccionesRecords(records));
-  }, []);
+    if (!isInspeccionesEnabled || inspeccionesRecords.length > 0) return;
+    let isMounted = true;
+    fetchInspecciones().then((records) => {
+      if (isMounted) setInspeccionesRecords(records);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [isInspeccionesEnabled, inspeccionesRecords.length]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
@@ -44,10 +54,10 @@ function App() {
 
   useEffect(() => {
     if (isMobile) {
-      state.setSidebarCollapsed(true);
-      state.setActiveDepartment('mixto');
+      setSidebarCollapsed(true);
+      setActiveDepartment('mixto');
     }
-  }, [isMobile]);
+  }, [isMobile, setSidebarCollapsed, setActiveDepartment]);
 
   // Operational Context Value
   const operationalValue: OperationalContextValue = useMemo(() => ({
@@ -60,14 +70,6 @@ function App() {
     handleUpdateFeatureCollapsed: state.handleUpdateFeatureCollapsed,
     handleSaveDailyLog: state.handleSaveDailyLog,
     handleFeatureDeleted: state.handleFeatureDeleted,
-    globalNovedades: state.globalNovedades,
-    fetchGlobalNovedades: state.fetchGlobalNovedades,
-    saveGlobalNovedad: state.saveGlobalNovedad,
-    deleteGlobalNovedad: state.deleteGlobalNovedad,
-    updateGlobalNovedad: state.updateGlobalNovedad,
-    dailyActivity: state.dailyActivity,
-    fetchDailyActivity: state.fetchDailyActivity,
-    saveDailyActivity: state.saveDailyActivity,
     refreshFeatures: state.refreshFeatures,
     realtimeStatus: state.realtimeStatus,
     isRealtimeConnected: state.isRealtimeConnected,
@@ -81,14 +83,6 @@ function App() {
     state.handleUpdateFeatureCollapsed,
     state.handleSaveDailyLog,
     state.handleFeatureDeleted,
-    state.globalNovedades,
-    state.fetchGlobalNovedades,
-    state.saveGlobalNovedad,
-    state.deleteGlobalNovedad,
-    state.updateGlobalNovedad,
-    state.dailyActivity,
-    state.fetchDailyActivity,
-    state.saveDailyActivity,
     state.refreshFeatures,
     state.realtimeStatus,
     state.isRealtimeConnected,
@@ -358,17 +352,12 @@ function App() {
               activeDepartment={state.activeDepartment}
               selectedDate={state.selectedDate}
               onSelectedDateChange={state.setSelectedDate}
-              globalNovedades={state.globalNovedades}
-              onFetchGlobalNovedades={state.fetchGlobalNovedades}
-              onSaveGlobalNovedad={state.saveGlobalNovedad}
-              onDeleteGlobalNovedad={state.deleteGlobalNovedad}
-              onUpdateGlobalNovedad={state.updateGlobalNovedad}
               onRefreshFeatures={state.refreshFeatures}
               onNavigateToFeature={(feat) => {
                 state.setRangeReportFeature(null);
                 state.setZoomToFeature(feat);
               }}
-              canEdit={isAuthenticated}
+              canEdit={canEditLogs}
             />
           )}
 

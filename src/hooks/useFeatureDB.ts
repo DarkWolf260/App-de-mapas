@@ -1,29 +1,24 @@
-import { useState, useEffect, useCallback } from "react";
-import { initDatabase } from "../db/database";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   supabaseFeatureRepo,
   supabaseLogRepo,
-  supabaseNovedadRepo,
   supabaseMigrationRepo,
   supabaseRealtime,
 } from "../repositories/supabaseImpl";
 import type {
   IFeatureRepository,
   ILogRepository,
-  INovedadRepository,
   IMigrationRepository,
   IRealtimeProvider,
   RealtimeChannelStatus,
 } from "../repositories/interfaces";
-import type { DailyLog, DrawnFeature, NovedadEntry } from "../types";
+import type { DailyLog, DrawnFeature } from "../types";
 import { FeatureLogBook } from "../utils/featureLogBook";
-import { useNovedades } from "./useNovedades";
-import { useDailyActivity } from "./useDailyActivity";
+import { showToast } from "../utils/toast";
 
 interface UseFeatureDBOptions {
   featureRepo?: IFeatureRepository;
   logRepo?: ILogRepository;
-  novedadRepo?: INovedadRepository;
   migrationRepo?: IMigrationRepository;
   realtime?: IRealtimeProvider;
   selectedDate?: string;
@@ -32,29 +27,12 @@ interface UseFeatureDBOptions {
 export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
   const featureRepo = opts.featureRepo ?? supabaseFeatureRepo;
   const logRepo = opts.logRepo ?? supabaseLogRepo;
-  const novedadRepo = opts.novedadRepo ?? supabaseNovedadRepo;
   const migrationRepo = opts.migrationRepo ?? supabaseMigrationRepo;
   const realtime = opts.realtime ?? supabaseRealtime;
 
   const [drawnFeatures, setDrawnFeatures] = useState<DrawnFeature[]>([]);
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeChannelStatus>("CONNECTING");
-
-  // Novedades sub-hook
-  const {
-    globalNovedades,
-    setGlobalNovedades,
-    fetchGlobalNovedades,
-    saveGlobalNovedad,
-    deleteGlobalNovedad,
-    updateGlobalNovedad,
-  } = useNovedades({ novedadRepo });
-
-  // Daily Activity sub-hook
-  const {
-    dailyActivity,
-    fetchDailyActivity,
-    saveDailyActivity,
-  } = useDailyActivity();
+  const refetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchFromSupabase = useCallback(async () => {
     try {
@@ -63,6 +41,7 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
 
       if (features.length === 0) {
         try {
+          const { initDatabase } = await import("../db/database");
           const rxDb = await initDatabase();
           const rxDocs = await rxDb.features.find().exec();
           if (rxDocs && rxDocs.length > 0) {
@@ -97,6 +76,16 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     }
   }, [featureRepo, logRepo]);
 
+  const scheduleRefetch = useCallback(() => {
+    if (refetchTimerRef.current) {
+      clearTimeout(refetchTimerRef.current);
+    }
+    refetchTimerRef.current = setTimeout(() => {
+      refetchTimerRef.current = null;
+      fetchFromSupabase();
+    }, 350);
+  }, [fetchFromSupabase]);
+
   const syncLocalRxDBToSupabase = useCallback(async () => {
     await migrationRepo.run(fetchFromSupabase);
   }, [fetchFromSupabase, migrationRepo]);
@@ -115,36 +104,12 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     const unsubRealtime = realtime.subscribeToChanges(
       (payload) => {
         if (!payload || !payload.table) {
-          fetchFromSupabase();
+          scheduleRefetch();
           return;
         }
 
         if (payload.table === "drawn_features" || payload.table === "daily_logs") {
-          fetchFromSupabase();
-        } else if (payload.table === "novedades") {
-          if (payload.eventType === "INSERT" && payload.new && payload.new.id) {
-            setGlobalNovedades((prev) => {
-              if (prev.some((n) => n.id === payload.new.id)) return prev;
-              const entry: NovedadEntry = {
-                id: payload.new.id,
-                timestamp: payload.new.timestamp || payload.new.created_at || "",
-                time: payload.new.time || "",
-                text: payload.new.text || "",
-                type: payload.new.type || "novedad",
-              };
-              return [...prev, entry];
-            });
-          } else if (payload.eventType === "UPDATE" && payload.new && payload.new.id) {
-            setGlobalNovedades((prev) =>
-              prev.map((n) =>
-                n.id === payload.new.id
-                  ? { ...n, text: payload.new.text ?? n.text, time: payload.new.time ?? n.time }
-                  : n
-              )
-            );
-          } else if (payload.eventType === "DELETE" && payload.old && payload.old.id) {
-            setGlobalNovedades((prev) => prev.filter((n) => n.id !== payload.old.id));
-          }
+          scheduleRefetch();
         }
       },
       (status) => {
@@ -153,37 +118,65 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     );
 
     return () => {
+      if (refetchTimerRef.current) {
+        clearTimeout(refetchTimerRef.current);
+        refetchTimerRef.current = null;
+      }
       unsubAuth();
       unsubRealtime();
     };
-  }, [fetchFromSupabase, syncLocalRxDBToSupabase, realtime, setGlobalNovedades]);
+  }, [fetchFromSupabase, scheduleRefetch, syncLocalRxDBToSupabase, realtime]);
+
+  const runMutation = async (action: () => Promise<void>, errorMsg: string) => {
+    try {
+      await action();
+    } catch {
+      showToast(errorMsg, "error");
+      await fetchFromSupabase();
+    }
+  };
 
   const handleFeatureAdded = async (feat: DrawnFeature) => {
     setDrawnFeatures((prev) => [...prev.filter((f) => String(f.id) !== String(feat.id)), feat]);
-    await featureRepo.upsert(feat);
+    await runMutation(
+      () => featureRepo.upsert(feat),
+      "No se pudo guardar el elemento en el servidor. Verifica tus permisos o conexión."
+    );
   };
 
   const handleRenameFeature = async (id: number | string, title: string) => {
     setDrawnFeatures((prev) => prev.map((f) => (String(f.id) === String(id) ? { ...f, title } : f)));
-    await featureRepo.updateTitle(id, title);
+    await runMutation(
+      () => featureRepo.updateTitle(id, title),
+      "No se pudo actualizar el nombre. Verifica tus permisos."
+    );
   };
 
   const handleUpdateFeatureDescription = async (id: number | string, desc: string) => {
     const feat = drawnFeatures.find((f) => String(f.id) === String(id));
     setDrawnFeatures((prev) => prev.map((f) => (String(f.id) === String(id) ? { ...f, description: desc } : f)));
-    await featureRepo.updateDescription(id, desc, feat?.title);
+    await runMutation(
+      () => featureRepo.updateDescription(id, desc, feat?.title),
+      "No se pudo actualizar la descripción. Verifica tus permisos."
+    );
   };
 
   const handleUpdateFeatureColor = async (id: number | string, color: string) => {
     const feat = drawnFeatures.find((f) => String(f.id) === String(id));
     setDrawnFeatures((prev) => prev.map((f) => (String(f.id) === String(id) ? { ...f, color } : f)));
-    await featureRepo.updateColor(id, color, feat?.title);
+    await runMutation(
+      () => featureRepo.updateColor(id, color, feat?.title),
+      "No se pudo actualizar el color. Verifica tus permisos."
+    );
   };
 
   const handleToggleFeatureLock = async (id: number | string, locked: boolean) => {
     const feat = drawnFeatures.find((f) => String(f.id) === String(id));
     setDrawnFeatures((prev) => prev.map((f) => (String(f.id) === String(id) ? { ...f, locked } : f)));
-    await featureRepo.updateLock(id, locked, feat?.title);
+    await runMutation(
+      () => featureRepo.updateLock(id, locked, feat?.title),
+      "No se pudo cambiar el bloqueo del elemento. Verifica tus permisos."
+    );
   };
 
   const handleUpdateFeatureCollapsed = async (id: number | string, isCollapsed: boolean, collapsedCount: string | number) => {
@@ -195,7 +188,10 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
           : f
       )
     );
-    await featureRepo.updateCollapsed(id, isCollapsed, collapsedCount, feat?.title);
+    await runMutation(
+      () => featureRepo.updateCollapsed(id, isCollapsed, collapsedCount, feat?.title),
+      "No se pudo actualizar el estado de colapso. Verifica tus permisos."
+    );
   };
 
   const handleSaveDailyLog = async (featureId: number | string, log: DailyLog) => {
@@ -215,7 +211,10 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
         };
       })
     );
-    await logRepo.save(featureId, log);
+    await runMutation(
+      () => logRepo.save(featureId, log),
+      "No se pudo guardar la bitácora. Verifica tus permisos o si la fecha está restringida."
+    );
   };
 
   const handleFeatureDeleted = async (id: number | string) => {
@@ -223,7 +222,10 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     if (!idStr || idStr === "NaN" || idStr === "undefined") return;
     const feat = drawnFeatures.find((f) => String(f.id) === idStr);
     setDrawnFeatures((prev) => prev.filter((f) => String(f.id) !== idStr));
-    await featureRepo.delete(id, feat?.title);
+    await runMutation(
+      () => featureRepo.delete(id, feat?.title),
+      "No se pudo eliminar el elemento. Verifica tus permisos."
+    );
   };
 
   return {
@@ -236,14 +238,6 @@ export function useFeatureDB(opts: UseFeatureDBOptions = {}) {
     handleUpdateFeatureCollapsed,
     handleSaveDailyLog,
     handleFeatureDeleted,
-    globalNovedades,
-    fetchGlobalNovedades,
-    saveGlobalNovedad,
-    deleteGlobalNovedad,
-    updateGlobalNovedad,
-    dailyActivity,
-    fetchDailyActivity,
-    saveDailyActivity,
     refreshFeatures: fetchFromSupabase,
     realtimeStatus,
     isRealtimeConnected: realtimeStatus === "SUBSCRIBED",

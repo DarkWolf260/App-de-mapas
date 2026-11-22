@@ -2,12 +2,11 @@ import { describe, it, expect, vi } from "vitest";
 import type {
   IFeatureRepository,
   ILogRepository,
-  INovedadRepository,
   IStorage,
   IRealtimeProvider,
   IMigrationRepository,
 } from "../repositories/interfaces";
-import type { DrawnFeature, DailyLog, NovedadEntry } from "../types";
+import type { DrawnFeature, DailyLog } from "../types";
 
 const mockFeature: DrawnFeature = {
   id: 1,
@@ -22,14 +21,6 @@ const mockLog: DailyLog = {
   department: "pc",
   groups: [{ id: "g1", groupName: "Alpha", officersCount: "5" }],
   observations: "",
-};
-
-const mockNovedad: NovedadEntry = {
-  id: "n1",
-  timestamp: "2026-07-15T10:00:00Z",
-  time: "10:00",
-  text: "Novedad de prueba",
-  type: "novedad",
 };
 
 describe("IFeatureRepository", () => {
@@ -74,29 +65,6 @@ describe("ILogRepository", () => {
 
     await repo.save(1, mockLog);
     expect(repo.save).toHaveBeenCalledWith(1, mockLog);
-  });
-});
-
-describe("INovedadRepository", () => {
-  it("can be implemented with a mock", async () => {
-    const repo: INovedadRepository = {
-      fetch: vi.fn().mockResolvedValue([mockNovedad]),
-      insert: vi.fn().mockResolvedValue(undefined),
-      delete: vi.fn().mockResolvedValue(undefined),
-      update: vi.fn().mockResolvedValue(undefined),
-    };
-
-    const novedades = await repo.fetch("2026-07-15", "pc");
-    expect(novedades).toEqual([mockNovedad]);
-
-    await repo.insert(mockNovedad, "2026-07-15", "pc");
-    expect(repo.insert).toHaveBeenCalled();
-
-    await repo.delete("n1");
-    expect(repo.delete).toHaveBeenCalledWith("n1");
-
-    await repo.update("n1", { text: "editado" });
-    expect(repo.update).toHaveBeenCalledWith("n1", { text: "editado" });
   });
 });
 

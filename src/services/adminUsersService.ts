@@ -4,16 +4,12 @@ export interface UserPermissions {
   edit_logs: boolean;
   edit_historical_logs: boolean;
   edit_map: boolean;
-  manage_campamentos: boolean;
-  manage_camp_entries: boolean;
 }
 
 export const DEFAULT_OPERATOR_PERMISSIONS: UserPermissions = {
   edit_logs: true,
   edit_historical_logs: false,
   edit_map: false,
-  manage_campamentos: false,
-  manage_camp_entries: true,
 };
 
 export interface ManagedUser {

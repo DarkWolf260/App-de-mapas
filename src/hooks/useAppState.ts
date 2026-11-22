@@ -16,7 +16,7 @@ const CATEGORY_COLORS = {
   general: '#a855f7'
 };
 
-export function useAppState(isAdmin: boolean) {
+export function useAppState(canEditMap: boolean) {
   const [activeBasemap, setActiveBasemap] = useLocalStorageState<BasemapKey>('pc_active_basemap', 'satellite-free');
   const [layerVisibility, setLayerVisibility] = useLocalStorageState<LayerVisibility>('pc_layer_visibility', {
     sketch: true,
@@ -54,14 +54,6 @@ export function useAppState(isAdmin: boolean) {
     handleUpdateFeatureCollapsed,
     handleSaveDailyLog,
     handleFeatureDeleted,
-    globalNovedades,
-    fetchGlobalNovedades,
-    saveGlobalNovedad,
-    deleteGlobalNovedad,
-    updateGlobalNovedad,
-    dailyActivity,
-    fetchDailyActivity,
-    saveDailyActivity,
     refreshFeatures,
     realtimeStatus,
     isRealtimeConnected,
@@ -138,7 +130,7 @@ export function useAppState(isAdmin: boolean) {
   };
 
   const handleImportConfirmed = (featuresToImport: ParsedFeature[]) => {
-    if (!isAdmin) return;
+    if (!canEditMap) return;
     featuresToImport.forEach((f) => {
       handleFeatureAdded({
         id: Date.now() + Math.floor(Math.random() * 1000),
@@ -156,7 +148,7 @@ export function useAppState(isAdmin: boolean) {
   };
 
   const handleCreatePointAtCoords = (lat: number, lon: number) => {
-    if (!isAdmin) return;
+    if (!canEditMap) return;
     const newPoint: DrawnFeature = {
       id: Date.now(),
       title: `Punto ${lat.toFixed(4)}, ${lon.toFixed(4)}`,
@@ -169,7 +161,7 @@ export function useAppState(isAdmin: boolean) {
   };
 
   const handleImportData = (data: { points: MapPoint[]; areas: MapArea[] }) => {
-    if (!isAdmin) return;
+    if (!canEditMap) return;
     const existingTitles = new Set(drawnFeatures.map((f) => `${f.title}|${f.type}`));
     if (data.points) {
       for (const p of data.points) {
@@ -244,7 +236,6 @@ export function useAppState(isAdmin: boolean) {
     hiddenFeatures,
     points,
     areas,
-    globalNovedades,
     handleFeatureAdded,
     handleRenameFeature,
     handleUpdateFeatureDescription,
@@ -253,13 +244,6 @@ export function useAppState(isAdmin: boolean) {
     handleUpdateFeatureCollapsed,
     handleSaveDailyLog,
     handleFeatureDeleted,
-    fetchGlobalNovedades,
-    saveGlobalNovedad,
-    deleteGlobalNovedad,
-    updateGlobalNovedad,
-    dailyActivity,
-    fetchDailyActivity,
-    saveDailyActivity,
     refreshFeatures,
     handleToggleFeatureVisibility,
     handleSelectItem,

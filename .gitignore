@@ -26,6 +26,7 @@ dist-ssr
 # Local environment variables
 .env
 .env*.local
+*.tsbuildinfo
 node_modules/*
 graphify-out/*
 .agents

@@ -1,6 +1,5 @@
 import React, { createContext, useContext } from "react";
-import type { DrawnFeature, DailyLog, NovedadEntry } from "../types";
-import type { DailyActivity } from "../services/activityService";
+import type { DrawnFeature, DailyLog } from "../types";
 import type { RealtimeChannelStatus } from "../repositories/interfaces";
 
 export interface OperationalContextValue {
@@ -17,14 +16,6 @@ export interface OperationalContextValue {
   ) => Promise<void>;
   handleSaveDailyLog: (featureId: number | string, log: DailyLog) => Promise<void>;
   handleFeatureDeleted: (id: number | string) => Promise<void>;
-  globalNovedades: NovedadEntry[];
-  fetchGlobalNovedades: (date: string, department?: string) => Promise<void>;
-  saveGlobalNovedad: (entry: NovedadEntry, date: string, department?: string) => Promise<void>;
-  deleteGlobalNovedad: (entryId: string) => Promise<void>;
-  updateGlobalNovedad: (entryId: string, newText: string, newTime?: string) => Promise<void>;
-  dailyActivity: DailyActivity;
-  fetchDailyActivity: (date: string) => Promise<void>;
-  saveDailyActivity: (date: string, activities: string, description: string) => Promise<void>;
   refreshFeatures: () => Promise<void>;
   realtimeStatus: RealtimeChannelStatus;
   isRealtimeConnected: boolean;

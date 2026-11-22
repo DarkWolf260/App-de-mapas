@@ -14,7 +14,8 @@ function getKoboEndpoint(): string {
   return KOBO_VERCEL_URL;
 }
 
-const KOBO_TOKEN = import.meta.env.VITE_KOBOTOOLBOX_KEY || "";
+const KOBO_PAGE_SIZE = 1000;
+let cachedInspeccionesPromise: Promise<InspeccionRecord[]> | null = null;
 
 function cleanText(val?: string): string {
   if (!val) return "No especificado";
@@ -75,7 +76,15 @@ async function fetchFromSupabase(): Promise<InspeccionRecord[]> {
     for (const r of allData) {
       if (!r.latitude || !r.longitude) continue;
 
-      const riesgoFormatted = parseRiesgoEtiqueta(r.riesgo_color, r.evaluacion_riesgo) || "Bajo Riesgo / Seguro (Verde)";
+      const estadoVal = String(r.estado || "").toLowerCase();
+      if (estadoVal && !estadoVal.includes("guaira") && !estadoVal.includes("vargas")) {
+        continue;
+      }
+
+      const riesgoFormatted =
+        parseRiesgoEtiqueta(r.riesgo_color) ||
+        parseRiesgoEtiqueta(undefined, r.evaluacion_riesgo) ||
+        "Bajo Riesgo / Seguro (Verde)";
 
       const key = String(r.id);
       if (seenKeys.has(key)) continue;
@@ -107,10 +116,9 @@ async function fetchFromSupabase(): Promise<InspeccionRecord[]> {
 /** Carga directa desde KoboToolbox en PARALELO */
 async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
   const initialUrl = getKoboEndpoint();
-  const headers: Record<string, string> = KOBO_TOKEN ? { Authorization: `Token ${KOBO_TOKEN}` } : {};
 
   // 1. Obtener primera página para conocer el total de registros (count)
-  const firstRes = await fetch(`${initialUrl}?limit=100&start=0`, { headers });
+  const firstRes = await fetch(`${initialUrl}?limit=${KOBO_PAGE_SIZE}&start=0`);
   if (!firstRes.ok) throw new Error(`Kobo status: ${firstRes.status}`);
 
   const firstData = await firstRes.json();
@@ -118,11 +126,11 @@ async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
   const totalCount = firstData.count || 0;
 
   // 2. Disparar todas las demás páginas en PARALELO
-  if (totalCount > 100) {
+  if (totalCount > KOBO_PAGE_SIZE) {
     const pagePromises: Promise<any>[] = [];
-    for (let start = 100; start < totalCount; start += 100) {
+    for (let start = KOBO_PAGE_SIZE; start < totalCount; start += KOBO_PAGE_SIZE) {
       pagePromises.push(
-        fetch(`${initialUrl}?limit=100&start=${start}`, { headers })
+        fetch(`${initialUrl}?limit=${KOBO_PAGE_SIZE}&start=${start}`)
           .then((res) => (res.ok ? res.json() : { results: [] }))
           .then((d) => d.results || [])
           .catch(() => [])
@@ -139,9 +147,7 @@ async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
 
   for (const r of allResults) {
     const estadoVal = String(r["modulo1/Estado"] || r["BUBBLE_inspeccion"] || "").toLowerCase();
-    const fullStr = JSON.stringify(r).toLowerCase();
-    const isLaGuaira = estadoVal.includes("guaira") || estadoVal.includes("vargas") ||
-                       fullStr.includes("la guaira") || fullStr.includes("la_guaira") || fullStr.includes("vargas");
+    const isLaGuaira = estadoVal.includes("guaira") || estadoVal.includes("vargas");
 
     if (!isLaGuaira) continue;
 
@@ -190,17 +196,32 @@ async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
   return laGuairaRecords;
 }
 
-export async function fetchInspecciones(): Promise<InspeccionRecord[]> {
-  // 1. Cargar directamente desde Kobo (vía proxy Vite en dev o Vercel Edge Function en prod)
-  try {
-    const koboData = await fetchFromKoboParallel();
-    if (koboData.length > 0) {
-      return koboData;
-    }
-  } catch (err) {
-    console.warn("[inspeccionService] Falló la consulta a Kobo, recurriendo a Supabase:", err);
+export function fetchInspecciones(forceRefresh = false): Promise<InspeccionRecord[]> {
+  if (!forceRefresh && cachedInspeccionesPromise) {
+    return cachedInspeccionesPromise;
   }
 
-  // 2. Respaldo: Supabase deduplicado
-  return await fetchFromSupabase();
+  const request = (async () => {
+    // 1. Cargar directamente desde Kobo (vía proxy Vite en dev o Vercel Edge Function en prod)
+    try {
+      const koboData = await fetchFromKoboParallel();
+      if (koboData.length > 0) {
+        return koboData;
+      }
+    } catch (err) {
+      console.warn("[inspeccionService] Falló la consulta a Kobo, recurriendo a Supabase:", err);
+    }
+
+    // 2. Respaldo: Supabase deduplicado
+    return await fetchFromSupabase();
+  })();
+
+  cachedInspeccionesPromise = request.then((records) => {
+    if (records.length === 0) {
+      cachedInspeccionesPromise = null;
+    }
+    return records;
+  });
+
+  return cachedInspeccionesPromise;
 }

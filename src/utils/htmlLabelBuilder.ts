@@ -32,6 +32,17 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
+function sanitizeColor(color: string | undefined, fallback: string): string {
+  const c = String(color || "").trim();
+  if (/^#[0-9a-fA-F]{3,8}$/.test(c)) return c;
+  if (/^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/.test(c)) return c;
+  return fallback;
+}
+
+function sanitizeDomId(raw: string): string {
+  return String(raw || "").replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
 function getFeatureCoordinates(feat: DrawnFeature): [number, number] | null {
   const geom = feat.geojsonGeometry;
   if (!geom) return null;
@@ -218,8 +229,8 @@ export function buildHtmlLabelString(data: CustomLabelData): string {
     id,
     title,
     info,
-    color,
-    statusColor = "#22c55e",
+    color: rawColor,
+    statusColor: rawStatusColor = "#22c55e",
     isActiveArea,
     teamNames = [],
     rescuedCount = 0,
@@ -229,6 +240,10 @@ export function buildHtmlLabelString(data: CustomLabelData): string {
     transfersCount = 0,
     customActivities = [],
   } = data;
+
+  const color = sanitizeColor(rawColor, "#38bdf8");
+  const statusColor = sanitizeColor(rawStatusColor, "#22c55e");
+  const safeId = sanitizeDomId(String(id));
 
   if (isActiveArea) {
     const teamsHtml = teamNames.length > 0
@@ -278,7 +293,7 @@ export function buildHtmlLabelString(data: CustomLabelData): string {
 
       const customBadgesList = customActivities.map((act, idx) => {
         const hasDesc = !!act.description?.trim();
-        const actKey = `act_${id}_${act.id || idx}`;
+        const actKey = `act_${safeId}_${sanitizeDomId(String(act.id || idx))}`;
         return `
           <span class="custom-activity-badge" data-act-target="${actKey}" style="
             color: #c084fc;
@@ -304,7 +319,7 @@ export function buildHtmlLabelString(data: CustomLabelData): string {
       const customDescriptions = customActivities
         .filter((act) => !!act.description?.trim())
         .map((act, idx) => {
-          const actKey = `act_${id}_${act.id || idx}`;
+          const actKey = `act_${safeId}_${sanitizeDomId(String(act.id || idx))}`;
           return `
             <div id="${actKey}" class="custom-activity-desc" style="
               display: none;
@@ -453,7 +468,9 @@ export const LABEL_ZOOM_THRESHOLD = 16;
  * Genera el HTML string de un Pin compacto estilizado con borde delgado más oscuro
  */
 export function buildCompactPinString(data: CustomLabelData): string {
-  const { title, color = "#f97316", statusColor = "#22c55e" } = data;
+  const { title, color: rawColor = "#f97316", statusColor: rawStatusColor = "#22c55e" } = data;
+  const color = sanitizeColor(rawColor, "#f97316");
+  const statusColor = sanitizeColor(rawStatusColor, "#22c55e");
   const isOrange = String(statusColor).toLowerCase().includes("f97316") || String(statusColor).toLowerCase().includes("orange");
   const glowColor = isOrange ? "rgba(249, 115, 22, 0.45)" : "rgba(34, 197, 94, 0.45)";
   const darkerBorder = getDarkerTone(statusColor || color, 0.58);

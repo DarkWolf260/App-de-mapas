@@ -1,4 +1,4 @@
-import type { DrawnFeature, DailyLog, NovedadEntry } from "../types";
+import type { DrawnFeature, DailyLog } from "../types";
 
 export interface IFeatureRepository {
   fetchAll(): Promise<DrawnFeature[]>;
@@ -14,13 +14,6 @@ export interface IFeatureRepository {
 export interface ILogRepository {
   fetchAll(date?: string): Promise<Map<string, DailyLog[]>>;
   save(featureId: number | string, log: DailyLog): Promise<void>;
-}
-
-export interface INovedadRepository {
-  fetch(date: string, department?: string): Promise<NovedadEntry[]>;
-  insert(entry: NovedadEntry, date: string, department: string): Promise<void>;
-  delete(id: string): Promise<void>;
-  update(id: string, data: Record<string, string>): Promise<void>;
 }
 
 export interface IMigrationRepository {

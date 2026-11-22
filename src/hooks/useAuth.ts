@@ -77,9 +77,9 @@ export function useAuth() {
   const isSuspended = profile?.is_suspended ?? false;
 
   const permissions: UserPermissions = isSuspended
-    ? { ...DEFAULT_OPERATOR_PERMISSIONS, edit_logs: false, manage_campamentos: false, manage_camp_entries: false }
+    ? { edit_logs: false, edit_historical_logs: false, edit_map: false }
     : isAdmin
-    ? { edit_logs: true, edit_historical_logs: true, edit_map: true, manage_campamentos: true, manage_camp_entries: true }
+    ? { edit_logs: true, edit_historical_logs: true, edit_map: true }
     : { ...DEFAULT_OPERATOR_PERMISSIONS, ...(profile?.permissions ?? {}) };
 
   const login = async (email: string, pass: string) => {

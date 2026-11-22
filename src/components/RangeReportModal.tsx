@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import type { DrawnFeature, DailyLog, DepartmentView, NovedadEntry } from "../types";
+import type { DrawnFeature, DailyLog, DepartmentView } from "../types";
 import { buildParentsMap } from "../utils/spatialUtils";
 import {
   getDatesRange,
@@ -19,11 +19,6 @@ interface RangeReportModalProps {
   activeDepartment?: DepartmentView;
   selectedDate?: string;
   onSelectedDateChange?: (date: string) => void;
-  globalNovedades?: NovedadEntry[];
-  onFetchGlobalNovedades?: (date: string, department?: string) => void;
-  onSaveGlobalNovedad?: (entry: NovedadEntry, date: string, department: string) => Promise<void>;
-  onDeleteGlobalNovedad?: (entryId: string) => Promise<void>;
-  onUpdateGlobalNovedad?: (entryId: string, newText: string, newTime?: string) => Promise<void>;
   onRefreshFeatures?: () => Promise<void>;
   onNavigateToFeature?: (feat: DrawnFeature) => void;
   canEdit?: boolean;

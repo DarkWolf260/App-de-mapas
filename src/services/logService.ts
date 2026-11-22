@@ -79,5 +79,6 @@ export async function saveDailyLog(featureId: number | string, log: DailyLog): P
     }
   } catch (err: any) {
     console.warn("[logService] Error al guardar bitácora en Supabase:", err);
+    throw err;
   }
 }

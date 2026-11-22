@@ -122,18 +122,13 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   selectedColorFilter = "all",
   onZoomToInspeccion,
 }) => {
-  // Desactivar totalmente cuando el acumulado está activado (sea operativo o inspecciones)
-  if (showAccumulated) {
-    return null;
-  }
-
   const targetDateStr = selectedDate || new Date().toLocaleDateString("en-CA");
   const [viewMode, setViewMode] = useState<ViewMode>("sitios");
   const [isCompact, setIsCompact] = useState<boolean>(false);
 
   // Filtro de inspecciones
   const filteredInspecciones = useMemo(() => {
-    if (!isInspeccionesMode || !inspeccionesRecords) return [];
+    if (showAccumulated || !isInspeccionesMode || !inspeccionesRecords) return [];
     return inspeccionesRecords.filter((r) => {
       if (r.fecha && !r.fecha.startsWith(targetDateStr)) return false;
       if (selectedColorFilter !== "all") {
@@ -150,16 +145,21 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
       }
       return true;
     });
-  }, [isInspeccionesMode, inspeccionesRecords, targetDateStr, selectedColorFilter]);
+  }, [showAccumulated, isInspeccionesMode, inspeccionesRecords, targetDateStr, selectedColorFilter]);
 
-  const activePoints = useMemo(() => computeActivePoints(drawnFeatures, targetDateStr, activeDepartment), [drawnFeatures, targetDateStr, activeDepartment]);
-  const teams = useMemo(() => computeTeams(drawnFeatures, targetDateStr, activeDepartment), [drawnFeatures, targetDateStr, activeDepartment]);
+  const activePoints = useMemo(() => (showAccumulated ? [] : computeActivePoints(drawnFeatures, targetDateStr, activeDepartment)), [showAccumulated, drawnFeatures, targetDateStr, activeDepartment]);
+  const teams = useMemo(() => (showAccumulated ? [] : computeTeams(drawnFeatures, targetDateStr, activeDepartment)), [showAccumulated, drawnFeatures, targetDateStr, activeDepartment]);
   const sortedPoints = useMemo(() => [...activePoints].sort((a, b) => a.title.localeCompare(b.title, "es")), [activePoints]);
   const totalOff = activePoints.reduce((acc, item) => acc + item.totalOff, 0);
   const totalGroups = activePoints.reduce((acc, item) => acc + item.groups, 0);
   const totalActiveGroups = activePoints.reduce((acc, item) => acc + item.activeGroups, 0);
 
   const dayStats = useMemo(() => getDayStats(drawnFeatures, targetDateStr, activeDepartment), [drawnFeatures, targetDateStr, activeDepartment]);
+
+  // Desactivar totalmente cuando el acumulado está activado (sea operativo o inspecciones)
+  if (showAccumulated) {
+    return null;
+  }
 
   const metricBadges = [
     { label: "Rescat.", value: dayStats.totalRescued, color: "var(--color-info)" },
