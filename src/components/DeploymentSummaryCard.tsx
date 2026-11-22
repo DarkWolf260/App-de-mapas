@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import type { DrawnFeature, DepartmentView, InspeccionRecord } from "../types";
 import { getTotalPersonnel, getNormalizedGroupList, mergeLogs, getDayStats } from "../utils/logUtils";
 import { LayoutDashboard, Users, MapPin, Tag, X, BarChart2, List, Building2 } from "lucide-react";
@@ -159,13 +159,22 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   const dayStats = useMemo(() => getDayStats(drawnFeatures, targetDateStr, activeDepartment), [drawnFeatures, targetDateStr, activeDepartment]);
 
   const metricBadges = [
-    { label: "Rescat.", value: dayStats.totalRescued, color: "var(--color-info)" },
+    { label: "Rescat.", value: dayStats.totalRescued, color: "#38bdf8" },
     { label: "Recup.", value: dayStats.totalRecovered, color: "#ef4444" },
-    { label: "Masc.", value: dayStats.totalPets, color: "var(--color-green)" },
-    { label: "Atenc.", value: dayStats.totalPrehospitalCare, color: "#f59e0b" },
-    { label: "Trasl.", value: dayStats.totalTransfers, color: "var(--color-purple)" },
+    { label: "Masc.", value: dayStats.totalPets, color: "#22c55e" },
+    { label: "Atenc.", value: dayStats.totalPrehospitalCare, color: "#fb923c" },
+    { label: "Trasl.", value: dayStats.totalTransfers, color: "#cbd5e1" },
   ];
   const hasMetrics = metricBadges.some((m) => m.value > 0);
+
+  useEffect(() => {
+    if (widgetCollapsed) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onToggleCollapse(true);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [widgetCollapsed, onToggleCollapse]);
 
   const statDivider = <div style={{ width: "1px", height: "28px", background: "rgba(255,255,255,0.1)" }} />;
 
@@ -178,132 +187,150 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
 
   const hasData = viewMode === "sitios" ? activePoints.length > 0 : teams.length > 0;
 
-  // Modo 1: Icono Discreto (cuadrado con bordes redondeados)
+  const anchorButton = (
+    <button
+      type="button"
+      className={`hud-icon-square-btn ${!widgetCollapsed ? "active" : ""}`}
+      onClick={() => onToggleCollapse(!widgetCollapsed)}
+      aria-expanded={!widgetCollapsed}
+      aria-label={
+        showAccumulated
+          ? "Resumen de personal (modo acumulado)"
+          : isInspeccionesMode
+            ? `Inspecciones de infraestructura hoy: ${filteredInspecciones.length}`
+            : `Personal desplegado: ${totalOff} funcionarios (${targetDateStr})`
+      }
+      style={customStyle}
+      title={
+        showAccumulated
+          ? "Modo acumulado activo — clic para ver resumen"
+          : isInspeccionesMode
+            ? `Inspecciones hoy: ${filteredInspecciones.length}`
+            : `Personal Desplegado: ${totalOff} funcionarios (${targetDateStr})`
+      }
+    >
+      {isInspeccionesMode ? <Building2 size={18} aria-hidden="true" /> : <Users size={18} aria-hidden="true" />}
+    </button>
+  );
+
   if (widgetCollapsed) {
     return (
-      <button
-        type="button"
-        className="hud-icon-square-btn"
-        onClick={() => onToggleCollapse(false)}
-        aria-label={
-          showAccumulated
-            ? "Resumen de personal (modo acumulado)"
-            : isInspeccionesMode
-              ? `Inspecciones de infraestructura hoy: ${filteredInspecciones.length}`
-              : `Personal desplegado: ${totalOff} funcionarios (${targetDateStr})`
-        }
-        style={customStyle}
-        title={
-          showAccumulated
-            ? "Modo acumulado activo — clic para ver resumen"
-            : isInspeccionesMode
-              ? `Inspecciones hoy: ${filteredInspecciones.length}`
-              : `Personal Desplegado: ${totalOff} funcionarios (${targetDateStr})`
-        }
-      >
-        {isInspeccionesMode ? <Building2 size={18} aria-hidden="true" /> : <Users size={18} aria-hidden="true" />}
-      </button>
+      <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+        {anchorButton}
+      </div>
     );
   }
 
-  // En modo acumulado, mantener la tarjeta estable con explicación y salida rápida a vista diaria
+  // En modo acumulado, popover a la izquierda del botón fijo
   if (showAccumulated) {
     return (
-      <div
-        className="deployed-staff-widget"
-        style={{
-          background: "rgba(10, 15, 28, 0.95)",
-          border: "1px solid rgba(249, 115, 22, 0.35)",
-          color: "#f8fafc",
-          padding: "12px 14px",
-          borderRadius: "12px",
-          fontSize: "12px",
-          fontFamily: "var(--font-sans)",
-          boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
-          zIndex: 100,
-          width: "310px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          ...customStyle,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-          <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#fdba74", display: "flex", alignItems: "center", gap: "6px" }}>
-            {isInspeccionesMode ? <Building2 size={14} /> : <Users size={14} />}
-            {isInspeccionesMode ? "Inspecciones — Acumulado" : "Despliegue — Modo Acumulado"}
-          </span>
-          <button
-            type="button"
-            onClick={() => onToggleCollapse(true)}
-            title="Ocultar a icono discreto"
-            aria-label="Minimizar resumen de despliegue"
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "#94a3b8",
-              cursor: "pointer",
-              padding: "2px",
-              display: "inline-flex",
-              alignItems: "center",
-            }}
-          >
-            <X size={14} />
-          </button>
+      <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+        <div
+          className="deployed-staff-widget"
+          style={{
+            position: "absolute",
+            right: "calc(100% + 10px)",
+            bottom: 0,
+            background: "rgba(10, 15, 28, 0.96)",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+            border: "1px solid rgba(255, 255, 255, 0.14)",
+            color: "#f8fafc",
+            padding: "12px 14px",
+            borderRadius: "12px",
+            fontSize: "12px",
+            fontFamily: "var(--font-sans)",
+            boxShadow: "0 12px 30px rgba(0,0,0,0.65)",
+            zIndex: 110,
+            width: "310px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            ...customStyle,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+            <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#fdba74", display: "flex", alignItems: "center", gap: "6px" }}>
+              {isInspeccionesMode ? <Building2 size={14} /> : <Users size={14} />}
+              {isInspeccionesMode ? "Inspecciones — Acumulado" : "Despliegue — Modo Acumulado"}
+            </span>
+            <button
+              type="button"
+              onClick={() => onToggleCollapse(true)}
+              title="Cerrar panel"
+              aria-label="Cerrar resumen de despliegue"
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#94a3b8",
+                cursor: "pointer",
+                padding: "2px",
+                display: "inline-flex",
+                alignItems: "center",
+              }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <p style={{ margin: 0, fontSize: "0.74rem", color: "#cbd5e1", lineHeight: 1.45 }}>
+            {isInspeccionesMode
+              ? `Mostrando las ${inspeccionesRecords.length.toLocaleString("es-VE")} inspecciones acumuladas en el mapa.`
+              : "El detalle de personal y equipos por turno se muestra por fecha específica."}
+          </p>
+          {onToggleAccumulated && (
+            <button
+              type="button"
+              onClick={onToggleAccumulated}
+              style={{
+                alignSelf: "flex-start",
+                padding: "6px 12px",
+                borderRadius: "7px",
+                border: "1px solid rgba(249, 115, 22, 0.55)",
+                background: "rgba(249, 115, 22, 0.18)",
+                color: "#fdba74",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "var(--font-sans)",
+              }}
+            >
+              Volver a vista por día
+            </button>
+          )}
         </div>
-        <p style={{ margin: 0, fontSize: "0.74rem", color: "#cbd5e1", lineHeight: 1.45 }}>
-          {isInspeccionesMode
-            ? `Mostrando las ${inspeccionesRecords.length.toLocaleString("es-VE")} inspecciones acumuladas en el mapa.`
-            : "El detalle de personal y equipos por turno se muestra por fecha específica."}
-        </p>
-        {onToggleAccumulated && (
-          <button
-            type="button"
-            onClick={onToggleAccumulated}
-            style={{
-              alignSelf: "flex-start",
-              padding: "6px 12px",
-              borderRadius: "7px",
-              border: "1px solid rgba(249, 115, 22, 0.55)",
-              background: "rgba(249, 115, 22, 0.18)",
-              color: "#fdba74",
-              fontSize: "0.72rem",
-              fontWeight: 700,
-              cursor: "pointer",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            Volver a vista por día
-          </button>
-        )}
+        {anchorButton}
       </div>
     );
   }
 
   return (
-    <div
-      className="deployed-staff-widget"
-      style={{
-        background: "rgba(10, 15, 28, 0.94)",
-        border: "1px solid rgba(255, 255, 255, 0.12)",
-        color: "#f8fafc",
-        padding: "10px 12px",
-        borderRadius: "12px",
-        fontSize: "11px",
-        fontFamily: "var(--font-sans)",
-        boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        zIndex: 100,
-        width: "330px",
-        maxHeight: "260px",
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        gap: "6px",
-        ...customStyle,
-      }}
-    >
+    <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+      <div
+        className="deployed-staff-widget"
+        style={{
+          position: "absolute",
+          right: "calc(100% + 10px)",
+          bottom: 0,
+          background: "rgba(10, 15, 28, 0.96)",
+          border: "1px solid rgba(255, 255, 255, 0.14)",
+          color: "#f8fafc",
+          padding: "10px 12px",
+          borderRadius: "12px",
+          fontSize: "11px",
+          fontFamily: "var(--font-sans)",
+          boxShadow: "0 12px 30px rgba(0,0,0,0.65)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          zIndex: 110,
+          width: "330px",
+          maxHeight: "280px",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          ...customStyle,
+        }}
+      >
       {/* Header en una sola línea (Siempre Fijo) */}
       <div
         style={{
@@ -320,9 +347,9 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
           flexShrink: 0,
         }}
       >
-        <span style={{ display: "flex", alignItems: "center", gap: "5px", whiteSpace: "nowrap" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: "5px", whiteSpace: "nowrap", color: "#fdba74" }}>
           {isInspeccionesMode ? <Building2 size={12} style={{ flexShrink: 0 }} /> : <LayoutDashboard size={12} style={{ flexShrink: 0 }} />}
-          {isInspeccionesMode ? `INSPECCIONES KOBO (${filteredInspecciones.length})` : "PERSONAL DESPLEGADO"}
+          {isInspeccionesMode ? `INSPECCIONES (${filteredInspecciones.length})` : "PERSONAL DESPLEGADO"}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
           <span style={{ fontSize: "9.5px", color: "var(--text-muted)", fontWeight: 600 }}>{targetDateStr}</span>
@@ -444,10 +471,10 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
               onClick={() => setViewMode("sitios")}
               style={{
                 flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "3px",
-                padding: "3px 6px", borderRadius: "5px", border: "1px solid transparent",
-                background: viewMode === "sitios" ? "rgba(56, 189, 248, 0.12)" : "transparent",
-                borderColor: viewMode === "sitios" ? "rgba(56, 189, 248, 0.3)" : "transparent",
-                color: viewMode === "sitios" ? "var(--color-info)" : "var(--text-muted)",
+                padding: "4px 6px", borderRadius: "5px", border: "1px solid transparent",
+                background: viewMode === "sitios" ? "rgba(249, 115, 22, 0.16)" : "transparent",
+                borderColor: viewMode === "sitios" ? "rgba(249, 115, 22, 0.35)" : "transparent",
+                color: viewMode === "sitios" ? "#fdba74" : "#94a3b8",
                 fontSize: "8.5px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.04em",
                 cursor: "pointer", transition: "all 0.15s ease", fontFamily: "var(--font-sans)",
               }}
@@ -458,10 +485,10 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
               onClick={() => setViewMode("equipos")}
               style={{
                 flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "3px",
-                padding: "3px 6px", borderRadius: "5px", border: "1px solid transparent",
-                background: viewMode === "equipos" ? "rgba(139, 92, 246, 0.12)" : "transparent",
-                borderColor: viewMode === "equipos" ? "rgba(139, 92, 246, 0.3)" : "transparent",
-                color: viewMode === "equipos" ? "rgba(139, 92, 246, 1)" : "var(--text-muted)",
+                padding: "4px 6px", borderRadius: "5px", border: "1px solid transparent",
+                background: viewMode === "equipos" ? "rgba(249, 115, 22, 0.16)" : "transparent",
+                borderColor: viewMode === "equipos" ? "rgba(249, 115, 22, 0.35)" : "transparent",
+                color: viewMode === "equipos" ? "#fdba74" : "#94a3b8",
                 fontSize: "8.5px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.04em",
                 cursor: "pointer", transition: "all 0.15s ease", fontFamily: "var(--font-sans)",
               }}
@@ -558,6 +585,8 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
         </>
       )}
       </div>
+      </div>
+      {anchorButton}
     </div>
   );
 };

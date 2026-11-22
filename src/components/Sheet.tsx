@@ -8,15 +8,19 @@ interface SheetProps {
   height?: string;
 }
 
-export const Sheet: React.FC<SheetProps> = ({ open, onClose, children, height = "50vh" }) => {
+export const Sheet: React.FC<SheetProps> = ({ open, onClose, children, height = "55vh" }) => {
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
       document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -27,76 +31,82 @@ export const Sheet: React.FC<SheetProps> = ({ open, onClose, children, height = 
         style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(0, 0, 0, 0.6)",
+          background: "rgba(0, 0, 0, 0.65)",
           backdropFilter: "blur(4px)",
           WebkitBackdropFilter: "blur(4px)",
           zIndex: 250,
-          animation: "sheetFadeIn 0.2s ease-out",
+          animation: "sheetFadeIn 0.18s ease-out",
         }}
       />
       <div
+        role="dialog"
+        aria-modal="true"
         style={{
           position: "fixed",
           bottom: 0,
           left: 0,
           right: 0,
           height,
-          maxHeight: "85vh",
-          background: "rgba(10, 15, 28, 0.97)",
+          maxHeight: "84dvh",
+          background: "rgba(10, 15, 29, 0.98)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+          borderTop: "1px solid rgba(255, 255, 255, 0.12)",
           borderRadius: "16px 16px 0 0",
+          boxShadow: "0 -12px 36px rgba(0, 0, 0, 0.65)",
           zIndex: 251,
           display: "flex",
           flexDirection: "column",
-          animation: "sheetSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+          animation: "sheetSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
           overflow: "hidden",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
         <div
           style={{
+            position: "relative",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "8px 0 4px",
+            padding: "10px 16px 8px",
             flexShrink: 0,
           }}
         >
           <div
             style={{
-              width: "36px",
+              width: "38px",
               height: "4px",
-              borderRadius: "2px",
-              background: "rgba(255, 255, 255, 0.25)",
+              borderRadius: "999px",
+              background: "rgba(255, 255, 255, 0.22)",
               cursor: "pointer",
             }}
             onClick={onClose}
           />
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Cerrar panel"
             style={{
               position: "absolute",
               right: "12px",
-              top: "6px",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "50%",
-              color: "var(--text-muted)",
+              top: "8px",
+              background: "rgba(255, 255, 255, 0.06)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              borderRadius: "8px",
+              color: "#94a3b8",
               cursor: "pointer",
-              padding: "4px",
               display: "flex",
-              width: "28px",
-              height: "28px",
+              width: "30px",
+              height: "30px",
               alignItems: "center",
               justifyContent: "center",
+              padding: 0,
             }}
           >
-            <X size={14} />
+            <X size={15} aria-hidden="true" />
           </button>
         </div>
-        <div style={{ flex: 1, overflow: "auto", padding: "0 12px 12px" }}>
+        <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "4px 16px 20px" }}>
           {children}
         </div>
       </div>

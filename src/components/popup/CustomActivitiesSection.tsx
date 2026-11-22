@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { CustomActivity } from "../../types";
 import { Activity, Plus, Trash2, Tag, Check, MessageSquare } from "lucide-react";
-import { sectionBox, inputStyle } from "./popupStyles";
+import { sectionBox, sectionTitleStyle, inputStyle } from "./popupStyles";
 import { generateUUID } from "../../utils/uuidUtils";
 import { ACTIVITY_CATALOG_GROUPS, ALL_CATALOG_ACTIVITIES } from "../../utils/activityCatalog";
 
@@ -15,8 +15,8 @@ interface CustomActivitiesSectionProps {
 
 const selectStyle: React.CSSProperties = {
   ...inputStyle,
-  fontSize: "0.68rem",
-  background: "rgba(10, 15, 29, 0.92)",
+  fontSize: "0.7rem",
+  background: "rgba(10, 15, 29, 0.94)",
   color: "#f8fafc",
   cursor: "pointer",
 };
@@ -76,23 +76,12 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
   };
 
   return (
-    <div style={{ ...sectionBox, background: "rgba(168, 85, 247, 0.04)", borderColor: "rgba(168, 85, 247, 0.2)" }}>
-      <div
-        style={{
-          fontSize: "0.62rem",
-          fontWeight: 700,
-          color: "#c084fc",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
-          paddingBottom: "2px",
-          marginBottom: "6px",
-          display: "flex",
-          alignItems: "center",
-          gap: "4px",
-        }}
-      >
-        <Activity size={10} /> {title}
+    <div style={sectionBox}>
+      <div style={sectionTitleStyle}>
+        <Activity size={11} style={{ color: "#94a3b8" }} />
+        <span>{title}</span>
         {subtitle && (
-          <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", fontWeight: 400, marginLeft: "auto" }}>
+          <span style={{ fontSize: "0.56rem", color: "#64748b", fontWeight: 500, marginLeft: "auto", textTransform: "none", letterSpacing: 0 }}>
             {subtitle}
           </span>
         )}
@@ -100,7 +89,7 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
 
       {/* Lista de Actividades Registradas */}
       {customActivities.length > 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "8px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {customActivities.map((act) => {
             const isLegacyValue = !ALL_CATALOG_ACTIVITIES.includes(act.name);
             return (
@@ -109,15 +98,15 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "3px",
-                  background: "rgba(0, 0, 0, 0.3)",
-                  border: "1px solid rgba(168, 85, 247, 0.25)",
-                  borderRadius: "5px",
-                  padding: "5px 7px",
+                  gap: "4px",
+                  background: "rgba(0, 0, 0, 0.25)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  borderRadius: "6px",
+                  padding: "6px 8px",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Tag size={10} style={{ color: "#c084fc", flexShrink: 0 }} />
+                  <Tag size={11} style={{ color: "#94a3b8", flexShrink: 0 }} />
                   {canEdit ? (
                     <select
                       aria-label="Tipo de actividad"
@@ -126,13 +115,13 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                       style={{
                         flex: 1,
                         minWidth: 0,
-                        fontSize: "0.65rem",
+                        fontSize: "0.68rem",
                         fontWeight: 700,
                         color: "#f8fafc",
-                        background: "rgba(10, 15, 29, 0.85)",
-                        border: "1px solid rgba(168, 85, 247, 0.3)",
+                        background: "rgba(15, 23, 42, 0.9)",
+                        border: "1px solid rgba(255, 255, 255, 0.14)",
                         borderRadius: "4px",
-                        padding: "2px 4px",
+                        padding: "3px 5px",
                         fontFamily: "inherit",
                         cursor: "pointer",
                       }}
@@ -151,7 +140,7 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                       ))}
                     </select>
                   ) : (
-                    <span style={{ fontSize: "0.66rem", fontWeight: 700, color: "var(--text-main)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#f8fafc", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {act.name}
                     </span>
                   )}
@@ -162,20 +151,31 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                       value={act.value}
                       onChange={(e) => handleUpdateValue(act.id, e.target.value)}
                       style={{
-                        width: "50px",
+                        width: "48px",
                         textAlign: "center",
-                        padding: "2px 4px",
-                        fontSize: "0.68rem",
+                        padding: "3px 4px",
+                        fontSize: "0.7rem",
                         fontWeight: 800,
-                        color: "#a855f7",
-                        background: "rgba(0,0,0,0.4)",
-                        border: "1px solid rgba(168, 85, 247, 0.4)",
+                        color: "#fdba74",
+                        background: "rgba(15, 23, 42, 0.9)",
+                        border: "1px solid rgba(255, 255, 255, 0.14)",
                         borderRadius: "4px",
-                        fontFamily: "inherit",
+                        fontFamily: "var(--font-mono, monospace)",
                       }}
                     />
                   ) : (
-                    <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#a855f7" }}>
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        fontWeight: 800,
+                        color: "#fdba74",
+                        background: "rgba(249, 115, 22, 0.12)",
+                        border: "1px solid rgba(249, 115, 22, 0.28)",
+                        borderRadius: "5px",
+                        padding: "1px 7px",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
                       {act.value}
                     </span>
                   )}
@@ -191,12 +191,12 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                         padding: "2px",
                         display: "flex",
                         alignItems: "center",
-                        opacity: 0.8,
+                        opacity: 0.85,
                       }}
                       title="Eliminar actividad"
                       aria-label={`Eliminar actividad ${act.name}`}
                     >
-                      <Trash2 size={10} />
+                      <Trash2 size={11} />
                     </button>
                   )}
                 </div>
@@ -205,26 +205,25 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                 {canEdit ? (
                   <input
                     type="text"
-                    placeholder="Detalle (ej: tema, escuela, asistentes, estado Finalizada/Programada)..."
+                    placeholder="Detalle (tema, escuela, asistentes, estado)..."
                     value={act.description || ""}
                     onChange={(e) => handleUpdateDescription(act.id, e.target.value)}
                     style={{
                       width: "100%",
-                      fontSize: "0.62rem",
+                      fontSize: "0.66rem",
                       color: "#e2e8f0",
-                      background: "rgba(0, 0, 0, 0.35)",
-                      border: "1px solid rgba(168, 85, 247, 0.25)",
+                      background: "rgba(15, 23, 42, 0.75)",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
                       borderRadius: "4px",
-                      padding: "3px 6px",
+                      padding: "4px 7px",
                       fontFamily: "inherit",
                       boxSizing: "border-box",
-                      marginTop: "2px",
                     }}
                   />
                 ) : (
                   !!act.description && (
-                    <div style={{ fontSize: "0.62rem", color: "#e2e8f0", fontStyle: "italic", padding: "3px 6px", background: "rgba(168, 85, 247, 0.12)", borderRadius: "4px", marginTop: "2px", borderLeft: "2px solid #c084fc", display: "flex", alignItems: "center", gap: "4px" }}>
-                      <MessageSquare size={11} style={{ flexShrink: 0, opacity: 0.8 }} />
+                    <div style={{ fontSize: "0.66rem", color: "#cbd5e1", padding: "4px 7px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "4px", display: "flex", alignItems: "flex-start", gap: "5px", lineHeight: 1.35 }}>
+                      <MessageSquare size={11} style={{ flexShrink: 0, color: "#94a3b8", marginTop: "2px" }} />
                       <span>{act.description}</span>
                     </div>
                   )
@@ -235,7 +234,7 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
         </div>
       ) : (
         !showAddForm && (
-          <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontStyle: "italic", textAlign: "center", margin: "4px 0" }}>
+          <div style={{ fontSize: "0.66rem", color: "#64748b", fontStyle: "italic", textAlign: "center", padding: "2px 0" }}>
             No hay actividades registradas
           </div>
         )
@@ -250,15 +249,14 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                 display: "flex",
                 flexDirection: "column",
                 gap: "6px",
-                background: "rgba(0,0,0,0.25)",
-                border: "1px solid rgba(168, 85, 247, 0.3)",
+                background: "rgba(0, 0, 0, 0.25)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
                 borderRadius: "6px",
                 padding: "8px",
-                marginTop: "4px",
               }}
             >
-              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#c084fc" }}>
-                Nueva Actividad
+              <span style={{ fontSize: "0.64rem", fontWeight: 700, color: "#cbd5e1" }}>
+                Nueva actividad
               </span>
 
               <select
@@ -286,14 +284,14 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                   placeholder="Cant. (Ej: 1)"
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
-                  style={{ ...inputStyle, fontSize: "0.68rem", width: "80px" }}
+                  style={{ ...inputStyle, fontSize: "0.7rem", width: "80px" }}
                 />
                 <input
                   type="text"
                   placeholder="Detalle (tema, turno, asistentes, estado)..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  style={{ ...inputStyle, fontSize: "0.68rem", flex: 1 }}
+                  style={{ ...inputStyle, fontSize: "0.7rem", flex: 1 }}
                 />
               </div>
 
@@ -303,11 +301,11 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                   onClick={handleAdd}
                   disabled={!selectedName.trim()}
                   style={{
-                    background: selectedName.trim() ? "rgba(168, 85, 247, 0.25)" : "rgba(255,255,255,0.05)",
-                    border: `1px solid ${selectedName.trim() ? "rgba(168, 85, 247, 0.5)" : "rgba(255,255,255,0.1)"}`,
+                    background: selectedName.trim() ? "rgba(249, 115, 22, 0.18)" : "rgba(255,255,255,0.04)",
+                    border: `1px solid ${selectedName.trim() ? "rgba(249, 115, 22, 0.5)" : "rgba(255,255,255,0.1)"}`,
                     borderRadius: "5px",
-                    color: selectedName.trim() ? "#c084fc" : "var(--text-muted)",
-                    fontSize: "0.64rem",
+                    color: selectedName.trim() ? "#fdba74" : "#64748b",
+                    fontSize: "0.66rem",
                     fontWeight: 700,
                     padding: "4px 10px",
                     cursor: selectedName.trim() ? "pointer" : "default",
@@ -323,10 +321,10 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                   onClick={() => setShowAddForm(false)}
                   style={{
                     background: "transparent",
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    border: "1px solid rgba(255,255,255,0.12)",
                     borderRadius: "5px",
-                    color: "var(--text-muted)",
-                    fontSize: "0.64rem",
+                    color: "#94a3b8",
+                    fontSize: "0.66rem",
                     padding: "4px 8px",
                     cursor: "pointer",
                   }}
@@ -341,23 +339,22 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
               onClick={() => setShowAddForm(true)}
               style={{
                 width: "100%",
-                background: "rgba(168, 85, 247, 0.12)",
-                border: "1px dashed rgba(168, 85, 247, 0.35)",
-                borderRadius: "5px",
-                color: "#c084fc",
-                fontSize: "0.62rem",
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px dashed rgba(255, 255, 255, 0.18)",
+                borderRadius: "6px",
+                color: "#cbd5e1",
+                fontSize: "0.66rem",
                 fontWeight: 700,
-                padding: "4px 6px",
+                padding: "6px 8px",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "4px",
-                marginTop: "4px",
                 transition: "all 0.15s ease",
               }}
             >
-              <Plus size={10} /> Añadir Actividad
+              <Plus size={11} /> Añadir Actividad
             </button>
           )}
         </>

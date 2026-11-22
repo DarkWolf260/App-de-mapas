@@ -243,6 +243,13 @@
   background: rgba(249, 115, 22, 0.2);
   border-color: var(--accent-orange);
   color: #fdba74;
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.28);
+}
+
+.hud-icon-square-btn.active {
+  background: rgba(249, 115, 22, 0.2);
+  border-color: var(--accent-orange);
+  color: #fdba74;
 }
 
 @keyframes statsModeEnter {

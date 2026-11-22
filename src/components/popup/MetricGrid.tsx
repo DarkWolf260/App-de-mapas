@@ -42,13 +42,13 @@ export function MetricInputs({ group, groupIdx, onGroupFieldChange, onDepartment
             }}
             style={{
               ...metricInputStyle,
-              color,
-              borderColor: color.startsWith("var") ? "rgba(56, 189, 248, 0.35)" : `${color}50`,
+              color: "#f8fafc",
+              borderColor: "rgba(255, 255, 255, 0.14)",
               fontSize: "0.76rem",
               fontWeight: 700,
               padding: "4px 4px",
               textAlign: "center",
-              background: "rgba(0, 0, 0, 0.25)",
+              background: "rgba(15, 23, 42, 0.85)",
             }}
           />
         </div>
@@ -83,9 +83,9 @@ export function MetricBadges({ group }: MetricBadgesProps) {
         <span key={label} style={{ color, fontWeight: 700 }}>{value} {label}</span>
       ))}
       {customActs.map((act) => (
-        <span key={act.id} style={{ color: "#c084fc", fontWeight: 700 }}>
+        <span key={act.id} style={{ color: "#fdba74", fontWeight: 700 }}>
           {act.value} {act.name}
-          {act.description && <span style={{ opacity: 0.85, fontWeight: 500, fontStyle: "italic", marginLeft: "3px" }}>({act.description})</span>}
+          {act.description && <span style={{ color: "#cbd5e1", fontWeight: 500, fontStyle: "italic", marginLeft: "3px" }}>({act.description})</span>}
         </span>
       ))}
     </div>
@@ -118,17 +118,17 @@ export function MetricDisplayGrid({ source, showZero = true, smallFont = false }
       </div>
 
       {customActs.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "4px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "6px" }}>
           {customActs.map((act) => (
             <div
               key={act.id || act.name}
               style={{
-                fontSize: "0.62rem",
-                color: "#c084fc",
-                background: "rgba(168, 85, 247, 0.12)",
-                border: "1px solid rgba(168, 85, 247, 0.3)",
-                borderRadius: "5px",
-                padding: "3px 7px",
+                fontSize: "0.66rem",
+                color: "#f8fafc",
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 255, 255, 0.09)",
+                borderRadius: "6px",
+                padding: "5px 8px",
                 display: "flex",
                 flexDirection: "column",
                 gap: "2px",
@@ -136,10 +136,10 @@ export function MetricDisplayGrid({ source, showZero = true, smallFont = false }
             >
               <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
                 <span>{act.name}</span>
-                <span style={{ fontWeight: 800 }}>{act.value}</span>
+                <span style={{ fontWeight: 800, color: "#fdba74" }}>{act.value}</span>
               </div>
               {act.description && (
-                <div style={{ fontSize: "0.58rem", color: "#e2e8f0", fontStyle: "italic", opacity: 0.9, display: "flex", alignItems: "center", gap: "4px" }}>
+                <div style={{ fontSize: "0.62rem", color: "#94a3b8", display: "flex", alignItems: "center", gap: "4px" }}>
                   <MessageSquare size={10} style={{ flexShrink: 0, opacity: 0.8 }} />
                   <span>{act.description}</span>
                 </div>

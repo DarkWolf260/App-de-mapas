@@ -73,9 +73,9 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
       </div>
 
       {/* Row 2: Encargado, Teléfono, Funcionarios */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1.1fr 0.6fr", gap: "8px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1.1fr 0.6fr", gap: "8px", alignItems: "end" }}>
         <div>
-          <span className="rr-editor-label">Encargado / Responsable</span>
+          <span className="rr-editor-label" style={{ whiteSpace: "nowrap" }}>Encargado</span>
           <input
             type="text"
             className="rr-editor-input"
@@ -85,7 +85,7 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
           />
         </div>
         <div>
-          <span className="rr-editor-label">Teléfono</span>
+          <span className="rr-editor-label" style={{ whiteSpace: "nowrap" }}>Teléfono</span>
           <input
             type="text"
             className="rr-editor-input"
@@ -96,7 +96,7 @@ export const GroupFields: React.FC<GroupFieldsProps> = ({
           />
         </div>
         <div>
-          <span className="rr-editor-label">Funcs.</span>
+          <span className="rr-editor-label" style={{ whiteSpace: "nowrap" }}>Funcs.</span>
           <input
             type="number"
             min="0"

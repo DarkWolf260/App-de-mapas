@@ -1,16 +1,16 @@
 # Graph Report - App-de-mapas  (2026-11-22)
 
 ## Corpus Check
-- 5479 files · ~1,020,535 words
+- 5483 files · ~1,021,478 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 21737 nodes · 18587 edges · 5888 communities (5623 shown, 265 thin omitted)
+- 21769 nodes · 18727 edges · 5884 communities (5621 shown, 263 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 85 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `be3879a3`
+- Built from commit: `60a9d3ff`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -83,16 +83,12 @@
 - [[_COMMUNITY_Community 107|Community 107]]
 - [[_COMMUNITY_Community 108|Community 108]]
 - [[_COMMUNITY_Community 109|Community 109]]
-- [[_COMMUNITY_Community 110|Community 110]]
-- [[_COMMUNITY_Community 111|Community 111]]
 - [[_COMMUNITY_Community 112|Community 112]]
 - [[_COMMUNITY_Community 113|Community 113]]
 - [[_COMMUNITY_Community 117|Community 117]]
-- [[_COMMUNITY_Community 118|Community 118]]
-- [[_COMMUNITY_Community 119|Community 119]]
 - [[_COMMUNITY_Community 122|Community 122]]
 - [[_COMMUNITY_Community 123|Community 123]]
-- [[_COMMUNITY_Community 125|Community 125]]
+- [[_COMMUNITY_Community 124|Community 124]]
 - [[_COMMUNITY_Community 131|Community 131]]
 - [[_COMMUNITY_Community 132|Community 132]]
 - [[_COMMUNITY_Community 137|Community 137]]
@@ -104,7 +100,6 @@
 - [[_COMMUNITY_Community 148|Community 148]]
 - [[_COMMUNITY_Community 149|Community 149]]
 - [[_COMMUNITY_Community 150|Community 150]]
-- [[_COMMUNITY_Community 152|Community 152]]
 - [[_COMMUNITY_Community 155|Community 155]]
 - [[_COMMUNITY_Community 160|Community 160]]
 - [[_COMMUNITY_Community 161|Community 161]]
@@ -1059,9 +1054,9 @@
 - [[_COMMUNITY_Community 6097|Community 6097]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `DrawnFeature` - 144 edges
-2. `DepartmentView` - 81 edges
-3. `DailyLog` - 64 edges
+1. `DrawnFeature` - 150 edges
+2. `DepartmentView` - 87 edges
+3. `DailyLog` - 67 edges
 4. `attachments` - 58 edges
 5. `attachments` - 58 edges
 6. `attachments` - 58 edges
@@ -1074,9 +1069,9 @@
 - `49208()` --calls--> `M()`  [INFERRED]
   public/assets/esri/core/workers/chunks/08dfe61c75f0032db4d4.js → src/utils/excelExporter.ts
 - `49208()` --calls--> `M()`  [INFERRED]
-  public/assets/esri/core/workers/chunks/1ea7245f9f6b4ad64a0a.js → src/utils/excelExporter.ts
-- `49208()` --calls--> `M()`  [INFERRED]
   public/assets/esri/core/workers/chunks/32b5d2537feefe6e94a3.js → src/utils/excelExporter.ts
+- `25098()` --calls--> `M()`  [INFERRED]
+  public/assets/esri/core/workers/chunks/3351c4e88c55db3cf622.js → src/utils/excelExporter.ts
 - `49208()` --calls--> `M()`  [INFERRED]
   public/assets/esri/core/workers/chunks/33e86dd1a54e447fa0e3.js → src/utils/excelExporter.ts
 - `49208()` --calls--> `M()`  [INFERRED]
@@ -1086,63 +1081,63 @@
 - 2-file cycle: `src/utils/featureLogBook.ts -> src/utils/logMerge.ts -> src/utils/featureLogBook.ts`
 - 2-file cycle: `src/utils/featureLogBook.ts -> src/utils/logSerialization.ts -> src/utils/featureLogBook.ts`
 
-## Communities (5888 total, 265 thin omitted)
+## Communities (5884 total, 263 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.10
-Nodes (24): AuthModal(), DepartmentTabs(), DepartmentTabsProps, tabs, PizarraHeader(), PizarraHeaderProps, PizarraOperacional(), RealtimeStatusBadge() (+16 more)
+Cohesion: 0.07
+Nodes (58): CustomMapPopupProps, DeploymentSummaryCardProps, GlobalStatsWidgetProps, MapComponentProps, MapFeatureActions, MapUIContext, MobilePersonalSheetProps, RangeReportModalProps (+50 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.08
-Nodes (56): ActivePoint, computeActivePoints(), computeTeams(), DeploymentSummaryCard(), getRiskBadgeInfo(), TeamEntry, ViewMode, MobilePersonalSheet() (+48 more)
+Nodes (61): ActivePoint, computeActivePoints(), computeTeams(), DeploymentSummaryCard(), getRiskBadgeInfo(), TeamEntry, ViewMode, MobilePersonalSheet() (+53 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.13
-Nodes (14): UseFeatureDBOptions, ILogRepository, IMigrationRepository, INovedadRepository, IRealtimeProvider, RealtimePayload, supabaseFeatureRepo, supabaseLogRepo (+6 more)
+Cohesion: 0.16
+Nodes (13): RealtimeStatusBadge(), RealtimeStatusBadgeProps, UseFeatureDBOptions, ILogRepository, IMigrationRepository, IRealtimeProvider, RealtimeChannelStatus, RealtimePayload (+5 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.15
-Nodes (8): AdminPanelPage(), ErrorBoundary, ErrorBoundaryProps, ErrorBoundaryState, LoginPage(), rootEl, AdminApp(), rootEl
+Nodes (8): AdminPanelPage(), ErrorBoundary, ErrorBoundaryProps, ErrorBoundaryState, rootEl, AdminApp(), rootEl, ExcelApp()
 
 ### Community 4 - "Community 4"
-Cohesion: 0.13
-Nodes (32): ColorPicker(), ColorPickerProps, DRAW_TOOLS, DrawingToolbar(), DrawingToolbarProps, ToolId, MapComponent(), MapSettingsPanel() (+24 more)
+Cohesion: 0.10
+Nodes (40): MapSettingsPanel(), MapSettingsPanelProps, TOGGLES, UseMapSetupProps, ColorPicker(), ColorPickerProps, DRAW_TOOLS, DrawingToolbar() (+32 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.10
-Nodes (26): CombinedDateEntry, CombinedGroupItem, HistoryTab(), HistoryTabProps, MONTH_NAMES, WEEKDAY_NAMES, CustomActivitiesSectionProps, CustomActivity (+18 more)
+Cohesion: 0.11
+Nodes (31): baseVisibility, ACTIVITY_CATALOG_GROUPS, ActivityCatalogGroup, ALL_CATALOG_ACTIVITIES, DemolitionEvent, DemolitionInfo, extractPhaseLabel(), FORMACION_ACTIVITY_NAMES (+23 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.06
-Nodes (31): DeploymentSummaryCard(), ArrowStyle, HtmlPointLabelItem, HtmlPointLabelItemProps, HtmlPointLabels(), HtmlPointLabelsProps, Placement, DrawnFeaturesList() (+23 more)
+Cohesion: 0.10
+Nodes (21): GroupFields(), GroupFieldsProps, Time24Input(), Time24InputProps, inputStyle, labelStyle, DepartmentSelect(), DepartmentSelectProps (+13 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.05
-Nodes (46): ConfirmDeleteModal(), ConfirmDeleteModalProps, DeploymentSummaryCardProps, GlobalStatsWidget(), GlobalStatsWidgetProps, labelStyle, MobileBottomBar(), MobileBottomBarProps (+38 more)
+Cohesion: 0.04
+Nodes (52): ConfirmDeleteModal(), ConfirmDeleteModalProps, getTypeText(), ImportPreviewModal(), ImportPreviewModalProps, labelStyle, MobileBottomBar(), MobileBottomBarProps (+44 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.06
-Nodes (32): DrawnFeaturesList(), DrawnFeaturesListProps, GroupSectionProps, parseCoords(), FEATURE_ICONS, FeatureCard(), FeatureCardProps, getTypeText() (+24 more)
+Cohesion: 0.04
+Nodes (55): DeploymentSummaryCard(), DrawnFeaturesList(), DrawnFeaturesListProps, GroupSectionProps, parseCoords(), FEATURE_ICONS, FeatureCard(), FeatureCardProps (+47 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.05
-Nodes (72): MobilePersonalSheetProps, FeaturePopupSessionProps, ContainedTabProps, InfoTabProps, OperationTabProps, CONTAINER_STYLE, CustomMapPopup(), CustomMapPopupProps (+64 more)
+Nodes (53): CustomActivitiesSectionProps, CombinedDateEntry, CombinedGroupItem, HistoryTab(), HistoryTabProps, MONTH_NAMES, WEEKDAY_NAMES, WEEKDAY_SHORT (+45 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.07
-Nodes (44): CustomActivitiesSection(), CustomActivitiesSectionProps, selectStyle, GeneralTab(), GeneralTabProps, InfoTab(), formatCoordFromFeature(), formatCoordinates() (+36 more)
+Cohesion: 0.05
+Nodes (78): CONTAINER_STYLE, CustomMapPopup(), FeatureEditActions, TAB_BAR_STYLE, tabBtnStyle(), TabId, useFeaturePopupSession(), CustomActivitiesSection() (+70 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.19
-Nodes (12): CATEGORY_COLORS, useAppState(), loadPosition(), Position, savePosition(), useDraggable(), useFeatureDB(), useFeatureOrder() (+4 more)
+Cohesion: 0.29
+Nodes (5): AdminHeader(), AdminHeaderProps, AdminSection, UserNavMenu(), UserNavMenuProps
 
 ### Community 12 - "Community 12"
 Cohesion: 0.22
 Nodes (11): BitacoraCalendar(), BitacoraCalendarProps, formatDateStr(), MONTH_NAMES, pad2(), WEEKDAY_NAMES, buildDateRange(), DateTimeline() (+3 more)
 
 ### Community 13 - "Community 13"
-Cohesion: 0.17
-Nodes (22): SpatialHierarchy, useCollapsedChildren(), useCollapsedGroups(), useSpatialHierarchy(), BoxRect, buildHtmlLabels(), choosePlacement(), computeScreenLabels() (+14 more)
+Cohesion: 0.15
+Nodes (17): PizarraOperacional(), CreateWorkTeamModal(), DeleteConfirmModal(), DeleteConfirmModalProps, PizarraHeader(), PizarraHeaderProps, DeleteTarget, fetchFeatures() (+9 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.18
@@ -1157,20 +1152,20 @@ Cohesion: 0.00
 Nodes (488): AD, AE, AF, Africa, Africa/Abidjan, Africa/Algiers, Africa/Bissau, Africa/Cairo (+480 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.24
-Nodes (7): AdminHeader(), AdminHeaderProps, AdminSection, AuthModal(), UserNavMenu(), UserNavMenuProps, useAuth()
+Cohesion: 0.29
+Nodes (7): loadPosition(), Position, savePosition(), useDraggable(), useFeatureOrder(), IStorage, browserStorage
 
 ### Community 18 - "Community 18"
-Cohesion: 0.13
-Nodes (16): GroupFields(), GroupFieldsProps, inputStyle, labelStyle, DepartmentSelect(), DepartmentSelectProps, labelStyle, EditWorkTeamModal() (+8 more)
+Cohesion: 0.27
+Nodes (7): GroupFields(), GroupFieldsProps, EditWorkTeamModal(), Time24Input(), Time24InputProps, defaultGroup, formatPhone()
 
 ### Community 19 - "Community 19"
 Cohesion: 0.00
 Nodes (488): ES, AD, AE, AF, Africa, Africa/Abidjan, Africa/Algiers, Africa/Bissau (+480 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.38
-Nodes (4): MapArea, MapPoint, hexToRgbArray(), mapAreaToGraphic()
+Cohesion: 0.18
+Nodes (4): INovedadRepository, mockFeature, mockLog, mockNovedad
 
 ### Community 21 - "Community 21"
 Cohesion: 0.15
@@ -1189,12 +1184,12 @@ Cohesion: 0.02
 Nodes (120): accuracy, accuracyInformation, additionalCameraLocations, additionalCameraLocationsTooltip, additionalFootprints, additionalFootprintsTooltip, aspect, basemap (+112 more)
 
 ### Community 32 - "Community 32"
-Cohesion: 0.18
-Nodes (18): DeleteUserModal(), DeleteUserModalProps, EditUserModal(), EditUserModalProps, LayersSection(), LayersSectionProps, PERM_DEFS, UsersTable() (+10 more)
+Cohesion: 0.14
+Nodes (22): DeleteUserModal(), DeleteUserModalProps, EditUserModal(), EditUserModalProps, LayersSection(), LayersSectionProps, PERM_DEFS, UsersTable() (+14 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.08
-Nodes (26): 86975(), 49208(), 25098(), 49208(), 49208(), 17632(), 43166(), 49208() (+18 more)
+Cohesion: 0.05
+Nodes (22): 86975(), 49208(), 49208(), 49208(), 49208(), 17632(), 49208(), 43166() (+14 more)
 
 ### Community 34 - "Community 34"
 Cohesion: 0.02
@@ -1209,8 +1204,8 @@ Cohesion: 0.02
 Nodes (100): chooseTimezone, timezoneAEST, timezoneAKST, timezoneAlaska, timezoneAmman, timezoneAmsterdam, timezoneArizona, timezoneAstana (+92 more)
 
 ### Community 43 - "Community 43"
-Cohesion: 0.06
-Nodes (69): ActivePoint, computeActivePoints(), computeTeams(), TeamEntry, ViewMode, PizarraOperacional(), RangeReportModal(), RangeReportModalProps (+61 more)
+Cohesion: 0.07
+Nodes (60): ActivePoint, computeActivePoints(), computeTeams(), TeamEntry, ViewMode, RangeReportModal(), EMPTY_LOG, getRelevantLog() (+52 more)
 
 ### Community 48 - "Community 48"
 Cohesion: 0.03
@@ -1225,8 +1220,8 @@ Cohesion: 0.03
 Nodes (77): addAttachment, addField, allColums, attachments, attachmentsCount, attachmentThumbnail, attachmentType, centerOnSelection (+69 more)
 
 ### Community 52 - "Community 52"
-Cohesion: 0.15
-Nodes (16): FeatureSchema, initDatabase(), RxDrawnDatabaseCollections, RxDrawnFeatureCollection, supabase, deleteFeature(), resolveFeatureTitle(), updateFeatureCollapsed() (+8 more)
+Cohesion: 0.11
+Nodes (19): FeatureSchema, initDatabase(), RxDrawnDatabase, RxDrawnDatabaseCollections, RxDrawnFeatureCollection, RxDrawnFeatureDocument, GeoJSONFeature, useGeoJSONIO() (+11 more)
 
 ### Community 57 - "Community 57"
 Cohesion: 0.03
@@ -1277,32 +1272,36 @@ Cohesion: 0.04
 Nodes (55): addAttachment, attachments, cancelAssociationEditWarning, cancelEditTitle, cancelEditWarningMessage, cancelRequestTitle, cancelRequestWarningMessage, clearAreaOfInterest (+47 more)
 
 ### Community 88 - "Community 88"
-Cohesion: 0.04
-Nodes (83): ColorPicker(), ColorPickerProps, CONTAINER_STYLE, CustomMapPopup(), CustomMapPopupProps, FeatureEditActions, TAB_BAR_STYLE, tabBtnStyle() (+75 more)
+Cohesion: 0.06
+Nodes (58): ColorPicker(), ColorPickerProps, DRAW_TOOLS, DrawingToolbar(), DrawingToolbarProps, ToolId, GlobalStatsWidget(), MapComponent() (+50 more)
 
 ### Community 90 - "Community 90"
-Cohesion: 0.21
-Nodes (10): FeatureSchema, RxDrawnDatabase, RxDrawnDatabaseCollections, RxDrawnFeatureCollection, RxDrawnFeatureDocument, GeoJSONFeature, getPolygonCentroid(), isPointInPolygon() (+2 more)
+Cohesion: 0.38
+Nodes (4): MapArea, MapPoint, hexToRgbArray(), mapAreaToGraphic()
 
 ### Community 91 - "Community 91"
-Cohesion: 0.22
-Nodes (15): SORT_FIELDS, SortDirection, SortField, WorkTeamsTab(), WorkTeamsTabProps, SortableHeaderProps, WorkTeamsTableView(), WorkTeamsTableViewProps (+7 more)
+Cohesion: 0.12
+Nodes (26): CreateWorkTeamModalProps, DeleteConfirmModal(), DeleteConfirmModalProps, EditWorkTeamModalProps, teamIsBomberos(), pizarra/types.ts, DeleteTarget, WorkTeam (+18 more)
+
+### Community 93 - "Community 93"
+Cohesion: 0.19
+Nodes (11): FeatureSchema, initDatabase(), RxDrawnDatabase, RxDrawnDatabaseCollections, RxDrawnFeatureCollection, RxDrawnFeatureDocument, getPolygonCentroid(), isPointInPolygon() (+3 more)
 
 ### Community 95 - "Community 95"
+Cohesion: 0.42
+Nodes (5): CATEGORY_COLORS, useAppState(), useFeatureDB(), useFeatureVisibility(), useLocalStorageState()
+
+### Community 97 - "Community 97"
+Cohesion: 0.17
+Nodes (22): SpatialHierarchy, useCollapsedChildren(), useCollapsedGroups(), useSpatialHierarchy(), BoxRect, buildHtmlLabels(), choosePlacement(), computeScreenLabels() (+14 more)
+
+### Community 100 - "Community 100"
 Cohesion: 0.33
 Nodes (6): COG_SOURCES, getOrCreateCogLayer(), globalCogCache, LayerStatus, SwipeComparison(), SwipeComparisonProps
 
-### Community 97 - "Community 97"
+### Community 101 - "Community 101"
 Cohesion: 0.47
 Nodes (4): Toast(), setToastListener(), showToast(), ToastListener
-
-### Community 98 - "Community 98"
-Cohesion: 0.40
-Nodes (3): MetricCardProps, MetricCards(), MetricCardsProps
-
-### Community 101 - "Community 101"
-Cohesion: 0.20
-Nodes (11): CreateWorkTeamModalProps, DeleteConfirmModal(), DeleteConfirmModalProps, EditWorkTeamModalProps, teamIsBomberos(), pizarra/types.ts, DeleteTarget, WorkTeam (+3 more)
 
 ### Community 102 - "Community 102"
 Cohesion: 0.04
@@ -1329,40 +1328,24 @@ Cohesion: 0.04
 Nodes (44): chartTooltip, clearProfile, creatingPrompt-2d, creatingPrompt-3d, errors, invalidElevationInfo, invalidGeometry, noProfile (+36 more)
 
 ### Community 109 - "Community 109"
-Cohesion: 0.25
-Nodes (11): cleanText(), fetchFromKoboParallel(), fetchFromSupabase(), fetchInspecciones(), getKoboEndpoint(), KOBO_FIELDS_PARAM, KOBO_LA_GUAIRA_QUERY, parseRiesgoEtiqueta() (+3 more)
-
-### Community 110 - "Community 110"
-Cohesion: 0.32
-Nodes (12): buildAdaptiveLabelString(), buildCompactPinString(), buildHtmlLabelElement(), buildHtmlLabelString(), escapeHtml(), featureToLabelData(), getDarkerTone(), getFeatureCoordinates() (+4 more)
-
-### Community 111 - "Community 111"
-Cohesion: 0.20
-Nodes (3): CreateWorkTeamModal(), fetchFeatures(), rowToFeature()
+Cohesion: 0.40
+Nodes (3): MetricCardProps, MetricCards(), MetricCardsProps
 
 ### Community 112 - "Community 112"
-Cohesion: 0.20
-Nodes (7): AdminHeader(), AdminHeaderProps, AdminSection, TAB_BUTTON_STYLE(), MetricCardProps, MetricCards(), MetricCardsProps
+Cohesion: 0.32
+Nodes (6): AdminHeader(), AdminHeaderProps, AdminSection, TAB_BUTTON_STYLE(), UserNavMenu(), UserNavMenuProps
 
 ### Community 113 - "Community 113"
 Cohesion: 0.22
 Nodes (8): Design Health Score, Design Specificity Verdict, Minor Observations, Overall Impression, Persona Red Flags, Priority Issues, Questions to Consider, What's Working
 
 ### Community 117 - "Community 117"
-Cohesion: 0.40
-Nodes (5): statFieldStyle(), StatsField(), StatsFieldProps, WorkTeamStatsFields(), WorkTeamStatsFieldsProps
-
-### Community 118 - "Community 118"
-Cohesion: 0.53
-Nodes (3): initDatabase(), supabase, migrateRxDBToSupabase()
-
-### Community 119 - "Community 119"
-Cohesion: 0.50
-Nodes (3): Select(), SelectOption, SelectProps
+Cohesion: 0.09
+Nodes (17): CreateWorkTeamModal(), inputStyle, labelStyle, DepartmentSelect(), DepartmentSelectProps, labelStyle, inputStyle, labelStyle (+9 more)
 
 ### Community 122 - "Community 122"
-Cohesion: 0.15
-Nodes (21): DeleteUserModal(), DeleteUserModalProps, EditUserModal(), EditUserModalProps, LayersSection(), LayersSectionProps, PERM_DEFS, UsersTable() (+13 more)
+Cohesion: 0.11
+Nodes (26): DeleteUserModal(), DeleteUserModalProps, EditUserModal(), EditUserModalProps, LayersSection(), LayersSectionProps, MetricCardProps, MetricCards() (+18 more)
 
 ### Community 141 - "Community 141"
 Cohesion: 0.05
@@ -1453,8 +1436,8 @@ Cohesion: 0.07
 Nodes (29): beginning, color, end, errorLoadingLayer, follow, forward, frame, frameCenter (+21 more)
 
 ### Community 195 - "Community 195"
-Cohesion: 0.05
-Nodes (47): GroupFields(), GroupFieldsProps, Time24Input(), Time24InputProps, CreateWorkTeamModal(), CreateWorkTeamModalProps, inputStyle, labelStyle (+39 more)
+Cohesion: 0.14
+Nodes (21): CreateWorkTeamModalProps, EditWorkTeamModalProps, teamIsBomberos(), WorkTeam, WorkTeamCard(), WorkTeamCardProps, SORT_FIELDS, SortDirection (+13 more)
 
 ### Community 198 - "Community 198"
 Cohesion: 0.07
@@ -1729,8 +1712,8 @@ Cohesion: 0.10
 Nodes (20): Animate complex properties, Assess What "Extraordinary" Means Here, For data-heavy interfaces, For functional UI, For performance-critical UI, For visual/marketing surfaces, Implement with Discipline, Interact with the device (+12 more)
 
 ### Community 323 - "Community 323"
-Cohesion: 0.22
-Nodes (11): C, LoginField(), LoginFieldProps, LoginForm(), LoginFormProps, LoginSuccessScreen(), SectionButtonProps, RegisterForm() (+3 more)
+Cohesion: 0.15
+Nodes (16): AuthModal(), C, LoginField(), LoginFieldProps, LoginForm(), LoginFormProps, LoginSuccessScreen(), SectionButtonProps (+8 more)
 
 ### Community 324 - "Community 324"
 Cohesion: 0.10
@@ -1769,8 +1752,8 @@ Cohesion: 0.10
 Nodes (20): allLayersCount, collapseAll, deselectFeature, deselectGroup, deselectLayer, featuresCount, featuresCountShowing, filter (+12 more)
 
 ### Community 338 - "Community 338"
-Cohesion: 0.25
-Nodes (9): C, LoginField(), LoginFieldProps, LoginForm(), LoginFormProps, LoginSuccessScreen(), SectionButtonProps, RegisterForm() (+1 more)
+Cohesion: 0.18
+Nodes (13): AuthModal(), LoginPage(), useAuth(), C, LoginField(), LoginFieldProps, LoginForm(), LoginFormProps (+5 more)
 
 ### Community 339 - "Community 339"
 Cohesion: 0.10
@@ -2538,7 +2521,7 @@ Nodes (8): Cadence, Confirm and stop, Phase 1: Discovery interview, Phase 2: Res
 
 ### Community 710 - "Community 710"
 Cohesion: 0.06
-Nodes (43): DepartmentTabs(), DepartmentTabsProps, tabs, RealtimeStatusBadge(), RealtimeStatusBadgeProps, MapArea, MapPoint, parseCoords() (+35 more)
+Nodes (42): DepartmentTabs(), DepartmentTabsProps, tabs, RealtimeStatusBadge(), RealtimeStatusBadgeProps, MapArea, MapPoint, parseCoords() (+34 more)
 
 ### Community 712 - "Community 712"
 Cohesion: 0.22
@@ -4197,24 +4180,24 @@ Cohesion: 0.67
 Nodes (3): absolute, relative, direction
 
 ## Knowledge Gaps
-- **10220 isolated node(s):** `$schema`, `plugin`, `@opencode-ai/plugin`, `version`, `access` (+10215 more)
+- **10226 isolated node(s):** `$schema`, `plugin`, `@opencode-ai/plugin`, `version`, `access` (+10221 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **265 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **263 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `M()` connect `Community 33` to `Community 513`, `Community 131`, `Community 132`, `Community 137`, `Community 522`, `Community 269`, `Community 145`, `Community 146`, `Community 152`, `Community 408`, `Community 160`, `Community 40`, `Community 169`, `Community 170`, `Community 177`, `Community 693`, `Community 185`, `Community 443`, `Community 315`, `Community 445`, `Community 316`, `Community 447`, `Community 448`, `Community 194`, `Community 451`, `Community 454`, `Community 589`, `Community 334`, `Community 336`, `Community 337`, `Community 100`, `Community 356`, `Community 369`, `Community 245`, `Community 125`?**
+- **Why does `M()` connect `Community 33` to `Community 513`, `Community 131`, `Community 132`, `Community 137`, `Community 522`, `Community 269`, `Community 13`, `Community 145`, `Community 146`, `Community 408`, `Community 160`, `Community 40`, `Community 169`, `Community 170`, `Community 177`, `Community 693`, `Community 185`, `Community 443`, `Community 315`, `Community 445`, `Community 316`, `Community 447`, `Community 448`, `Community 194`, `Community 451`, `Community 454`, `Community 589`, `Community 334`, `Community 336`, `Community 337`, `Community 356`, `Community 369`, `Community 245`, `Community 124`?**
   _High betweenness centrality (0.019) - this node is a cross-community bridge._
-- **Why does `DrawnFeature` connect `Community 88` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 11`, `Community 13`, `Community 18`, `Community 43`, `Community 52`, `Community 195`, `Community 710`, `Community 90`, `Community 93`, `Community 110`, `Community 111`, `Community 501`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+- **Why does `DrawnFeature` connect `Community 0` to `Community 1`, `Community 2`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 13`, `Community 17`, `Community 20`, `Community 43`, `Community 52`, `Community 710`, `Community 88`, `Community 93`, `Community 95`, `Community 97`, `Community 98`, `Community 117`, `Community 501`?**
+  _High betweenness centrality (0.004) - this node is a cross-community bridge._
 - **Why does `90644()` connect `Community 33` to `Community 51`?**
   _High betweenness centrality (0.002) - this node is a cross-community bridge._
 - **What connects `$schema`, `plugin`, `@opencode-ai/plugin` to the rest of the system?**
-  _10220 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _10226 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.09915966386554621 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07033248081841433 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.08293224731580896 - nodes in this community are weakly interconnected._
-- **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.12561576354679804 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07685185185185185 - nodes in this community are weakly interconnected._
+- **Should `Community 3` be split into smaller, more focused modules?**
+  _Cohesion score 0.14705882352941177 - nodes in this community are weakly interconnected._

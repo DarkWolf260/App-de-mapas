@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, NovedadEntry } from "../types";
-import { computeContainedItems } from "../utils/spatialUtils";
+import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView } from "../types";
 import { Lock, Unlock, FileText, Settings, History, Info, X, GraduationCap, Hammer, Calendar, Tag, MessageSquare } from "lucide-react";
 import type { UserPermissions } from "../services/adminUsersService";
 import { getDemolitionInfo, getFeatureActivityHistory } from "../utils/activityCatalog";
@@ -79,10 +78,11 @@ const TAB_BAR_STYLE: React.CSSProperties = {
 function tabBtnStyle(active: boolean): React.CSSProperties {
   return {
     ...TAB_BTN_BASE,
-    background: active ? "rgba(56, 189, 248, 0.15)" : "transparent",
-    color: active ? "var(--color-info)" : "var(--text-muted)",
-    padding: "6px 10px",
-    fontSize: "0.72rem",
+    background: active ? "rgba(249, 115, 22, 0.16)" : "transparent",
+    color: active ? "#fdba74" : "#94a3b8",
+    borderColor: active ? "rgba(249, 115, 22, 0.35)" : "transparent",
+    padding: "6px 8px",
+    fontSize: "0.71rem",
     fontWeight: 700,
   };
 }
@@ -165,6 +165,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     const demolition = getDemolitionInfo(activeFeat);
     return (
       <div
+        className="demolition-card-popup"
         role="dialog"
         aria-label={`Información de demolición: ${activeFeat.title}`}
         style={{
@@ -349,7 +350,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
             justifyContent: "space-between",
             alignItems: "flex-start",
             gap: "10px",
-            borderBottom: "1px solid rgba(139, 92, 246, 0.25)",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
             paddingBottom: "12px",
           }}
         >
@@ -358,19 +359,20 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "5px",
+                gap: "6px",
                 alignSelf: "flex-start",
                 padding: "3px 8px",
                 borderRadius: "999px",
-                background: "rgba(139, 92, 246, 0.18)",
-                border: "1px solid rgba(139, 92, 246, 0.45)",
-                color: "#c4b5fd",
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.14)",
+                color: "#cbd5e1",
                 fontSize: "0.62rem",
                 fontWeight: 800,
                 letterSpacing: "0.04em",
                 textTransform: "uppercase",
               }}
             >
+              <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#8b5cf6", display: "inline-block" }} />
               <GraduationCap size={12} aria-hidden="true" /> Formación y Prevención
             </span>
             <h3
@@ -431,8 +433,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
               <div
                 key={`${entry.date}-${entry.department}`}
                 style={{
-                  background: "rgba(139, 92, 246, 0.06)",
-                  border: "1px solid rgba(139, 92, 246, 0.24)",
+                  background: "rgba(255, 255, 255, 0.025)",
+                  border: "1px solid rgba(255, 255, 255, 0.09)",
                   borderRadius: "10px",
                   padding: "10px 12px",
                   display: "flex",
@@ -442,7 +444,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: 800, color: "#e2e8f0" }}>
-                    <Calendar size={12} style={{ color: "#a78bfa" }} aria-hidden="true" />
+                    <Calendar size={12} style={{ color: "#94a3b8" }} aria-hidden="true" />
                     {formatSpanishDate(entry.date)}
                   </span>
                   <span
@@ -451,7 +453,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                       fontWeight: 700,
                       padding: "2px 7px",
                       borderRadius: "999px",
-                      background: entry.department === "bomberos" ? "rgba(239, 68, 68, 0.16)" : "rgba(249, 115, 22, 0.16)",
+                      background: entry.department === "bomberos" ? "rgba(239, 68, 68, 0.14)" : "rgba(249, 115, 22, 0.14)",
                       color: entry.department === "bomberos" ? "#fca5a5" : "#fdba74",
                       border: `1px solid ${entry.department === "bomberos" ? "rgba(239, 68, 68, 0.35)" : "rgba(249, 115, 22, 0.35)"}`,
                     }}
@@ -465,8 +467,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                     <div
                       key={act.id || `${entry.date}-${idx}`}
                       style={{
-                        background: "rgba(0, 0, 0, 0.3)",
-                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        background: "rgba(0, 0, 0, 0.28)",
+                        border: "1px solid rgba(255, 255, 255, 0.07)",
                         borderRadius: "7px",
                         padding: "7px 9px",
                         display: "flex",
@@ -476,17 +478,17 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                     >
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.76rem", fontWeight: 700, color: "#ffffff" }}>
-                          <Tag size={12} style={{ color: "#c4b5fd", flexShrink: 0 }} aria-hidden="true" />
+                          <Tag size={12} style={{ color: "#94a3b8", flexShrink: 0 }} aria-hidden="true" />
                           {act.name}
                         </span>
                         {act.value && (
                           <span
                             style={{
-                              fontSize: "0.74rem",
+                              fontSize: "0.72rem",
                               fontWeight: 800,
-                              color: "#c4b5fd",
-                              background: "rgba(139, 92, 246, 0.18)",
-                              border: "1px solid rgba(139, 92, 246, 0.38)",
+                              color: "#fdba74",
+                              background: "rgba(249, 115, 22, 0.12)",
+                              border: "1px solid rgba(249, 115, 22, 0.3)",
                               borderRadius: "6px",
                               padding: "1px 7px",
                               fontVariantNumeric: "tabular-nums",
@@ -498,7 +500,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
                       </div>
                       {act.description && (
                         <div style={{ display: "flex", alignItems: "flex-start", gap: "5px", fontSize: "0.7rem", color: "#cbd5e1", lineHeight: 1.4 }}>
-                          <MessageSquare size={11} style={{ color: "#a78bfa", flexShrink: 0, marginTop: "2px" }} aria-hidden="true" />
+                          <MessageSquare size={11} style={{ color: "#94a3b8", flexShrink: 0, marginTop: "2px" }} aria-hidden="true" />
                           <span>{act.description}</span>
                         </div>
                       )}
@@ -513,27 +515,9 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
     );
   }
 
-  const containedItems = computeContainedItems(activeFeat, sketchLayer, drawnFeatures);
-
-  const containedNovedades =
-    !isPolygon || containedItems.length === 0
-      ? []
-      : (containedItems
-          .map((feat) => {
-            const log = feat.dailyLogs?.find((l) =>
-              l.date === popupEditDate &&
-              (activeDepartment === "mixto"
-                ? true
-                : (l.department || "pc") === (activeDepartment === "bomberos" ? "bomberos" : "pc"))
-            );
-            const novedades = log?.novedades || [];
-            const observations = log?.observations?.trim() || "";
-            if (novedades.length === 0 && !observations) return null;
-            return { origin: feat.title || `Punto ${feat.id}`, originFeatId: feat.id, novedades };
-          })
-          .filter(Boolean) as Array<{ origin: string; originFeatId?: number | string; novedades: NovedadEntry[] }>);
-
   const showSketchTabs = layerVisibility.sketch && canEditMap;
+  const historyCount = activeFeat.dailyLogs?.length || 0;
+  const historyLabel = historyCount > 0 ? `Historial (${historyCount})` : "Historial";
 
   return (
     <div className="custom-map-popup right-sidebar-popup" style={CONTAINER_STYLE}>
@@ -543,18 +527,33 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          gap: "10px",
           borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
           paddingBottom: "10px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+          <span
+            title={`Color del punto: ${session.localColor}`}
+            style={{
+              width: "11px",
+              height: "11px",
+              borderRadius: "50%",
+              background: session.localColor || "#991b1b",
+              border: "1.5px solid rgba(255, 255, 255, 0.78)",
+              boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.5)",
+              flexShrink: 0,
+            }}
+          />
           <span
             style={{
               fontWeight: 800,
               fontSize: "0.9rem",
-              color: session.localColor,
+              color: "#f8fafc",
               textTransform: "uppercase",
-              letterSpacing: "0.05em",
+              letterSpacing: "0.04em",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
             {activeFeat.title}
@@ -607,19 +606,19 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           </button>
           {canEditLog && (
             <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
-              <FileText size={12} /> Editar Grupos
+              <FileText size={12} /> Operación
             </button>
           )}
           {(isPoint || isPolygon) && (
             <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}>
-              <History size={12} /> Historial
+              <History size={12} /> {historyLabel}
             </button>
           )}
         </div>
       )}
 
-      {/* Tab Selector — canEditMap (sketch off) */}
-      {canEditMap && !layerVisibility.sketch && (
+      {/* Tab Selector — canEditMap (point or polygon, sketch on or off) */}
+      {canEditMap && (isPoint || isPolygon) && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}>
             <Settings size={12} /> General
@@ -628,48 +627,10 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
             <Info size={12} /> Información
           </button>
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
-            <FileText size={12} /> Editar Grupos
-          </button>
-          {(isPoint || isPolygon) && (
-            <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}>
-              <History size={12} /> Historial
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Tab Selector — point with canEditMap (sketch on) */}
-      {canEditMap && isPoint && layerVisibility.sketch && (
-        <div style={TAB_BAR_STYLE}>
-          <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}>
-            <Settings size={12} /> General
-          </button>
-          <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}>
-            <Info size={12} /> Información
-          </button>
-          <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
-            <FileText size={12} /> Editar Grupos
+            <FileText size={12} /> Operación
           </button>
           <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}>
-            <History size={12} /> Historial
-          </button>
-        </div>
-      )}
-
-      {/* Tab Selector — polygon with canEditMap (sketch on) */}
-      {canEditMap && isPolygon && layerVisibility.sketch && (
-        <div style={TAB_BAR_STYLE}>
-          <button onClick={() => setActiveTab("general")} style={tabBtnStyle(activeTab === "general")}>
-            <Settings size={12} /> General
-          </button>
-          <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}>
-            <Info size={12} /> Información
-          </button>
-          <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
-            <FileText size={12} /> Editar Grupos
-          </button>
-          <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}>
-            <History size={12} /> Historial
+            <History size={12} /> {historyLabel}
           </button>
         </div>
       )}
@@ -683,34 +644,21 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         </div>
       )}
 
-      {/* Tab Content — Info */}
+      {/* Tab Content — Info (vista situacional de solo lectura + check rápido de llegada) */}
       {activeTab === "info" && (
         <InfoTab
           activeFeat={activeFeat}
           dailyLog={session.localLog}
-          localLog={session.localLog}
           mergedLog={session.mergedLog}
-          onEdit={() => canEditLog && setActiveTab("operation")}
           drawnFeatures={drawnFeatures}
           popupEditDate={popupEditDate}
+          activeDepartment={activeDepartment}
+          selectedDept={session.selectedDept}
           isAdmin={isAdmin}
           canEdit={canEditLog}
           canToggleArrival={canToggleArrival}
+          onEdit={() => canEditLog && setActiveTab("operation")}
           onToggleArrivalGroup={session.handleToggleArrivalGroup}
-          onGroupFieldChange={session.handleGroupFieldChange}
-          onGeneralFieldChange={session.handleGeneralFieldChange}
-          onSaveStats={session.handleLogSave}
-          saveSuccess={session.logSaveSuccess}
-          novedades={session.localLog.novedades || []}
-          onAddNovedad={session.handleAddNovedad}
-          onDeleteNovedad={session.handleDeleteNovedad}
-          onUpdateNovedad={session.handleUpdateNovedad}
-          containedNovedades={containedNovedades}
-          onNavigateToFeature={onNavigateToFeature}
-          activeDepartment={activeDepartment}
-          selectedDept={session.selectedDept}
-          onDepartmentSelect={session.setSelectedDept}
-          onViewHistory={() => setActiveTab("history")}
         />
       )}
 
@@ -743,7 +691,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         />
       )}
 
-      {/* Tab Content — Operation */}
+      {/* Tab Content — Operation (único editor del reporte diario) */}
       {activeTab === "operation" && (
         <OperationTab
           localLog={session.localLog}
@@ -755,6 +703,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           activeDepartment={activeDepartment}
           selectedDept={session.selectedDept}
           onDepartmentSelect={session.setSelectedDept}
+          isPolygon={isPolygon}
         />
       )}
 

@@ -199,69 +199,85 @@ function App() {
                 top: 0,
                 left: 0,
                 right: 0,
-                height: "58px",
-                background: "rgba(10, 15, 29, 0.95)",
+                height: "56px",
+                background: "rgba(10, 15, 29, 0.96)",
                 backdropFilter: "blur(16px)",
                 WebkitBackdropFilter: "blur(16px)",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.09)",
                 zIndex: 130,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                padding: "0 14px",
-                color: "#ffffff",
+                padding: "0 12px",
+                color: "#f8fafc",
                 fontFamily: "var(--font-sans)",
-                boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.45)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                 <button
-                  onClick={() => state.setSidebarCollapsed(!state.sidebarCollapsed)}
+                  type="button"
+                  onClick={() => {
+                    setMobilePanel(null);
+                    state.setSidebarCollapsed(!state.sidebarCollapsed);
+                  }}
                   style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    borderRadius: "8px",
-                    color: "#ffffff",
+                    background: "rgba(255, 255, 255, 0.05)",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    borderRadius: "9px",
+                    color: "#f8fafc",
                     width: "36px",
                     height: "36px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     cursor: "pointer",
+                    flexShrink: 0,
                   }}
+                  aria-label="Abrir menú lateral"
                   title="Abrir menú"
                 >
-                  <Menu size={20} />
+                  <Menu size={19} aria-hidden="true" />
                 </button>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "9px", minWidth: 0 }}>
                   <div
                     style={{
-                      width: "34px",
-                      height: "34px",
-                      borderRadius: "50%",
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "9px",
                       background: "linear-gradient(135deg, #f97316, #ea580c)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      boxShadow: "0 0 12px rgba(249,115,22,0.45)",
+                      boxShadow: "0 2px 10px rgba(249, 115, 22, 0.35)",
                       flexShrink: 0,
                     }}
                   >
-                    <Activity size={19} color="#ffffff" />
+                    <Activity size={17} color="#ffffff" aria-hidden="true" />
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
-                    <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#ffffff", letterSpacing: "0.02em" }}>
+                  <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2, minWidth: 0 }}>
+                    <span style={{ fontWeight: 800, fontSize: "0.9rem", color: "#f8fafc", letterSpacing: "0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       COE La Guaira
                     </span>
-                    <span style={{ fontSize: "0.68rem", color: "var(--accent-orange)", fontWeight: 700 }}>
-                      SIG Protección Civil
+                    <span style={{ fontSize: "0.62rem", color: "#fdba74", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {state.layerVisibility.formacion
+                        ? "Formación y Prevención"
+                        : state.layerVisibility.demolidos
+                          ? "Edificios Demolidos"
+                          : state.layerVisibility.inspecciones
+                            ? "Inspecciones"
+                            : state.activeDepartment === "bomberos"
+                              ? "Mando Bomberos"
+                              : state.activeDepartment === "pc"
+                                ? "Mando PC"
+                                : "Mando Mixto"}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
                 <UserNavMenu />
               </div>
             </div>
@@ -289,7 +305,10 @@ function App() {
           <Sidebar
             points={state.points}
             areas={state.areas}
-            onSelectItem={state.handleSelectItem}
+            onSelectItem={(id, type) => {
+              state.handleSelectItem(id, type);
+              if (isMobile) state.setSidebarCollapsed(true);
+            }}
             onDeleteItem={state.handleDeleteItem}
             onImportData={canEditMap ? state.handleImportData : undefined}
             selectedItemId={state.selectedItemId}
@@ -405,6 +424,8 @@ function App() {
 
           {isMobile && (
             <MobileBottomBar
+              activePanel={mobilePanel}
+              bitacoraOpen={state.rangeReportFeature !== null}
               onOpenPersonal={() => setMobilePanel(mobilePanel === 'personal' ? null : 'personal')}
               onOpenLayers={() => setMobilePanel(mobilePanel === 'layers' ? null : 'layers')}
               onOpenBitacora={() => { setMobilePanel(null); state.setRangeReportFeature('all'); }}
@@ -413,18 +434,19 @@ function App() {
           )}
 
           {isMobile && mobilePanel === 'personal' && (
-            <Sheet open={true} onClose={() => setMobilePanel(null)} height="65vh">
+            <Sheet open={true} onClose={() => setMobilePanel(null)} height="68dvh">
               <MobilePersonalSheet
                 drawnFeatures={state.drawnFeatures}
                 selectedDate={state.selectedDate}
                 activeDepartment={state.activeDepartment}
+                onDepartmentChange={state.setActiveDepartment}
                 onSelectFeature={(feat) => { setMobilePanel(null); state.setZoomToFeature(feat); }}
               />
             </Sheet>
           )}
 
           {isMobile && mobilePanel === 'layers' && (
-            <Sheet open={true} onClose={() => setMobilePanel(null)} height="60vh">
+            <Sheet open={true} onClose={() => setMobilePanel(null)} height="66dvh">
               <MobileLayersSheet
                 layerVisibility={state.layerVisibility}
                 onToggleLayer={state.handleToggleLayer}
@@ -433,11 +455,11 @@ function App() {
           )}
 
           {isMobile && mobilePanel === 'settings' && (
-            <Sheet open={true} onClose={() => setMobilePanel(null)} height="55vh">
+            <Sheet open={true} onClose={() => setMobilePanel(null)} height="58dvh">
               <MobileSettingsSheet
                 layerVisibility={state.layerVisibility}
                 onToggleLayer={state.handleToggleLayer}
-                canEditMap={isAuthenticated && (isAdmin || !!permissions?.edit_map)}
+                canEditMap={isAuthenticated && !isSuspended && (isAdmin || !!permissions?.edit_map)}
               />
             </Sheet>
           )}

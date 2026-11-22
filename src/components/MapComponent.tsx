@@ -46,10 +46,19 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
     onUpdateFeatureCollapsed,
   } = actions;
 
-  const [widgetCollapsed, setWidgetCollapsed] = React.useState(() => {
-    return localStorage.getItem("pc_widget_collapsed") === "true";
+  const [activeRightMenu, setActiveRightMenu] = React.useState<"settings" | "personal" | null>(() => {
+    return localStorage.getItem("pc_widget_collapsed") === "false" ? "personal" : null;
   });
-  const [showMapSettings, setShowMapSettings] = React.useState(false);
+  const showMapSettings = activeRightMenu === "settings";
+  const widgetCollapsed = activeRightMenu !== "personal";
+
+  const handleToggleRightMenu = React.useCallback((menu: "settings" | "personal") => {
+    setActiveRightMenu((prev) => {
+      const next = prev === menu ? null : menu;
+      localStorage.setItem("pc_widget_collapsed", String(next !== "personal"));
+      return next;
+    });
+  }, []);
   const [isMobile, setIsMobile] = React.useState(() => typeof window !== "undefined" && window.innerWidth <= 768);
 
   React.useEffect(() => {
@@ -366,8 +375,12 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
           {actions.onOpenRangeReport && (
             <button
               type="button"
-              className="hud-icon-square-btn bitacora-floating-btn"
-              onClick={() => actions.onOpenRangeReport && actions.onOpenRangeReport("all")}
+              className={`hud-icon-square-btn bitacora-floating-btn ${ui.bitacoraOpen ? "active" : ""}`}
+              onClick={() => {
+                setActiveRightMenu(null);
+                localStorage.setItem("pc_widget_collapsed", "true");
+                actions.onOpenRangeReport?.("all");
+              }}
               aria-label="Abrir panel de estadísticas y reporte por rango"
               title="Estadísticas y Reporte por Rango"
               style={{ pointerEvents: "auto" }}
@@ -383,7 +396,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
                 layerVisibility={layerVisibility}
                 onToggleLayer={props.onToggleLayer}
                 expanded={showMapSettings}
-                onToggle={() => setShowMapSettings((v) => !v)}
+                onToggle={() => handleToggleRightMenu("settings")}
                 canEditMap={canEditMap}
               />
             </div>
@@ -395,7 +408,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
               drawnFeatures={drawnFeatures}
               widgetCollapsed={widgetCollapsed}
               onToggleCollapse={(collapsed) => {
-                setWidgetCollapsed(collapsed);
+                setActiveRightMenu(collapsed ? null : "personal");
                 localStorage.setItem("pc_widget_collapsed", String(collapsed));
               }}
               onZoomToFeature={onZoomToFeature}

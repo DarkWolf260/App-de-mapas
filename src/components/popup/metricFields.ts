@@ -2,23 +2,23 @@ import type { DailyLog, GroupLogEntry, FeatureType, DrawnFeature } from "../../t
 import { getGeometryHandler } from "../../utils/geometryHandlers";
 
 export const METRIC_FIELDS = [
-  { label: "Rescat.", field: "rescuedCount" as const, color: "var(--color-info)" },
+  { label: "Rescat.", field: "rescuedCount" as const, color: "#38bdf8" },
   { label: "Recup.", field: "recoveredCount" as const, color: "#ef4444" },
-  { label: "Masc.", field: "rescuedPetsCount" as const, color: "var(--color-green)" },
-  { label: "Atenc.", field: "prehospitalCareCount" as const, color: "#0ea5e9" },
-  { label: "Trasl.", field: "transfersCount" as const, color: "var(--color-purple)" },
+  { label: "Masc.", field: "rescuedPetsCount" as const, color: "#22c55e" },
+  { label: "Atenc.", field: "prehospitalCareCount" as const, color: "#fb923c" },
+  { label: "Trasl.", field: "transfersCount" as const, color: "#cbd5e1" },
 ];
 
 export const COMMISSION_INDEPENDENT = "independiente";
 export const COMMISSION_PREFIX = "comision_";
 
 export const GROUP_COLORS = [
-  "var(--color-info)",
-  "var(--color-purple)",
-  "#c084fc",
-  "#fb923c",
-  "#34d399",
-  "#f87171",
+  "#f8fafc",
+  "#fdba74",
+  "#93c5fd",
+  "#86efac",
+  "#fca5a5",
+  "#cbd5e1",
 ];
 
 export function getGroupColor(idx: number): string {

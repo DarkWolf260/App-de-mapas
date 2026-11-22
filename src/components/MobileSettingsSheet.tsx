@@ -1,6 +1,6 @@
 import React from "react";
 import type { LayerVisibility } from "../types";
-import { Eye, EyeOff } from "lucide-react";
+import { Settings } from "lucide-react";
 
 interface MobileSettingsSheetProps {
   layerVisibility: LayerVisibility;
@@ -8,112 +8,74 @@ interface MobileSettingsSheetProps {
   canEditMap?: boolean;
 }
 
-const toggleStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  padding: "12px 14px",
-  background: "rgba(255,255,255,0.03)",
-  borderRadius: "10px",
-  border: "1px solid rgba(255,255,255,0.06)",
-  cursor: "pointer",
-  fontSize: "0.78rem",
-  fontWeight: 600,
-  transition: "background 0.15s",
-};
+const TOGGLES: Array<{ key: keyof LayerVisibility; label: string; description: string }> = [
+  { key: "sketch", label: "Herramientas de Dibujo", description: "Mostrar barra para crear o editar puntos y áreas" },
+  { key: "polygonLabels", label: "Nombres de Polígonos", description: "Mostrar nombres de sectores en el mapa" },
+  { key: "pointLabels", label: "Nombres de Sitios de Trabajo", description: "Mostrar etiquetas y tarjetas de puntos" },
+  { key: "basemapLabels", label: "Etiquetas de Calles y Mapa Base", description: "Mostrar vías y referencias del mapa satelital" },
+  { key: "hideNestedAreas", label: "Ocultar Áreas Anidadas", description: "Evitar superposición de sub-sectores" },
+];
 
 export const MobileSettingsSheet: React.FC<MobileSettingsSheetProps> = ({
   layerVisibility,
   onToggleLayer,
   canEditMap = false,
 }) => {
+  const visibleToggles = TOGGLES.filter((t) => t.key !== "sketch" || canEditMap);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontFamily: "var(--font-sans)", color: "#f8fafc" }}>
-      <div style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-        Ajustes de Mapa
-      </div>
-
-      {canEditMap && (
-        <div style={toggleStyle} onClick={() => onToggleLayer("sketch")}>
-          <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            {layerVisibility.sketch ? <Eye size={16} color="#22c55e" /> : <EyeOff size={16} color="var(--text-muted)" />}
-            Capa de Dibujo
-          </span>
-          <span style={{
-            width: "32px", height: "18px", borderRadius: "9px",
-            background: layerVisibility.sketch ? "rgba(34,197,94,0.3)" : "var(--bg-tertiary)",
-            border: `1px solid ${layerVisibility.sketch ? "rgba(34,197,94,0.5)" : "var(--border-color)"}`,
-            position: "relative", transition: "all 0.2s",
-          }}>
-            <span style={{
-              position: "absolute", top: "2px", left: layerVisibility.sketch ? "16px" : "2px",
-              width: "12px", height: "12px", borderRadius: "50%",
-              background: layerVisibility.sketch ? "#22c55e" : "var(--text-muted)",
-              transition: "left 0.2s",
-            }} />
-          </span>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "8px" }}>
+        <Settings size={16} style={{ color: "#fdba74" }} />
+        <div>
+          <div style={{ fontSize: "0.84rem", fontWeight: 800, color: "#f8fafc" }}>
+            Opciones del Mapa
+          </div>
+          <div style={{ fontSize: "0.66rem", color: "#94a3b8" }}>
+            Visibilidad de etiquetas y controles cartográficos
+          </div>
         </div>
-      )}
-
-      <div style={toggleStyle} onClick={() => onToggleLayer("polygonLabels")}>
-        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {layerVisibility.polygonLabels ? <Eye size={16} color="#22c55e" /> : <EyeOff size={16} color="var(--text-muted)" />}
-          Etiquetas de Polígonos
-        </span>
-        <span style={{
-          width: "32px", height: "18px", borderRadius: "9px",
-          background: layerVisibility.polygonLabels ? "rgba(34,197,94,0.3)" : "var(--bg-tertiary)",
-          border: `1px solid ${layerVisibility.polygonLabels ? "rgba(34,197,94,0.5)" : "var(--border-color)"}`,
-          position: "relative", transition: "all 0.2s",
-        }}>
-          <span style={{
-            position: "absolute", top: "2px", left: layerVisibility.polygonLabels ? "16px" : "2px",
-            width: "12px", height: "12px", borderRadius: "50%",
-            background: layerVisibility.polygonLabels ? "#22c55e" : "var(--text-muted)",
-            transition: "left 0.2s",
-          }} />
-        </span>
       </div>
 
-      <div style={toggleStyle} onClick={() => onToggleLayer("pointLabels")}>
-        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {layerVisibility.pointLabels ? <Eye size={16} color="#22c55e" /> : <EyeOff size={16} color="var(--text-muted)" />}
-          Etiquetas de Puntos
-        </span>
-        <span style={{
-          width: "32px", height: "18px", borderRadius: "9px",
-          background: layerVisibility.pointLabels ? "rgba(34,197,94,0.3)" : "var(--bg-tertiary)",
-          border: `1px solid ${layerVisibility.pointLabels ? "rgba(34,197,94,0.5)" : "var(--border-color)"}`,
-          position: "relative", transition: "all 0.2s",
-        }}>
-          <span style={{
-            position: "absolute", top: "2px", left: layerVisibility.pointLabels ? "16px" : "2px",
-            width: "12px", height: "12px", borderRadius: "50%",
-            background: layerVisibility.pointLabels ? "#22c55e" : "var(--text-muted)",
-            transition: "left 0.2s",
-          }} />
-        </span>
-      </div>
-
-
-      <div style={toggleStyle} onClick={() => onToggleLayer("hideNestedAreas")}>
-        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {layerVisibility.hideNestedAreas ? <Eye size={16} color="#22c55e" /> : <EyeOff size={16} color="var(--text-muted)" />}
-          Ocultar Áreas Anidadas
-        </span>
-        <span style={{
-          width: "32px", height: "18px", borderRadius: "9px",
-          background: layerVisibility.hideNestedAreas ? "rgba(34,197,94,0.3)" : "var(--bg-tertiary)",
-          border: `1px solid ${layerVisibility.hideNestedAreas ? "rgba(34,197,94,0.5)" : "var(--border-color)"}`,
-          position: "relative", transition: "all 0.2s",
-        }}>
-          <span style={{
-            position: "absolute", top: "2px", left: layerVisibility.hideNestedAreas ? "16px" : "2px",
-            width: "12px", height: "12px", borderRadius: "50%",
-            background: layerVisibility.hideNestedAreas ? "#22c55e" : "var(--text-muted)",
-            transition: "left 0.2s",
-          }} />
-        </span>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {visibleToggles.map(({ key, label, description }) => {
+          const active = !!layerVisibility[key];
+          return (
+            <div
+              key={key}
+              onClick={() => onToggleLayer(key)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                padding: "11px 12px",
+                background: active ? "rgba(249, 115, 22, 0.08)" : "rgba(255, 255, 255, 0.025)",
+                borderRadius: "10px",
+                border: `1px solid ${active ? "rgba(249, 115, 22, 0.3)" : "rgba(255, 255, 255, 0.08)"}`,
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#f8fafc" }}>
+                  {label}
+                </div>
+                <div style={{ fontSize: "0.64rem", color: "#94a3b8" }}>
+                  {description}
+                </div>
+              </div>
+              <label className="toggle-switch" onClick={(e) => e.stopPropagation()} style={{ flexShrink: 0 }}>
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={() => onToggleLayer(key)}
+                />
+                <span className="slider" />
+              </label>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

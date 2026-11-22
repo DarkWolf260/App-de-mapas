@@ -106,73 +106,96 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
       <div
         style={{
           position: "fixed",
-          top: "58px",
+          top: "56px",
           left: 0,
           right: 0,
-          height: "42px",
-          background: "rgba(10, 15, 28, 0.95)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
+          height: "44px",
+          background: "rgba(10, 15, 29, 0.94)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
           borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
           zIndex: 120,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 12px",
+          gap: "8px",
+          padding: "0 10px",
           fontFamily: "var(--font-sans)",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.4)",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.35)",
+          fontVariantNumeric: "tabular-nums",
         }}
       >
         {isInspeccionesMode ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, justifyContent: "center", overflow: "hidden" }}>
-            <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "#ef4444" }}>{inspeccionCounts.red} Alto</span>
-            <span style={{ color: "rgba(255,255,255,0.15)" }}>|</span>
-            <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "#f59e0b" }}>{inspeccionCounts.yellow} Prec.</span>
-            <span style={{ color: "rgba(255,255,255,0.15)" }}>|</span>
-            <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "#22c55e" }}>{inspeccionCounts.green} Bajo</span>
-            <span style={{ color: "rgba(255,255,255,0.15)" }}>|</span>
-            <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "#818cf8" }}>{inspeccionCounts.total} Total</span>
-          </div>
+          inspeccionesLoading ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, justifyContent: "center", color: "#cbd5e1", fontSize: "0.74rem", fontWeight: 700 }}>
+              <Building2 size={13} style={{ color: "var(--accent-orange)" }} />
+              <span>Cargando inspecciones...</span>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, justifyContent: "space-around", minWidth: 0 }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <span style={{ fontSize: "0.94rem", fontWeight: 800, color: "#ef4444", lineHeight: 1.05 }}>{inspeccionCounts.red}</span>
+                <span style={{ fontSize: "0.52rem", fontWeight: 700, color: "#fca5a5", textTransform: "uppercase" }}>Alto</span>
+              </div>
+              <div style={{ width: "1px", height: "18px", background: "rgba(255,255,255,0.08)" }} />
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <span style={{ fontSize: "0.94rem", fontWeight: 800, color: "#f59e0b", lineHeight: 1.05 }}>{inspeccionCounts.yellow}</span>
+                <span style={{ fontSize: "0.52rem", fontWeight: 700, color: "#fcd34d", textTransform: "uppercase" }}>Medio</span>
+              </div>
+              <div style={{ width: "1px", height: "18px", background: "rgba(255,255,255,0.08)" }} />
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <span style={{ fontSize: "0.94rem", fontWeight: 800, color: "#22c55e", lineHeight: 1.05 }}>{inspeccionCounts.green}</span>
+                <span style={{ fontSize: "0.52rem", fontWeight: 700, color: "#86efac", textTransform: "uppercase" }}>Bajo</span>
+              </div>
+              <div style={{ width: "1px", height: "18px", background: "rgba(255,255,255,0.08)" }} />
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <span style={{ fontSize: "0.94rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1.05 }}>{inspeccionCounts.total}</span>
+                <span style={{ fontSize: "0.52rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Total</span>
+              </div>
+            </div>
+          )
         ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, justifyContent: "center", overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px", flex: 1, justifyContent: "space-around", minWidth: 0 }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.rescuedPeople}</span>
-              <span style={{ fontSize: "0.52rem", fontWeight: 700, color: "#38bdf8", textTransform: "uppercase", opacity: 0.9, letterSpacing: "0.02em" }}>Rescatados</span>
+              <span style={{ fontSize: "0.95rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1.05 }}>{stats.rescuedPeople}</span>
+              <span style={{ fontSize: "0.5rem", fontWeight: 700, color: "#38bdf8", textTransform: "uppercase" }}>Resc.</span>
             </div>
-            <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "0.9rem" }}>|</span>
+            <div style={{ width: "1px", height: "18px", background: "rgba(255,255,255,0.08)" }} />
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.recoveredBodies}</span>
-              <span style={{ fontSize: "0.52rem", fontWeight: 700, color: "#ef4444", textTransform: "uppercase", opacity: 0.9, letterSpacing: "0.02em" }}>Cadáveres</span>
+              <span style={{ fontSize: "0.95rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1.05 }}>{stats.recoveredBodies}</span>
+              <span style={{ fontSize: "0.5rem", fontWeight: 700, color: "#ef4444", textTransform: "uppercase" }}>Recup.</span>
             </div>
-            <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "0.9rem" }}>|</span>
+            <div style={{ width: "1px", height: "18px", background: "rgba(255,255,255,0.08)" }} />
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.rescuedPets}</span>
-              <span style={{ fontSize: "0.52rem", fontWeight: 700, color: "#22c55e", textTransform: "uppercase", opacity: 0.9, letterSpacing: "0.02em" }}>Mascotas</span>
+              <span style={{ fontSize: "0.95rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1.05 }}>{stats.rescuedPets}</span>
+              <span style={{ fontSize: "0.5rem", fontWeight: 700, color: "#22c55e", textTransform: "uppercase" }}>Masc.</span>
             </div>
-            <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "0.9rem" }}>|</span>
+            <div style={{ width: "1px", height: "18px", background: "rgba(255,255,255,0.08)" }} />
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.prehospitalCare}</span>
-              <span style={{ fontSize: "0.52rem", fontWeight: 700, color: "#38bdf8", textTransform: "uppercase", opacity: 0.9, letterSpacing: "0.02em" }}>Atenciones</span>
+              <span style={{ fontSize: "0.95rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1.05 }}>{stats.prehospitalCare}</span>
+              <span style={{ fontSize: "0.5rem", fontWeight: 700, color: "#fb923c", textTransform: "uppercase" }}>Atenc.</span>
             </div>
-            <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "0.9rem" }}>|</span>
+            <div style={{ width: "1px", height: "18px", background: "rgba(255,255,255,0.08)" }} />
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{stats.transfers}</span>
-              <span style={{ fontSize: "0.52rem", fontWeight: 700, color: "#c084fc", textTransform: "uppercase", opacity: 0.9, letterSpacing: "0.02em" }}>Traslados</span>
+              <span style={{ fontSize: "0.95rem", fontWeight: 800, color: "#f8fafc", lineHeight: 1.05 }}>{stats.transfers}</span>
+              <span style={{ fontSize: "0.5rem", fontWeight: 700, color: "#cbd5e1", textTransform: "uppercase" }}>Trasl.</span>
             </div>
           </div>
         )}
 
         {onToggleAccumulated && (
           <button
+            type="button"
             onClick={onToggleAccumulated}
+            aria-pressed={showAccumulated}
             style={{
-              padding: "4px 9px",
-              borderRadius: "6px",
-              border: `1px solid ${showAccumulated ? "rgba(56,189,248,0.4)" : "rgba(255,255,255,0.12)"}`,
-              background: showAccumulated ? "rgba(56,189,248,0.15)" : "rgba(255,255,255,0.04)",
-              color: showAccumulated ? "#38bdf8" : "var(--text-muted)",
+              padding: "5px 9px",
+              borderRadius: "7px",
+              border: `1px solid ${showAccumulated ? "rgba(249, 115, 22, 0.55)" : "rgba(255, 255, 255, 0.14)"}`,
+              background: showAccumulated ? "rgba(249, 115, 22, 0.18)" : "rgba(255, 255, 255, 0.04)",
+              color: showAccumulated ? "#fdba74" : "#cbd5e1",
               cursor: "pointer",
-              fontSize: "0.62rem",
+              fontSize: "0.64rem",
               fontWeight: 700,
               whiteSpace: "nowrap",
               flexShrink: 0,
