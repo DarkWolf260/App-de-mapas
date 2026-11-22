@@ -7,6 +7,7 @@ import { fromLonLat } from "ol/proj";
 import { Circle as CircleStyle, Fill, Stroke, Style, Text } from "ol/style";
 import { buildParentsMap } from "./spatialUtils";
 import { isWorkFeatureActive } from "./htmlLabelBuilder";
+import { isDemolidosFeaturedPolygon } from "./activityCatalog";
 import { PALETTE } from "./colorUtils";
 import type { DrawnFeature, LayerVisibility, DepartmentView, InspeccionRecord } from "../types";
 
@@ -51,7 +52,8 @@ export function syncDrawnFeaturesToGraphics(
     if (!feat.geojsonGeometry) return;
     const isHidden = !!hiddenFeatures[String(feat.id)];
     const isNestedArea = feat.type === "polygon" && parentsMap[feat.id] !== undefined;
-    const shouldHideNested = isNestedArea && layerVisibility.hideNestedAreas;
+    const forceShowInDemolidos = !!layerVisibility.demolidos && isDemolidosFeaturedPolygon(feat);
+    const shouldHideNested = isNestedArea && layerVisibility.hideNestedAreas && !forceShowInDemolidos;
 
     if (isHidden || shouldHideNested) return;
 

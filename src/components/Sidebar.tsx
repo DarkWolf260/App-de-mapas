@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DepartmentTabs } from './DepartmentTabs';
 import type { DepartmentView, DrawnFeature } from '../types';
 import { getLocalDateStr } from '../utils/dateUtils';
+import { shouldShowFeatureForLayerMode } from '../utils/activityCatalog';
 import {
   MapPin,
   Trash2,
@@ -136,8 +137,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isInspeccionesMode = layerVisibility?.inspecciones ?? false;
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filtrado de elementos
+  const drawnById = React.useMemo(() => {
+    const lookup: Record<string, DrawnFeature> = {};
+    drawnFeatures.forEach((f) => {
+      lookup[String(f.id)] = f;
+    });
+    return lookup;
+  }, [drawnFeatures]);
+
+  // Filtrado de elementos (respetando capa temática activa y búsqueda)
   const filteredPoints = points.filter(p => {
+    if (layerVisibility?.formacion || layerVisibility?.demolidos) {
+      const feat = drawnById[String(p.id)];
+      if (feat && !shouldShowFeatureForLayerMode(feat, layerVisibility)) {
+        return false;
+      }
+    }
     const term = searchTerm.toLowerCase().trim();
     if (!term) return true;
     return p.name.toLowerCase().includes(term) ||

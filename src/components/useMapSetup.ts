@@ -4,6 +4,7 @@ import { fromLonLat } from "ol/proj";
 import XYZ from "ol/source/XYZ";
 import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapUrl, getBasemapMaxZoom } from "../utils/mapUtils";
 import { syncDrawnFeaturesToGraphics, syncImportedFeatures } from "../utils/graphicsSync";
+import { shouldShowFeatureForLayerMode } from "../utils/activityCatalog";
 import { buildParentsMap } from "../utils/spatialUtils";
 import { useMapInit } from "./useMapInit";
 import { useMapDrawing } from "./map/useMapDrawing";
@@ -176,18 +177,15 @@ export const useMapSetup = (props: UseMapSetupProps) => {
     const source = featuresSourceRef.current;
     if (!source) return;
 
-    if (layerVisibility.inspecciones) {
-      const polygonFeatures = drawnFeatures.filter((f) => f.type === "polygon");
-      syncDrawnFeaturesToGraphics(polygonFeatures, hiddenFeatures, layerVisibility, 0, source, selectedDate, activeDepartment, bare, parentsMap);
-    } else {
-      syncDrawnFeaturesToGraphics(drawnFeatures, hiddenFeatures, layerVisibility, 0, source, selectedDate, activeDepartment, bare, parentsMap);
-    }
-  }, [drawnFeatures, parentsMap, hiddenFeatures, layerVisibility, selectedDate, activeDepartment, bare, featuresSourceRef]);
+    const visibleFeatures = drawnFeatures.filter((f) => shouldShowFeatureForLayerMode(f, layerVisibility));
+    syncDrawnFeaturesToGraphics(visibleFeatures, hiddenFeatures, layerVisibility, 0, source, selectedDate, activeDepartment, bare, parentsMap);
+    featuresLayerRef.current?.changed();
+  }, [drawnFeatures, parentsMap, hiddenFeatures, layerVisibility, selectedDate, activeDepartment, bare, featuresSourceRef, featuresLayerRef]);
 
   useEffect(() => {
     const source = featuresSourceRef.current;
     if (!source || !importedFeatures) return;
-    const targetImported = layerVisibility.inspecciones
+    const targetImported = (layerVisibility.inspecciones || layerVisibility.formacion || layerVisibility.demolidos)
       ? importedFeatures.filter((f) => f.type === "polygon" || f.geojsonGeometry?.type === "Polygon")
       : importedFeatures;
     syncImportedFeatures(targetImported, layerVisibility, mapRef, source);

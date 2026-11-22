@@ -25,6 +25,8 @@ export function useAppState(canEditMap: boolean) {
     basemapLabels: false,
     hideNestedAreas: true,
     inspecciones: false,
+    formacion: false,
+    demolidos: false,
   });
 
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toLocaleDateString('en-CA'));
@@ -126,7 +128,24 @@ export function useAppState(canEditMap: boolean) {
   };
 
   const handleToggleLayer = (layerName: keyof LayerVisibility) => {
-    setLayerVisibility({ ...layerVisibility, [layerName]: !layerVisibility[layerName] });
+    const nextValue = !layerVisibility[layerName];
+    const nextState: LayerVisibility = { ...layerVisibility, [layerName]: nextValue };
+
+    // Las capas temáticas exclusivas (inspecciones, formacion, demolidos) son mutuamente excluyentes
+    if (nextValue && (layerName === 'inspecciones' || layerName === 'formacion' || layerName === 'demolidos')) {
+      if (layerName !== 'inspecciones') nextState.inspecciones = false;
+      if (layerName !== 'formacion') nextState.formacion = false;
+      if (layerName !== 'demolidos') nextState.demolidos = false;
+    }
+
+    // Al entrar a inspecciones ocultamos herramientas de dibujo; al salir las restauramos si corresponde
+    if (layerName === 'inspecciones') {
+      nextState.sketch = !nextValue;
+    } else if (nextValue && (layerName === 'formacion' || layerName === 'demolidos') && layerVisibility.inspecciones) {
+      nextState.sketch = true;
+    }
+
+    setLayerVisibility(nextState);
   };
 
   const handleImportConfirmed = (featuresToImport: ParsedFeature[]) => {

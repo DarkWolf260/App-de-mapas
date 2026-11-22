@@ -12,6 +12,8 @@ interface MapSettingsPanelProps {
 
 const TOGGLES: Array<{ key: keyof LayerVisibility; label: string }> = [
   { key: "sketch", label: "Herramientas de Dibujo" },
+  { key: "formacion", label: "Solo Formación y Prevención" },
+  { key: "demolidos", label: "Solo Edificios Demolidos" },
   { key: "polygonLabels", label: "Nombres de Polígonos" },
   { key: "pointLabels", label: "Nombres de Sitios de Trabajo" },
   { key: "basemapLabels", label: "Etiquetas de Calles y Mapa Base" },

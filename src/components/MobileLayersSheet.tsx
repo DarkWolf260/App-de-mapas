@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { LayerVisibility } from "../types";
-import { Layers, Pencil, Building2, Eye, EyeOff, ArrowRightLeft } from "lucide-react";
+import { Layers, Pencil, Building2, Eye, EyeOff, ArrowRightLeft, GraduationCap, Hammer } from "lucide-react";
 
 interface MobileLayersSheetProps {
   layerVisibility: LayerVisibility;
@@ -80,7 +80,65 @@ export const MobileLayersSheet: React.FC<MobileLayersSheetProps> = ({
         </span>
       </div>
 
-      {/* 2. Capa de Inspecciones de Infraestructura */}
+      {/* 2. Capa de Formación y Prevención Comunitaria */}
+      <div style={cardStyle(!!layerVisibility.formacion)} onClick={() => onToggleLayer("formacion")}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ background: "rgba(139, 92, 246, 0.18)", padding: "8px", borderRadius: "8px", color: "#a78bfa", display: "flex" }}>
+            <GraduationCap size={18} />
+          </div>
+          <div>
+            <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#ffffff" }}>
+              Formación y Prevención Comunitaria
+            </div>
+            <div style={{ fontSize: "0.62rem", color: "#94a3b8" }}>
+              Charlas educativas, capacitaciones, simulacros y QR
+            </div>
+          </div>
+        </div>
+
+        <span style={{
+          padding: "3px 8px",
+          borderRadius: "12px",
+          fontSize: "0.6rem",
+          fontWeight: 800,
+          background: layerVisibility.formacion ? "rgba(139, 92, 246, 0.25)" : "rgba(255,255,255,0.05)",
+          color: layerVisibility.formacion ? "#c4b5fd" : "#94a3b8",
+          border: `1px solid ${layerVisibility.formacion ? "rgba(139, 92, 246, 0.5)" : "rgba(255,255,255,0.1)"}`,
+        }}>
+          {layerVisibility.formacion ? "ACTIVA" : "OCULTA"}
+        </span>
+      </div>
+
+      {/* 3. Capa de Edificios Demolidos */}
+      <div style={cardStyle(!!layerVisibility.demolidos)} onClick={() => onToggleLayer("demolidos")}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ background: "rgba(17, 24, 39, 0.9)", border: "1px solid rgba(255,255,255,0.28)", padding: "8px", borderRadius: "8px", color: "#f8fafc", display: "flex" }}>
+            <Hammer size={18} />
+          </div>
+          <div>
+            <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#ffffff" }}>
+              Edificios Demolidos
+            </div>
+            <div style={{ fontSize: "0.62rem", color: "#94a3b8" }}>
+              Mostrar únicamente puntos de edificaciones demolidas
+            </div>
+          </div>
+        </div>
+
+        <span style={{
+          padding: "3px 8px",
+          borderRadius: "12px",
+          fontSize: "0.6rem",
+          fontWeight: 800,
+          background: layerVisibility.demolidos ? "rgba(248, 250, 252, 0.16)" : "rgba(255,255,255,0.05)",
+          color: layerVisibility.demolidos ? "#ffffff" : "#94a3b8",
+          border: `1px solid ${layerVisibility.demolidos ? "rgba(248, 250, 252, 0.45)" : "rgba(255,255,255,0.1)"}`,
+        }}>
+          {layerVisibility.demolidos ? "ACTIVA" : "OCULTA"}
+        </span>
+      </div>
+
+      {/* 4. Capa de Inspecciones de Infraestructura */}
       <div style={cardStyle(!!layerVisibility.inspecciones)} onClick={() => onToggleLayer("inspecciones")}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{ background: "rgba(249, 115, 22, 0.16)", padding: "8px", borderRadius: "8px", color: "#fb923c", display: "flex" }}>

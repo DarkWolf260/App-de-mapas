@@ -11,7 +11,7 @@ import { useDraggable } from "../hooks/useDraggable";
 import type { MapFeatureActions, MapUIContext } from "./mapTypes";
 import { DEFAULT_CENTER } from "../utils/mapUtils";
 import { fromLonLat, toLonLat } from "ol/proj";
-import { Satellite, Copy, Link2, Check, Building2, Layers, BarChart2, ExternalLink } from "lucide-react";
+import { Satellite, Copy, Link2, Check, Building2, BarChart2, ExternalLink, GraduationCap, Hammer } from "lucide-react";
 
 interface MapComponentProps {
   activeBasemap: BasemapKey | string;
@@ -155,18 +155,16 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
   }, []);
 
   const handleToggleInspeccionesLayer = React.useCallback(() => {
-    const isCurrentlyActive = !!layerVisibility.inspecciones;
-    if (!isCurrentlyActive) {
-      if (layerVisibility.sketch) {
-        props.onToggleLayer?.("sketch");
-      }
-    } else {
-      if (!layerVisibility.sketch) {
-        props.onToggleLayer?.("sketch");
-      }
-    }
     props.onToggleLayer?.("inspecciones");
-  }, [layerVisibility.inspecciones, layerVisibility.sketch, props.onToggleLayer]);
+  }, [props.onToggleLayer]);
+
+  const handleToggleFormacionLayer = React.useCallback(() => {
+    props.onToggleLayer?.("formacion");
+  }, [props.onToggleLayer]);
+
+  const handleToggleDemolidosLayer = React.useCallback(() => {
+    props.onToggleLayer?.("demolidos");
+  }, [props.onToggleLayer]);
 
   const handleCopyCoords = React.useCallback((lat: number, lng: number) => {
     const coordsStr = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
@@ -470,6 +468,30 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
             transition: "left 0.22s ease",
           }}
         >
+          <button
+            type="button"
+            className={`swipe-toggle-btn layer-formacion ${layerVisibility.formacion ? "active" : ""}`}
+            style={{ position: "relative", bottom: "auto", left: "auto" }}
+            onClick={handleToggleFormacionLayer}
+            aria-pressed={!!layerVisibility.formacion}
+            title={layerVisibility.formacion ? "Volver a vista operativa completa" : "Mostrar solo puntos de Formación y Prevención Comunitaria"}
+          >
+            <GraduationCap size={16} aria-hidden="true" />
+            <span className="swipe-toggle-label">Formación</span>
+          </button>
+
+          <button
+            type="button"
+            className={`swipe-toggle-btn layer-demolidos ${layerVisibility.demolidos ? "active" : ""}`}
+            style={{ position: "relative", bottom: "auto", left: "auto" }}
+            onClick={handleToggleDemolidosLayer}
+            aria-pressed={!!layerVisibility.demolidos}
+            title={layerVisibility.demolidos ? "Volver a vista operativa completa" : "Mostrar solo edificios demolidos"}
+          >
+            <Hammer size={16} aria-hidden="true" />
+            <span className="swipe-toggle-label">Demolidos</span>
+          </button>
+
           <button
             type="button"
             className={`swipe-toggle-btn ${layerVisibility.inspecciones ? "active" : ""}`}

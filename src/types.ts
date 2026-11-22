@@ -123,6 +123,8 @@ export interface LayerVisibility {
   allowLabelOverlap?: boolean;
   basemapLabels?: boolean;
   inspecciones?: boolean;
+  formacion?: boolean;
+  demolidos?: boolean;
 }
 
 export interface InspeccionRecord {

@@ -3,6 +3,7 @@ import type { CustomActivity } from "../../types";
 import { Activity, Plus, Trash2, Tag, Check, MessageSquare } from "lucide-react";
 import { sectionBox, inputStyle } from "./popupStyles";
 import { generateUUID } from "../../utils/uuidUtils";
+import { ACTIVITY_CATALOG_GROUPS, ALL_CATALOG_ACTIVITIES } from "../../utils/activityCatalog";
 
 interface CustomActivitiesSectionProps {
   customActivities: CustomActivity[];
@@ -12,20 +13,28 @@ interface CustomActivitiesSectionProps {
   subtitle?: string;
 }
 
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  fontSize: "0.68rem",
+  background: "rgba(10, 15, 29, 0.92)",
+  color: "#f8fafc",
+  cursor: "pointer",
+};
+
 export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = ({
   customActivities = [],
   onChange,
   canEdit = true,
-  title = "Actividades Personalizadas",
-  subtitle = "Adicionales a los indicadores estándar",
+  title = "Actividades",
+  subtitle = "Catálogo estandarizado",
 }) => {
-  const [customName, setCustomName] = useState<string>("");
+  const [selectedName, setSelectedName] = useState<string>("");
   const [value, setValue] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
 
   const handleAdd = () => {
-    const name = customName.trim();
+    const name = selectedName.trim();
     const val = value.trim() || "1";
     if (!name) return;
 
@@ -37,7 +46,7 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
     };
 
     onChange([...customActivities, newActivity]);
-    setCustomName("");
+    setSelectedName("");
     setValue("");
     setDescription("");
     setShowAddForm(false);
@@ -45,6 +54,13 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
 
   const handleRemove = (id: string) => {
     onChange(customActivities.filter((act) => act.id !== id));
+  };
+
+  const handleUpdateName = (id: string, newName: string) => {
+    if (!newName.trim()) return;
+    onChange(
+      customActivities.map((act) => (act.id === id ? { ...act, name: newName } : act))
+    );
   };
 
   const handleUpdateValue = (id: string, newVal: string) => {
@@ -85,105 +101,142 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
       {/* Lista de Actividades Registradas */}
       {customActivities.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "8px" }}>
-          {customActivities.map((act) => (
-            <div
-              key={act.id}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "3px",
-                background: "rgba(0, 0, 0, 0.3)",
-                border: "1px solid rgba(168, 85, 247, 0.25)",
-                borderRadius: "5px",
-                padding: "5px 7px",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <Tag size={10} style={{ color: "#c084fc", flexShrink: 0 }} />
-                <span style={{ fontSize: "0.66rem", fontWeight: 700, color: "var(--text-main)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {act.name}
-                </span>
+          {customActivities.map((act) => {
+            const isLegacyValue = !ALL_CATALOG_ACTIVITIES.includes(act.name);
+            return (
+              <div
+                key={act.id}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "3px",
+                  background: "rgba(0, 0, 0, 0.3)",
+                  border: "1px solid rgba(168, 85, 247, 0.25)",
+                  borderRadius: "5px",
+                  padding: "5px 7px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Tag size={10} style={{ color: "#c084fc", flexShrink: 0 }} />
+                  {canEdit ? (
+                    <select
+                      aria-label="Tipo de actividad"
+                      value={act.name}
+                      onChange={(e) => handleUpdateName(act.id, e.target.value)}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        color: "#f8fafc",
+                        background: "rgba(10, 15, 29, 0.85)",
+                        border: "1px solid rgba(168, 85, 247, 0.3)",
+                        borderRadius: "4px",
+                        padding: "2px 4px",
+                        fontFamily: "inherit",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {isLegacyValue && (
+                        <option value={act.name}>{act.name} (histórico)</option>
+                      )}
+                      {ACTIVITY_CATALOG_GROUPS.map((group) => (
+                        <optgroup key={group.label} label={group.label}>
+                          {group.options.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  ) : (
+                    <span style={{ fontSize: "0.66rem", fontWeight: 700, color: "var(--text-main)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {act.name}
+                    </span>
+                  )}
+                  {canEdit ? (
+                    <input
+                      type="text"
+                      aria-label="Cantidad"
+                      value={act.value}
+                      onChange={(e) => handleUpdateValue(act.id, e.target.value)}
+                      style={{
+                        width: "50px",
+                        textAlign: "center",
+                        padding: "2px 4px",
+                        fontSize: "0.68rem",
+                        fontWeight: 800,
+                        color: "#a855f7",
+                        background: "rgba(0,0,0,0.4)",
+                        border: "1px solid rgba(168, 85, 247, 0.4)",
+                        borderRadius: "4px",
+                        fontFamily: "inherit",
+                      }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#a855f7" }}>
+                      {act.value}
+                    </span>
+                  )}
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(act.id)}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "#f87171",
+                        cursor: "pointer",
+                        padding: "2px",
+                        display: "flex",
+                        alignItems: "center",
+                        opacity: 0.8,
+                      }}
+                      title="Eliminar actividad"
+                      aria-label={`Eliminar actividad ${act.name}`}
+                    >
+                      <Trash2 size={10} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Descripción / Nota del Detalle */}
                 {canEdit ? (
                   <input
                     type="text"
-                    value={act.value}
-                    onChange={(e) => handleUpdateValue(act.id, e.target.value)}
+                    placeholder="Detalle (ej: tema, escuela, asistentes, estado Finalizada/Programada)..."
+                    value={act.description || ""}
+                    onChange={(e) => handleUpdateDescription(act.id, e.target.value)}
                     style={{
-                      width: "50px",
-                      textAlign: "center",
-                      padding: "2px 4px",
-                      fontSize: "0.68rem",
-                      fontWeight: 800,
-                      color: "#a855f7",
-                      background: "rgba(0,0,0,0.4)",
-                      border: "1px solid rgba(168, 85, 247, 0.4)",
+                      width: "100%",
+                      fontSize: "0.62rem",
+                      color: "#e2e8f0",
+                      background: "rgba(0, 0, 0, 0.35)",
+                      border: "1px solid rgba(168, 85, 247, 0.25)",
                       borderRadius: "4px",
-                      outline: "none",
+                      padding: "3px 6px",
                       fontFamily: "inherit",
+                      boxSizing: "border-box",
+                      marginTop: "2px",
                     }}
                   />
                 ) : (
-                  <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#a855f7" }}>
-                    {act.value}
-                  </span>
-                )}
-                {canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(act.id)}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: "#f87171",
-                      cursor: "pointer",
-                      padding: "2px",
-                      display: "flex",
-                      alignItems: "center",
-                      opacity: 0.8,
-                    }}
-                    title="Eliminar actividad"
-                  >
-                    <Trash2 size={10} />
-                  </button>
+                  !!act.description && (
+                    <div style={{ fontSize: "0.62rem", color: "#e2e8f0", fontStyle: "italic", padding: "3px 6px", background: "rgba(168, 85, 247, 0.12)", borderRadius: "4px", marginTop: "2px", borderLeft: "2px solid #c084fc", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <MessageSquare size={11} style={{ flexShrink: 0, opacity: 0.8 }} />
+                      <span>{act.description}</span>
+                    </div>
+                  )
                 )}
               </div>
-
-              {/* Descripción / Nota del Detalle */}
-              {canEdit ? (
-                <input
-                  type="text"
-                  placeholder="Texto descriptivo / detalle de la actividad (opcional)..."
-                  value={act.description || ""}
-                  onChange={(e) => handleUpdateDescription(act.id, e.target.value)}
-                  style={{
-                    width: "100%",
-                    fontSize: "0.62rem",
-                    color: "#e2e8f0",
-                    background: "rgba(0, 0, 0, 0.35)",
-                    border: "1px solid rgba(168, 85, 247, 0.25)",
-                    borderRadius: "4px",
-                    padding: "3px 6px",
-                    outline: "none",
-                    fontFamily: "inherit",
-                    boxSizing: "border-box",
-                    marginTop: "2px",
-                  }}
-                />
-              ) : (
-                !!act.description && (
-                  <div style={{ fontSize: "0.62rem", color: "#e2e8f0", fontStyle: "italic", padding: "3px 6px", background: "rgba(168, 85, 247, 0.12)", borderRadius: "4px", marginTop: "2px", borderLeft: "2px solid #c084fc", display: "flex", alignItems: "center", gap: "4px" }}>
-                    <MessageSquare size={11} style={{ flexShrink: 0, opacity: 0.8 }} />
-                    <span>{act.description}</span>
-                  </div>
-                )
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         !showAddForm && (
           <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontStyle: "italic", textAlign: "center", margin: "4px 0" }}>
-            No hay actividades personalizadas añadidas
+            No hay actividades registradas
           </div>
         )
       )}
@@ -205,17 +258,27 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
               }}
             >
               <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#c084fc" }}>
-                Nueva Actividad Personalizada
+                Nueva Actividad
               </span>
 
-              <input
-                type="text"
-                placeholder="Nombre de la actividad (Ej: Guardia preventiva)..."
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                style={{ ...inputStyle, fontSize: "0.68rem" }}
+              <select
+                aria-label="Seleccionar actividad del catálogo"
+                value={selectedName}
+                onChange={(e) => setSelectedName(e.target.value)}
+                style={selectStyle}
                 autoFocus
-              />
+              >
+                <option value="">Selecciona una actividad del catálogo...</option>
+                {ACTIVITY_CATALOG_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.options.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
 
               <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                 <input
@@ -227,7 +290,7 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                 />
                 <input
                   type="text"
-                  placeholder="Texto descriptivo (opcional)..."
+                  placeholder="Detalle (tema, turno, asistentes, estado)..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   style={{ ...inputStyle, fontSize: "0.68rem", flex: 1 }}
@@ -238,16 +301,16 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                 <button
                   type="button"
                   onClick={handleAdd}
-                  disabled={!customName.trim()}
+                  disabled={!selectedName.trim()}
                   style={{
-                    background: customName.trim() ? "rgba(168, 85, 247, 0.25)" : "rgba(255,255,255,0.05)",
-                    border: `1px solid ${customName.trim() ? "rgba(168, 85, 247, 0.5)" : "rgba(255,255,255,0.1)"}`,
+                    background: selectedName.trim() ? "rgba(168, 85, 247, 0.25)" : "rgba(255,255,255,0.05)",
+                    border: `1px solid ${selectedName.trim() ? "rgba(168, 85, 247, 0.5)" : "rgba(255,255,255,0.1)"}`,
                     borderRadius: "5px",
-                    color: customName.trim() ? "#c084fc" : "var(--text-muted)",
+                    color: selectedName.trim() ? "#c084fc" : "var(--text-muted)",
                     fontSize: "0.64rem",
                     fontWeight: 700,
                     padding: "4px 10px",
-                    cursor: customName.trim() ? "pointer" : "default",
+                    cursor: selectedName.trim() ? "pointer" : "default",
                     display: "flex",
                     alignItems: "center",
                     gap: "4px",
@@ -294,7 +357,7 @@ export const CustomActivitiesSection: React.FC<CustomActivitiesSectionProps> = (
                 transition: "all 0.15s ease",
               }}
             >
-              <Plus size={10} /> Añadir Actividad Personalizada
+              <Plus size={10} /> Añadir Actividad
             </button>
           )}
         </>

@@ -24,6 +24,7 @@ import "ol/ol.css";
 import type { Color } from "../utils/colorUtils";
 import { PALETTE, hexToRgb } from "../utils/colorUtils";
 import { DEFAULT_CENTER, DEFAULT_ZOOM, getBasemapUrl, getBasemapMaxZoom } from "../utils/mapUtils";
+import { isDemolishedColor, isDemolidosFeaturedPolygon } from "../utils/activityCatalog";
 import { featureToLabelData, buildHtmlLabelElement, LABEL_ZOOM_THRESHOLD } from "../utils/htmlLabelBuilder";
 import { buildParentsMap } from "../utils/spatialUtils";
 import type { DrawnFeature, HtmlLabel, LayerVisibility, DepartmentView, InspeccionRecord } from "../types";
@@ -148,8 +149,13 @@ export function useMapInit(
           ? (view.getZoom() ?? (resolution ? view.getZoomForResolution(resolution) ?? 15 : 15))
           : 15;
 
-        // Puntos visibles a partir de zoom 16, polígonos/líneas a partir de zoom 13
-        const zoomThreshold = isPoint ? 16 : 13;
+        const rawFeat = feature.get("feat") as DrawnFeature | undefined;
+        const isBlackMarker = isPoint && isDemolishedColor(rawColor);
+        const isDemolidosMode = !!layerVisibilityRef.current?.demolidos;
+        const isFeaturedDemoPoly = isDemolidosMode && !!rawFeat && isDemolidosFeaturedPolygon(rawFeat);
+
+        // Puntos visibles a partir de zoom 16 (zoom 12 en capa solo Demolidos), polígonos a partir de zoom 13 (12 para Urbanismo Hugo Chávez en Demolidos)
+        const zoomThreshold = isPoint ? (isDemolidosMode ? 12 : 16) : (isFeaturedDemoPoly ? 12 : 13);
         const passesZoom = currentZoom >= zoomThreshold;
 
         // Verificar visibilidad de labels según configuración
@@ -163,9 +169,9 @@ export function useMapInit(
           fill: new Fill({ color: fillColor }),
           stroke: new Stroke({ color: strokeColor, width: 2, lineCap: "round", lineJoin: "round" }),
           image: new CircleStyle({
-            radius: 5,
-            fill: new Fill({ color: strokeColor }),
-            stroke: new Stroke({ color: "#ffffff", width: 1.5 }),
+            radius: isBlackMarker ? 6 : 5,
+            fill: new Fill({ color: isBlackMarker ? "#090d16" : strokeColor }),
+            stroke: new Stroke({ color: "#ffffff", width: isBlackMarker ? 2 : 1.5 }),
           }),
           text: showText
             ? new Text({
@@ -315,7 +321,8 @@ export function useMapInit(
           callbacks.onFeatureClick?.();
           setCustomPopup({ mapPoint: evt.coordinate, feat });
           setPopupScreenPos({ x: evt.pixel[0], y: evt.pixel[1] });
-          if (canEditRef.current && layerVisibilityRef.current.sketch && !feat.locked) {
+          const isConsultLayer = !!layerVisibilityRef.current.formacion || !!layerVisibilityRef.current.demolidos;
+          if (canEditRef.current && layerVisibilityRef.current.sketch && !isConsultLayer && !feat.locked) {
             onSelectFeatureRef.current?.(feat);
           } else {
             onSelectFeatureRef.current?.(null);

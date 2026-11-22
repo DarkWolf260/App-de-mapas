@@ -3,6 +3,7 @@ import OlMap from "ol/Map";
 import Overlay from "ol/Overlay";
 import { fromLonLat } from "ol/proj";
 import { buildParentsMap } from "../../utils/spatialUtils";
+import { shouldShowFeatureForLayerMode } from "../../utils/activityCatalog";
 import { featureToLabelData, buildHtmlLabelElement, updateHtmlLabelElementContent } from "../../utils/htmlLabelBuilder";
 import type { DrawnFeature, LayerVisibility, DepartmentView } from "../../types";
 
@@ -70,7 +71,7 @@ export const useMapOverlays = ({
         const fid = String(feat.id);
         currentDrawnIds.add(fid);
 
-        if (hiddenFeatures[fid]) {
+        if (hiddenFeatures[fid] || !shouldShowFeatureForLayerMode(feat, layerVisibility)) {
           const existing = overlayMap.get(fid);
           if (existing) existing.setPosition(undefined);
           return;
@@ -150,6 +151,8 @@ export const useMapOverlays = ({
     activeDepartment,
     layerVisibility.pointLabels,
     layerVisibility.inspecciones,
+    layerVisibility.formacion,
+    layerVisibility.demolidos,
   ]);
 
   // Limpieza total al desmontar el componente del mapa

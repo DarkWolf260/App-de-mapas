@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import type { DrawnFeature, DailyLog, LayerVisibility, DepartmentView, NovedadEntry } from "../types";
 import { computeContainedItems } from "../utils/spatialUtils";
-import { Lock, Unlock, FileText, Settings, History, Info, X } from "lucide-react";
+import { Lock, Unlock, FileText, Settings, History, Info, X, GraduationCap, Hammer, Calendar, Tag, MessageSquare } from "lucide-react";
 import type { UserPermissions } from "../services/adminUsersService";
+import { getDemolitionInfo, getFeatureActivityHistory } from "../utils/activityCatalog";
 import { TAB_BTN_BASE } from "./popup/popupStyles";
 import { GeneralTab } from "./popup/GeneralTab";
 import { OperationTab } from "./popup/OperationTab";
@@ -143,9 +144,376 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
   if (!customPopup || !activeFeat) return null;
 
+  const isPoint = activeFeat.type === "point" || activeFeat.geojsonGeometry?.type === "Point";
+  const isPolygon = activeFeat.type === "polygon" || activeFeat.geojsonGeometry?.type === "Polygon";
+
+  const formatSpanishDate = (isoDate: string | null) => {
+    if (!isoDate) return "Fecha no registrada";
+    const parts = isoDate.split("-");
+    if (parts.length !== 3) return isoDate;
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    if (isNaN(d.getTime())) return isoDate;
+    return d.toLocaleDateString("es-VE", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  // Vista dedicada: Capa Edificios Demolidos → tarjeta compacta con fecha de demolición
+  if (layerVisibility.demolidos && isPoint) {
+    const demolition = getDemolitionInfo(activeFeat);
+    return (
+      <div
+        role="dialog"
+        aria-label={`Información de demolición: ${activeFeat.title}`}
+        style={{
+          position: "fixed",
+          top: "84px",
+          right: "20px",
+          width: "320px",
+          maxWidth: "calc(100vw - 32px)",
+          zIndex: 300,
+          background: "rgba(10, 15, 29, 0.96)",
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
+          border: "1px solid rgba(248, 250, 252, 0.22)",
+          borderRadius: "14px",
+          padding: "16px 18px",
+          boxShadow: "0 16px 40px rgba(0, 0, 0, 0.72)",
+          color: "#f8fafc",
+          fontFamily: "var(--font-sans)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          pointerEvents: "auto",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                alignSelf: "flex-start",
+                padding: "3px 8px",
+                borderRadius: "999px",
+                background: "#111827",
+                border: "1px solid rgba(248, 250, 252, 0.35)",
+                color: "#f8fafc",
+                fontSize: "0.62rem",
+                fontWeight: 800,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+              }}
+            >
+              <Hammer size={11} aria-hidden="true" /> Edificio demolido
+            </span>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "0.95rem",
+                fontWeight: 800,
+                color: "#ffffff",
+                lineHeight: 1.25,
+              }}
+            >
+              {activeFeat.title}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar tarjeta"
+            title="Cerrar"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: "6px",
+              color: "#cbd5e1",
+              cursor: "pointer",
+              padding: "4px 6px",
+              display: "flex",
+              alignItems: "center",
+              flexShrink: 0,
+            }}
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {demolition.events.length > 0 ? (
+            demolition.events.map((ev) => (
+              <div
+                key={ev.date}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  background: "rgba(255, 255, 255, 0.04)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "10px",
+                  padding: "11px 14px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "9px",
+                    background: "rgba(248, 250, 252, 0.1)",
+                    border: "1px solid rgba(248, 250, 252, 0.2)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#ffffff",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Calendar size={16} aria-hidden="true" />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    {ev.label ? ev.label : "Fecha de demolición"}
+                  </span>
+                  <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "#ffffff" }}>
+                    {formatSpanishDate(ev.date)}
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                background: "rgba(255, 255, 255, 0.04)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "10px",
+                padding: "12px 14px",
+              }}
+            >
+              <div
+                style={{
+                  width: "34px",
+                  height: "34px",
+                  borderRadius: "9px",
+                  background: "rgba(248, 250, 252, 0.1)",
+                  border: "1px solid rgba(248, 250, 252, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#ffffff",
+                  flexShrink: 0,
+                }}
+              >
+                <Calendar size={16} aria-hidden="true" />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Fecha de demolición
+                </span>
+                <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "#ffffff" }}>
+                  {formatSpanishDate(demolition.demolishedDate)}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ fontSize: "0.72rem", color: "#cbd5e1", display: "flex", flexDirection: "column", gap: "4px" }}>
+          <span style={{ color: "#94a3b8", fontWeight: 600 }}>{demolition.statusLabel}</span>
+          {demolition.description && (
+            <p style={{ margin: 0, fontSize: "0.72rem", color: "#cbd5e1", lineHeight: 1.4 }}>
+              {demolition.description}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Vista dedicada: Capa Formación y Prevención Comunitaria → solo historial de actividades
+  if (layerVisibility.formacion && isPoint) {
+    const activityHistory = getFeatureActivityHistory(activeFeat);
+    const totalActivities = activityHistory.reduce((sum, entry) => sum + entry.activities.length, 0);
+
+    return (
+      <div className="custom-map-popup right-sidebar-popup" style={CONTAINER_STYLE}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: "10px",
+            borderBottom: "1px solid rgba(139, 92, 246, 0.25)",
+            paddingBottom: "12px",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                alignSelf: "flex-start",
+                padding: "3px 8px",
+                borderRadius: "999px",
+                background: "rgba(139, 92, 246, 0.18)",
+                border: "1px solid rgba(139, 92, 246, 0.45)",
+                color: "#c4b5fd",
+                fontSize: "0.62rem",
+                fontWeight: 800,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              <GraduationCap size={12} aria-hidden="true" /> Formación y Prevención
+            </span>
+            <h3
+              style={{
+                margin: 0,
+                fontWeight: 800,
+                fontSize: "0.94rem",
+                color: "#f8fafc",
+                textTransform: "uppercase",
+                letterSpacing: "0.03em",
+              }}
+            >
+              {activeFeat.title}
+            </h3>
+            <span style={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600 }}>
+              Historial de actividades · {totalActivities} {totalActivities === 1 ? "registro" : "registros"}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar panel"
+            title="Cerrar Panel"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "6px",
+              color: "var(--text-muted)",
+              cursor: "pointer",
+              padding: "4px 8px",
+              lineHeight: 1,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+        </div>
+
+        {activityHistory.length === 0 ? (
+          <div
+            style={{
+              padding: "24px 16px",
+              textAlign: "center",
+              color: "#94a3b8",
+              fontSize: "0.78rem",
+              background: "rgba(255,255,255,0.02)",
+              border: "1px dashed rgba(255,255,255,0.1)",
+              borderRadius: "10px",
+            }}
+          >
+            Sin actividades registradas en este sitio.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {activityHistory.map((entry) => (
+              <div
+                key={`${entry.date}-${entry.department}`}
+                style={{
+                  background: "rgba(139, 92, 246, 0.06)",
+                  border: "1px solid rgba(139, 92, 246, 0.24)",
+                  borderRadius: "10px",
+                  padding: "10px 12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: 800, color: "#e2e8f0" }}>
+                    <Calendar size={12} style={{ color: "#a78bfa" }} aria-hidden="true" />
+                    {formatSpanishDate(entry.date)}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "0.6rem",
+                      fontWeight: 700,
+                      padding: "2px 7px",
+                      borderRadius: "999px",
+                      background: entry.department === "bomberos" ? "rgba(239, 68, 68, 0.16)" : "rgba(249, 115, 22, 0.16)",
+                      color: entry.department === "bomberos" ? "#fca5a5" : "#fdba74",
+                      border: `1px solid ${entry.department === "bomberos" ? "rgba(239, 68, 68, 0.35)" : "rgba(249, 115, 22, 0.35)"}`,
+                    }}
+                  >
+                    {entry.department === "bomberos" ? "Bomberos" : "Protección Civil"}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {entry.activities.map((act, idx) => (
+                    <div
+                      key={act.id || `${entry.date}-${idx}`}
+                      style={{
+                        background: "rgba(0, 0, 0, 0.3)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "7px",
+                        padding: "7px 9px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.76rem", fontWeight: 700, color: "#ffffff" }}>
+                          <Tag size={12} style={{ color: "#c4b5fd", flexShrink: 0 }} aria-hidden="true" />
+                          {act.name}
+                        </span>
+                        {act.value && (
+                          <span
+                            style={{
+                              fontSize: "0.74rem",
+                              fontWeight: 800,
+                              color: "#c4b5fd",
+                              background: "rgba(139, 92, 246, 0.18)",
+                              border: "1px solid rgba(139, 92, 246, 0.38)",
+                              borderRadius: "6px",
+                              padding: "1px 7px",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {act.value}
+                          </span>
+                        )}
+                      </div>
+                      {act.description && (
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "5px", fontSize: "0.7rem", color: "#cbd5e1", lineHeight: 1.4 }}>
+                          <MessageSquare size={11} style={{ color: "#a78bfa", flexShrink: 0, marginTop: "2px" }} aria-hidden="true" />
+                          <span>{act.description}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const containedItems = computeContainedItems(activeFeat, sketchLayer, drawnFeatures);
-  const isPoint = activeFeat.type === "point";
-  const isPolygon = activeFeat.type === "polygon";
 
   const containedNovedades =
     !isPolygon || containedItems.length === 0
