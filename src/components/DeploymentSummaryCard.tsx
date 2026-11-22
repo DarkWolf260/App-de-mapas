@@ -15,6 +15,7 @@ interface DeploymentSummaryCardProps {
 
   // Inspecciones & Mode Props
   showAccumulated?: boolean;
+  onToggleAccumulated?: () => void;
   isInspeccionesMode?: boolean;
   inspeccionesRecords?: InspeccionRecord[];
   selectedColorFilter?: "all" | "rojo" | "amarillo" | "verde";
@@ -117,6 +118,7 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
   activeDepartment,
   style: customStyle,
   showAccumulated = false,
+  onToggleAccumulated,
   isInspeccionesMode = false,
   inspeccionesRecords = [],
   selectedColorFilter = "all",
@@ -156,16 +158,11 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
 
   const dayStats = useMemo(() => getDayStats(drawnFeatures, targetDateStr, activeDepartment), [drawnFeatures, targetDateStr, activeDepartment]);
 
-  // Desactivar totalmente cuando el acumulado está activado (sea operativo o inspecciones)
-  if (showAccumulated) {
-    return null;
-  }
-
   const metricBadges = [
     { label: "Rescat.", value: dayStats.totalRescued, color: "var(--color-info)" },
     { label: "Recup.", value: dayStats.totalRecovered, color: "#ef4444" },
     { label: "Masc.", value: dayStats.totalPets, color: "var(--color-green)" },
-    { label: "Atenc.", value: dayStats.totalPrehospitalCare, color: "#0ea5e9" },
+    { label: "Atenc.", value: dayStats.totalPrehospitalCare, color: "#f59e0b" },
     { label: "Trasl.", value: dayStats.totalTransfers, color: "var(--color-purple)" },
   ];
   const hasMetrics = metricBadges.some((m) => m.value > 0);
@@ -174,40 +171,112 @@ export const DeploymentSummaryCard: React.FC<DeploymentSummaryCardProps> = ({
 
   const renderStat = (label: string, value: number, color: string) => (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <span style={{ fontSize: "7px", fontWeight: 700, color, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "1px" }}>{label}</span>
-      <span style={{ fontSize: "16px", fontWeight: 800, color: "#f8fafc" }}>{value}</span>
+      <span style={{ fontSize: "9px", fontWeight: 700, color, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "1px" }}>{label}</span>
+      <span style={{ fontSize: "16px", fontWeight: 800, color: "#f8fafc", fontVariantNumeric: "tabular-nums" }}>{value}</span>
     </div>
   );
 
   const hasData = viewMode === "sitios" ? activePoints.length > 0 : teams.length > 0;
 
-  // Modo 1: Icono Discreto (completamente minimizado)
+  // Modo 1: Icono Discreto (cuadrado con bordes redondeados)
   if (widgetCollapsed) {
     return (
       <button
+        type="button"
+        className="hud-icon-square-btn"
         onClick={() => onToggleCollapse(false)}
+        aria-label={
+          showAccumulated
+            ? "Resumen de personal (modo acumulado)"
+            : isInspeccionesMode
+              ? `Inspecciones de infraestructura hoy: ${filteredInspecciones.length}`
+              : `Personal desplegado: ${totalOff} funcionarios (${targetDateStr})`
+        }
+        style={customStyle}
+        title={
+          showAccumulated
+            ? "Modo acumulado activo — clic para ver resumen"
+            : isInspeccionesMode
+              ? `Inspecciones hoy: ${filteredInspecciones.length}`
+              : `Personal Desplegado: ${totalOff} funcionarios (${targetDateStr})`
+        }
+      >
+        {isInspeccionesMode ? <Building2 size={18} aria-hidden="true" /> : <Users size={18} aria-hidden="true" />}
+      </button>
+    );
+  }
+
+  // En modo acumulado, mantener la tarjeta estable con explicación y salida rápida a vista diaria
+  if (showAccumulated) {
+    return (
+      <div
+        className="deployed-staff-widget"
         style={{
-          width: "32px",
-          height: "32px",
-          borderRadius: "50%",
-          background: "rgba(10, 15, 29, 0.85)",
-          border: "1px solid rgba(255, 255, 255, 0.18)",
-          color: "var(--color-info)",
-          cursor: "pointer",
+          background: "rgba(10, 15, 28, 0.95)",
+          border: "1px solid rgba(249, 115, 22, 0.35)",
+          color: "#f8fafc",
+          padding: "12px 14px",
+          borderRadius: "12px",
+          fontSize: "12px",
+          fontFamily: "var(--font-sans)",
+          boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
+          zIndex: 100,
+          width: "310px",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
-          transition: "all 0.2s ease",
-          padding: 0,
+          flexDirection: "column",
+          gap: "10px",
           ...customStyle,
         }}
-        title={isInspeccionesMode ? `Inspecciones Kobo hoy: ${filteredInspecciones.length}` : `Personal Desplegado: ${totalOff} funcionarios (${targetDateStr})`}
       >
-        {isInspeccionesMode ? <Building2 size={16} /> : <Users size={16} />}
-      </button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+          <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#fdba74", display: "flex", alignItems: "center", gap: "6px" }}>
+            {isInspeccionesMode ? <Building2 size={14} /> : <Users size={14} />}
+            {isInspeccionesMode ? "Inspecciones — Acumulado" : "Despliegue — Modo Acumulado"}
+          </span>
+          <button
+            type="button"
+            onClick={() => onToggleCollapse(true)}
+            title="Ocultar a icono discreto"
+            aria-label="Minimizar resumen de despliegue"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#94a3b8",
+              cursor: "pointer",
+              padding: "2px",
+              display: "inline-flex",
+              alignItems: "center",
+            }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+        <p style={{ margin: 0, fontSize: "0.74rem", color: "#cbd5e1", lineHeight: 1.45 }}>
+          {isInspeccionesMode
+            ? `Mostrando las ${inspeccionesRecords.length.toLocaleString("es-VE")} inspecciones acumuladas en el mapa.`
+            : "El detalle de personal y equipos por turno se muestra por fecha específica."}
+        </p>
+        {onToggleAccumulated && (
+          <button
+            type="button"
+            onClick={onToggleAccumulated}
+            style={{
+              alignSelf: "flex-start",
+              padding: "6px 12px",
+              borderRadius: "7px",
+              border: "1px solid rgba(249, 115, 22, 0.55)",
+              background: "rgba(249, 115, 22, 0.18)",
+              color: "#fdba74",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            Volver a vista por día
+          </button>
+        )}
+      </div>
     );
   }
 

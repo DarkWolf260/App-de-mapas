@@ -4,10 +4,10 @@ import { MapPin, Ruler, Hexagon, Square, Circle, Move, Pencil, Trash2, X } from 
 
 export const DRAW_TOOLS = [
   { id: "point",     label: "Punto",     icon: <MapPin size={14} /> },
-  { id: "polyline",  label: "Linea",     icon: <Ruler size={14} /> },
-  { id: "polygon",   label: "Poligono",  icon: <Hexagon size={14} /> },
+  { id: "polyline",  label: "Línea",     icon: <Ruler size={14} /> },
+  { id: "polygon",   label: "Polígono",  icon: <Hexagon size={14} /> },
   { id: "rectangle", label: "Rect.",     icon: <Square size={14} /> },
-  { id: "circle",    label: "Circulo",   icon: <Circle size={14} /> },
+  { id: "circle",    label: "Círculo",   icon: <Circle size={14} /> },
 ] as const;
 
 export type ToolId = typeof DRAW_TOOLS[number]["id"];
@@ -69,12 +69,13 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
           <span className="draw-tool-label">Mover</span>
         </button>
         <button
+          type="button"
           className={"draw-tool-btn" + (editMode === "reshape" ? " active" : "")}
-          title="Editar vertices"
+          title="Editar vértices"
           onClick={() => onToggleEditMode("reshape")}
         >
           <span className="draw-tool-icon"><Pencil size={14} /></span>
-          <span className="draw-tool-label">Vertices</span>
+          <span className="draw-tool-label">Vértices</span>
         </button>
         <button className="draw-tool-btn danger" title="Eliminar seleccionado" onClick={() => onDelete()}>
           <span className="draw-tool-icon"><Trash2 size={14} /></span>

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { RealtimeStatusBadge } from './RealtimeStatusBadge';
 import type { RealtimeChannelStatus } from '../repositories/interfaces';
+import { showToast } from '../utils/toast';
 
 export interface MapPoint {
   id: string;
@@ -66,6 +67,7 @@ interface SidebarProps {
   hiddenFeatures?: Record<string, boolean>;
   onToggleFeatureVisibility?: (id: string | number) => void;
   realtimeStatus?: RealtimeChannelStatus;
+  onRetryRealtime?: () => void;
   layerVisibility?: any;
   onToggleLayer?: any;
   swipeActive?: boolean;
@@ -127,6 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   hiddenFeatures = {},
   onToggleFeatureVisibility,
   realtimeStatus,
+  onRetryRealtime,
   layerVisibility,
   onCloseMobile,
   isCollapsed = false,
@@ -188,26 +191,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Importar datos de JSON
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     const fileReader = new FileReader();
-    if (e.target.files && e.target.files[0]) {
-      fileReader.readAsText(e.target.files[0], "UTF-8");
-      fileReader.onload = (event) => {
-        try {
-          const parsed = JSON.parse(event.target?.result as string);
-          if (parsed && (Array.isArray(parsed.points) || Array.isArray(parsed.areas))) {
-            onImportData?.({
-              points: parsed.points || [],
-              areas: parsed.areas || []
-            });
-            alert('Datos importados con éxito.');
-          } else {
-            alert('El formato del archivo no es válido.');
-          }
-        } catch {
-          alert('Error al leer el archivo JSON.');
+    fileReader.readAsText(file, "UTF-8");
+    fileReader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (parsed && (Array.isArray(parsed.points) || Array.isArray(parsed.areas))) {
+          const pts = parsed.points || [];
+          const ars = parsed.areas || [];
+          onImportData?.({ points: pts, areas: ars });
+          showToast(`Importación completada: ${pts.length} puntos y ${ars.length} áreas.`, "success");
+        } else {
+          showToast("Formato JSON inválido: el archivo debe incluir arreglos 'points' o 'areas'.", "error");
         }
-      };
-    }
+      } catch {
+        showToast("No se pudo leer el archivo JSON. Verifica que tenga sintaxis válida.", "error");
+      } finally {
+        e.target.value = "";
+      }
+    };
   };
 
   const subtitle =
@@ -232,11 +236,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {realtimeStatus && <RealtimeStatusBadge status={realtimeStatus} />}
+            {realtimeStatus && <RealtimeStatusBadge status={realtimeStatus} onRetry={onRetryRealtime} />}
             <button
+              type="button"
               onClick={onToggleCollapse || onCloseMobile}
               className="sidebar-card-toggle-btn"
               title={isCollapsed ? "Mostrar panel lateral" : "Ocultar panel lateral"}
+              aria-label={isCollapsed ? "Mostrar panel lateral" : "Ocultar panel lateral"}
+              aria-expanded={!isCollapsed}
             >
               {isCollapsed ? <Menu size={16} /> : <X size={16} />}
             </button>
@@ -328,7 +335,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {isCollapsed && searchTerm.trim() && (
         <div className="sidebar-search-dropdown scrollable-thin">
           {matchingFeatures.length === 0 && !coords ? (
-            <div className="sidebar-search-empty">No se encontraron elementos</div>
+            <div className="sidebar-search-empty">
+              {/^-?\d+[\d.,;\s-]*$/.test(searchTerm.trim())
+                ? "Formato de coordenadas inválido. Usa: lat, lon (ej. 10.6001, -66.9332)"
+                : "No se encontraron áreas ni puntos coincidentes"}
+            </div>
           ) : (
             matchingFeatures.map((feat) => (
               <div

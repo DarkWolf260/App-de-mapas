@@ -14,6 +14,7 @@ interface GlobalStatsWidgetProps {
 
   // Inspecciones props
   isInspeccionesMode?: boolean;
+  inspeccionesLoading?: boolean;
   inspeccionesRecords?: InspeccionRecord[];
   selectedColorFilter?: "all" | "rojo" | "amarillo" | "verde";
   setSelectedColorFilter?: (color: "all" | "rojo" | "amarillo" | "verde") => void;
@@ -28,6 +29,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
   onToggleAccumulated,
   compact = false,
   isInspeccionesMode = false,
+  inspeccionesLoading = false,
   inspeccionesRecords = [],
   selectedColorFilter = "all",
   setSelectedColorFilter,
@@ -208,6 +210,12 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
     >
       {/* SI ES MODO INSPECCIONES */}
       {isInspeccionesMode ? (
+        inspeccionesLoading ? (
+          <div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "4px 6px", color: "#cbd5e1", fontSize: "0.75rem", fontWeight: 700 }}>
+            <Building2 size={14} style={{ color: "var(--accent-orange)" }} />
+            <span>Cargando inspecciones de infraestructura...</span>
+          </div>
+        ) : (
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           {/* Alto Riesgo */}
           <div
@@ -302,36 +310,37 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
             <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#818cf8", textTransform: "uppercase", letterSpacing: "0.04em" }}>
               Total Edificaciones
             </span>
-            <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>
+            <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc", fontVariantNumeric: "tabular-nums" }}>
               {inspeccionCounts.total}
             </span>
           </div>
         </div>
+        )
       ) : (
         /* MODO OPERATIVO DE SIEMPRE */
-        <div style={{ display: "flex", alignItems: "center", gap: compact ? "6px" : "14px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: compact ? "6px" : "14px", fontVariantNumeric: "tabular-nums" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "var(--color-info)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "R." : "Rescatados"}</span>
+            <span style={{ fontSize: compact ? "0.45rem" : "0.62rem", fontWeight: 700, color: "var(--color-info)", textTransform: "uppercase", letterSpacing: "0.04em" }}>{compact ? "R." : "Rescatados"}</span>
             <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.rescuedPeople}</span>
           </div>
-          <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+          <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.1)" }} />
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "C." : "Cadáveres"}</span>
+            <span style={{ fontSize: compact ? "0.45rem" : "0.62rem", fontWeight: 700, color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.04em" }}>{compact ? "C." : "Recuperados"}</span>
             <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.recoveredBodies}</span>
           </div>
-          <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+          <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.1)" }} />
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "var(--color-green)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "M." : "Mascotas"}</span>
+            <span style={{ fontSize: compact ? "0.45rem" : "0.62rem", fontWeight: 700, color: "var(--color-green)", textTransform: "uppercase", letterSpacing: "0.04em" }}>{compact ? "M." : "Mascotas"}</span>
             <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.rescuedPets}</span>
           </div>
-          {!compact && <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.08)" }} />}
+          {!compact && <div style={{ width: "1px", height: "20px", background: "rgba(255, 255, 255, 0.1)" }} />}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "#38bdf8", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "At." : "Atenciones"}</span>
+            <span style={{ fontSize: compact ? "0.45rem" : "0.62rem", fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", letterSpacing: "0.04em" }}>{compact ? "At." : "Atenciones"}</span>
             <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.prehospitalCare}</span>
           </div>
-          <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.08)" }} />
+          <div style={{ width: "1px", height: compact ? "14px" : "20px", background: "rgba(255, 255, 255, 0.1)" }} />
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <span style={{ fontSize: compact ? "0.45rem" : "0.55rem", fontWeight: 700, color: "var(--color-purple)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.85 }}>{compact ? "T." : "Traslados"}</span>
+            <span style={{ fontSize: compact ? "0.45rem" : "0.62rem", fontWeight: 700, color: "var(--color-purple)", textTransform: "uppercase", letterSpacing: "0.04em" }}>{compact ? "T." : "Traslados"}</span>
             <span style={{ fontSize: compact ? "0.85rem" : "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{stats.transfers}</span>
           </div>
         </div>
@@ -340,44 +349,49 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
       {/* Mode toggle */}
       {onToggleAccumulated && (
         <button
+          type="button"
           onClick={onToggleAccumulated}
+          aria-pressed={showAccumulated}
           title={showAccumulated ? "Cambiar a modo diario" : "Cambiar a modo acumulado"}
           style={{
-            padding: "2px 8px",
+            padding: "4px 10px",
             borderRadius: "6px",
-            border: `1px solid ${showAccumulated ? "rgba(56,189,248,0.4)" : "rgba(255,255,255,0.12)"}`,
-            background: showAccumulated ? "rgba(56,189,248,0.15)" : "rgba(255,255,255,0.03)",
-            color: showAccumulated ? (isInspeccionesMode ? "#818cf8" : "#38bdf8") : "var(--text-muted)",
+            border: `1px solid ${showAccumulated ? "rgba(249, 115, 22, 0.55)" : "rgba(255, 255, 255, 0.16)"}`,
+            background: showAccumulated ? "rgba(249, 115, 22, 0.2)" : "rgba(255, 255, 255, 0.05)",
+            color: showAccumulated ? "#fdba74" : "#cbd5e1",
             cursor: "pointer",
-            fontSize: "0.58rem",
+            fontSize: "0.66rem",
             fontWeight: 700,
             display: "flex",
             alignItems: "center",
-            gap: "3px",
+            gap: "4px",
             transition: "all 0.15s ease",
             whiteSpace: "nowrap",
             flexShrink: 0,
           }}
         >
-          {showAccumulated ? <Calendar size={10} /> : <Clock size={10} />}
+          {showAccumulated ? <Calendar size={11} aria-hidden="true" /> : <Clock size={11} aria-hidden="true" />}
           {showAccumulated ? "Acumulado" : "Hoy"}
         </button>
       )}
 
       {/* Slide Toggle Tab Handle */}
       <button
+        type="button"
         onClick={() => {
           const next = !isCollapsed;
           setIsCollapsed(next);
           localStorage.setItem("pc_stats_widget_collapsed", String(next));
         }}
+        aria-label={isCollapsed ? "Mostrar resumen de estadísticas" : "Ocultar resumen de estadísticas"}
+        aria-expanded={!isCollapsed}
         style={{
           position: "absolute",
           bottom: "-18px",
           left: "50%",
           transform: "translateX(-50%)",
           background: "rgba(10, 15, 29, 0.97)",
-          border: `1px solid ${isInspeccionesMode ? "rgba(129, 140, 248, 0.3)" : "rgba(56, 189, 248, 0.25)"}`,
+          border: "1px solid rgba(255, 255, 255, 0.16)",
           borderTop: "none",
           borderRadius: "0 0 10px 10px",
           width: "36px",
@@ -385,24 +399,23 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: isInspeccionesMode ? "#818cf8" : "rgba(56, 189, 248, 0.8)",
+          color: "#cbd5e1",
           cursor: "pointer",
           boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-          outline: "none",
           transition: "all 0.2s ease",
           padding: 0,
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(10, 15, 29, 0.95)";
+          e.currentTarget.style.background = "rgba(15, 23, 42, 0.98)";
           e.currentTarget.style.color = "#fff";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = "rgba(10, 15, 29, 0.9)";
-          e.currentTarget.style.color = isInspeccionesMode ? "#818cf8" : "rgba(56, 189, 248, 0.8)";
+          e.currentTarget.style.background = "rgba(10, 15, 29, 0.97)";
+          e.currentTarget.style.color = "#cbd5e1";
         }}
         title={isCollapsed ? "Mostrar estadísticas" : "Ocultar estadísticas"}
       >
-        {isCollapsed ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+        {isCollapsed ? <ChevronDown size={12} aria-hidden="true" /> : <ChevronUp size={12} aria-hidden="true" />}
       </button>
     </div>
   );

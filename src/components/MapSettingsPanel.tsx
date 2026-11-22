@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Settings, X } from "lucide-react";
 import type { LayerVisibility } from "../types";
 
@@ -25,46 +25,42 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
   onToggle,
   canEditMap = false,
 }) => {
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onToggle();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [expanded, onToggle]);
+
   const visibleToggles = TOGGLES.filter((t) => t.key !== "sketch" || canEditMap);
   if (!expanded) {
     return (
       <button
+        type="button"
+        className="hud-icon-square-btn"
         onClick={onToggle}
-        style={{
-          width: "32px",
-          height: "32px",
-          borderRadius: "50%",
-          background: "rgba(10, 15, 29, 0.85)",
-          border: "1px solid rgba(255, 255, 255, 0.18)",
-          color: "var(--color-info)",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
-          transition: "all 0.2s ease",
-          padding: 0,
-        }}
-        title="Opciones del Mapa"
+        aria-label="Abrir opciones y capas del mapa"
+        aria-expanded={false}
+        title="Opciones y Capas del Mapa"
       >
-        <Settings size={15} />
+        <Settings size={18} aria-hidden="true" />
       </button>
     );
   }
 
   return (
     <div
+      role="region"
+      aria-label="Opciones del mapa"
       style={{
         width: "270px",
-        background: "rgba(10, 15, 28, 0.94)",
-        border: "1px solid rgba(255, 255, 255, 0.12)",
+        background: "rgba(10, 15, 28, 0.95)",
+        border: "1px solid rgba(255, 255, 255, 0.14)",
         borderRadius: "12px",
         padding: "10px 12px",
         boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
       }}
     >
       <div
@@ -79,23 +75,25 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
       >
         <span
           style={{
-            fontSize: "0.72rem",
+            fontSize: "0.74rem",
             fontWeight: 800,
-            color: "var(--color-info)",
+            color: "#fdba74",
             letterSpacing: "0.04em",
             display: "flex",
             alignItems: "center",
             gap: "6px",
           }}
         >
-          <Settings size={13} /> Opciones del Mapa
+          <Settings size={13} aria-hidden="true" /> Opciones del Mapa
         </span>
         <button
+          type="button"
           onClick={onToggle}
+          aria-label="Cerrar opciones del mapa"
           style={{
             background: "transparent",
             border: "none",
-            color: "var(--text-muted)",
+            color: "#94a3b8",
             cursor: "pointer",
             padding: "2px",
             display: "flex",
@@ -103,7 +101,7 @@ export const MapSettingsPanel: React.FC<MapSettingsPanelProps> = ({
           }}
           title="Ocultar opciones"
         >
-          <X size={14} />
+          <X size={14} aria-hidden="true" />
         </button>
       </div>
 

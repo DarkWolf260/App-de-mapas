@@ -80,18 +80,18 @@ export const MobileLayersSheet: React.FC<MobileLayersSheetProps> = ({
         </span>
       </div>
 
-      {/* 2. Capa de Inspecciones (Kobo) */}
+      {/* 2. Capa de Inspecciones de Infraestructura */}
       <div style={cardStyle(!!layerVisibility.inspecciones)} onClick={() => onToggleLayer("inspecciones")}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ background: "rgba(99, 102, 241, 0.15)", padding: "8px", borderRadius: "8px", color: "#818cf8", display: "flex" }}>
+          <div style={{ background: "rgba(249, 115, 22, 0.16)", padding: "8px", borderRadius: "8px", color: "#fb923c", display: "flex" }}>
             <Building2 size={18} />
           </div>
           <div>
             <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#ffffff" }}>
-              Capa de Inspecciones Kobo
+              Inspecciones de Infraestructura
             </div>
-            <div style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>
-              2,564 evaluaciones de estructuras e infraestructuras
+            <div style={{ fontSize: "0.66rem", color: "#94a3b8" }}>
+              Evaluaciones de edificaciones en La Guaira
             </div>
           </div>
         </div>
@@ -101,8 +101,8 @@ export const MobileLayersSheet: React.FC<MobileLayersSheetProps> = ({
           borderRadius: "12px",
           fontSize: "0.6rem",
           fontWeight: 800,
-          background: layerVisibility.inspecciones ? "rgba(99, 102, 241, 0.2)" : "rgba(255,255,255,0.05)",
-          color: layerVisibility.inspecciones ? "#818cf8" : "var(--text-muted)",
+          background: layerVisibility.inspecciones ? "rgba(249, 115, 22, 0.2)" : "rgba(255,255,255,0.05)",
+          color: layerVisibility.inspecciones ? "#fdba74" : "#94a3b8",
           border: `1px solid ${layerVisibility.inspecciones ? "rgba(99, 102, 241, 0.4)" : "rgba(255,255,255,0.1)"}`,
         }}>
           {layerVisibility.inspecciones ? "ACTIVA" : "OCULTA"}

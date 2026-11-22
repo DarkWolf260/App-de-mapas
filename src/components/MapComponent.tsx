@@ -364,32 +364,17 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
             pointerEvents: "none",
           }}
         >
-          {/* Botón Flotante Discreto de Panel de Estadísticas (Cyan Neón) */}
+          {/* Botón Flotante de Panel de Estadísticas (Cuadrado con bordes redondeados) */}
           {actions.onOpenRangeReport && (
             <button
-              className="bitacora-floating-btn"
+              type="button"
+              className="hud-icon-square-btn bitacora-floating-btn"
               onClick={() => actions.onOpenRangeReport && actions.onOpenRangeReport("all")}
-              style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "50%",
-                background: "rgba(10, 15, 29, 0.85)",
-                border: "1px solid rgba(56, 189, 248, 0.45)",
-                color: "#38bdf8",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)",
-                boxShadow: "0 4px 12px rgba(56, 189, 248, 0.25)",
-                transition: "all 0.2s ease",
-                padding: 0,
-                pointerEvents: "auto",
-              }}
-              title="Abrir Panel de Estadísticas"
+              aria-label="Abrir panel de estadísticas y reporte por rango"
+              title="Estadísticas y Reporte por Rango"
+              style={{ pointerEvents: "auto" }}
             >
-              <BarChart2 size={16} style={{ color: "#38bdf8" }} />
+              <BarChart2 size={18} aria-hidden="true" />
             </button>
           )}
 
@@ -429,6 +414,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
               selectedDate={ui.selectedDate}
               activeDepartment={ui.activeDepartment}
               showAccumulated={ui.showAccumulated}
+              onToggleAccumulated={props.onToggleAccumulated}
               isInspeccionesMode={layerVisibility.inspecciones ?? false}
               inspeccionesRecords={inspeccionesRecords}
               selectedColorFilter={selectedColorFilter}
@@ -468,38 +454,45 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
         />
       )}
 
-      {/* Floating Action Buttons — Bottom Left (Solo Escritorio cuando el sidebar está colapsado) */}
-      {!bare && !isMobile && !ui.sidebarOpen && (
-        <div style={{ position: "fixed", bottom: "24px", left: "24px", zIndex: 30, display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>
-          {/* Fila Superior: Botón de Inspecciones (Encima de Antes / Después) */}
+      {/* Floating Action Buttons — Bottom Left Dock (Con etiquetas, bordes redondeados, persistentes al abrir el sidebar) */}
+      {!bare && !isMobile && (
+        <div
+          className="cartographic-dock"
+          style={{
+            position: "fixed",
+            bottom: "20px",
+            left: ui.sidebarOpen ? "382px" : "18px",
+            zIndex: 110,
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            alignItems: "flex-start",
+            transition: "left 0.22s ease",
+          }}
+        >
           <button
+            type="button"
             className={`swipe-toggle-btn ${layerVisibility.inspecciones ? "active" : ""}`}
+            style={{ position: "relative", bottom: "auto", left: "auto" }}
             onClick={handleToggleInspeccionesLayer}
-            title={layerVisibility.inspecciones ? "Desactivar Capa de Inspecciones Kobo" : "Activar Capa de Inspecciones Kobo"}
-            style={{
-              position: "relative",
-              bottom: "auto",
-              left: "auto",
-              borderColor: layerVisibility.inspecciones ? "rgba(99, 102, 241, 0.8)" : undefined,
-              backgroundColor: layerVisibility.inspecciones ? "rgba(99, 102, 241, 0.25)" : undefined,
-            }}
+            aria-pressed={!!layerVisibility.inspecciones}
+            title={layerVisibility.inspecciones ? "Desactivar inspecciones de infraestructura" : "Activar inspecciones de infraestructura"}
           >
-            <Building2 size={16} style={{ color: layerVisibility.inspecciones ? "#818cf8" : undefined }} />
+            <Building2 size={16} aria-hidden="true" />
             <span className="swipe-toggle-label">Inspecciones</span>
           </button>
 
-          {/* Fila Inferior: Botón Antes / Después */}
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <button
-              className={`swipe-toggle-btn ${swipeActive ? "active" : ""}`}
-              style={{ position: "relative", bottom: "auto", left: "auto" }}
-              onClick={swipeActive ? deactivateSwipe : activateSwipe}
-              title={swipeActive ? "Cerrar comparación" : "Comparar antes/después"}
-            >
-              <Satellite size={16} />
-              <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Después"}</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            className={`swipe-toggle-btn ${swipeActive ? "active" : ""}`}
+            style={{ position: "relative", bottom: "auto", left: "auto" }}
+            onClick={swipeActive ? deactivateSwipe : activateSwipe}
+            aria-pressed={swipeActive}
+            title={swipeActive ? "Cerrar comparación satelital" : "Comparar satélite antes y después"}
+          >
+            <Satellite size={16} aria-hidden="true" />
+            <span className="swipe-toggle-label">{swipeActive ? "Cerrar" : "Antes / Después"}</span>
+          </button>
         </div>
       )}
 

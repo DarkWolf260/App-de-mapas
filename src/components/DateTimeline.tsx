@@ -3,20 +3,20 @@ import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { BitacoraCalendar } from "./BitacoraCalendar";
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const MONTHS_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
-function formatDate(dateStr: string): { day: string; dayName: string } {
+function formatDate(dateStr: string): { day: string; dayName: string; monthYear: string } {
   const parts = dateStr.split("-").map(Number);
   const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
   const d = dateObj.getDate();
   const dayOfWeek = DAYS[dateObj.getDay()];
-  return { day: String(d), dayName: dayOfWeek };
+  const monthName = MONTHS_SHORT[dateObj.getMonth()] || "";
+  return { day: String(d), dayName: dayOfWeek, monthYear: `${monthName} ${dateObj.getFullYear()}` };
 }
 
-function buildDateRange(startDate: string): string[] {
+function buildDateRange(startDate: string, maxDate: string): string[] {
   const dates: string[] = [];
-  const end = new Date();
-  end.setDate(end.getDate() + 1); // Mañana
-  end.setHours(0, 0, 0, 0);
+  const end = new Date(maxDate + "T00:00:00");
   const start = new Date(startDate + "T00:00:00");
   let current = new Date(start);
   while (current <= end) {
@@ -37,13 +37,8 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
   onDateChange,
   startDate = "2026-06-24",
 }) => {
-  const allDates = useMemo(() => buildDateRange(startDate), [startDate]);
   const todayStr = useMemo(() => new Date().toLocaleDateString("en-CA"), []);
-  const tomorrowStr = useMemo(() => {
-    const t = new Date();
-    t.setDate(t.getDate() + 1);
-    return t.toLocaleDateString("en-CA");
-  }, []);
+  const allDates = useMemo(() => buildDateRange(startDate, todayStr), [startDate, todayStr]);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   const calendarWrapperRef = React.useRef<HTMLDivElement>(null);
@@ -55,20 +50,28 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
         setCalendarOpen(false);
       }
     };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setCalendarOpen(false);
+    };
     document.addEventListener("mousedown", handleOutside);
     document.addEventListener("touchstart", handleOutside);
+    document.addEventListener("keydown", handleKey);
     return () => {
       document.removeEventListener("mousedown", handleOutside);
       document.removeEventListener("touchstart", handleOutside);
+      document.removeEventListener("keydown", handleKey);
     };
   }, [calendarOpen]);
 
-  const selectedIndex = allDates.indexOf(selectedDate);
+  const rawIndex = allDates.indexOf(selectedDate);
+  const selectedIndex = rawIndex >= 0 ? rawIndex : allDates.length - 1;
 
   const windowSize = 5;
   const half = Math.floor(windowSize / 2);
-  const startIdx = Math.max(0, Math.min(selectedIndex - half, allDates.length - windowSize));
-  const visibleDates = allDates.slice(startIdx, startIdx + windowSize).filter((d) => d <= tomorrowStr);
+  const startIdx = Math.max(0, Math.min(selectedIndex - half, Math.max(0, allDates.length - windowSize)));
+  const visibleDates = allDates.slice(startIdx, startIdx + windowSize);
+
+  const activeMeta = useMemo(() => formatDate(selectedDate || todayStr), [selectedDate, todayStr]);
 
   const handlePrev = () => {
     if (selectedIndex > 0) {
@@ -78,10 +81,7 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
 
   const handleNext = () => {
     if (selectedIndex < allDates.length - 1) {
-      const nextDate = allDates[selectedIndex + 1];
-      if (nextDate <= tomorrowStr) {
-        onDateChange(nextDate);
-      }
+      onDateChange(allDates[selectedIndex + 1]);
     }
   };
 
@@ -92,26 +92,31 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
   const isToday = selectedDate === todayStr;
 
   return (
-    <div className="date-timeline">
+    <div className="date-timeline" role="region" aria-label="Selector de fecha operativa">
       <button
+        type="button"
         className="dt-nav-btn"
         onClick={handlePrev}
         disabled={selectedIndex <= 0}
         title="Día anterior"
+        aria-label="Día anterior"
       >
-        <ChevronLeft size={14} />
+        <ChevronLeft size={14} aria-hidden="true" />
       </button>
 
       <div className="dt-dates">
         {visibleDates.map((dateStr) => {
-          const { day, dayName } = formatDate(dateStr);
+          const { day, dayName, monthYear } = formatDate(dateStr);
           const isActive = dateStr === selectedDate;
           const isTodayDate = dateStr === todayStr;
           return (
             <button
+              type="button"
               key={dateStr}
               className={`dt-date-btn ${isActive ? "active" : ""} ${isTodayDate ? "today" : ""}`}
               onClick={() => onDateChange(dateStr)}
+              aria-current={isActive ? "date" : undefined}
+              aria-label={`${dayName} ${day} ${monthYear}${isTodayDate ? " (Hoy)" : ""}`}
             >
               <span className="dt-date-day">{day}</span>
               <span className="dt-date-month">{dayName}</span>
@@ -121,21 +126,27 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
       </div>
 
       <button
+        type="button"
         className="dt-nav-btn"
         onClick={handleNext}
-        disabled={selectedIndex >= allDates.length - 1 || allDates[selectedIndex] >= tomorrowStr}
+        disabled={selectedIndex >= allDates.length - 1}
         title="Día siguiente"
+        aria-label="Día siguiente"
       >
-        <ChevronRight size={14} />
+        <ChevronRight size={14} aria-hidden="true" />
       </button>
 
       <div className="dt-calendar-wrapper" ref={calendarWrapperRef}>
         <button
+          type="button"
           className="dt-calendar-btn"
           onClick={() => setCalendarOpen((prev) => !prev)}
-          title="Seleccionar fecha"
+          title="Abrir calendario de bitácora"
+          aria-label={`Abrir calendario (${activeMeta.monthYear})`}
+          aria-expanded={calendarOpen}
         >
-          <Calendar size={14} />
+          <Calendar size={14} aria-hidden="true" />
+          <span className="dt-month-label">{activeMeta.monthYear}</span>
         </button>
 
         {calendarOpen && (
@@ -147,14 +158,19 @@ export const DateTimeline: React.FC<DateTimelineProps> = ({
                 setCalendarOpen(false);
               }}
               minDate={startDate}
-              maxDate={tomorrowStr}
+              maxDate={todayStr}
             />
           </div>
         )}
       </div>
 
       {!isToday && (
-        <button className="dt-today-btn" onClick={handleToday} title="Volver a hoy">
+        <button
+          type="button"
+          className="dt-today-btn"
+          onClick={handleToday}
+          title="Volver a la fecha actual"
+        >
           Hoy
         </button>
       )}

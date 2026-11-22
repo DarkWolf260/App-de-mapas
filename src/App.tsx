@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import MapComponent from './components/MapComponent';
 import { Sidebar } from './components/Sidebar';
 import { GlobalStatsWidget } from './components/GlobalStatsWidget';
@@ -33,18 +33,28 @@ function App() {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
   const [mobilePanel, setMobilePanel] = useState<'personal' | 'settings' | 'layers' | null>(null);
   const [inspeccionesRecords, setInspeccionesRecords] = useState<InspeccionRecord[]>([]);
+  const [inspeccionesLoading, setInspeccionesLoading] = useState(false);
+  const inspeccionesLoadedRef = useRef(false);
   const isInspeccionesEnabled = !!state.layerVisibility.inspecciones;
 
   useEffect(() => {
-    if (!isInspeccionesEnabled || inspeccionesRecords.length > 0) return;
-    let isMounted = true;
-    fetchInspecciones().then((records) => {
-      if (isMounted) setInspeccionesRecords(records);
-    });
+    if (!isInspeccionesEnabled || inspeccionesLoadedRef.current) return;
+    let cancelled = false;
+    setInspeccionesLoading(true);
+    fetchInspecciones()
+      .then((records) => {
+        if (cancelled) return;
+        if (records.length > 0) inspeccionesLoadedRef.current = true;
+        setInspeccionesRecords(records);
+        setInspeccionesLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setInspeccionesLoading(false);
+      });
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
-  }, [isInspeccionesEnabled, inspeccionesRecords.length]);
+  }, [isInspeccionesEnabled]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
@@ -263,6 +273,7 @@ function App() {
             onToggleAccumulated={() => state.setShowAccumulated(!state.showAccumulated)}
             compact={isMobile}
             isInspeccionesMode={state.layerVisibility.inspecciones ?? false}
+            inspeccionesLoading={inspeccionesLoading}
             inspeccionesRecords={inspeccionesRecords}
           />
 
@@ -271,6 +282,7 @@ function App() {
             areas={state.areas}
             onSelectItem={state.handleSelectItem}
             onDeleteItem={state.handleDeleteItem}
+            onImportData={canEditMap ? state.handleImportData : undefined}
             selectedItemId={state.selectedItemId}
             className={state.sidebarCollapsed ? 'collapsed' : ''}
             isCollapsed={state.sidebarCollapsed}
@@ -278,15 +290,20 @@ function App() {
             isMobile={isMobile}
             activeDepartment={state.activeDepartment}
             onDepartmentChange={state.setActiveDepartment}
+            isAdmin={isAdmin && !isSuspended}
             showPoints={state.showPoints}
             showAreas={state.showAreas}
             onToggleShowPoints={() => state.setShowPoints(!state.showPoints)}
             onToggleShowAreas={() => state.setShowAreas(!state.showAreas)}
+            hiddenFeatures={state.hiddenFeatures}
+            onToggleFeatureVisibility={state.handleToggleFeatureVisibility}
+            realtimeStatus={state.realtimeStatus}
+            onRetryRealtime={state.refreshFeatures}
             layerVisibility={state.layerVisibility}
             onToggleLayer={state.handleToggleLayer}
             onCloseMobile={() => state.setSidebarCollapsed(true)}
             onGoToCoords={state.handleGoToCoords}
-            onCreatePointAtCoords={state.handleCreatePointAtCoords}
+            onCreatePointAtCoords={canEditMap ? state.handleCreatePointAtCoords : undefined}
             onZoomToFeature={state.setZoomToFeature}
             drawnFeatures={state.drawnFeatures}
           />
