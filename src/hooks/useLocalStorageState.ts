@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { browserStorage } from "../repositories/storageImpl";
 import type { IStorage } from "../repositories/interfaces";
 
@@ -19,13 +19,16 @@ export function useLocalStorageState<T>(
     return defaultValue;
   });
 
-  const setWithPersist = (value: T | ((prev: T) => T)) => {
-    setState((prev) => {
-      const next = typeof value === "function" ? (value as (prev: T) => T)(prev) : value;
-      storage.setItem(key, JSON.stringify(next));
-      return next;
-    });
-  };
+  const setWithPersist = useCallback(
+    (value: T | ((prev: T) => T)) => {
+      setState((prev) => {
+        const next = typeof value === "function" ? (value as (prev: T) => T)(prev) : value;
+        storage.setItem(key, JSON.stringify(next));
+        return next;
+      });
+    },
+    [key, storage],
+  );
 
   return [state, setWithPersist];
 }

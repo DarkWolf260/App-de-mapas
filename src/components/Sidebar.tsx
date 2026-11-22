@@ -179,7 +179,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   });
 
   const getFeatureIcon = (type: string, color?: string) => {
-    const style = { color: color || "#38bdf8", flexShrink: 0 };
+    const style = { color: color || "#94a3b8", flexShrink: 0 };
     if (type === 'point') return <MapPin size={14} style={style} />;
     if (type === 'polyline') return <Activity size={14} style={style} />;
     return <Square size={14} style={style} />;
@@ -378,12 +378,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* ── PANEL DE CONTENIDO (50% POLÍGONOS / 50% PUNTOS) ── */}
       {!isCollapsed && (
         <div className="sidebar-content-panel">
-          {/* Listado de Áreas y Polígonos (50%) */}
-          <div className="sidebar-section half-split">
+          {/* Listado de Áreas y Polígonos */}
+          <div className={`sidebar-section half-split ${!showAreas ? 'section-collapsed' : ''}`}>
             <div className="section-title" onClick={onToggleShowAreas} style={{ cursor: "pointer", flexShrink: 0 }}>
-              <Map size={14} />
+              <Map size={13} />
               <span>Áreas y Polígonos ({filteredAreas.length})</span>
-              <span style={{ marginLeft: "auto" }}>{showAreas ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
+              <span style={{ marginLeft: "auto", display: "inline-flex" }}>
+                {showAreas ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </span>
             </div>
 
             {showAreas && (
@@ -393,54 +395,64 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {searchTerm ? "No hay áreas coincidentes" : "No hay áreas trazadas"}
                   </div>
                 ) : (
-                  filteredAreas.map(area => (
-                    <div
-                      key={area.id}
-                      className={`element-item ${selectedItemId === area.id ? 'active' : ''}`}
-                      onClick={() => onSelectItem(area.id, 'area')}
-                      style={{ borderLeftColor: area.color }}
-                    >
-                      <div className="element-header">
-                        <span className="element-name">{area.name}</span>
-                        <div className="element-actions" onClick={(e) => e.stopPropagation()}>
-                          {onToggleFeatureVisibility && (
-                            <input
-                              type="checkbox"
-                              checked={!hiddenFeatures[String(area.id)]}
-                              onChange={() => onToggleFeatureVisibility(String(area.id))}
-                              title={hiddenFeatures[String(area.id)] ? "Mostrar área" : "Ocultar área"}
-                              style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#38bdf8", flexShrink: 0 }}
-                            />
-                          )}
-                          {isAdmin && (
-                            <button
-                              className="action-icon-btn"
-                              onClick={() => onDeleteItem(area.id, 'area')}
-                              title="Eliminar área"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
+                  filteredAreas.map(area => {
+                    const isHidden = !!hiddenFeatures[String(area.id)];
+                    const desc = area.description?.trim();
+                    return (
+                      <div
+                        key={area.id}
+                        className={`element-item ${selectedItemId === area.id ? 'active' : ''} ${isHidden ? 'is-hidden' : ''}`}
+                        onClick={() => onSelectItem(area.id, 'area')}
+                      >
+                        <div className="element-header">
+                          <span
+                            className="element-swatch is-area"
+                            style={{ backgroundColor: area.color || '#f97316' }}
+                            aria-hidden="true"
+                          />
+                          <span className="element-name" title={area.name}>{area.name}</span>
+                          <div className="element-actions" onClick={(e) => e.stopPropagation()}>
+                            {onToggleFeatureVisibility && (
+                              <input
+                                type="checkbox"
+                                checked={!isHidden}
+                                onChange={() => onToggleFeatureVisibility(String(area.id))}
+                                title={isHidden ? "Mostrar área" : "Ocultar área"}
+                                aria-label={isHidden ? `Mostrar ${area.name}` : `Ocultar ${area.name}`}
+                                className="element-visibility-checkbox"
+                              />
+                            )}
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="action-icon-btn"
+                                onClick={() => onDeleteItem(area.id, 'area')}
+                                title="Eliminar área"
+                                aria-label={`Eliminar ${area.name}`}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
                         </div>
+                        {desc && <span className="element-desc" title={desc}>{desc}</span>}
                       </div>
-                      <span className="element-desc">{area.description || 'Sin descripción'}</span>
-                      <div className="element-meta">
-                        <span>• {area.areaHectares.toFixed(2)} Ha</span>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             )}
           </div>
 
-          {/* Listado de Puntos Operacionales (50%) */}
+          {/* Listado de Puntos Operacionales */}
           {!isInspeccionesMode && (
-            <div className="sidebar-section half-split">
+            <div className={`sidebar-section half-split ${!showPoints ? 'section-collapsed' : ''}`}>
               <div className="section-title" onClick={onToggleShowPoints} style={{ cursor: "pointer", flexShrink: 0 }}>
-                <MapPin size={14} />
+                <MapPin size={13} />
                 <span>Puntos Operacionales ({filteredPoints.length})</span>
-                <span style={{ marginLeft: "auto" }}>{showPoints ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
+                <span style={{ marginLeft: "auto", display: "inline-flex" }}>
+                  {showPoints ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </span>
               </div>
 
               {showPoints && (
@@ -450,59 +462,55 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {searchTerm ? "No hay puntos coincidentes" : "No hay puntos registrados"}
                     </div>
                   ) : (
-                    filteredPoints.map(point => (
-                      <div
-                        key={point.id}
-                        className={`element-item ${selectedItemId === point.id ? 'active' : ''}`}
-                        onClick={() => onSelectItem(point.id, 'point')}
-                        style={{ borderLeftColor: point.color }}
-                      >
-                        <div className="element-header">
-                          <span className="element-name">{point.name}</span>
-                          {point.isCollapsed && (
+                    filteredPoints.map(point => {
+                      const isHidden = !!hiddenFeatures[String(point.id)];
+                      const desc = point.description?.trim();
+                      return (
+                        <div
+                          key={point.id}
+                          className={`element-item ${selectedItemId === point.id ? 'active' : ''} ${isHidden ? 'is-hidden' : ''}`}
+                          onClick={() => onSelectItem(point.id, 'point')}
+                        >
+                          <div className="element-header">
                             <span
-                              style={{
-                                fontSize: "0.62rem",
-                                fontWeight: 800,
-                                color: "#f87171",
-                                background: "rgba(239, 68, 68, 0.18)",
-                                border: "1px solid rgba(239, 68, 68, 0.4)",
-                                padding: "1px 6px",
-                                borderRadius: "4px",
-                                marginLeft: "6px",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              Colapsado: {point.collapsedCount || "1"}
-                            </span>
-                          )}
-                          <div className="element-actions" onClick={(e) => e.stopPropagation()}>
-                            {onToggleFeatureVisibility && (
-                              <input
-                                type="checkbox"
-                                checked={!hiddenFeatures[String(point.id)]}
-                                onChange={() => onToggleFeatureVisibility(String(point.id))}
-                                title={hiddenFeatures[String(point.id)] ? "Mostrar punto" : "Ocultar punto"}
-                                style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#38bdf8", flexShrink: 0 }}
-                              />
+                              className="element-swatch"
+                              style={{ backgroundColor: point.color || '#f97316' }}
+                              aria-hidden="true"
+                            />
+                            <span className="element-name" title={point.name}>{point.name}</span>
+                            {point.isCollapsed && (
+                              <span className="element-collapsed-pill">
+                                Colap: {point.collapsedCount || "1"}
+                              </span>
                             )}
-                            {isAdmin && (
-                              <button
-                                className="action-icon-btn"
-                                onClick={() => onDeleteItem(point.id, 'point')}
-                                title="Eliminar punto"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            )}
+                            <div className="element-actions" onClick={(e) => e.stopPropagation()}>
+                              {onToggleFeatureVisibility && (
+                                <input
+                                  type="checkbox"
+                                  checked={!isHidden}
+                                  onChange={() => onToggleFeatureVisibility(String(point.id))}
+                                  title={isHidden ? "Mostrar punto" : "Ocultar punto"}
+                                  aria-label={isHidden ? `Mostrar ${point.name}` : `Ocultar ${point.name}`}
+                                  className="element-visibility-checkbox"
+                                />
+                              )}
+                              {isAdmin && (
+                                <button
+                                  type="button"
+                                  className="action-icon-btn"
+                                  onClick={() => onDeleteItem(point.id, 'point')}
+                                  title="Eliminar punto"
+                                  aria-label={`Eliminar ${point.name}`}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </div>
                           </div>
+                          {desc && <span className="element-desc" title={desc}>{desc}</span>}
                         </div>
-                        <span className="element-desc">{point.description || 'Sin descripción'}</span>
-                        <div className="element-meta">
-                          <span>• {point.coordinates.latitude.toFixed(4)}, {point.coordinates.longitude.toFixed(4)}</span>
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               )}
@@ -512,12 +520,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Botones de Importación/Exportación al final — Solo para Administradores */}
           {isAdmin && (
             <div className="transfer-buttons">
-              <button className="btn-transfer" onClick={handleExport} title="Exportar datos a JSON">
-                <Download size={16} />
+              <button type="button" className="btn-transfer" onClick={handleExport} title="Exportar datos a JSON">
+                <Download size={14} />
                 <span>Exportar</span>
               </button>
               <label className="btn-transfer" style={{ cursor: 'pointer' }} title="Importar datos desde JSON">
-                <Upload size={16} />
+                <Upload size={14} />
                 <span>Importar</span>
                 <input
                   type="file"

@@ -31,12 +31,12 @@
     height: 100dvh !important;
     z-index: 260 !important;
     margin-left: 0 !important;
-    padding: 12px 12px calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 10px 10px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
     background: rgba(10, 15, 29, 0.98) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     pointer-events: auto !important;
-    overflow-y: auto !important;
+    overflow: hidden !important;
     box-sizing: border-box !important;
   }
 
@@ -47,12 +47,13 @@
 
   .sidebar-header-card,
   .sidebar-search-card,
-  .sidebar-body-card {
+  .sidebar-content-panel {
     box-shadow: none !important;
   }
 
-  .sidebar-body-card {
+  .sidebar-content-panel {
     flex: 1 !important;
+    height: auto !important;
     max-height: none !important;
     min-height: 0 !important;
   }
@@ -483,15 +484,19 @@
   }
 
   .action-icon-btn {
-    padding: 6px;
+    padding: 4px;
   }
 
   .element-item {
-    padding: 10px;
+    padding: 7px 9px;
+  }
+
+  .element-actions {
+    opacity: 1 !important;
   }
 
   .element-list {
-    max-height: 180px;
+    max-height: none;
   }
 
   .dt-calendar-popup {

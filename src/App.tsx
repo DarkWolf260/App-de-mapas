@@ -71,8 +71,11 @@ function App() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  const prevIsMobileRef = useRef<boolean | null>(null);
   useEffect(() => {
-    if (isMobile) {
+    const wasMobile = prevIsMobileRef.current;
+    prevIsMobileRef.current = isMobile;
+    if (isMobile && wasMobile !== true) {
       setSidebarCollapsed(true);
       setActiveDepartment('mixto');
     }
