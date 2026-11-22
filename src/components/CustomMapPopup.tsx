@@ -33,6 +33,7 @@ interface CustomMapPopupProps {
   onClose: () => void;
   onNavigateToFeature?: (feat: DrawnFeature) => void;
   activeDepartment?: DepartmentView;
+  isAuthenticated?: boolean;
   isAdmin?: boolean;
   isOperador?: boolean;
   isSuspended?: boolean;
@@ -107,6 +108,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   onClose,
   onNavigateToFeature,
   activeDepartment = "pc",
+  isAuthenticated = false,
+  isSuspended = false,
   isAdmin = false,
   isOperador = false,
   permissions,
@@ -118,8 +121,9 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
 
   const todayStr = new Date().toLocaleDateString("en-CA");
   const isEditingToday = popupEditDate === todayStr;
-  const canEditLog = isAdmin || (isOperador && (isEditingToday || !!permissions?.edit_historical_logs));
-  const canToggleArrival = isAdmin || (isOperador && (isEditingToday || !!permissions?.edit_historical_logs));
+  const canViewHistory = isAuthenticated && !isSuspended;
+  const canEditLog = isAuthenticated && !isSuspended && (isAdmin || (isOperador && (isEditingToday || !!permissions?.edit_historical_logs)));
+  const canToggleArrival = isAuthenticated && !isSuspended && (isAdmin || (isOperador && (isEditingToday || !!permissions?.edit_historical_logs)));
 
   const [activeTab, setActiveTab] = useState<TabId>(canEditMap ? "general" : "info");
 
@@ -141,6 +145,12 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
   useEffect(() => {
     setActiveTab(canEditMap && layerVisibility.sketch ? "general" : "info");
   }, [activeFeat?.id, activeFeat?.type, layerVisibility.sketch, canEditMap]);
+
+  useEffect(() => {
+    if (!canViewHistory && activeTab === "history") {
+      setActiveTab("info");
+    }
+  }, [canViewHistory, activeTab]);
 
   if (!customPopup || !activeFeat) return null;
 
@@ -598,8 +608,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         </button>
       </div>
 
-      {/* Tab Selector — read-only */}
-      {!canEditMap && (
+      {/* Tab Selector — read-only (solo se muestra si hay más de una pestaña disponible) */}
+      {!canEditMap && (canEditLog || (canViewHistory && (isPoint || isPolygon))) && (
         <div style={TAB_BAR_STYLE}>
           <button onClick={() => setActiveTab("info")} style={tabBtnStyle(activeTab === "info")}>
             <Info size={12} /> Información
@@ -609,7 +619,7 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
               <FileText size={12} /> Operación
             </button>
           )}
-          {(isPoint || isPolygon) && (
+          {canViewHistory && (isPoint || isPolygon) && (
             <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}>
               <History size={12} /> {historyLabel}
             </button>
@@ -629,9 +639,11 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
           <button onClick={() => setActiveTab("operation")} style={tabBtnStyle(activeTab === "operation")}>
             <FileText size={12} /> Operación
           </button>
-          <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}>
-            <History size={12} /> {historyLabel}
-          </button>
+          {canViewHistory && (
+            <button onClick={() => setActiveTab("history")} style={tabBtnStyle(activeTab === "history")}>
+              <History size={12} /> {historyLabel}
+            </button>
+          )}
         </div>
       )}
 
@@ -707,8 +719,8 @@ export const CustomMapPopup: React.FC<CustomMapPopupProps> = ({
         />
       )}
 
-      {/* Tab Content — History */}
-      {activeTab === "history" && (
+      {/* Tab Content — History (solo usuarios autenticados activos) */}
+      {activeTab === "history" && canViewHistory && (
         <HistoryTab
           logs={activeFeat.dailyLogs}
           featureTitle={activeFeat.title}

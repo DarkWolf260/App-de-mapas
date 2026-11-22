@@ -348,6 +348,8 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
           onClose={() => setCustomPopup(null)}
           onNavigateToFeature={handleNavigateToFeature}
           activeDepartment={ui.activeDepartment}
+          isAuthenticated={ui.isAuthenticated}
+          isSuspended={ui.isSuspended}
           isAdmin={ui.isAdmin}
           isOperador={ui.isOperador}
           permissions={ui.permissions}
