@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, type MutableRefObject } from "react";
 import VectorSource from "ol/source/Vector";
-import { fetchInspecciones } from "../../services/inspeccionService";
+import { fetchInspecciones, subscribeInspeccionesUpdates } from "../../services/inspeccionService";
 import { syncInspeccionesToGraphics } from "../../utils/graphicsSync";
 import type { InspeccionRecord, LayerVisibility } from "../../types";
 
@@ -24,15 +24,21 @@ export const useMapInspecciones = ({
   const isInspeccionesVisible = !!layerVisibility.inspecciones;
 
   useEffect(() => {
-    if (!isInspeccionesVisible || inspeccionesRecords.length > 0) return;
+    if (!isInspeccionesVisible) return;
     let isMounted = true;
-    fetchInspecciones().then((records) => {
-      if (isMounted) {
-        setInspeccionesRecords(records);
-      }
+    const unsub = subscribeInspeccionesUpdates((fresh) => {
+      if (isMounted) setInspeccionesRecords(fresh);
     });
+    if (inspeccionesRecords.length === 0) {
+      fetchInspecciones().then((records) => {
+        if (isMounted) {
+          setInspeccionesRecords(records);
+        }
+      });
+    }
     return () => {
       isMounted = false;
+      unsub();
     };
   }, [isInspeccionesVisible, inspeccionesRecords.length]);
 

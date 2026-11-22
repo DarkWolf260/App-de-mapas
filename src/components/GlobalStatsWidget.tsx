@@ -190,13 +190,14 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
     <div
       style={{
         position: "absolute",
-        top: isCollapsed ? "-44px" : "18px",
+        top: isCollapsed ? "-48px" : "18px",
         left: "50%",
         transform: "translateX(-50%)",
-        background: "rgba(10, 15, 28, 0.92)",
+        minHeight: "48px",
+        background: "rgba(10, 15, 28, 0.94)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        border: `1px solid ${isInspeccionesMode ? "rgba(129, 140, 248, 0.3)" : "rgba(255, 255, 255, 0.1)"}`,
+        border: `1px solid ${isInspeccionesMode ? "rgba(249, 115, 22, 0.38)" : "rgba(255, 255, 255, 0.12)"}`,
         borderRadius: "14px",
         padding: "6px 20px",
         boxShadow: "0 12px 30px rgba(0, 0, 0, 0.6)",
@@ -205,18 +206,23 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
         alignItems: "center",
         gap: "16px",
         fontFamily: "var(--font-sans)",
-        transition: "top 0.3s cubic-bezier(0.4, 0, 0.2, 1), left 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: "top 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, box-shadow 0.25s ease",
       }}
     >
+      <div
+        key={isInspeccionesMode ? (inspeccionesLoading ? "insp-loading" : "insp-ready") : "ops-mode"}
+        className="stats-mode-content"
+        style={{ display: "flex", alignItems: "center", minHeight: "34px" }}
+      >
       {/* SI ES MODO INSPECCIONES */}
       {isInspeccionesMode ? (
         inspeccionesLoading ? (
-          <div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "4px 6px", color: "#cbd5e1", fontSize: "0.75rem", fontWeight: 700 }}>
+          <div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0 6px", color: "#cbd5e1", fontSize: "0.75rem", fontWeight: 700, whiteSpace: "nowrap" }}>
             <Building2 size={14} style={{ color: "var(--accent-orange)" }} />
             <span>Cargando inspecciones de infraestructura...</span>
           </div>
         ) : (
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px", fontVariantNumeric: "tabular-nums" }}>
           {/* Alto Riesgo */}
           <div
             onClick={() => setSelectedColorFilter?.(selectedColorFilter === "rojo" ? "all" : "rojo")}
@@ -345,6 +351,7 @@ export const GlobalStatsWidget: React.FC<GlobalStatsWidgetProps> = ({
           </div>
         </div>
       )}
+      </div>
 
       {/* Mode toggle */}
       {onToggleAccumulated && (

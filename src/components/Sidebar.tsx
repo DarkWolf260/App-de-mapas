@@ -18,8 +18,6 @@ import {
   Plus,
   Square,
 } from 'lucide-react';
-import { RealtimeStatusBadge } from './RealtimeStatusBadge';
-import type { RealtimeChannelStatus } from '../repositories/interfaces';
 import { showToast } from '../utils/toast';
 
 export interface MapPoint {
@@ -66,8 +64,6 @@ interface SidebarProps {
   onToggleShowAreas?: () => void;
   hiddenFeatures?: Record<string, boolean>;
   onToggleFeatureVisibility?: (id: string | number) => void;
-  realtimeStatus?: RealtimeChannelStatus;
-  onRetryRealtime?: () => void;
   layerVisibility?: any;
   onToggleLayer?: any;
   swipeActive?: boolean;
@@ -128,8 +124,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleShowAreas,
   hiddenFeatures = {},
   onToggleFeatureVisibility,
-  realtimeStatus,
-  onRetryRealtime,
   layerVisibility,
   onCloseMobile,
   isCollapsed = false,
@@ -236,7 +230,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {realtimeStatus && <RealtimeStatusBadge status={realtimeStatus} onRetry={onRetryRealtime} />}
             <button
               type="button"
               onClick={onToggleCollapse || onCloseMobile}

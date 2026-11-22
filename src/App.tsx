@@ -18,7 +18,7 @@ import { MobileLayersSheet } from './components/MobileLayersSheet';
 import { Sheet } from './components/Sheet';
 import { UserNavMenu } from './components/UserNavMenu';
 import { Activity, Menu } from 'lucide-react';
-import { fetchInspecciones } from './services/inspeccionService';
+import { fetchInspecciones, subscribeInspeccionesUpdates } from './services/inspeccionService';
 import type { InspeccionRecord } from './types';
 import './App.css';
 
@@ -38,7 +38,15 @@ function App() {
   const isInspeccionesEnabled = !!state.layerVisibility.inspecciones;
 
   useEffect(() => {
-    if (!isInspeccionesEnabled || inspeccionesLoadedRef.current) return;
+    if (!isInspeccionesEnabled) return;
+    const unsub = subscribeInspeccionesUpdates((fresh) => {
+      inspeccionesLoadedRef.current = true;
+      setInspeccionesRecords(fresh);
+      setInspeccionesLoading(false);
+    });
+    if (inspeccionesLoadedRef.current) {
+      return unsub;
+    }
     let cancelled = false;
     setInspeccionesLoading(true);
     fetchInspecciones()
@@ -53,6 +61,7 @@ function App() {
       });
     return () => {
       cancelled = true;
+      unsub();
     };
   }, [isInspeccionesEnabled]);
 
@@ -297,8 +306,6 @@ function App() {
             onToggleShowAreas={() => state.setShowAreas(!state.showAreas)}
             hiddenFeatures={state.hiddenFeatures}
             onToggleFeatureVisibility={state.handleToggleFeatureVisibility}
-            realtimeStatus={state.realtimeStatus}
-            onRetryRealtime={state.refreshFeatures}
             layerVisibility={state.layerVisibility}
             onToggleLayer={state.handleToggleLayer}
             onCloseMobile={() => state.setSidebarCollapsed(true)}

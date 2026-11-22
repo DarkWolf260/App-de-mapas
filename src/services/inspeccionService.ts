@@ -15,7 +15,67 @@ function getKoboEndpoint(): string {
 }
 
 const KOBO_PAGE_SIZE = 1000;
+const KOBO_LA_GUAIRA_QUERY = encodeURIComponent(JSON.stringify({ "modulo1/Estado": "La_Guaira" }));
+const KOBO_FIELDS_PARAM = encodeURIComponent(
+  JSON.stringify([
+    "_id",
+    "_geolocation",
+    "_submission_time",
+    "modulo1/Estado",
+    "modulo1/Municipio",
+    "modulo1/Parroquia",
+    "modulo1/Fecha",
+    "group_zw4ob28/_3_1_Nombre_de_la_edificaci_n",
+    "group_pa3ko43/_2_1_Nombre_de_la_Ins_n_o_Consejo_Comunal",
+    "group_jc0wd35/_4_1_Indique_el_uso_de_la_edifi",
+    "group_hr7mg21/_5_1_Indique_el_tipo_de_estructura",
+    "group_zo0ds00/_11_1_Identificar_el_sgo_mas_desfavorable",
+    "group_zo0ds00/_11_2_OBSERVACIONES",
+    "modulo6/Etiqueta_o_Riesgo",
+    "group_vy1eb97/Riesgo_de_edificios_aleda_os",
+    "modulo6/_6_1_Riesgo_o_dictamen",
+  ])
+);
+const CACHE_KEY = "coe_inspecciones_cache_v1";
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
+
 let cachedInspeccionesPromise: Promise<InspeccionRecord[]> | null = null;
+let backgroundRefreshStarted = false;
+const updateListeners = new Set<(records: InspeccionRecord[]) => void>();
+
+export function subscribeInspeccionesUpdates(cb: (records: InspeccionRecord[]) => void): () => void {
+  updateListeners.add(cb);
+  return () => {
+    updateListeners.delete(cb);
+  };
+}
+
+function readSessionCache(): InspeccionRecord[] | null {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts: number; data: InspeccionRecord[] };
+    if (!parsed || !Array.isArray(parsed.data) || parsed.data.length === 0) return null;
+    if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionCache(records: InspeccionRecord[]): void {
+  if (typeof sessionStorage === "undefined" || records.length === 0) return;
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: records }));
+  } catch {
+    // Ignorar quota exceeded en sessionStorage
+  }
+}
+
+function notifyListeners(records: InspeccionRecord[]): void {
+  updateListeners.forEach((cb) => cb(records));
+}
 
 function cleanText(val?: string): string {
   if (!val) return "No especificado";
@@ -42,32 +102,37 @@ function parseRiesgoEtiqueta(rawTag?: string, rawRiesgo?: string): string | null
   return null;
 }
 
-/** Carga ultrarrápida desde Supabase con paginación completa, filtrado de riesgo y deduplicación */
+/** Carga ultrarrápida desde Supabase en paralelo (paginación con count exacto) */
 async function fetchFromSupabase(): Promise<InspeccionRecord[]> {
   try {
-    let allData: any[] = [];
-    let page = 0;
     const pageSize = 1000;
-    let hasMore = true;
+    const first = await supabase
+      .from("inspecciones_edificaciones")
+      .select("*", { count: "exact" })
+      .range(0, pageSize - 1);
 
-    while (hasMore) {
-      const from = page * pageSize;
-      const to = from + pageSize - 1;
-      const { data, error } = await supabase
-        .from("inspecciones_edificaciones")
-        .select("*")
-        .range(from, to);
+    if (first.error || !first.data || first.data.length === 0) {
+      return [];
+    }
 
-      if (error || !data || data.length === 0) {
-        hasMore = false;
-      } else {
-        allData = allData.concat(data);
-        if (data.length < pageSize) {
-          hasMore = false;
-        } else {
-          page++;
-        }
+    let allData: any[] = [...first.data];
+    const totalCount = first.count ?? allData.length;
+
+    if (totalCount > pageSize) {
+      const pagePromises: PromiseLike<any[]>[] = [];
+      for (let from = pageSize; from < totalCount; from += pageSize) {
+        pagePromises.push(
+          supabase
+            .from("inspecciones_edificaciones")
+            .select("*")
+            .range(from, from + pageSize - 1)
+            .then((res) => (!res.error && res.data ? res.data : []))
+        );
       }
+      const restPages = await Promise.all(pagePromises);
+      restPages.forEach((pageRows) => {
+        allData = allData.concat(pageRows);
+      });
     }
 
     const seenKeys = new Set<string>();
@@ -113,12 +178,17 @@ async function fetchFromSupabase(): Promise<InspeccionRecord[]> {
   }
 }
 
-/** Carga directa desde KoboToolbox en PARALELO */
+/** Carga directa desde KoboToolbox en PARALELO (filtrada por estado y solo campos requeridos) */
 async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
   const initialUrl = getKoboEndpoint();
+  const isDevProxy = initialUrl === KOBO_PROXIED_URL;
+  const buildPageUrl = (start: number) =>
+    isDevProxy
+      ? `${initialUrl}?limit=${KOBO_PAGE_SIZE}&start=${start}&query=${KOBO_LA_GUAIRA_QUERY}&fields=${KOBO_FIELDS_PARAM}`
+      : `${initialUrl}?limit=${KOBO_PAGE_SIZE}&start=${start}`;
 
-  // 1. Obtener primera página para conocer el total de registros (count)
-  const firstRes = await fetch(`${initialUrl}?limit=${KOBO_PAGE_SIZE}&start=0`);
+  // 1. Obtener primera página para conocer el total de registros de La Guaira (count)
+  const firstRes = await fetch(buildPageUrl(0));
   if (!firstRes.ok) throw new Error(`Kobo status: ${firstRes.status}`);
 
   const firstData = await firstRes.json();
@@ -130,7 +200,7 @@ async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
     const pagePromises: Promise<any>[] = [];
     for (let start = KOBO_PAGE_SIZE; start < totalCount; start += KOBO_PAGE_SIZE) {
       pagePromises.push(
-        fetch(`${initialUrl}?limit=${KOBO_PAGE_SIZE}&start=${start}`)
+        fetch(buildPageUrl(start))
           .then((res) => (res.ok ? res.json() : { results: [] }))
           .then((d) => d.results || [])
           .catch(() => [])
@@ -196,24 +266,60 @@ async function fetchFromKoboParallel(): Promise<InspeccionRecord[]> {
   return laGuairaRecords;
 }
 
+function triggerBackgroundKoboRefresh(): void {
+  if (backgroundRefreshStarted) return;
+  backgroundRefreshStarted = true;
+  fetchFromKoboParallel()
+    .then((freshKobo) => {
+      if (freshKobo.length > 0) {
+        writeSessionCache(freshKobo);
+        cachedInspeccionesPromise = Promise.resolve(freshKobo);
+        notifyListeners(freshKobo);
+      }
+    })
+    .catch((err) => {
+      console.warn("[inspeccionService] Refresco en segundo plano desde Kobo omitido:", err);
+    });
+}
+
 export function fetchInspecciones(forceRefresh = false): Promise<InspeccionRecord[]> {
   if (!forceRefresh && cachedInspeccionesPromise) {
     return cachedInspeccionesPromise;
   }
 
+  // 0. Caché instantánea de sesión (0 ms) + refresco silencioso de Kobo en segundo plano
+  if (!forceRefresh) {
+    const cached = readSessionCache();
+    if (cached && cached.length > 0) {
+      cachedInspeccionesPromise = Promise.resolve(cached);
+      triggerBackgroundKoboRefresh();
+      return cachedInspeccionesPromise;
+    }
+  } else {
+    backgroundRefreshStarted = false;
+  }
+
   const request = (async () => {
-    // 1. Cargar directamente desde Kobo (vía proxy Vite en dev o Vercel Edge Function en prod)
+    // 1. Carga rápida desde Supabase en paralelo (~700 ms) + actualización en segundo plano desde Kobo
+    const supabaseData = await fetchFromSupabase();
+    if (supabaseData.length > 0) {
+      writeSessionCache(supabaseData);
+      triggerBackgroundKoboRefresh();
+      return supabaseData;
+    }
+
+    // 2. Respaldo directo desde Kobo filtrado por La Guaira + solo 16 campos
     try {
       const koboData = await fetchFromKoboParallel();
       if (koboData.length > 0) {
+        writeSessionCache(koboData);
         return koboData;
       }
     } catch (err) {
-      console.warn("[inspeccionService] Falló la consulta a Kobo, recurriendo a Supabase:", err);
+      console.warn("[inspeccionService] Falló la consulta directa a Kobo:", err);
     }
 
-    // 2. Respaldo: Supabase deduplicado
-    return await fetchFromSupabase();
+    return [];
   })();
 
   cachedInspeccionesPromise = request.then((records) => {
