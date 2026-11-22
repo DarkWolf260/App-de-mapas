@@ -58,13 +58,15 @@ export const useMapDrawing = (opts: UseMapDrawingOptions) => {
   const translateInteractionRef = useRef<Translate | null>(null);
   const snapInteractionRef = useRef<Snap | null>(null);
 
+  const sketchEnabled = canEditMap === true && !!layerVisibility.sketch && !layerVisibility.inspecciones;
+
   const onSelectGraphicForEdit = useCallback(
     (g: DrawnFeature | null) => {
       if (!g) {
         setSelectedGraphic(null);
         return;
       }
-      if (canEditMap !== true || !layerVisibility.sketch) return;
+      if (!sketchEnabled) return;
       const feat = drawnFeatures.find((f) => String(f.id) === String(g.id));
       if (feat?.locked) {
         setSelectedGraphic(null);
@@ -73,7 +75,7 @@ export const useMapDrawing = (opts: UseMapDrawingOptions) => {
       setActiveTool(null);
       setSelectedGraphic(feat || g);
     },
-    [canEditMap, layerVisibility.sketch, drawnFeatures]
+    [sketchEnabled, drawnFeatures]
   );
 
   // Referencia para rastrear los estados previos de bloqueo de cada elemento
@@ -81,8 +83,9 @@ export const useMapDrawing = (opts: UseMapDrawingOptions) => {
 
   // Sincronización automática de selección cuando un elemento se bloquea o desbloquea
   useEffect(() => {
-    if (!canEditMap || !layerVisibility.sketch) {
+    if (!sketchEnabled) {
       if (selectedGraphic) setSelectedGraphic(null);
+      if (activeTool) setActiveTool(null);
       return;
     }
 
@@ -171,8 +174,7 @@ export const useMapDrawing = (opts: UseMapDrawingOptions) => {
   }, [
     drawnFeatures,
     customPopup,
-    canEditMap,
-    layerVisibility.sketch,
+    sketchEnabled,
     selectedGraphic,
     activeTool,
     setCustomPopup,
@@ -189,7 +191,7 @@ export const useMapDrawing = (opts: UseMapDrawingOptions) => {
       drawInteractionRef.current = null;
     }
 
-    if (activeTool && canEditMap) {
+    if (activeTool && sketchEnabled) {
       let draw: Draw;
       if (activeTool === "point") {
         draw = new Draw({ source, type: "Point" });
@@ -257,7 +259,7 @@ export const useMapDrawing = (opts: UseMapDrawingOptions) => {
         drawInteractionRef.current = null;
       }
     };
-  }, [activeTool, canEditMap, mapRef, featuresSourceRef, onFeatureAddedRef]);
+  }, [activeTool, sketchEnabled, mapRef, featuresSourceRef, onFeatureAddedRef]);
 
   // 2. Manejo de Modificación / Translate Exclusivo para la Figura Seleccionada
   useEffect(() => {
@@ -274,7 +276,7 @@ export const useMapDrawing = (opts: UseMapDrawingOptions) => {
       translateInteractionRef.current = null;
     }
 
-    if (canEditMap && layerVisibility.sketch) {
+    if (sketchEnabled) {
       if (!snapInteractionRef.current) {
         const snap = new Snap({ source });
         map.addInteraction(snap);
@@ -342,8 +344,7 @@ export const useMapDrawing = (opts: UseMapDrawingOptions) => {
       }
     }
   }, [
-    canEditMap,
-    layerVisibility.sketch,
+    sketchEnabled,
     selectedGraphic,
     editMode,
     mapRef,

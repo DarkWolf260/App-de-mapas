@@ -292,7 +292,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
       <div className="map-view-container" ref={mapDiv} style={{ width: "100%", height: "100%" }} />
 
       {/* Floating Draggable Drawing Toolbar */}
-      {!bare && canEditMap && layerVisibility.sketch && (
+      {!bare && canEditMap && layerVisibility.sketch && !layerVisibility.inspecciones && (
         <div
           className="draw-toolbar-wrapper"
           style={

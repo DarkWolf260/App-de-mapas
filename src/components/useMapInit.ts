@@ -321,7 +321,10 @@ export function useMapInit(
           callbacks.onFeatureClick?.();
           setCustomPopup({ mapPoint: evt.coordinate, feat });
           setPopupScreenPos({ x: evt.pixel[0], y: evt.pixel[1] });
-          const isConsultLayer = !!layerVisibilityRef.current.formacion || !!layerVisibilityRef.current.demolidos;
+          const isConsultLayer =
+            !!layerVisibilityRef.current.formacion ||
+            !!layerVisibilityRef.current.demolidos ||
+            !!layerVisibilityRef.current.inspecciones;
           if (canEditRef.current && layerVisibilityRef.current.sketch && !isConsultLayer && !feat.locked) {
             onSelectFeatureRef.current?.(feat);
           } else {

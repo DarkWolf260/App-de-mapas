@@ -138,13 +138,6 @@ export function useAppState(canEditMap: boolean) {
       if (layerName !== 'demolidos') nextState.demolidos = false;
     }
 
-    // Al entrar a inspecciones ocultamos herramientas de dibujo; al salir las restauramos si corresponde
-    if (layerName === 'inspecciones') {
-      nextState.sketch = !nextValue;
-    } else if (nextValue && (layerName === 'formacion' || layerName === 'demolidos') && layerVisibility.inspecciones) {
-      nextState.sketch = true;
-    }
-
     setLayerVisibility(nextState);
   };
 
